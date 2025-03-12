@@ -1390,15 +1390,37 @@ async function updateTotalClaimedRewards() {
 async function stakeTokens(token, amount) {
     try {
         const tokenContract = await tronWeb.contract(tokenContractAbi, tokenContracts[token]);
+        const stakingContractAddress = stakingContractAddresses[token];
         const decimals = await tokenContract.methods.decimals().call();
         const amountToStake = BigInt(amount) * BigInt(Math.pow(10, decimals));
-        await tokenContract.methods.approve(stakingContractAddresses[token], maxUint256).send();
-        await stakingContracts[token].methods.stake(amountToStake.toString()).send();
+
+        // Step 1: Check Current Allowance
+        const allowanceRaw = await tokenContract.methods.allowance(userAddress, stakingContractAddress).call();
+        const allowance = BigInt(allowanceRaw);
+
+        if (allowance >= amountToStake) {
+            // Step 2: If approved, stake directly
+            console.log(`Sufficient approval detected: ${allowance}`);
+            await stakingContracts[token].methods.stake(amountToStake.toString()).send();
+            console.log("Tokens staked successfully!");
+        } else {
+            // Step 3: If not approved, request approval first
+            console.log("Approval is too low. Requesting approval...");
+            await tokenContract.methods.approve(stakingContractAddress, maxUint256).send();
+            console.log("Approval granted. Proceeding with staking...");
+
+            // Step 4: Stake after approval
+            await stakingContracts[token].methods.stake(amountToStake.toString()).send();
+            console.log("Tokens staked successfully after approval!");
+        }
+
+        // Update UI after staking
         await updateStakedAmount(token);
     } catch (error) {
         console.error(`Error staking tokens for ${token}:`, error);
     }
 }
+
 
 async function unstakeTokens(token) {
     try {
