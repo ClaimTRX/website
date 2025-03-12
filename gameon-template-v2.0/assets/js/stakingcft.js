@@ -970,7 +970,7 @@ async function updateClaimableRewards(token) {
         const decimals = await tokenContract.methods.decimals().call();
         const claimableRewards = claimableRewardsRaw / Math.pow(10, decimals);
         document.getElementById(`claimable-rewards-${token}`).innerText = formatNumber(claimableRewards) + ' ';
-        document.getElementById(`earned-rewards-${token}`).innerText = formatNumber(claimableRewards) + ' ';
+        
     } catch (error) {
         console.error(`Error fetching claimable rewards for ${token}:`, error);
     }
