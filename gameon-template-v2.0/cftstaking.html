@@ -176,9 +176,10 @@
                                                 <span>Staked</span>
                                             </div>
                                             <div class="col single-item">
-                                                <span id="earned-rewards-token1">0 CFT</span>
-                                                <span>Earned</span>
-                                            </div>
+    <span id="projected-yearly-earnings-token1">0 CFT</span>
+    <span>Projected Yearly Earnings</span>
+</div>
+
                                             <div class="col single-item">
                                                 <span id="estimated-apr-token1">25%</span>
                                                 <span>APY</span>
@@ -1321,6 +1322,7 @@ async function updateTokenUI(token) {
     await delay(400); await updateEstimatedAPR(token);
     await delay(400); await updateClaimableRewards(token);
     await delay(400); await updateTotalClaimedRewards();
+	await delay(400);await updateProjectedYearlyEarnings(token);
 }
 
 async function updateAvailableTokens(token) {
@@ -1372,6 +1374,19 @@ async function updateClaimableRewards(token) {
         document.getElementById(`earned-rewards-${token}`).innerText = formatNumber(claimableRewards) + ' ';
     } catch (error) {
         console.error(`Error fetching claimable rewards for ${token}:`, error);
+    }
+}
+
+	    async function updateProjectedYearlyEarnings(token) {
+    try {
+        const projectedYearlyEarningsRaw = await stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call();
+        const tokenContract = await tronWeb.contract(tokenContractAbi, tokenContracts[token]);
+        const decimals = await tokenContract.methods.decimals().call();
+
+        const projectedYearlyEarnings = projectedYearlyEarningsRaw / Math.pow(10, decimals);
+        document.getElementById(`projected-yearly-earnings-${token}`).innerText = formatNumber(projectedYearlyEarnings) + ' ';
+    } catch (error) {
+        console.error(`Error fetching projected yearly earnings for ${token}:`, error);
     }
 }
 
