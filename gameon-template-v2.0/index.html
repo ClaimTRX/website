@@ -58,27 +58,14 @@
 
 	<div class="main">
 		<!-- ***** Header Start ***** -->
-		<header id="header">
-			<!-- Navbar -->
-			<nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
-				<div class="container header">
-
-					<!-- Logo -->
-					<a class="navbar-brand" href="index.html">
-						<img src="assets/img/logo/logo.png" alt="Brand Logo" />
-					</a>
-
-					<div class="ms-auto"></div>
-
-					<!-- Navbar Nav -->
+		<!-- Navbar Nav -->
 					<ul class="navbar-nav items mx-auto">
-						<li class="nav-item active">
-							<a href="index.html" class="nav-link active">Home</a>
+						<li class="nav-item">
+							<a href="index.html" class="nav-link">Home</a>
 						</li>
 						<li class="nav-item dropdown">
 							<a href="#" class="nav-link">Projects <i class="icon-arrow-down"></i></a>
 							<ul class="dropdown-menu">
-								
 								<li class="nav-item">
 									<a href="project-details.html" class="nav-link">Project Details</a>
 								</li>
@@ -90,23 +77,13 @@
 								<li class="nav-item">
 									<a href="cftstaking.html" class="nav-link">CFT Staking</a>
 								</li>
-								<li class="nav-item">
-									<a href="tokenstaking.html" class="nav-link">Token Staking</a>
+								<li class="nav-item active">
+									<a href="tokenstaking.html" class="nav-link active">Token Staking</a>
 								</li>
-								
-							</ul>
-						</li>
-						<li class="nav-item dropdown">
-							<a href="#" class="nav-link">Energy <i class="icon-arrow-down"></i></a>
-							<ul class="dropdown-menu">
-								<li class="nav-item">
-									<a href="energy.html" class="nav-link">FEB Energy</a>
-								</li>
-								
-								
 							</ul>
 						</li>
 						
+					</ul>
 
 					<!-- Navbar Icons -->
 					<ul class="navbar-nav icons">
@@ -128,9 +105,14 @@
 
 					<!-- Navbar Action Button -->
 					<ul class="navbar-nav action">
-						<li class="nav-item ms-2">
-							<a href="wallet-connect.html" class="btn ms-lg-auto btn-bordered-white"><i class="icon-wallet me-md-2"></i>Wallet Connect</a>
-						</li>
+						<ul class="navbar-nav action">
+    <li class="nav-item ms-2">
+        <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
+            <i class="icon-wallet me-md-2"></i> Wallet Connect
+        </button>
+    </li>
+</ul>
+
 					</ul>
 
 				</div>
