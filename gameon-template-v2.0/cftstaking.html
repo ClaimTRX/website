@@ -1252,9 +1252,8 @@ async function checkTronLinkInstalled() {
             console.log("Connected to TronLink:", userAddress);
 
             connectButton.innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
-            connectButton.disabled = true; // Disable button after connection
         } else {
-            alert("TronLink is not installed or not logged in.");
+            
         }
     }
 
@@ -1267,10 +1266,16 @@ async function checkTronLinkInstalled() {
                 console.error("Failed to connect to TronLink:", e);
             }
         } else {
-            alert("Please install TronLink extension.");
+            
         }
     });
+
+    // Check connection status on page load
+    if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+        connectWallet();
+    }
 });
+
 
 
 // Connect wallet
