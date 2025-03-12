@@ -916,12 +916,12 @@ async function updateAllUI() {
 }
 
 async function updateTokenUI(token) {
-    await delay(400); await updateAvailableTokens(token);
-    await delay(400); await updateStakedAmount(token);
-    await delay(400); await updateEstimatedAPR(token);
-    await delay(400); await updateClaimableRewards(token);
-    await delay(400); await updateTotalClaimedRewards();
-	await delay(400);await updateProjectedYearlyEarnings(token);
+    await delay(100); await updateAvailableTokens(token);
+    await delay(100); await updateStakedAmount(token);
+    await delay(100); await updateEstimatedAPR(token);
+    await delay(100); await updateClaimableRewards(token);
+    await delay(100); await updateTotalClaimedRewards();
+	await delay(100);await updateProjectedYearlyEarnings(token);
 }
 
 async function updateAvailableTokens(token) {
