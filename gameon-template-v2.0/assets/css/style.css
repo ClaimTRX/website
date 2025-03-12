@@ -2808,3 +2808,79 @@ a.page-numbers:hover {
   /* #endregion Blog */
 }
 /* #endregion All Media Queries *//*# sourceMappingURL=style.css.map */
+
+//added by me
+
+/* Custom Input Fields */
+.custom-input {
+    background-color: #222; /* Dark background matching card-bg-color (#16182D) */
+    border: 1px solid #555; /* Subtle gray border */
+    color: white; /* White text */
+    border-radius: 5px; /* Slightly rounded corners */
+    padding: 10px; /* More internal space */
+    font-size: 1rem; /* Consistent with theme */
+}
+
+.custom-input:focus {
+    background-color: #2c2f4c; /* Slightly lighter dark shade */
+    border-color: #007bff; /* Blue accent */
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* Subtle blue glow */
+    outline: none; /* Remove default outline */
+}
+
+/* Custom Max Buttons */
+.custom-max-btn {
+    background-color: #007bff; /* Blue base color */
+    border: 1px solid #555; /* Match input border */
+    color: white; /* White text */
+    border-radius: 5px; /* Consistent with input */
+    padding: 10px 15px; /* Adjusted padding */
+    font-size: 0.9rem; /* Smaller text */
+    transition: all 0.3s ease; /* Smooth transition */
+}
+
+.custom-max-btn:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4); /* Blue shadow */
+}
+
+/* Custom Action Buttons (Contribute/Withdraw) */
+.custom-action-btn {
+    background: linear-gradient(90deg, #007bff 0%, #57048a 100%); /* Gradient matching View Contributors */
+    color: white; /* White text */
+    border: none; /* Remove default border */
+    border-radius: 10px; /* Subtle rounding */
+    padding: 15px 20px; /* Larger clickable area */
+    font-size: 1rem; /* Base font size */
+    font-weight: 700; /* Bold text */
+    text-transform: uppercase; /* Uppercase for emphasis */
+    letter-spacing: 1px; /* Spacing for readability */
+    height: 60px; /* Fixed height for vertical text */
+    width: 100%; /* Full width */
+    position: relative; /* For text positioning */
+    overflow: hidden; /* Contain text */
+    transition: all 0.3s ease; /* Smooth transition */
+}
+
+.custom-action-btn:hover {
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.5); /* Enhanced shadow */
+    transform: translateY(-2px); /* Slight lift effect */
+}
+
+.custom-action-btn span {
+    writing-mode: vertical-rl; /* Vertical text */
+    transform: rotate(180deg); /* Rotate for correct orientation */
+    display: block; /* Ensure full height */
+    position: absolute; /* Position text */
+    top: 50%; /* Center vertically */
+    left: 50%; /* Center horizontally */
+    transform-origin: center; /* Rotate from center */
+    white-space: nowrap; /* Prevent text wrapping */
+}
+
+/* Labels */
+.form-label {
+    color: #9CA0D2; /* Match primary-p-color */
+    font-weight: 500; /* Slightly bold */
+    font-size: 0.9rem; /* Smaller for balance */
+}
