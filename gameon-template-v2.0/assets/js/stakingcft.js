@@ -1,13 +1,3 @@
-<!-- JavaScript Includes -->
-    <script src="assets/js/vendor/jquery.min.js"></script>
-    <script src="assets/js/vendor/popper.min.js"></script>
-    <script src="assets/js/vendor/bootstrap.min.js"></script>
-    <script src="assets/js/vendor/all.min.js"></script>
-    <script src="assets/js/vendor/gallery.min.js"></script>
-    <script src="assets/js/vendor/slider.min.js"></script>
-    <script src="assets/js/vendor/countdown.min.js"></script>
-    <script src="assets/js/vendor/shuffle.min.js"></script>
-    <script src="assets/js/main.js"></script>
 
     <!-- Additional Scripts for Tron Integration -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
