@@ -1,7 +1,7 @@
 
     
     
-    <script>
+   
        let tronWeb, userAddress;
 let stakingContracts = [];
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
@@ -1067,5 +1067,5 @@ function formatNumber(num) {
 function formatWholeNumber(num) {
     return Math.floor(parseFloat(num)).toLocaleString('en-US');
 }
-    </script>
+   
 
