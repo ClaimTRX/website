@@ -814,12 +814,12 @@ async function updateUI() {
     try {
         await updateAvailableTokens();
         await delay(400);
-        await updateNewStakedAmount();
+        await updateStakedAmountCFT();
         await delay(400);
        
         await updateAPR(); 
         await delay(400);
-        await updateNewClaimableRewards();
+        await updateClaimableRewardsCFT();
         await delay(400);
         await updateTotalClaimedRewards();
         await delay(400);
@@ -834,7 +834,7 @@ async function updateAvailableTokens() {
         try {
           const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
           const balance = Number(balanceRaw) / Math.pow(10, decimalsStableX);
-          document.getElementById('available-tokens').innerText = formatNumber(balance.toString()) + ' ';
+          document.getElementById('available-tokens-cft').innerText = formatNumber(balance) + ' ';
         } catch (error) {
           console.error('Error updating available tokens:', error);
         }
@@ -843,7 +843,7 @@ async function updateAvailableTokens() {
 async function updateNewClaimableRewards() {
     try {
         const claimableRewards = await newStakingContract.methods.viewPendingReward(userAddress).call();
-        document.getElementById('new-claimable-rewards').innerText = formatNumber(tronWeb.fromSun(claimableRewards.toString())) + ' ';
+        document.getElementById('claimable-rewards-cft').innerText = formatNumber(claimableRewards) + ' ';
     } catch (error) {
         console.error('Error updating claimable rewards:', error);
     }
@@ -852,7 +852,7 @@ async function updateNewClaimableRewards() {
 async function updateTotalClaimedRewards() {
     try {
         const totalClaimedRewards = await newStakingContract.methods.viewTotalClaimedRewards(userAddress).call();
-        document.getElementById('total-claimed-rewards').innerText = formatNumber(tronWeb.fromSun(totalClaimedRewards.toString())) + ' ';
+        document.getElementById('total-claimed-rewards-cft').innerText = formatNumber(totalClaimedRewards) + ' ';
     } catch (error) {
         console.error('Error fetching total claimed rewards:', error);
     }
@@ -861,7 +861,7 @@ async function updateTotalClaimedRewards() {
 async function updateNewStakedAmount() {
     try {
         const stakedAmount = await newStakingContract.methods.viewStakedAmount(userAddress).call();
-        document.getElementById('new-staked-amount').innerText = formatWholeNumber(tronWeb.fromSun(stakedAmount.toString())) + ' ';
+        document.getElementById('staked-amount-cft').innerText = formatWholeNumber(stakedAmount) + ' ';
     } catch (error) {
         console.error('Error updating staked amount:', error);
     }
@@ -871,16 +871,16 @@ async function updateNewStakedAmount() {
 
 
 
-async function newStakeTokens(amount) {
+async function stakeTokensCFT(amount) {
     const amountToStake = tronWeb.toSun(amount);
     await tokenContract.methods.approve(newStakingContractAddress, maxUint256).send();
-    await newStakingContract.methods.stake(amountToStake).send();
+    await newStakingContract.methods.stake(amount).send();
     setTimeout(updateUI, 3000);
 }
 
-async function newUnstakeTokens() {
+async function unstakeTokensCFT() {
     const unstakeAmount = document.getElementById('new-stake-amount').value;
-    await newStakingContract.methods.withdraw(tronWeb.toSun(unstakeAmount)).send();
+    await newStakingContract.methods.withdraw(amount).send();
     setTimeout(updateUI, 3000);
 }
 
@@ -889,19 +889,14 @@ async function claimNewRewards() {
     setTimeout(updateUI, 3000);
 }
 
-document.getElementById('new-stake-button').addEventListener('click', async () => {
-    const stakeAmount = document.getElementById('new-stake-amount').value;
-    if (stakeAmount) {
-        await newStakeTokens(stakeAmount);
-    }
+document.getElementById('stake-button-cft').addEventListener('click', async () => {
+    await stakeTokensCFT(stakeAmount);
 });
-
-document.getElementById('new-unstake-button').addEventListener('click', async () => {
-    await newUnstakeTokens();
+document.getElementById('unstake-button-cft').addEventListener('click', async () => {
+    await unstakeTokensCFT();
 });
-
-document.getElementById('new-claim-rewards-button').addEventListener('click', async () => {
-    await claimNewRewards();
+document.getElementById('claim-rewards-button-cft').addEventListener('click', async () => {
+    await claimRewardsCFT();
 });
 
       
@@ -922,10 +917,11 @@ document.getElementById('new-claim-rewards-button').addEventListener('click', as
           const annualRewardValueUSD = annualRewardTokens * cftPrice; // CFT price = $0.27
           const apr = (annualRewardValueUSD / stakedValueUSD) * 100;
 
-          document.getElementById('estimated-apr').innerText = apr.toFixed(2) + ' %';
+          document.getElementById('apr-cft').innerText = apr.toFixed(2) + ' %';
         } catch (error) {
           console.error('Error updating APR:', error);
-          document.getElementById('estimated-apr').innerText = 'Error';
+          document.getElementById('apr-cft').innerText = apr.toFixed(2) + ' %';
+
         }
       }
 
