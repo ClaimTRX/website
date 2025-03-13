@@ -851,8 +851,7 @@ async function updateTokenUI(token) {
         await delay(400);
         await updateStakedAmount(token);
         await delay(400);
-        await updateProjectedYearlyEarnings(token);
-        await delay(400);
+        
         await updateAPR(token);
         await delay(400);
         await updateClaimableRewards(token);
@@ -932,36 +931,9 @@ async function updateStakedAmount(token) {
     }
 }
 
-// Function to update the staked percentage
-async function updateStakedPercentage(token) {
-    try {
-        const stakedAmount = await stakingContracts[token].methods.viewStakedAmount(userAddress).call();
-        const totalStaked = await stakingContracts[token].methods.viewTotalStaked().call();
-        let stakedPercentage = 0;
 
-        if (totalStaked > 0) {
-            stakedPercentage = (stakedAmount / totalStaked) * 100;
-        }
 
-        document.getElementById(`staked-percentage-${token}`).innerText = stakedPercentage.toFixed(2) + ' %';
-    } catch (error) {
-        console.error(`Error fetching staked percentage for ${token}:`, error);
-    }
-}
 
-// Function to update projected yearly earnings
-async function updateProjectedYearlyEarnings(token) {
-    try {
-        const projectedYearlyEarningsRaw = await stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call();
-        const tokenContract = await tronWeb.contract(tokenContractAbi, tokenContracts[token]);
-        const decimals = await tokenContract.methods.decimals().call();
-
-        const projectedYearlyEarnings = projectedYearlyEarningsRaw / Math.pow(10, decimals);
-        document.getElementById(`projected-yearly-earnings-${token}`).innerText = formatNumber(projectedYearlyEarnings) + ' ';
-    } catch (error) {
-        console.error(`Error fetching projected yearly earnings for ${token}:`, error);
-    }
-}
 
 // Event listener for staking
 document.getElementById('stake-button-token1').addEventListener('click', async () => {
