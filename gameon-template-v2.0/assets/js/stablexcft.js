@@ -1,5 +1,5 @@
  
-      let  userAddress, newStakingContract, tokenContract;
+      let  newStakingContract, tokenContract;
       const tokenContractAddress = 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS';
       const newStakingContractAddress = 'TUvHH8QtyXvMubLJRgKBdwfG7Y2TRLGSE6';
       const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
