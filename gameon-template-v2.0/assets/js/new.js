@@ -845,6 +845,11 @@ async function updateAllUI() {
     }
 }
 
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
 // Update UI for a specific token
 async function updateTokenUI(token) {
     await updateAvailableTokens(token);
