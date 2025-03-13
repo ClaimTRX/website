@@ -1,7 +1,4 @@
- <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
-   
-    <script>
+ 
       let tronWeb, userAddress, newStakingContract, tokenContract;
       const tokenContractAddress = 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS';
       const newStakingContractAddress = 'TUvHH8QtyXvMubLJRgKBdwfG7Y2TRLGSE6';
@@ -978,4 +975,4 @@ function delay(ms) {
     });
 });
 
-    </script>
+  
