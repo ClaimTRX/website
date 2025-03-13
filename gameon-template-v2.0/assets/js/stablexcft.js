@@ -790,25 +790,25 @@ async function connectWallet() {
 }
 
 async function initializeTronWeb() {
-        try {
-          tronWeb = window.tronWeb;
-          userAddress = tronWeb.defaultAddress.base58;
+    try {
+        tronWeb = window.tronWeb;
+        userAddress = tronWeb.defaultAddress.base58;
 
-          if (!userAddress) throw new Error('User address not available');
+        if (!userAddress) throw new Error('User address not available');
 
-          newStakingContract = await tronWeb.contract(newStakingContractAbi, newStakingContractAddress);
-          tokenContract = await tronWeb.contract(tokenContractAbi, tokenContractAddress);
+        newStakingContract = await tronWeb.contract(newStakingContractAbi, newStakingContractAddress);
+        tokenContract = await tronWeb.contract(tokenContractAbi, tokenContractAddress);
 
-          // Fetch StableX decimals once
-          decimalsStableX = await tokenContract.methods.decimals().call();
+        // Fetch StableX decimals once
+        decimalsStableX = await tokenContract.methods.decimals().call();
 
-          document.getElementById('connect-button').style.display = 'none';
+        document.getElementById('connect-button').style.display = 'none';
 
-          await updateUI();
-        } catch (error) {
-          console.error('Error initializing TronWeb or Contracts:', error);
-        }
-      }
+        await updateUI();
+    } catch (error) {
+        console.error('Error initializing TronWeb or Contracts:', error);
+    }
+}
 
 async function updateUI() {
     try {
@@ -816,31 +816,28 @@ async function updateUI() {
         await delay(400);
         await updateStakedAmountCFT();
         await delay(400);
-       
-        await updateAPR(); 
+        await updateAPR();
         await delay(400);
         await updateClaimableRewardsCFT();
         await delay(400);
         await updateTotalClaimedRewards();
         await delay(400);
-        
-        
     } catch (error) {
         console.error('Error updating UI:', error);
     }
 }
 
 async function updateAvailableTokens() {
-        try {
-          const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
-          const balance = Number(balanceRaw) / Math.pow(10, decimalsStableX);
-          document.getElementById('available-tokens-cft').innerText = formatNumber(balance) + ' ';
-        } catch (error) {
-          console.error('Error updating available tokens:', error);
-        }
-      }
+    try {
+        const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
+        const balance = Number(balanceRaw) / Math.pow(10, decimalsStableX);
+        document.getElementById('available-tokens-cft').innerText = formatNumber(balance) + ' ';
+    } catch (error) {
+        console.error('Error updating available tokens:', error);
+    }
+}
 
-async function updateNewClaimableRewards() {
+async function updateClaimableRewardsCFT() {
     try {
         const claimableRewards = await newStakingContract.methods.viewPendingReward(userAddress).call();
         document.getElementById('claimable-rewards-cft').innerText = formatNumber(claimableRewards) + ' ';
@@ -858,7 +855,7 @@ async function updateTotalClaimedRewards() {
     }
 }
 
-async function updateNewStakedAmount() {
+async function updateStakedAmountCFT() {
     try {
         const stakedAmount = await newStakingContract.methods.viewStakedAmount(userAddress).call();
         document.getElementById('staked-amount-cft').innerText = formatWholeNumber(stakedAmount) + ' ';
@@ -867,65 +864,82 @@ async function updateNewStakedAmount() {
     }
 }
 
-
-
-
-
+// Function to stake tokens
 async function stakeTokensCFT(amount) {
-    const amountToStake = tronWeb.toSun(amount);
-    await tokenContract.methods.approve(newStakingContractAddress, maxUint256).send();
-    await newStakingContract.methods.stake(amount).send();
-    setTimeout(updateUI, 3000);
+    try {
+        const amountToStake = tronWeb.toSun(amount);
+        await tokenContract.methods.approve(newStakingContractAddress, amountToStake).send();
+        await newStakingContract.methods.stake(amountToStake).send();
+        setTimeout(updateUI, 3000);
+    } catch (error) {
+        console.error('Error staking tokens:', error);
+    }
 }
 
+// Function to unstake tokens
 async function unstakeTokensCFT() {
-    const unstakeAmount = document.getElementById('new-stake-amount').value;
-    await newStakingContract.methods.withdraw(amount).send();
-    setTimeout(updateUI, 3000);
+    try {
+        const unstakeAmount = document.getElementById('new-stake-amount').value;
+        if (unstakeAmount) {
+            await newStakingContract.methods.withdraw(tronWeb.toSun(unstakeAmount)).send();
+            setTimeout(updateUI, 3000);
+        }
+    } catch (error) {
+        console.error('Error unstaking tokens:', error);
+    }
 }
 
-async function claimNewRewards() {
-    await newStakingContract.methods.claimReward().send();
-    setTimeout(updateUI, 3000);
+// Function to claim rewards
+async function claimNewRewardsCFT() {
+    try {
+        await newStakingContract.methods.claimReward().send();
+        setTimeout(updateUI, 3000);
+    } catch (error) {
+        console.error('Error claiming rewards:', error);
+    }
 }
 
+// Event listeners for staking, unstaking, and claiming rewards
 document.getElementById('stake-button-cft').addEventListener('click', async () => {
-    await stakeTokensCFT(stakeAmount);
+    const stakeAmount = document.getElementById('new-stake-amount').value;
+    if (stakeAmount) {
+        await stakeTokensCFT(stakeAmount);
+    }
 });
+
 document.getElementById('unstake-button-cft').addEventListener('click', async () => {
     await unstakeTokensCFT();
 });
+
 document.getElementById('claim-rewards-button-cft').addEventListener('click', async () => {
-    await claimRewardsCFT();
+    await claimNewRewardsCFT();
 });
 
-      
+// Function to update APR
+async function updateAPR() {
+    try {
+        const stakedAmountRaw = await newStakingContract.methods.viewStakedAmount(userAddress).call();
+        const projectedRewardsRaw = await newStakingContract.methods.viewProjectedRewardsForYear(userAddress).call();
 
-      async function updateAPR() {
-        try {
-          const stakedAmountRaw = await newStakingContract.methods.viewStakedAmount(userAddress).call();
-          const projectedRewardsRaw = await newStakingContract.methods.viewProjectedRewardsForYear(userAddress).call();
-
-          if (stakedAmountRaw == 0) {
-            document.getElementById('estimated-apr').innerText = '0.00 %';
+        if (stakedAmountRaw == 0) {
+            document.getElementById('apr-cft').innerText = '0.00 %';
             return;
-          }
-
-          const stakedTokens = Number(stakedAmountRaw) / Math.pow(10, decimalsStableX);
-          const annualRewardTokens = Number(projectedRewardsRaw) / Math.pow(10, decimalsCFT);
-          const stakedValueUSD = stakedTokens * 1; // StableX price = $1
-          const annualRewardValueUSD = annualRewardTokens * cftPrice; // CFT price = $0.27
-          const apr = (annualRewardValueUSD / stakedValueUSD) * 100;
-
-          document.getElementById('apr-cft').innerText = apr.toFixed(2) + ' %';
-        } catch (error) {
-          console.error('Error updating APR:', error);
-          document.getElementById('apr-cft').innerText = apr.toFixed(2) + ' %';
-
         }
-      }
 
+        const stakedTokens = Number(stakedAmountRaw) / Math.pow(10, decimalsStableX);
+        const annualRewardTokens = Number(projectedRewardsRaw) / Math.pow(10, decimalsCFT);
+        const stakedValueUSD = stakedTokens * 1; // StableX price = $1
+        const annualRewardValueUSD = annualRewardTokens * cftPrice; // CFT price = $0.27
+        const apr = (annualRewardValueUSD / stakedValueUSD) * 100;
 
+        document.getElementById('apr-cft').innerText = apr.toFixed(2) + ' %';
+    } catch (error) {
+        console.error('Error updating APR:', error);
+        document.getElementById('apr-cft').innerText = 'Error';
+    }
+}
+
+// Helper functions for formatting numbers
 function formatNumber(num) {
     return parseFloat(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -934,11 +948,13 @@ function formatWholeNumber(num) {
     return Math.floor(parseFloat(num)).toLocaleString('en-US');
 }
 
+// Helper function to add delay
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-       document.addEventListener("DOMContentLoaded", function () {
+// Sidebar toggle functionality
+document.addEventListener("DOMContentLoaded", function () {
     const menuToggle = document.querySelector(".menu-toggle");
     const sidebar = document.querySelector(".sidebar");
 
@@ -946,5 +962,6 @@ function delay(ms) {
         sidebar.classList.toggle("active");
     });
 });
+
 
   
