@@ -18,7 +18,7 @@ const tokenDetails = {
     }
 };
 
-const StakingContractAbi = [
+const stakingContractAbi = [
     {
         "inputs": [
             {
