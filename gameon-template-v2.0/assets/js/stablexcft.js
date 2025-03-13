@@ -816,8 +816,7 @@ async function updateUI() {
         await delay(400);
         await updateNewStakedAmount();
         await delay(400);
-        await updateProjectedRewards();
-        await delay(400);
+       
         await updateAPR(); 
         await delay(400);
         await updateNewClaimableRewards();
