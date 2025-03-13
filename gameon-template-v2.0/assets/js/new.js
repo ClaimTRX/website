@@ -848,10 +848,15 @@ async function updateAllUI() {
 // Update UI for a specific token
 async function updateTokenUI(token) {
     await updateAvailableTokens(token);
+    await delay(400);
     await updateStakedAmount(token);
+    await delay(400);
     await updateAPR(token);
+    await delay(400);
     await updateClaimableRewards(token);
+    await delay(400);
     await updateTotalClaimedRewards(token);
+    await delay(400);
 }
 
 // Update available tokens
