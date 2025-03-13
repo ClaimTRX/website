@@ -882,7 +882,7 @@ async function updateTokenUI(token) {
 async function updateAPR(token) {
     try {
         const aprRaw = await stakingContracts[token].methods.viewAPR().call();
-        const apr = aprRaw / 1e2; // Convert from 6 decimals
+        const apr = aprRaw / 1e4; // Convert from 6 decimals
 
         document.getElementById(`apr-${token}`).innerText = apr.toFixed(2) + " %";
     } catch (error) {
@@ -891,19 +891,6 @@ async function updateAPR(token) {
 }
 
 
-// Function to update the total staked amount
-async function updateTotalStaked(token) {
-    try {
-        const totalStakedRaw = await stakingContracts[token].methods.viewTotalStaked().call();
-        const tokenContract = await tronWeb.contract(tokenContractAbi, tokenContracts[token]);
-        const decimals = await tokenContract.methods.decimals().call();
-
-        const totalStaked = totalStakedRaw / Math.pow(10, decimals);
-        document.getElementById(`total-staked-${token}`).innerText = formatNumber(totalStaked) + '';
-    } catch (error) {
-        console.error(`Error fetching total staked TRX for ${token}:`, error);
-    }
-}
 
 // Function to update claimable rewards
 async function updateClaimableRewards(token) {
@@ -970,15 +957,8 @@ document.getElementById('stake-button-stablex').addEventListener('click', async 
 document.getElementById('unstake-button-stablex').addEventListener('click', async () => {
     try {
         await unstakeTokens('stablex');
-        await updateAllUI();
-        setTimeout(async () => {
-            await updateAllUI(); // Update the UI 4 seconds after unstaking
-        }, 4000);
     } catch (error) {
         console.error('Error unstaking tokens:', error);
-        
-
-
     }
 });
 
