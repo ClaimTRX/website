@@ -867,25 +867,9 @@ async function updateNewStakedAmount() {
     }
 }
 
-async function updateNewStakedPercentage() {
-    try {
-        const stakedAmount = await newStakingContract.methods.viewStakedAmount(userAddress).call();
-        const totalStaked = await newStakingContract.methods.viewTotalStaked().call();
-        const stakedPercentage = totalStaked > 0 ? (stakedAmount / totalStaked) * 100 : 0;
-        document.getElementById('new-staked-percentage').innerText = stakedPercentage.toFixed(2) + ' %';
-    } catch (error) {
-        console.error('Error updating staked percentage:', error);
-    }
-}
 
-async function updateProjectedRewards() {
-    try {
-        const projectedRewards = await newStakingContract.methods.viewProjectedRewardsForYear(userAddress).call();
-        document.getElementById('new-projected-rewards').innerText = formatNumber(tronWeb.fromSun(projectedRewards.toString())) + ' CFT';
-    } catch (error) {
-        console.error('Error updating projected rewards:', error);
-    }
-}
+
+
 
 async function newStakeTokens(amount) {
     const amountToStake = tronWeb.toSun(amount);
@@ -920,14 +904,7 @@ document.getElementById('new-claim-rewards-button').addEventListener('click', as
     await claimNewRewards();
 });
 
-      async function updateTotalStaked() {
-    try {
-        const totalStaked = await newStakingContract.methods.viewTotalStaked().call();
-        document.getElementById('total-staked-amount').innerText = formatWholeNumber(tronWeb.fromSun(totalStaked.toString())) + ' StableX';
-    } catch (error) {
-        console.error('Error updating total staked amount:', error);
-    }
-}
+      
 
       async function updateAPR() {
         try {
