@@ -5,11 +5,11 @@
 
     // Contract Addresses
     const tokenContracts = {
-      token1: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
+      stablex: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
     };
 
     const stakingContractAddresses = {
-      token1: 'TRVn2h65VrbGb7zkASz3escJiHJWMSy7pV',
+      stablex: 'TRVn2h65VrbGb7zkASz3escJiHJWMSy7pV',
     };
 
     const stakingContractAbi = [
@@ -847,7 +847,7 @@ async function updateAllUI() {
 async function updateTokenUI(token) {
     try {
       
-        await updateAvailableTokens('token1');
+        await updateAvailableTokens('stablex');
         await delay(400);
         await updateStakedAmount(token);
         await delay(400);
@@ -936,11 +936,11 @@ async function updateStakedAmount(token) {
 
 
 // Event listener for staking
-document.getElementById('stake-button-token1').addEventListener('click', async () => {
-    const stakeAmount = document.getElementById('stake-amount-token1').value;
+document.getElementById('stake-button-stablex').addEventListener('click', async () => {
+    const stakeAmount = document.getElementById('stake-amount-stablex').value;
     if (stakeAmount) {
         try {
-            await stakeTokens('token1', stakeAmount);
+            await stakeTokens('stablex', stakeAmount);
             setTimeout(async () => {
                 await updateAllUI(); // Update the UI 4 seconds after staking
             }, 4000);
@@ -951,9 +951,9 @@ document.getElementById('stake-button-token1').addEventListener('click', async (
 });
 
 // Event listener for unstaking
-document.getElementById('unstake-button-token1').addEventListener('click', async () => {
+document.getElementById('unstake-button-stablex').addEventListener('click', async () => {
     try {
-        await unstakeTokens('token1');
+        await unstakeTokens('stablex');
         setTimeout(async () => {
             await updateAllUI(); // Update the UI 4 seconds after unstaking
         }, 4000);
@@ -963,9 +963,9 @@ document.getElementById('unstake-button-token1').addEventListener('click', async
 });
 
 // Event listener for claiming rewards
-document.getElementById('claim-rewards-button-token1').addEventListener('click', async () => {
+document.getElementById('claim-rewards-button-stablex').addEventListener('click', async () => {
     try {
-        await claimRewards('token1');
+        await claimRewards('stablex');
         setTimeout(async () => {
             await updateAllUI(); // Update the UI 4 seconds after claiming rewards
         }, 4000);
@@ -1009,7 +1009,7 @@ async function stakeTokens(token, amount) {
 // Function to unstake tokens
 async function unstakeTokens(token) {
     try {
-        const unstakeAmount = document.getElementById(`stake-amount-token1`).value;
+        const unstakeAmount = document.getElementById(`stake-amount-stablex`).value;
         if (unstakeAmount) {
             const tokenContract = await tronWeb.contract(tokenContractAbi, tokenContracts[token]);
             const decimals = await tokenContract.methods.decimals().call();
