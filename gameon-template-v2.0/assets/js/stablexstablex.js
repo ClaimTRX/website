@@ -824,6 +824,8 @@ async function initializeTronWeb() {
         await updateAllUI();
     } catch (error) {
         console.error('Error initializing TronWeb:', error);
+        await updateAvailableTokens('stablex');
+
     }
 }
 
@@ -880,7 +882,7 @@ async function updateTokenUI(token) {
 async function updateAPR(token) {
     try {
         const aprRaw = await stakingContracts[token].methods.viewAPR().call();
-        const apr = aprRaw / 1e4; // Convert from 6 decimals
+        const apr = aprRaw / 1e2; // Convert from 6 decimals
 
         document.getElementById(`apr-${token}`).innerText = apr.toFixed(2) + " %";
     } catch (error) {
@@ -917,6 +919,20 @@ async function updateClaimableRewards(token) {
     }
 }
 
+document.getElementById('max-stake-stablex').addEventListener('click', async () => {
+    try {
+        const tokenContract = await tronWeb.contract(tokenContractAbi, tokenContracts['stablex']);
+        const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
+        const decimals = await tokenContract.methods.decimals().call();
+        
+        const balance = balanceRaw / Math.pow(10, decimals);
+        document.getElementById('stake-amount-stablex').value = balance.toFixed(2);
+    } catch (error) {
+        console.error('Error fetching balance:', error);
+    }
+});
+
+
 // Function to update the staked amount
 async function updateStakedAmount(token) {
     try {
@@ -925,7 +941,8 @@ async function updateStakedAmount(token) {
         const decimals = await tokenContract.methods.decimals().call();
 
         const stakedAmount = stakedAmountRaw / Math.pow(10, decimals);
-        document.getElementById(`staked-amount-${token}`).innerText = formatWholeNumber(stakedAmount) + ' ';
+        document.getElementById(`staked-amount-stablex`).innerText = formatNumber(totalStaked);
+
     } catch (error) {
         console.error(`Error fetching staked amount for ${token}:`, error);
     }
@@ -954,11 +971,15 @@ document.getElementById('stake-button-stablex').addEventListener('click', async 
 document.getElementById('unstake-button-stablex').addEventListener('click', async () => {
     try {
         await unstakeTokens('stablex');
+        await updateAllUI();
         setTimeout(async () => {
             await updateAllUI(); // Update the UI 4 seconds after unstaking
         }, 4000);
     } catch (error) {
         console.error('Error unstaking tokens:', error);
+        
+
+
     }
 });
 
@@ -1009,7 +1030,8 @@ async function stakeTokens(token, amount) {
 // Function to unstake tokens
 async function unstakeTokens(token) {
     try {
-        const unstakeAmount = document.getElementById(`stake-amount-stablex`).value;
+        const unstakeAmount = document.getElementById(`withdraw-amount-stablex`).value;
+
         if (unstakeAmount) {
             const tokenContract = await tronWeb.contract(tokenContractAbi, tokenContracts[token]);
             const decimals = await tokenContract.methods.decimals().call();
