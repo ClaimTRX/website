@@ -933,7 +933,6 @@ document.getElementById('max-stake-stablex').addEventListener('click', async () 
 });
 
 
-// Function to update the staked amount
 async function updateStakedAmount(token) {
     try {
         const stakedAmountRaw = await stakingContracts[token].methods.viewStakedAmount(userAddress).call();
@@ -941,12 +940,12 @@ async function updateStakedAmount(token) {
         const decimals = await tokenContract.methods.decimals().call();
 
         const stakedAmount = stakedAmountRaw / Math.pow(10, decimals);
-        document.getElementById(`staked-amount-stablex`).innerText = formatNumber(totalStaked);
-
+        document.getElementById(`staked-amount-stablex`).innerText = formatNumber(stakedAmount);
     } catch (error) {
         console.error(`Error fetching staked amount for ${token}:`, error);
     }
 }
+
 
 
 
