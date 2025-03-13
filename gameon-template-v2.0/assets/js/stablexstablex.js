@@ -884,11 +884,18 @@ async function updateAPR(token) {
         const aprRaw = await stakingContracts[token].methods.viewAPR().call();
         const apr = aprRaw / 1e4; // Convert from 6 decimals
 
-        document.getElementById(`apr-${token}`).innerText = apr.toFixed(2) + " %";
+        // ✅ Match the HTML ID (`estimated-apr-${token}`)
+        const aprElement = document.getElementById(`estimated-apr-${token}`);
+        if (aprElement) {
+            aprElement.innerText = apr.toFixed(2) + " %";
+        } else {
+            console.warn(`Warning: Element estimated-apr-${token} not found in DOM`);
+        }
     } catch (error) {
         console.error(`Error fetching APR for ${token}:`, error);
     }
 }
+
 
 
 
