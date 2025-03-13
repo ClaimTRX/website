@@ -36,6 +36,19 @@ const stakingContractAbi = [
         "type": "constructor"
     },
     {
+    "inputs": [],
+    "name": "viewAPR",
+    "outputs": [
+        {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+        }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+},
+    {
         "anonymous": false,
         "inputs": [
             {
@@ -863,15 +876,39 @@ async function updateStakedAmount(token) {
     }
 }
 
-// Update APR
 async function updateAPR(token) {
     try {
-        const aprRaw = await stakingContracts[token].methods.viewAPR().call();
-        document.getElementById(`estimated-apr-${token}`).innerText = (aprRaw / 1e4).toFixed(2) + ' %';
+        // Only StableX has viewAPR in its smart contract
+        if (token === "stablex") {
+            if (!stakingContracts[token].methods.viewAPR) {
+                console.error(`viewAPR function is missing in ${token} staking contract.`);
+                return;
+            }
+            const aprRaw = await stakingContracts[token].methods.viewAPR().call();
+            document.getElementById(`estimated-apr-${token}`).innerText = (aprRaw / 1e4).toFixed(2) + ' %';
+        } else if (token === "cft") {
+            // Manually calculate APR for CFT staking
+            const stakedAmountRaw = await stakingContracts[token].methods.viewStakedAmount(userAddress).call();
+            const projectedRewardsRaw = await stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call();
+
+            if (stakedAmountRaw == 0) {
+                document.getElementById(`estimated-apr-${token}`).innerText = '0.00 %';
+                return;
+            }
+
+            const stakedTokens = Number(stakedAmountRaw) / Math.pow(10, tokenDetails[token].decimals);
+            const annualRewardTokens = Number(projectedRewardsRaw) / Math.pow(10, tokenDetails[token].decimals);
+            const stakedValueUSD = stakedTokens * 1; // Assuming StableX is $1
+            const annualRewardValueUSD = annualRewardTokens * tokenDetails[token].price; // Use predefined CFT price
+
+            const apr = (annualRewardValueUSD / stakedValueUSD) * 100;
+            document.getElementById(`estimated-apr-${token}`).innerText = apr.toFixed(2) + ' %';
+        }
     } catch (error) {
         console.error(`Error updating APR for ${token}:`, error);
     }
 }
+
 
 // Update claimable rewards
 async function updateClaimableRewards(token) {
