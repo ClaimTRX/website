@@ -785,7 +785,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (await checkTronLinkInstalled()) {
         await initializeTronWeb();
-        setInterval(updateAllUI, 60000); // Update UI every minute
+        setInterval(updateAllUI, 600000); // Update UI every minute
     } else {
         console.error('TronLink is not installed.');
     }
@@ -916,12 +916,14 @@ async function updateAllUI() {
 }
 
 async function updateTokenUI(token) {
-    await delay(100); await updateAvailableTokens(token);
-    await delay(100); await updateStakedAmount(token);
-    await delay(100); await updateEstimatedAPR(token);
-    await delay(100); await updateClaimableRewards(token);
-    await delay(100); await updateTotalClaimedRewards();
-	await delay(100);await updateProjectedYearlyEarnings(token);
+    
+    await delay(300); await updateStakedAmount(token);
+    await delay(300); await updateEstimatedAPR(token);
+    
+    await delay(300); await updateTotalClaimedRewards();
+	await delay(300); await updateAvailableTokens(token);
+	await delay(300); await updateClaimableRewards(token);
+	
 }
 
 async function updateAvailableTokens(token) {
