@@ -821,7 +821,8 @@ async function initializeTronWeb() {
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58;
         
-        document.getElementById('connect-button').style.display = 'none';
+        document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
+
         
         for (let key in tokenDetails) {
             let details = tokenDetails[key];
