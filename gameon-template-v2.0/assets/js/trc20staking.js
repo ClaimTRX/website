@@ -879,7 +879,8 @@ async function updateAvailableTokens(token) {
     try {
         const balanceRaw = await tokenContracts[token].methods.balanceOf(userAddress).call();
         const balance = Number(balanceRaw) / Math.pow(10, tokenDetails[token].decimals);
-        document.getElementById(`available-tokens-${token}`).innerText = balance.toLocaleString();
+        document.getElementById(`available-tokens-${token}`).innerText = balance.toLocaleString('en-US', { maximumFractionDigits: 0 });
+
 
     } catch (error) {
         console.error(`Error updating available tokens for ${token}:`, error);
@@ -891,7 +892,8 @@ async function updateStakedAmount(token) {
     try {
         const stakedAmountRaw = await stakingContracts[token].methods.viewStakedAmount(userAddress).call();
         const stakedAmount = Number(stakedAmountRaw) / Math.pow(10, tokenDetails[token].decimals);
-        document.getElementById(`staked-amount-${token}`).innerText = stakedAmount.toLocaleString();
+        document.getElementById(`staked-amount-${token}`).innerText = stakedAmount.toLocaleString('en-US', { maximumFractionDigits: 0 });
+
 
     } catch (error) {
         console.error(`Error updating staked amount for ${token}:`, error);
@@ -904,7 +906,8 @@ async function updateProjectedRewards(token) {
         const projectedRewards = Number(projectedRewardsRaw) / Math.pow(10, tokenDetails[token].decimals);
 
         // Display the projected rewards
-        document.getElementById(`projected-rewards-${token}`).innerText = projectedRewards.toLocaleString();
+        document.getElementById(`projected-rewards-${token}`).innerText = projectedRewards.toLocaleString('en-US', { maximumFractionDigits: 0 });
+
 
     } catch (error) {
         console.error(`Error updating projected rewards for ${token}:`, error);
@@ -917,7 +920,8 @@ async function updateClaimableRewards(token) {
     try {
         const claimableRewardsRaw = await stakingContracts[token].methods.viewPendingReward(userAddress).call();
         const claimableRewards = claimableRewardsRaw / Math.pow(10, tokenDetails[token].decimals);
-        document.getElementById(`claimable-rewards-${token}`).innerText = claimableRewards.toLocaleString();
+        document.getElementById(`claimable-rewards-${token}`).innerText = claimableRewards.toLocaleString('en-US', { maximumFractionDigits: 0 });
+
 
     } catch (error) {
         console.error(`Error updating claimable rewards for ${token}:`, error);
