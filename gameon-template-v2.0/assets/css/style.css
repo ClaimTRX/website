@@ -1080,8 +1080,10 @@ header .navbar-expand .navbar-brand i {
   color: var(--primary-color);
 }
 header .navbar-expand .navbar-brand img {
-  height: var(--nav-brand-height);
+  height: 80px;
+  width: auto; /* Keeps aspect ratio */
 }
+
 header .navbar-expand .navbar-nav.toggle {
   display: none;
 }
