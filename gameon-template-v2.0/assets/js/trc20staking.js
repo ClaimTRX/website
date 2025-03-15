@@ -902,7 +902,7 @@ async function updateProjectedRewards(token) {
         const projectedRewards = Number(projectedRewardsRaw) / Math.pow(10, tokenDetails[token].decimals);
 
         // Display the projected rewards
-        document.getElementById(`projected-rewards-${token}`).innerText = projectedRewards.toFixed(2) + ' Tokens/Year';
+        document.getElementById(`projected-rewards-${token}`).innerText = projectedRewards.toFixed(2) + '';
     } catch (error) {
         console.error(`Error updating projected rewards for ${token}:`, error);
     }
