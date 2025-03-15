@@ -2914,3 +2914,11 @@ a.page-numbers:hover {
     }
 }
 
+/* Adjust spacing for buttons on mobile screens */
+@media (max-width: 768px) {
+    .button-group a {
+        display: block;
+        margin-bottom: 15px; /* Adjust the spacing between buttons */
+    }
+}
+
