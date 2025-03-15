@@ -879,7 +879,8 @@ async function updateAvailableTokens(token) {
     try {
         const balanceRaw = await tokenContracts[token].methods.balanceOf(userAddress).call();
         const balance = Number(balanceRaw) / Math.pow(10, tokenDetails[token].decimals);
-        document.getElementById(`available-tokens-${token}`).innerText = balance.toFixed(2);
+        document.getElementById(`available-tokens-${token}`).innerText = balance.toLocaleString();
+
     } catch (error) {
         console.error(`Error updating available tokens for ${token}:`, error);
     }
@@ -890,7 +891,8 @@ async function updateStakedAmount(token) {
     try {
         const stakedAmountRaw = await stakingContracts[token].methods.viewStakedAmount(userAddress).call();
         const stakedAmount = Number(stakedAmountRaw) / Math.pow(10, tokenDetails[token].decimals);
-        document.getElementById(`staked-amount-${token}`).innerText = stakedAmount.toFixed(2);
+        document.getElementById(`staked-amount-${token}`).innerText = stakedAmount.toLocaleString();
+
     } catch (error) {
         console.error(`Error updating staked amount for ${token}:`, error);
     }
@@ -902,7 +904,8 @@ async function updateProjectedRewards(token) {
         const projectedRewards = Number(projectedRewardsRaw) / Math.pow(10, tokenDetails[token].decimals);
 
         // Display the projected rewards
-        document.getElementById(`projected-rewards-${token}`).innerText = projectedRewards.toFixed(2) + '';
+        document.getElementById(`projected-rewards-${token}`).innerText = projectedRewards.toLocaleString();
+
     } catch (error) {
         console.error(`Error updating projected rewards for ${token}:`, error);
     }
@@ -914,7 +917,8 @@ async function updateClaimableRewards(token) {
     try {
         const claimableRewardsRaw = await stakingContracts[token].methods.viewPendingReward(userAddress).call();
         const claimableRewards = claimableRewardsRaw / Math.pow(10, tokenDetails[token].decimals);
-        document.getElementById(`claimable-rewards-${token}`).innerText = claimableRewards.toFixed(2);
+        document.getElementById(`claimable-rewards-${token}`).innerText = claimableRewards.toLocaleString();
+
     } catch (error) {
         console.error(`Error updating claimable rewards for ${token}:`, error);
     }
@@ -925,7 +929,8 @@ async function updateTotalClaimedRewards(token) {
     try {
         const totalClaimedRewardsRaw = await stakingContracts[token].methods.viewTotalClaimedRewards(userAddress).call();
         const totalClaimedRewards = totalClaimedRewardsRaw / Math.pow(10, tokenDetails[token].decimals);
-        document.getElementById(`total-claimed-rewards-${token}`).innerText = totalClaimedRewards.toFixed(2);
+        document.getElementById(`total-claimed-rewards-${token}`).innerText = totalClaimedRewards.toLocaleString();
+
     } catch (error) {
         console.error(`Error updating total claimed rewards for ${token}:`, error);
     }
