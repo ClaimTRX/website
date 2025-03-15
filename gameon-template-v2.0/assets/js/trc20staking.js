@@ -866,7 +866,7 @@ async function updateTokenUI(token) {
     await delay(400);
     await updateStakedAmount(token);
     await delay(400);
-    await updateAPR(token);
+    await updateProjectedRewards(token);  // Replaces APR function
     await delay(400);
     await updateClaimableRewards(token);
     await delay(400);
@@ -896,36 +896,15 @@ async function updateStakedAmount(token) {
     }
 }
 
-async function updateAPR(token) {
+async function updateProjectedRewards(token) {
     try {
-        // Only StableX has viewAPR in its smart contract
-        if (token === "stablex") {
-            if (!stakingContracts[token].methods.viewAPR) {
-                console.error(`viewAPR function is missing in ${token} staking contract.`);
-                return;
-            }
-            const aprRaw = await stakingContracts[token].methods.viewAPR().call();
-            document.getElementById(`estimated-apr-${token}`).innerText = (aprRaw / 1e4).toFixed(2) + ' %';
-        } else if (token === "cft") {
-            // Manually calculate APR for CFT staking
-            const stakedAmountRaw = await stakingContracts[token].methods.viewStakedAmount(userAddress).call();
-            const projectedRewardsRaw = await stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call();
+        const projectedRewardsRaw = await stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call();
+        const projectedRewards = Number(projectedRewardsRaw) / Math.pow(10, tokenDetails[token].decimals);
 
-            if (stakedAmountRaw == 0) {
-                document.getElementById(`estimated-apr-${token}`).innerText = '0.00 %';
-                return;
-            }
-
-            const stakedTokens = Number(stakedAmountRaw) / Math.pow(10, tokenDetails[token].decimals);
-            const annualRewardTokens = Number(projectedRewardsRaw) / Math.pow(10, tokenDetails[token].decimals);
-            const stakedValueUSD = stakedTokens * 1; // Assuming StableX is $1
-            const annualRewardValueUSD = annualRewardTokens * tokenDetails[token].price; // Use predefined CFT price
-
-            const apr = (annualRewardValueUSD / stakedValueUSD) * 100;
-            document.getElementById(`estimated-apr-${token}`).innerText = apr.toFixed(2) + ' %';
-        }
+        // Display the projected rewards
+        document.getElementById(`projected-rewards-${token}`).innerText = projectedRewards.toFixed(2) + ' Tokens/Year';
     } catch (error) {
-        console.error(`Error updating APR for ${token}:`, error);
+        console.error(`Error updating projected rewards for ${token}:`, error);
     }
 }
 
@@ -955,31 +934,28 @@ async function updateTotalClaimedRewards(token) {
 // Staking function
 async function stakeTokens(token, amount) {
     try {
-        const amountToStake = tronWeb.toSun(amount);
+        // Adjust amount based on token decimals
+        const amountToStake = BigInt(amount) * BigInt(10 ** tokenDetails[token].decimals);
+
         const stakingContractAddress = tokenDetails[token].stakingAddress;
         const tokenContract = tokenContracts[token];
 
-        // Step 1: Check Current Allowance
+        // Check Current Allowance
         const allowanceRaw = await tokenContract.methods.allowance(userAddress, stakingContractAddress).call();
         const allowance = BigInt(allowanceRaw);
 
-        if (allowance >= BigInt(amountToStake)) {
-            // Step 2: If approved, stake directly
+        if (allowance >= amountToStake) {
             console.log(`Sufficient approval detected: ${allowance}`);
-            await stakingContracts[token].methods.stake(amountToStake).send();
+            await stakingContracts[token].methods.stake(amountToStake.toString()).send();
             console.log("Tokens staked successfully!");
         } else {
-            // Step 3: If not approved, request approval first
             console.log("Approval is too low. Requesting approval...");
             await tokenContract.methods.approve(stakingContractAddress, maxUint256).send();
             console.log("Approval granted. Proceeding with staking...");
-
-            // Step 4: Stake after approval
-            await stakingContracts[token].methods.stake(amountToStake).send();
+            await stakingContracts[token].methods.stake(amountToStake.toString()).send();
             console.log("Tokens staked successfully after approval!");
         }
 
-        // Update UI after staking
         await updateTokenUI(token);
     } catch (error) {
         console.error(`Error staking tokens for ${token}:`, error);
@@ -987,16 +963,20 @@ async function stakeTokens(token, amount) {
 }
 
 
+
 // Unstaking function
 async function unstakeTokens(token) {
     try {
         const unstakeAmount = document.getElementById(`withdraw-amount-${token}`).value;
-        await stakingContracts[token].methods.withdraw(tronWeb.toSun(unstakeAmount)).send();
+        const amountToUnstake = BigInt(unstakeAmount) * BigInt(10 ** tokenDetails[token].decimals);
+
+        await stakingContracts[token].methods.withdraw(amountToUnstake.toString()).send();
         await updateTokenUI(token);
     } catch (error) {
         console.error(`Error unstaking tokens for ${token}:`, error);
     }
 }
+
 
 // Claim rewards function
 async function claimRewards(token) {
