@@ -933,7 +933,8 @@ async function updateTotalClaimedRewards(token) {
     try {
         const totalClaimedRewardsRaw = await stakingContracts[token].methods.viewTotalClaimedRewards(userAddress).call();
         const totalClaimedRewards = totalClaimedRewardsRaw / Math.pow(10, tokenDetails[token].decimals);
-        document.getElementById(`total-claimed-rewards-${token}`).innerText = totalClaimedRewards.toLocaleString();
+        document.getElementById(`total-claimed-rewards-${token}`).innerText = totalClaimedRewards.toLocaleString('en-US', { maximumFractionDigits: 0 });
+
 
     } catch (error) {
         console.error(`Error updating total claimed rewards for ${token}:`, error);
