@@ -939,27 +939,37 @@ function formatAddress(address) {
 }
 
 // ✅ Update pagination logic to display up to 4 pages, then arrows for next/previous
+// ✅ Update pagination logic to display up to 4 pages, then arrows for next/previous
 function updatePaginationControls(token) {
     let totalPages = Math.ceil(stakerList.length / rowsPerPage);
     let paginationHTML = "";
 
-    // Show "Previous" arrow if not on first page
+    // Previous page button (disabled if on first page)
     if (currentPage > 1) {
         paginationHTML += `<li><a href="#" class="prev page-numbers" onclick="changePage(${currentPage - 1}, '${token}')"><i class="icon-arrow-left"></i></a></li>`;
     }
 
-    // Show first 4 page numbers
-    for (let i = 1; i <= Math.min(4, totalPages); i++) {
+    let startPage = Math.max(1, currentPage - 2); // Dynamic start page
+    let endPage = Math.min(totalPages, startPage + 3); // Ensure only 4 pages shown
+
+    // Adjust start if on last pages
+    if (currentPage > 4 && currentPage + 1 >= totalPages) {
+        startPage = Math.max(1, totalPages - 3);
+        endPage = totalPages;
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
         paginationHTML += `<li><a href="#" class="page-numbers ${i === currentPage ? 'current' : ''}" onclick="changePage(${i}, '${token}')">${i}</a></li>`;
     }
 
-    // Show "Next" arrow if not on last page
+    // Next page button (disabled if on last page)
     if (currentPage < totalPages) {
         paginationHTML += `<li><a href="#" class="next page-numbers" onclick="changePage(${currentPage + 1}, '${token}')"><i class="icon-arrow-right"></i></a></li>`;
     }
 
     document.getElementById(`pagination-${token}`).innerHTML = paginationHTML;
 }
+
 
 
 // ✅ Change page function (now it can access `stakerList` globally)
