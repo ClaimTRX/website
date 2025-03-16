@@ -32,6 +32,25 @@ const stakingContractAbi = [
     },
     {
     "inputs": [],
+    "name": "getAllStakersAndAmounts",
+    "outputs": [
+        {
+            "internalType": "address[]",
+            "name": "",
+            "type": "address[]"
+        },
+        {
+            "internalType": "uint256[]",
+            "name": "",
+            "type": "uint256[]"
+        }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+}
+
+    {
+    "inputs": [],
     "name": "viewAPR",
     "outputs": [
         {
