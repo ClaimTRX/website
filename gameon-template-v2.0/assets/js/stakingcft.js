@@ -943,7 +943,7 @@ async function updateStakedAmount(token) {
         const stakedAmountRaw = await stakingContracts[token].methods.viewStakedAmount(userAddress).call();
         const tokenContract = await tronWeb.contract(tokenContractAbi, tokenContracts[token]);
         const decimals = await tokenContract.methods.decimals().call();
-        const stakedAmount = stakedAmountRaw / Math.pow(10, decimals);
+        const stakedAmount = Math.floor(stakedAmountRaw / Math.pow(10, decimals)); 
         document.getElementById(`staked-amount-${token}`).innerText = formatWholeNumber(stakedAmount) + ' ';
     } catch (error) {
         console.error(`Error fetching staked amount for ${token}:`, error);
