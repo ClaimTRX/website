@@ -2922,3 +2922,15 @@ a.page-numbers:hover {
     }
 }
 
+.leaderboard-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.leaderboard-area table {
+    margin: auto;
+}
+
+
