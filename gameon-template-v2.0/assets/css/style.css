@@ -2959,4 +2959,40 @@ a.page-numbers:hover {
     color: #fff;
 }
 
+/* Dropdown Menu Improvements */
+.navbar-nav .dropdown-menu {
+    background-color: #101020;  /* Dark background to match theme */
+    border: 1px solid #2c2f38;  /* Subtle border */
+    border-radius: 8px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 8px 0;
+    min-width: 180px;
+}
+
+/* Dropdown items */
+.navbar-nav .dropdown-menu .nav-item .nav-link {
+    color: #ffffff; /* White text */
+    padding: 10px 15px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease-in-out;
+}
+
+/* Hover effect */
+.navbar-nav .dropdown-menu .nav-item .nav-link:hover {
+    background-color: #2a2e3a;  /* Slightly lighter dark color */
+    color: #1DA1F2;  /* Tron/CFT ecosystem blue */
+}
+
+/* Active dropdown item */
+.navbar-nav .dropdown-menu .nav-item .nav-link.active {
+    color: #1DA1F2;  /* Highlight active item */
+    font-weight: 600;
+}
+
+/* Dropdown arrow spacing fix */
+.navbar-nav .nav-item.dropdown .nav-link {
+    padding-right: 12px;
+}
+
 
