@@ -554,7 +554,12 @@ async function fetchListings() {
         const listingIds = result[0];
         const listings = result[1];
         const container = document.getElementById("listings-container");
-        container.innerHTML = "";
+        container.innerHTML = ""; // Clear previous listings
+
+        if (listingIds.length === 0) {
+            container.innerHTML = "<p class='text-center'>No active listings.</p>";
+            return;
+        }
 
         for (let i = 0; i < listingIds.length; i++) {
             const listing = listings[i];
@@ -564,14 +569,24 @@ async function fetchListings() {
             const amount = tronWeb.fromSun(listing.tokenAmount);
             const totalPrice = tronWeb.fromSun(listing.priceInTRX);
 
+            // Create listing element with a card style
             const listingElement = document.createElement("div");
             listingElement.className = "col-12 col-md-6 single-staking-item text-center p-3 border rounded";
+
             listingElement.innerHTML = `
-                <p><strong>Seller:</strong> ${seller}</p>
-                <p><strong>Amount:</strong> ${amount} CFT</p>
-                <p><strong>Total Price:</strong> ${totalPrice} TRX</p>
-                <a href="#" class="btn btn-success" onclick="buyToken(${listingIds[i]}, ${totalPrice})">Buy</a>
+                <div class="card p-3 mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Seller: ${seller}</h5>
+                        <p class="card-text"><strong>Amount:</strong> ${amount} CFT</p>
+                        <p class="card-text"><strong>Total Price:</strong> ${totalPrice} TRX</p>
+                        <div class="d-flex justify-content-center">
+                            <button class="btn btn-success me-2" onclick="buyToken(${listingIds[i]}, ${totalPrice})">Buy</button>
+                            <button class="btn btn-danger" onclick="cancelListing(${listingIds[i]})">Cancel</button>
+                        </div>
+                    </div>
+                </div>
             `;
+
             container.appendChild(listingElement);
         }
     } catch (error) {
@@ -579,6 +594,7 @@ async function fetchListings() {
         document.getElementById("listings-container").innerHTML = "<p class='text-center'>Failed to load listings.</p>";
     }
 }
+
 
 async function listTokens() {
     const amount = document.getElementById("sell-amount").value;
