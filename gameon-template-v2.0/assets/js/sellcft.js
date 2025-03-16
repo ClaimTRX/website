@@ -569,22 +569,18 @@ async function fetchListings() {
             const seller = tronWeb.address.fromHex(listing.seller);
             const amount = tronWeb.fromSun(listing.tokenAmount);
             const totalPrice = tronWeb.fromSun(listing.priceInTRX);
-
             const isSeller = seller === userAddress; // Check if the connected wallet is the seller
 
-            // Create listing card matching Sell CFT card
+            // Create listing card to match the Sell CFT card
             const listingElement = document.createElement("div");
             listingElement.className = "col-12 col-md-10 single-staking-item mb-4";
 
             listingElement.innerHTML = `
                 <div class="card p-4">
-                    <div class="d-flex align-items-center">
-                        <img class="avatar-max-lg me-3" src="assets/img/content/cftlogo518.png" alt="">
-                        <div class="content">
-                            <h4 class="m-0">Seller: ${seller}</h4>
-                            <p class="mt-2"><strong>Amount:</strong> ${amount} CFT</p>
-                            <p><strong>Total Price:</strong> ${totalPrice} TRX</p>
-                        </div>
+                    <div class="content">
+                        <h4 class="m-0 text-white">Seller: ${seller}</h4>
+                        <p class="mt-2 text-light"><strong>Amount:</strong> <span class="text-white">${amount} CFT</span></p>
+                        <p class="text-light"><strong>Total Price:</strong> <span class="text-white">${totalPrice} TRX</span></p>
                     </div>
                     <div class="input-area d-flex flex-column mt-3">
                         <a href="#" class="btn input-btn mt-2" onclick="buyToken(${listingIds[i]}, ${totalPrice})">Buy</a>
