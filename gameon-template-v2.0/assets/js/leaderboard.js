@@ -775,7 +775,18 @@ const stakingContractAbi = [
         "type": "event"
     }
 ];
-// DOMContentLoaded Event Listener
+// Store full wallet addresses mapped to custom names
+const walletNames = {
+    "TQLrSGjNtYwtUdttbm4HsXxD6vmbePWni4": "TheKingdom",
+    
+    // Add more wallet addresses and names here
+};
+
+// Number of rows per page
+const rowsPerPage = 10;
+let currentPage = 1;
+
+// Initialize the app
 async function initialize() {
     document.getElementById('connect-button').addEventListener('click', connectWallet);
     if (await checkTronLinkInstalled()) {
@@ -841,39 +852,79 @@ async function updateTokenUI(token) {
     await delay(400);
 }
 
-// Fetch and display all stakers sorted in descending order
+// Fetch and display all stakers sorted in descending order with pagination
 async function fetchAndDisplayStakers(token) {
     try {
         const stakersData = await stakingContracts[token].methods.getAllStakersAndAmounts().call();
 
-        let stakers = stakersData[0]; // Array of wallet addresses
+        let stakers = stakersData[0]; // Array of full wallet addresses
         let amountsRaw = stakersData[1]; // Array of staked amounts (big numbers)
 
         let decimals = tokenDetails[token].decimals;
 
-        // Convert amounts to readable numbers and pair with wallet addresses
+        // Convert amounts and pair with wallet addresses
         let stakerList = stakers.map((wallet, index) => ({
             wallet,
             amount: Number(amountsRaw[index]) / Math.pow(10, decimals)
         }));
 
-        // Sort the staker list by amount in descending order
+        // Sort the list by staked amount (descending)
         stakerList.sort((a, b) => b.amount - a.amount);
 
-        // Generate HTML for displaying stakers
-        let stakersHTML = stakerList.map(staker => `
-            <tr>
-                <td>${staker.wallet}</td>
-                <td>${staker.amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
-            </tr>
-        `).join('');
-
-        // Insert into the table in your HTML
-        document.getElementById(`stakers-list-${token}`).innerHTML = stakersHTML;
-
+        // Paginate the results
+        displayStakers(stakerList, token);
     } catch (error) {
         console.error(`Error fetching stakers for ${token}:`, error);
     }
+}
+
+// Function to display paginated stakers
+function displayStakers(stakerList, token) {
+    let leaderboard = document.getElementById(`stakers-list-${token}`);
+    leaderboard.innerHTML = ""; // Clear previous entries
+
+    let startIndex = (currentPage - 1) * rowsPerPage;
+    let endIndex = startIndex + rowsPerPage;
+    let paginatedList = stakerList.slice(startIndex, endIndex);
+
+    // Generate table rows
+    let stakersHTML = paginatedList.map((staker, index) => {
+        let rank = startIndex + index + 1;
+        let walletShort = staker.wallet.slice(0, 5) + "***"; // Hide most of wallet address
+        let name = walletNames[staker.wallet] || "Unknown"; // Use custom name if available
+
+        return `
+            <tr>
+                <td>${rank}</td>
+                <td>${name}</td>
+                <td>${walletShort}</td>
+                <td>${staker.amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+            </tr>
+        `;
+    }).join('');
+
+    leaderboard.innerHTML = stakersHTML;
+
+    // Update pagination controls
+    updatePaginationControls(stakerList.length, token);
+}
+
+// Function to update pagination controls
+function updatePaginationControls(totalEntries, token) {
+    let totalPages = Math.ceil(totalEntries / rowsPerPage);
+    let paginationHTML = "";
+
+    for (let i = 1; i <= totalPages; i++) {
+        paginationHTML += `<li><a href="#" class="page-numbers ${i === currentPage ? 'current' : ''}" onclick="changePage(${i}, '${token}')">${i}</a></li>`;
+    }
+
+    document.getElementById(`pagination-${token}`).innerHTML = paginationHTML;
+}
+
+// Change page function
+function changePage(page, token) {
+    currentPage = page;
+    fetchAndDisplayStakers(token);
 }
 
 // Update all stakers' lists for all tokens
