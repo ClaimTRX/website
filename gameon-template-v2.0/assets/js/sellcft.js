@@ -558,7 +558,7 @@ async function fetchListings() {
         container.innerHTML = ""; // Clear previous listings
 
         if (listingIds.length === 0) {
-            container.innerHTML = "<p class='text-center'>No active listings.</p>";
+            container.innerHTML = "<p class='text-center' style='color: white;'>No active listings.</p>";
             return;
         }
 
@@ -569,20 +569,21 @@ async function fetchListings() {
             const seller = tronWeb.address.fromHex(listing.seller);
             const amount = tronWeb.fromSun(listing.tokenAmount);
             const totalPrice = tronWeb.fromSun(listing.priceInTRX);
+            const isSeller = seller === userAddress; // Check if the connected user is the seller
 
             // Create listing element with a card style
             const listingElement = document.createElement("div");
             listingElement.className = "col-12 col-md-6 single-staking-item text-center p-3 border rounded";
 
             listingElement.innerHTML = `
-                <div class="card p-3 mb-3">
+                <div class="card p-3 mb-3" style="background-color: #1a1a2e; color: white; border: 1px solid #4CAF50;">
                     <div class="card-body">
-                        <h5 class="card-title">Seller: ${seller}</h5>
-                        <p class="card-text"><strong>Amount:</strong> ${amount} CFT</p>
-                        <p class="card-text"><strong>Total Price:</strong> ${totalPrice} TRX</p>
+                        <h5 class="card-title" style="color: white;">Seller: ${seller}</h5>
+                        <p class="card-text" style="color: white;"><strong>Amount:</strong> ${amount} CFT</p>
+                        <p class="card-text" style="color: white;"><strong>Total Price:</strong> ${totalPrice} TRX</p>
                         <div class="d-flex justify-content-center">
                             <button class="btn btn-success me-2" onclick="buyToken(${listingIds[i]}, ${totalPrice})">Buy</button>
-                            <button class="btn btn-danger" onclick="cancelListing(${listingIds[i]})">Cancel</button>
+                            ${isSeller ? `<button class="btn btn-danger" onclick="cancelListing(${listingIds[i]})">Cancel</button>` : ''}
                         </div>
                     </div>
                 </div>
@@ -592,9 +593,10 @@ async function fetchListings() {
         }
     } catch (error) {
         console.error("Error fetching listings:", error);
-        document.getElementById("listings-container").innerHTML = "<p class='text-center'>Failed to load listings.</p>";
+        document.getElementById("listings-container").innerHTML = "<p class='text-center' style='color: white;'>Failed to load listings.</p>";
     }
 }
+
 
 
 async function listTokens() {
