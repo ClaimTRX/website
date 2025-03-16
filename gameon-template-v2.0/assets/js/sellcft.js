@@ -548,105 +548,106 @@ async function updateCFTBalance() {
     }
 }
 
-
-
 async function fetchListings() {
-        try {
-            const result = await marketplaceContract.methods.getActiveListings().call();
-            const listingIds = result[0];
-            const listings = result[1];
-            const container = document.getElementById("listings-container");
-            container.innerHTML = "";
+    try {
+        const result = await marketplaceContract.methods.getActiveListings().call();
+        const listingIds = result[0];
+        const listings = result[1];
+        const container = document.getElementById("listings-container");
+        container.innerHTML = "";
 
-            for (let i = 0; i < listingIds.length; i++) {
-                const listing = listings[i];
-                if (!listing.isActive) continue;
+        for (let i = 0; i < listingIds.length; i++) {
+            const listing = listings[i];
+            if (!listing.isActive) continue;
 
-                const seller = tronWeb.address.fromHex(listing.seller);
-                const amount = tronWeb.fromSun(listing.tokenAmount);
-                const totalPrice = tronWeb.fromSun(listing.priceInTRX);
+            const seller = tronWeb.address.fromHex(listing.seller);
+            const amount = tronWeb.fromSun(listing.tokenAmount);
+            const totalPrice = tronWeb.fromSun(listing.priceInTRX);
 
-                const listingElement = document.createElement("div");
-                listingElement.className = "col-12 col-md-6 single-staking-item text-center p-3 border rounded";
-                listingElement.innerHTML = `
-                    <p><strong>Seller:</strong> ${seller}</p>
-                    <p><strong>Amount:</strong> ${amount} CFT</p>
-                    <p><strong>Total Price:</strong> ${totalPrice} TRX</p>
-                    <a href="#" class="btn btn-success" onclick="buyToken(${listingIds[i]}, ${totalPrice})">Buy</a>
-                `;
-                container.appendChild(listingElement);
-            }
-        } catch (error) {
-            console.error("Error fetching listings:", error);
-            document.getElementById("listings-container").innerHTML = "<p class='text-center'>Failed to load listings.</p>";
+            const listingElement = document.createElement("div");
+            listingElement.className = "col-12 col-md-6 single-staking-item text-center p-3 border rounded";
+            listingElement.innerHTML = `
+                <p><strong>Seller:</strong> ${seller}</p>
+                <p><strong>Amount:</strong> ${amount} CFT</p>
+                <p><strong>Total Price:</strong> ${totalPrice} TRX</p>
+                <a href="#" class="btn btn-success" onclick="buyToken(${listingIds[i]}, ${totalPrice})">Buy</a>
+            `;
+            container.appendChild(listingElement);
         }
+    } catch (error) {
+        console.error("Error fetching listings:", error);
+        document.getElementById("listings-container").innerHTML = "<p class='text-center'>Failed to load listings.</p>";
     }
+}
 
 async function listTokens() {
-        const amount = document.getElementById("sell-amount").value;
-        const price = document.getElementById("sell-price").value;
-        if (!amount || amount <= 0) {
-            alert("Enter a valid amount.");
-            return;
-        }
+    const amount = document.getElementById("sell-amount").value;
+    const price = document.getElementById("sell-price").value;
 
-        const totalPrice = amount * price; // Convert to total TRX value
-        const tokenAmountSun = tronWeb.toSun(amount);
-        const totalPriceSun = tronWeb.toSun(totalPrice);
-
-        try {
-            const allowance = await tokenContract.methods.allowance(userAddress, marketplaceContractAddress).call();
-            if (parseInt(allowance) < tokenAmountSun) {
-                await tokenContract.methods.approve(marketplaceContractAddress, tokenAmountSun).send();
-            }
-
-            await marketplaceContract.methods.listToken(tokenAmountSun, totalPriceSun).send();
-            alert("Tokens listed successfully!");
-            fetchListings();
-        } catch (error) {
-            console.error("Error listing tokens:", error);
-            alert("Failed to list tokens.");
-        }
+    if (!amount || amount <= 0 || !price || price <= 0) {
+        alert("Enter a valid amount and price.");
+        return;
     }
+
+    const totalPrice = amount * price; // Convert to total TRX value
+    const tokenAmountSun = tronWeb.toSun(amount);
+    const totalPriceSun = tronWeb.toSun(totalPrice);
+
+    try {
+        // Check if allowance is sufficient
+        const allowance = await tokenContract.methods.allowance(userAddress, marketplaceContractAddress).call();
+        if (parseInt(allowance) < parseInt(tokenAmountSun)) {
+            await tokenContract.methods.approve(marketplaceContractAddress, tokenAmountSun).send();
+        }
+
+        await marketplaceContract.methods.listToken(tokenAmountSun, totalPriceSun).send();
+        alert("Tokens listed successfully!");
+        fetchListings();
+    } catch (error) {
+        console.error("Error listing tokens:", error);
+        alert("Failed to list tokens.");
+    }
+}
 
 async function buyToken(listingId, totalPrice) {
-        try {
-            await marketplaceContract.methods.buyToken(listingId).send({ callValue: tronWeb.toSun(totalPrice) });
-            alert("Purchase successful!");
-            fetchListings();
-        } catch (error) {
-            console.error("Error buying token:", error);
-            alert("Failed to buy token.");
-        }
+    try {
+        await marketplaceContract.methods.buyToken(listingId).send({ callValue: tronWeb.toSun(totalPrice) });
+        alert("Purchase successful!");
+        fetchListings();
+    } catch (error) {
+        console.error("Error buying token:", error);
+        alert("Failed to buy token.");
     }
-
-    document.getElementById("list-button").addEventListener("click", listTokens);
-    document.addEventListener("DOMContentLoaded", fetchListings);
-
+}
 
 async function cancelListing(listingId) {
     try {
         await marketplaceContract.methods.cancelListing(listingId).send();
         alert('Listing cancelled successfully! Your CFT has been refunded.');
-        fetchMarketplaceListings();
+        fetchListings();
     } catch (error) {
         console.error('Error cancelling listing:', error);
         alert('Failed to cancel listing.');
     }
 }
 
-
 document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("connect-button").addEventListener("click", connectWallet);
+    
+    // Add event listener for listing tokens
+    document.getElementById("list-button").addEventListener("click", listTokens);
+
+    // Sell options buttons
     document.querySelectorAll(".sell-option").forEach(button => {
         button.addEventListener("click", () => {
             const price = button.getAttribute("data-price");
-            approveAndListTokens(document.getElementById("sell-amount").value, price);
+            document.getElementById("sell-price").value = price;
         });
     });
 
     if (await checkTronLinkInstalled()) {
         await connectWallet();
+        updateCFTBalance(); // Update CFT balance on load
     }
 });
 
@@ -656,4 +657,5 @@ function formatNumber(num, decimals = 0) {
         maximumFractionDigits: decimals
     });
 }
+
 
