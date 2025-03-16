@@ -879,7 +879,9 @@ async function updateAvailableTokens(token) {
     try {
         const balanceRaw = await tokenContracts[token].methods.balanceOf(userAddress).call();
         const balance = Number(balanceRaw) / Math.pow(10, tokenDetails[token].decimals);
-        document.getElementById(`available-tokens-${token}`).innerText = balance.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        document.getElementById(`available-tokens-${token}`).innerText = Math.floor(balance).toLocaleString('en-US');
+
+
 
 
     } catch (error) {
@@ -892,7 +894,8 @@ async function updateStakedAmount(token) {
     try {
         const stakedAmountRaw = await stakingContracts[token].methods.viewStakedAmount(userAddress).call();
         const stakedAmount = Number(stakedAmountRaw) / Math.pow(10, tokenDetails[token].decimals);
-        document.getElementById(`staked-amount-${token}`).innerText = stakedAmount.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        document.getElementById(`staked-amount-${token}`).innerText = Math.floor(stakedAmount).toLocaleString('en-US');
+
 
 
     } catch (error) {
@@ -906,7 +909,8 @@ async function updateProjectedRewards(token) {
         const projectedRewards = Number(projectedRewardsRaw) / Math.pow(10, tokenDetails[token].decimals);
 
         // Display the projected rewards
-        document.getElementById(`projected-rewards-${token}`).innerText = projectedRewards.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        document.getElementById(`projected-rewards-${token}`).innerText = Math.floor(projectedRewards).toLocaleString('en-US');
+
 
 
     } catch (error) {
@@ -920,7 +924,8 @@ async function updateClaimableRewards(token) {
     try {
         const claimableRewardsRaw = await stakingContracts[token].methods.viewPendingReward(userAddress).call();
         const claimableRewards = claimableRewardsRaw / Math.pow(10, tokenDetails[token].decimals);
-        document.getElementById(`claimable-rewards-${token}`).innerText = claimableRewards.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        document.getElementById(`claimable-rewards-${token}`).innerText = Math.floor(claimableRewards).toLocaleString('en-US');
+
 
 
     } catch (error) {
@@ -933,7 +938,8 @@ async function updateTotalClaimedRewards(token) {
     try {
         const totalClaimedRewardsRaw = await stakingContracts[token].methods.viewTotalClaimedRewards(userAddress).call();
         const totalClaimedRewards = totalClaimedRewardsRaw / Math.pow(10, tokenDetails[token].decimals);
-        document.getElementById(`total-claimed-rewards-${token}`).innerText = totalClaimedRewards.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        document.getElementById(`total-claimed-rewards-${token}`).innerText = Math.floor(totalClaimedRewards).toLocaleString('en-US');
+
 
 
     } catch (error) {
