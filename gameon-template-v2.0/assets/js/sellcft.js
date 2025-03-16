@@ -572,39 +572,23 @@ async function fetchListings() {
 
             const isSeller = seller === userAddress; // Check if the connected wallet is the seller
 
-            // Create listing card
+            // Create listing card matching Sell CFT card
             const listingElement = document.createElement("div");
             listingElement.className = "col-12 col-md-10 single-staking-item mb-4";
 
             listingElement.innerHTML = `
-                <div class="card">
-                    <div class="card-header bg-inherit border-0 p-0">
-                        <h2 class="m-0">
-                            <button class="btn staking-btn d-block text-start w-100 py-4">
-                                <div class="row">
-                                    <div class="col-12">
-                                        <div class="media flex-column flex-md-row">
-                                            
-                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                <h4 class="m-0">Seller: ${seller}</h4>
-                                                <p><strong>Amount:</strong> ${amount} CFT</p>
-                                                <p><strong>Total Price:</strong> ${totalPrice} TRX</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </button>
-                        </h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-12 col-md-4 single-staking-item input-box">
-                                <div class="input-area d-flex flex-column">
-                                    <a href="#" class="btn input-btn mt-2" onclick="buyToken(${listingIds[i]}, ${totalPrice})">Buy</a>
-                                    ${isSeller ? `<a href="#" class="btn btn-danger mt-2" onclick="cancelListing(${listingIds[i]})">Cancel</a>` : ""}
-                                </div>
-                            </div>
+                <div class="card p-4">
+                    <div class="d-flex align-items-center">
+                        <img class="avatar-max-lg me-3" src="assets/img/content/cftlogo518.png" alt="">
+                        <div class="content">
+                            <h4 class="m-0">Seller: ${seller}</h4>
+                            <p class="mt-2"><strong>Amount:</strong> ${amount} CFT</p>
+                            <p><strong>Total Price:</strong> ${totalPrice} TRX</p>
                         </div>
+                    </div>
+                    <div class="input-area d-flex flex-column mt-3">
+                        <a href="#" class="btn input-btn mt-2" onclick="buyToken(${listingIds[i]}, ${totalPrice})">Buy</a>
+                        ${isSeller ? `<a href="#" class="btn btn-danger mt-2" onclick="cancelListing(${listingIds[i]})">Cancel</a>` : ""}
                     </div>
                 </div>
             `;
@@ -616,6 +600,7 @@ async function fetchListings() {
         document.getElementById("listings-container").innerHTML = "<p class='text-center'>Failed to load listings.</p>";
     }
 }
+
 
 
 
