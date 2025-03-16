@@ -162,51 +162,52 @@
 		<!-- ***** Hero Area End ***** -->
 
 		
-		<!-- Staking Area (Sell CFT) -->
-    <section class="staking-area">
-        <div id="gameon-accordion" class="container accordion">
-            <div class="row justify-content-center">
-                <div class="col-12 col-md-10">
-                    <div class="single-accordion-item">
-                        <div class="card-header bg-inherit border-0 p-0">
-                            <h2 class="m-0">
-                                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSell">
-                                    <div class="row">
-                                        <div class="col-12 col-md-8">
-                                            <div class="media flex-column flex-md-row">
-                                                <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
-                                                <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                    <h4 class="m-0">Sell CFT</h4>
-                                                    <p>List your CFT tokens for sale on the marketplace.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
-                                        <div class="col single-item">
-                                            <span id="available-cft">Loading...</span>
-                                            <span>Your CFT Balance</span>
-                                        </div>
-                                        <div class="col single-item">
-                                            <span id="market-price">Loading...</span>
-                                            <span>Market Price (TRX per CFT)</span>
-                                        </div>
-                                    </div>
-                                </button>
-                            </h2>
-                        </div>
-                        <div id="collapseSell" class="collapse" data-bs-parent="#gameon-accordion">
-                            <div class="card-body">
+		<section class="staking-area">
+    <div id="gameon-accordion" class="container accordion">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-10">
+                <div class="single-accordion-item">
+                    <div class="card-header bg-inherit border-0 p-0">
+                        <h2 class="m-0">
+                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSell">
                                 <div class="row">
-                                    <!-- Sell CFT Section -->
-                                    <div class="col-12 col-md-4 single-staking-item input-box">
-                                        <span class="item-title mb-2">Sell</span>
-                                        <div class="input-area d-flex flex-column">
-                                            <div class="input-text">
-                                                <input type="text" placeholder="0" id="sell-amount">
+                                    <div class="col-12 col-md-8">
+                                        <div class="media flex-column flex-md-row">
+                                            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                <h4 class="m-0">Sell CFT</h4>
+                                                <p>List your CFT tokens for sale on the marketplace.</p>
                                             </div>
-                                            <a href="#" class="btn input-btn mt-2" id="sell-button">List for Sale</a>
                                         </div>
+                                    </div>
+                                </div>
+                                <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                    <div class="col single-item">
+                                        <span id="user-cft-balance">Loading...</span>
+                                        <span>Your CFT Balance</span>
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseSell" class="collapse" data-bs-parent="#gameon-accordion">
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Sell CFT Section -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Sell</span>
+                                    <input type="number" placeholder="Amount of CFT" id="sell-amount" class="form-control">
+                                    
+                                    <span class="item-title mb-2 mt-3">Select Price (TRX per CFT)</span>
+                                    <select id="sell-price" class="form-control">
+                                        <option value="0.9">0.9 TRX</option>
+                                        <option value="1">1 TRX</option>
+                                        <option value="1.1">1.1 TRX</option>
+                                        <option value="1.2">1.2 TRX</option>
+                                    </select>
+                                    
+                                    <div class="input-area d-flex flex-column mt-3">
+                                        <a href="#" class="btn input-btn mt-2" id="sell-button">List for Sale</a>
                                     </div>
                                 </div>
                             </div>
@@ -215,7 +216,8 @@
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
     <!-- Marketplace Listings -->
     <section class="marketplace-listings">
