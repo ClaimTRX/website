@@ -649,6 +649,7 @@ async function updateBuyPriceFEB() {
     }
 }
 
+
 // Buy CFT tokens
 async function buyTokens(trxAmount) {
     try {
@@ -707,8 +708,9 @@ function calculateFebCFT() {
 
 // Format numbers with commas, no decimals
 function formatNumber(num) {
-    return parseInt(num).toLocaleString('en-US'); // Formats as "100,000"
+    return Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
 
 // Attach event listeners
 document.addEventListener('DOMContentLoaded', async () => {
