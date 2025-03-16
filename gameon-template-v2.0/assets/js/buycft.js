@@ -602,27 +602,34 @@ async function updateUI() {
     }
 }
 
+
 // Fetch and update TRX balance
 async function updateTRXBalance() {
     try {
         const trxBalance = await tronWeb.trx.getBalance(userAddress);
-        const trxElement = document.getElementById('available-trx');
-        if (trxElement) trxElement.innerText = `${formatNumber(tronWeb.fromSun(trxBalance))} TRX`;
+        const formattedBalance = formatNumber(tronWeb.fromSun(trxBalance));
+
+        // Update both instances of 'available-trx'
+        document.querySelectorAll("#available-trx").forEach(el => el.innerText = `${formattedBalance} TRX`);
     } catch (error) {
         console.error("Error fetching TRX balance:", error);
     }
 }
 
+
 // Fetch available CFT tokens in the contract
 async function updateAvailableCFT() {
     try {
         const tokenBalance = await tokenContract.methods.balanceOf(swapContractAddress).call();
-        const cftElement = document.getElementById('available-cft');
-        if (cftElement) cftElement.innerText = `${formatNumber(tronWeb.fromSun(tokenBalance))} CFT Available`;
+        const formattedBalance = formatNumber(tronWeb.fromSun(tokenBalance));
+
+        // Ensure both cards get the updated value
+        document.querySelectorAll("#available-cft").forEach(el => el.innerText = `${formattedBalance} CFT Available`);
     } catch (error) {
         console.error("Error fetching available CFT:", error);
     }
 }
+
 
 // Fetch and update the buy price of CFT
 async function updateBuyPrice() {
