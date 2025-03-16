@@ -532,7 +532,7 @@ async function initializeContracts() {
 async function updateUI() {
     try {
         await updateCFTBalance();
-        await updateMarketPrice();
+        
         await fetchMarketplaceListings();
     } catch (error) {
         console.error("Error updating UI:", error);
@@ -548,14 +548,7 @@ async function updateCFTBalance() {
     }
 }
 
-async function updateMarketPrice() {
-    try {
-        const marketPrice = await marketplaceContract.methods.getMarketPrice().call();
-        document.getElementById("market-price").innerText = formatNumber(tronWeb.fromSun(marketPrice), 2) + " TRX per CFT";
-    } catch (error) {
-        console.error("Error fetching market price:", error);
-    }
-}
+
 
 async function fetchMarketplaceListings() {
     try {
