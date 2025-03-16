@@ -906,13 +906,10 @@ async function fetchAndDisplayStakers(token) {
 }
 
 // ✅ Function to display paginated stakers
+
 function displayStakers(stakerList, token) {
     let leaderboard = document.getElementById(`stakers-list-${token}`);
-    if (!leaderboard) {
-        console.error(`Leaderboard element not found: stakers-list-${token}`);
-        return;
-    }
-    leaderboard.innerHTML = ""; 
+    leaderboard.innerHTML = ""; // Clear previous entries
 
     let startIndex = (currentPage - 1) * rowsPerPage;
     let endIndex = startIndex + rowsPerPage;
@@ -921,14 +918,17 @@ function displayStakers(stakerList, token) {
     // Generate table rows
     let stakersHTML = paginatedList.map((staker, index) => {
         let rank = startIndex + index + 1;
-        let walletShort = staker.wallet.slice(0, 5) + "***";
-        let name = walletNames[staker.wallet] || "Unknown";
+
+        // Convert wallet address from hex to Base58 (Tron format)
+        let formattedWallet = tronWeb.address.fromHex(staker.wallet);
+
+        // If wallet has a name, use the name. Otherwise, show shortened address.
+        let displayName = walletNames[formattedWallet] || (formattedWallet.slice(0, 5) + "***");
 
         return `
             <tr>
                 <td>${rank}</td>
-                <td>${name}</td>
-                <td>${walletShort}</td>
+                <td>${displayName}</td>
                 <td>${staker.amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
             </tr>
         `;
@@ -936,9 +936,10 @@ function displayStakers(stakerList, token) {
 
     leaderboard.innerHTML = stakersHTML;
 
-    // ✅ Update pagination controls
+    // Update pagination controls
     updatePaginationControls(stakerList.length, token);
 }
+
 
 // ✅ Function to update pagination controls
 function updatePaginationControls(totalEntries, token) {
