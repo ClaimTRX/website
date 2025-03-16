@@ -533,7 +533,8 @@ async function updateUI() {
     try {
         await updateCFTBalance();
         
-        await fetchMarketplaceListings();
+        await fetchListings();
+
     } catch (error) {
         console.error("Error updating UI:", error);
     }
