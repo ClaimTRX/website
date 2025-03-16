@@ -2991,5 +2991,37 @@ a.page-numbers:hover {
     font-weight: 600;
 }
 
+/* Social Icons Styling */
+.social-icons {
+    display: flex;
+    gap: 15px; /* Adjusts spacing */
+}
+
+/* Icon Buttons */
+.social-icons a {
+    background-color: transparent; /* Removes dark background */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%; /* Keeps circular shape */
+    transition: all 0.3s ease-in-out;
+}
+
+/* Ensure Icons are White */
+.social-icons a i {
+    font-size: 22px;
+    color: #ffffff; /* Ensures white color */
+    transition: color 0.3s ease-in-out;
+}
+
+/* Hover Effect */
+.social-icons a:hover i {
+    color: #1DA1F2; /* Tron/CFT ecosystem blue */
+}
+
+
+
 
 
