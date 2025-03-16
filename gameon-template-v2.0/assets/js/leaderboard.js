@@ -803,7 +803,7 @@ async function initialize() {
     if (await checkTronLinkInstalled()) {
         console.log("TronLink detected!");
         await initializeTronWeb();
-        setInterval(updateAllUI, 60000);
+        
         setInterval(updateAllStakers, 60000);
     } else {
         console.error('TronLink is not installed.');
@@ -846,7 +846,7 @@ async function initializeTronWeb() {
             stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
         }
 
-        await updateAllUI();
+       
         await updateAllStakers(); // Fetch and display all stakers on load
     } catch (error) {
         console.error('Error initializing TronWeb or Contracts:', error);
