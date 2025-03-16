@@ -799,9 +799,7 @@ const walletNames = {
     "TQLrSGjNtYwtUdttbm4HsXxD6vmbePWni4": "TheKingdom",
 };
 
-// Number of rows per page
-const rowsPerPage = 10;
-let currentPage = 1;
+
 
 // ✅ Ensure DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
@@ -945,26 +943,29 @@ function updatePaginationControls(token) {
     let totalPages = Math.ceil(stakerList.length / rowsPerPage);
     let paginationHTML = "";
 
-    // Previous page button (disabled if on first page)
+    // Show "Previous" arrow if not on first page
     if (currentPage > 1) {
         paginationHTML += `<li><a href="#" class="prev page-numbers" onclick="changePage(${currentPage - 1}, '${token}')"><i class="icon-arrow-left"></i></a></li>`;
     }
 
+    // Show first 4 page numbers
     for (let i = 1; i <= Math.min(4, totalPages); i++) {
         paginationHTML += `<li><a href="#" class="page-numbers ${i === currentPage ? 'current' : ''}" onclick="changePage(${i}, '${token}')">${i}</a></li>`;
     }
 
-    if (totalPages > 4 && currentPage < totalPages) {
+    // Show "Next" arrow if not on last page
+    if (currentPage < totalPages) {
         paginationHTML += `<li><a href="#" class="next page-numbers" onclick="changePage(${currentPage + 1}, '${token}')"><i class="icon-arrow-right"></i></a></li>`;
     }
 
     document.getElementById(`pagination-${token}`).innerHTML = paginationHTML;
 }
 
+
 // ✅ Change page function (now it can access `stakerList` globally)
 function changePage(page, token) {
     let totalPages = Math.ceil(stakerList.length / rowsPerPage);
-    if (page < 1 || page > totalPages) return; // Prevent invalid pages
+    if (page < 1 || page > totalPages) return; // Ensure pages stay in range
     currentPage = page;
     displayStakers(token);
 }
