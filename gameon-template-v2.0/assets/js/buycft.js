@@ -574,7 +574,7 @@ async function connectWallet() {
 
         console.log("Connected to TronLink:", userAddress);
         await initializeContracts();
-        await updateUI();
+        await updateUI();  // Update UI after connecting
     } catch (e) {
         console.error("Failed to connect:", e);
     }
@@ -606,7 +606,8 @@ async function updateUI() {
 async function updateTRXBalance() {
     try {
         const trxBalance = await tronWeb.trx.getBalance(userAddress);
-        document.getElementById('available-trx').innerText = `${tronWeb.fromSun(trxBalance)} TRX`;
+        const trxElement = document.getElementById('available-trx');
+        if (trxElement) trxElement.innerText = `${formatNumber(tronWeb.fromSun(trxBalance))} TRX`;
     } catch (error) {
         console.error("Error fetching TRX balance:", error);
     }
@@ -616,7 +617,8 @@ async function updateTRXBalance() {
 async function updateAvailableCFT() {
     try {
         const tokenBalance = await tokenContract.methods.balanceOf(swapContractAddress).call();
-        document.getElementById('available-cft').innerText = `${tronWeb.fromSun(tokenBalance)} CFT Available`;
+        const cftElement = document.getElementById('available-cft');
+        if (cftElement) cftElement.innerText = `${formatNumber(tronWeb.fromSun(tokenBalance))} CFT Available`;
     } catch (error) {
         console.error("Error fetching available CFT:", error);
     }
@@ -625,20 +627,25 @@ async function updateAvailableCFT() {
 // Fetch and update the buy price of CFT
 async function updateBuyPrice() {
     try {
+        const buyPriceElement = document.getElementById('buy-price');
+        if (!buyPriceElement) return console.error("Error: Element 'buy-price' not found.");
+
         const buyPrice = await swapContract.methods.buyPrice().call();
-        document.getElementById('buy-price').innerText = tronWeb.fromSun(buyPrice);
+        buyPriceElement.innerText = formatNumber(tronWeb.fromSun(buyPrice));
     } catch (error) {
-        console.error("Error fetching buy price:", error);
+        console.error('Error fetching buy price:', error);
     }
 }
 
-// Fetch and update the buy price for FEB holders
 async function updateBuyPriceFEB() {
     try {
+        const buyPriceFebElement = document.getElementById('buy-price-feb');
+        if (!buyPriceFebElement) return console.error("Error: Element 'buy-price-feb' not found.");
+
         const buyPriceFEB = await swapContract.methods.buyPriceFEB().call();
-        document.getElementById('buy-price-feb').innerText = tronWeb.fromSun(buyPriceFEB);
+        buyPriceFebElement.innerText = formatNumber(tronWeb.fromSun(buyPriceFEB));
     } catch (error) {
-        console.error("Error fetching FEB buy price:", error);
+        console.error('Error fetching FEB buy price:', error);
     }
 }
 
@@ -681,7 +688,7 @@ function calculateCFT() {
     }
 
     const cftAmount = trxAmount / buyPrice;
-    document.getElementById('calculated-cft').innerText = `CFT tokens you will get: ${cftAmount.toFixed(2)} CFT`;
+    document.getElementById('calculated-cft').innerText = `CFT tokens you will get: ${formatNumber(cftAmount)}`;
 }
 
 // Calculate CFT received for entered TRX (FEB)
@@ -695,12 +702,18 @@ function calculateFebCFT() {
     }
 
     const cftAmount = trxAmount / buyPriceFEB;
-    document.getElementById('calculated-feb-cft').innerText = `CFT tokens you will get: ${cftAmount.toFixed(2)} CFT`;
+    document.getElementById('calculated-feb-cft').innerText = `CFT tokens you will get: ${formatNumber(cftAmount)}`;
+}
+
+// Format numbers with commas, no decimals
+function formatNumber(num) {
+    return parseInt(num).toLocaleString('en-US'); // Formats as "100,000"
 }
 
 // Attach event listeners
 document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('connect-button').addEventListener('click', connectWallet);
+    
     document.getElementById('trx-amount').addEventListener('input', calculateCFT);
     document.getElementById('buy-button').addEventListener('click', () => {
         buyTokens(document.getElementById('trx-amount').value);
@@ -715,4 +728,5 @@ document.addEventListener('DOMContentLoaded', async () => {
         await connectWallet();
     }
 });
+
 
