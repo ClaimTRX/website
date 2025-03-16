@@ -558,7 +558,7 @@ async function fetchListings() {
         container.innerHTML = ""; // Clear previous listings
 
         if (listingIds.length === 0) {
-            container.innerHTML = "<p class='text-center' style='color: white;'>No active listings.</p>";
+            container.innerHTML = "<p class='text-center'>No active listings.</p>";
             return;
         }
 
@@ -569,21 +569,41 @@ async function fetchListings() {
             const seller = tronWeb.address.fromHex(listing.seller);
             const amount = tronWeb.fromSun(listing.tokenAmount);
             const totalPrice = tronWeb.fromSun(listing.priceInTRX);
-            const isSeller = seller === userAddress; // Check if the connected user is the seller
 
-            // Create listing element with a card style
+            const isSeller = seller === userAddress; // Check if the connected wallet is the seller
+
+            // Create listing card
             const listingElement = document.createElement("div");
-            listingElement.className = "col-12 col-md-6 single-staking-item text-center p-3 border rounded";
+            listingElement.className = "col-12 col-md-10 single-staking-item mb-4";
 
             listingElement.innerHTML = `
-                <div class="card p-3 mb-3" style="background-color: #1a1a2e; color: white; border: 1px solid #4CAF50;">
+                <div class="card">
+                    <div class="card-header bg-inherit border-0 p-0">
+                        <h2 class="m-0">
+                            <button class="btn staking-btn d-block text-start w-100 py-4">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="media flex-column flex-md-row">
+                                            
+                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                <h4 class="m-0">Seller: ${seller}</h4>
+                                                <p><strong>Amount:</strong> ${amount} CFT</p>
+                                                <p><strong>Total Price:</strong> ${totalPrice} TRX</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                    </div>
                     <div class="card-body">
-                        <h5 class="card-title" style="color: white;">Seller: ${seller}</h5>
-                        <p class="card-text" style="color: white;"><strong>Amount:</strong> ${amount} CFT</p>
-                        <p class="card-text" style="color: white;"><strong>Total Price:</strong> ${totalPrice} TRX</p>
-                        <div class="d-flex justify-content-center">
-                            <button class="btn btn-success me-2" onclick="buyToken(${listingIds[i]}, ${totalPrice})">Buy</button>
-                            ${isSeller ? `<button class="btn btn-danger" onclick="cancelListing(${listingIds[i]})">Cancel</button>` : ''}
+                        <div class="row">
+                            <div class="col-12 col-md-4 single-staking-item input-box">
+                                <div class="input-area d-flex flex-column">
+                                    <a href="#" class="btn input-btn mt-2" onclick="buyToken(${listingIds[i]}, ${totalPrice})">Buy</a>
+                                    ${isSeller ? `<a href="#" class="btn btn-danger mt-2" onclick="cancelListing(${listingIds[i]})">Cancel</a>` : ""}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -593,9 +613,10 @@ async function fetchListings() {
         }
     } catch (error) {
         console.error("Error fetching listings:", error);
-        document.getElementById("listings-container").innerHTML = "<p class='text-center' style='color: white;'>Failed to load listings.</p>";
+        document.getElementById("listings-container").innerHTML = "<p class='text-center'>Failed to load listings.</p>";
     }
 }
+
 
 
 
