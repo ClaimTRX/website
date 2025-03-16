@@ -1,5 +1,3 @@
-const tokenContractAddress = 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA'; // Replace with your token contract address
-    const swapContractAddress = 'TSaGTyDQwFK2LPY99H6GcucqjQrQUGXnLF'; // Replace with your swap contract address
 
     const tokenContractAbi = [
     {
@@ -542,43 +540,13 @@ const tokenContractAddress = 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA'; // Replace wi
 ]
 ;
 
-    // Initialize on page load
-document.addEventListener('DOMContentLoaded', async () => {
-    document.getElementById('connect-button').addEventListener('click', connectWallet);
+    const tokenContractAddress = 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA';
+const swapContractAddress = 'TSaGTyDQwFK2LPY99H6GcucqjQrQUGXnLF';
 
-    if (await checkTronLinkInstalled()) {
-        await initializeTronWeb();
-        setInterval(updateAllUI, 600000); // Update UI every minute
-    } else {
-        console.error('TronLink is not installed.');
-    }
+// Store contract instances globally
+let tronWeb, userAddress, tokenContract, swapContract;
 
-        // Regular buy tokens
-        document.getElementById('trx-amount').addEventListener('input', calculateCFT);
-        document.getElementById('buy-button').addEventListener('click', async () => {
-            const trxAmount = document.getElementById('trx-amount').value;
-            if (!trxAmount || trxAmount <= 0) {
-                alert('Please enter a valid TRX amount.');
-                return;
-            }
-            await buyTokens(trxAmount);
-        });
-
-        // FEB buy tokens
-        document.getElementById('feb-trx-amount').addEventListener('input', calculateFebCFT);
-        document.getElementById('buy-feb-button').addEventListener('click', async () => {
-            const trxAmount = document.getElementById('feb-trx-amount').value;
-            if (!trxAmount || trxAmount <= 0) {
-                alert('Please enter a valid TRX amount.');
-                return;
-            }
-            await buyTokensAsFEB(trxAmount);
-        });
-    });
-
-    
-
-    // Check if TronLink is installed
+// Check if TronLink is installed
 async function checkTronLinkInstalled() {
     return new Promise((resolve) => {
         const interval = setInterval(() => {
@@ -590,187 +558,161 @@ async function checkTronLinkInstalled() {
     });
 }
 
-	    document.addEventListener("DOMContentLoaded", async function () {
-    const connectButton = document.getElementById("connect-button");
-
-    async function connectWallet() {
-        if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
-            userAddress = window.tronWeb.defaultAddress.base58;
-            console.log("Connected to TronLink:", userAddress);
-
-            connectButton.innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
-        } else {
-            
-        }
-    }
-
-    connectButton.addEventListener("click", async () => {
-        if (window.tronLink) {
-            try {
-                await window.tronLink.request({ method: "tron_requestAccounts" });
-                connectWallet();
-            } catch (e) {
-                console.error("Failed to connect to TronLink:", e);
-            }
-        } else {
-            
-        }
-    });
-
-    // Check connection status on page load
-    if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
-        connectWallet();
-    }
-});
-
-
-
-// Connect wallet
+// Wallet Connection
 async function connectWallet() {
+    if (!window.tronWeb) {
+        alert("TronLink not found. Please install and log in.");
+        return;
+    }
+
     try {
-        await tronLink.request({ method: 'tron_requestAccounts' });
-        await initializeTronWeb();
+        await window.tronLink.request({ method: "tron_requestAccounts" });
+        tronWeb = window.tronWeb;
+        userAddress = tronWeb.defaultAddress.base58;
+
+        document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
+
+        console.log("Connected to TronLink:", userAddress);
+        await initializeContracts();
+        await updateUI();
     } catch (e) {
-        console.error('Failed to connect to TronLink:', e);
+        console.error("Failed to connect:", e);
     }
 }
 
-// Initialize TronWeb and contracts
-async function initializeTronWeb() {
-    tronWeb = window.tronWeb;
-    userAddress = tronWeb.defaultAddress.base58;
-    console.log('Connected to TronLink. User Address:', userAddress);
-    document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
-
-
-    for (let token in stakingContractAddresses) {
-        stakingContracts[token] = await tronWeb.contract(stakingContractAbi, stakingContractAddresses[token]);
-    }
-
-    await updateAllUI();
-}
-
-// Delay function
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-// Update all UI elements
-async function updateAllUI() {
-    for (let token in stakingContracts) {
-        await updateTokenUI(token);
+// Initialize TronWeb and Contracts
+async function initializeContracts() {
+    try {
+        tokenContract = await tronWeb.contract(tokenContractAbi, tokenContractAddress);
+        swapContract = await tronWeb.contract(swapContractAbi, swapContractAddress);
+    } catch (error) {
+        console.error("Error initializing contracts:", error);
     }
 }
 
-    async function updateUI() {
-        try {
-            await updateTRXBalance();
-            await updateAvailableCFT();
-            await updateBuyPrice();
-            await updateBuyPriceFEB();
-        } catch (error) {
-            console.error('Error updating UI:', error);
-        }
+// Update UI Elements
+async function updateUI() {
+    try {
+        await updateTRXBalance();
+        await updateAvailableCFT();
+        await updateBuyPrice();
+        await updateBuyPriceFEB();
+    } catch (error) {
+        console.error("Error updating UI:", error);
+    }
+}
+
+// Fetch and update TRX balance
+async function updateTRXBalance() {
+    try {
+        const trxBalance = await tronWeb.trx.getBalance(userAddress);
+        document.getElementById('available-trx').innerText = `${tronWeb.fromSun(trxBalance)} TRX`;
+    } catch (error) {
+        console.error("Error fetching TRX balance:", error);
+    }
+}
+
+// Fetch available CFT tokens in the contract
+async function updateAvailableCFT() {
+    try {
+        const tokenBalance = await tokenContract.methods.balanceOf(swapContractAddress).call();
+        document.getElementById('available-cft').innerText = `${tronWeb.fromSun(tokenBalance)} CFT Available`;
+    } catch (error) {
+        console.error("Error fetching available CFT:", error);
+    }
+}
+
+// Fetch and update the buy price of CFT
+async function updateBuyPrice() {
+    try {
+        const buyPrice = await swapContract.methods.buyPrice().call();
+        document.getElementById('buy-price').innerText = tronWeb.fromSun(buyPrice);
+    } catch (error) {
+        console.error("Error fetching buy price:", error);
+    }
+}
+
+// Fetch and update the buy price for FEB holders
+async function updateBuyPriceFEB() {
+    try {
+        const buyPriceFEB = await swapContract.methods.buyPriceFEB().call();
+        document.getElementById('buy-price-feb').innerText = tronWeb.fromSun(buyPriceFEB);
+    } catch (error) {
+        console.error("Error fetching FEB buy price:", error);
+    }
+}
+
+// Buy CFT tokens
+async function buyTokens(trxAmount) {
+    try {
+        await swapContract.methods.buyTokens().send({
+            from: userAddress,
+            callValue: tronWeb.toSun(trxAmount)
+        });
+        alert('Tokens purchased successfully!');
+        await updateUI();
+    } catch (error) {
+        console.error('Error buying tokens:', error);
+    }
+}
+
+// Buy CFT tokens as a FEB holder
+async function buyTokensAsFEB(trxAmount) {
+    try {
+        await swapContract.methods.buyTokensAsFEBHolder().send({
+            from: userAddress,
+            callValue: tronWeb.toSun(trxAmount)
+        });
+        alert('Tokens purchased successfully (FEB Holder)!');
+        await updateUI();
+    } catch (error) {
+        console.error('Error buying tokens as FEB holder:', error);
+    }
+}
+
+// Calculate CFT received for entered TRX
+function calculateCFT() {
+    const trxAmount = parseFloat(document.getElementById('trx-amount').value);
+    const buyPrice = parseFloat(document.getElementById('buy-price').innerText);
+
+    if (!trxAmount || trxAmount <= 0 || !buyPrice) {
+        document.getElementById('calculated-cft').innerText = 'CFT tokens you will get: 0 CFT';
+        return;
     }
 
-    async function updateTRXBalance() {
-        try {
-            const trxBalance = await tronWeb.trx.getBalance(userAddress);
-            document.getElementById('user-trx-balance').innerText = 'TRX Balance: ' + formatNumber(tronWeb.fromSun(trxBalance)) + ' TRX';
-        } catch (error) {
-            console.error('Error fetching TRX balance:', error);
-        }
+    const cftAmount = trxAmount / buyPrice;
+    document.getElementById('calculated-cft').innerText = `CFT tokens you will get: ${cftAmount.toFixed(2)} CFT`;
+}
+
+// Calculate CFT received for entered TRX (FEB)
+function calculateFebCFT() {
+    const trxAmount = parseFloat(document.getElementById('feb-trx-amount').value);
+    const buyPriceFEB = parseFloat(document.getElementById('buy-price-feb').innerText);
+
+    if (!trxAmount || trxAmount <= 0 || !buyPriceFEB) {
+        document.getElementById('calculated-feb-cft').innerText = 'CFT tokens you will get: 0 CFT';
+        return;
     }
 
-    async function updateAvailableCFT() {
-        try {
-            const tokenBalance = await tokenContract.methods.balanceOf(swapContractAddress).call();
-            document.getElementById('available-cft').innerText = 'CFT available in contract: ' + formatNumber(tronWeb.fromSun(tokenBalance)) + ' CFT';
-        } catch (error) {
-            console.error('Error fetching available CFT:', error);
-        }
-    }
+    const cftAmount = trxAmount / buyPriceFEB;
+    document.getElementById('calculated-feb-cft').innerText = `CFT tokens you will get: ${cftAmount.toFixed(2)} CFT`;
+}
 
-    async function updateBuyPrice() {
-        try {
-            const buyPrice = await swapContract.methods.buyPrice().call();
-            document.getElementById('buy-price').innerText = tronWeb.fromSun(buyPrice);
-        } catch (error) {
-            console.error('Error fetching buy price:', error);
-        }
-    }
-
-    async function updateBuyPriceFEB() {
-        try {
-            const buyPriceFEB = await swapContract.methods.buyPriceFEB().call();
-            document.getElementById('buy-price-feb').innerText = tronWeb.fromSun(buyPriceFEB);
-        } catch (error) {
-            console.error('Error fetching FEB buy price:', error);
-        }
-    }
-
-    async function buyTokens(trxAmount) {
-        try {
-            await swapContract.methods.buyTokens().send({
-                from: userAddress,
-                callValue: tronWeb.toSun(trxAmount)
-            });
-            console.log('Tokens purchased.');
-            await updateUI();
-        } catch (error) {
-            console.error('Error buying tokens:', error);
-        }
-    }
-
-    async function buyTokensAsFEB(trxAmount) {
-        try {
-            await swapContract.methods.buyTokensAsFEBHolder().send({
-                from: userAddress,
-                callValue: tronWeb.toSun(trxAmount)
-            });
-            console.log('Tokens purchased (FEB holder).');
-            await updateUI();
-        } catch (error) {
-            console.error('Error buying tokens as FEB holder:', error);
-        }
-    }
-
-    function calculateCFT() {
-        const trxAmount = document.getElementById('trx-amount').value;
-        const buyPrice = document.getElementById('buy-price').innerText;
-
-        if (!trxAmount || trxAmount <= 0) {
-            document.getElementById('calculated-cft').innerText = 'CFT tokens you will get: 0 CFT';
-            return;
-        }
-
-        const cftAmount = trxAmount / buyPrice;
-        document.getElementById('calculated-cft').innerText = 'CFT tokens you will get: ' + formatNumber(cftAmount) + ' CFT';
-    }
-
-    function calculateFebCFT() {
-        const trxAmount = document.getElementById('feb-trx-amount').value;
-        const buyPriceFEB = document.getElementById('buy-price-feb').innerText;
-
-        if (!trxAmount || trxAmount <= 0) {
-            document.getElementById('calculated-feb-cft').innerText = 'CFT tokens you will get: 0 CFT';
-            return;
-        }
-
-        const cftAmount = trxAmount / buyPriceFEB;
-        document.getElementById('calculated-feb-cft').innerText = 'CFT tokens you will get: ' + formatNumber(cftAmount) + ' CFT';
-    }
-
-    function formatNumber(num) {
-        return parseFloat(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-    const menuToggle = document.querySelector(".menu-toggle");
-    const sidebar = document.querySelector(".sidebar");
-
-    menuToggle.addEventListener("click", function () {
-        sidebar.classList.toggle("active");
+// Attach event listeners
+document.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('connect-button').addEventListener('click', connectWallet);
+    document.getElementById('trx-amount').addEventListener('input', calculateCFT);
+    document.getElementById('buy-button').addEventListener('click', () => {
+        buyTokens(document.getElementById('trx-amount').value);
     });
+
+    document.getElementById('feb-trx-amount').addEventListener('input', calculateFebCFT);
+    document.getElementById('buy-feb-button').addEventListener('click', () => {
+        buyTokensAsFEB(document.getElementById('feb-trx-amount').value);
+    });
+
+    if (await checkTronLinkInstalled()) {
+        await connectWallet();
+    }
 });
-  
+
