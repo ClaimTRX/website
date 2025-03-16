@@ -607,9 +607,8 @@ async function updateUI() {
 async function updateTRXBalance() {
     try {
         const trxBalance = await tronWeb.trx.getBalance(userAddress);
-        const formattedBalance = formatNumber(tronWeb.fromSun(trxBalance));
+        const formattedBalance = formatNumber(tronWeb.fromSun(trxBalance), 0); // No decimals
 
-        // Update both instances of 'available-trx'
         document.querySelectorAll("#available-trx").forEach(el => el.innerText = `${formattedBalance} TRX`);
     } catch (error) {
         console.error("Error fetching TRX balance:", error);
@@ -617,18 +616,19 @@ async function updateTRXBalance() {
 }
 
 
+
 // Fetch available CFT tokens in the contract
 async function updateAvailableCFT() {
     try {
         const tokenBalance = await tokenContract.methods.balanceOf(swapContractAddress).call();
-        const formattedBalance = formatNumber(tronWeb.fromSun(tokenBalance));
+        const formattedBalance = formatNumber(tronWeb.fromSun(tokenBalance), 0); // No decimals
 
-        // Ensure both cards get the updated value
         document.querySelectorAll("#available-cft").forEach(el => el.innerText = `${formattedBalance} CFT Available`);
     } catch (error) {
         console.error("Error fetching available CFT:", error);
     }
 }
+
 
 
 // Fetch and update the buy price of CFT
@@ -638,7 +638,7 @@ async function updateBuyPrice() {
         if (!buyPriceElement) return console.error("Error: Element 'buy-price' not found.");
 
         const buyPrice = await swapContract.methods.buyPrice().call();
-        buyPriceElement.innerText = formatNumber(tronWeb.fromSun(buyPrice));
+        buyPriceElement.innerText = formatNumber(tronWeb.fromSun(buyPrice), 2); // 2 decimals
     } catch (error) {
         console.error('Error fetching buy price:', error);
     }
@@ -650,11 +650,12 @@ async function updateBuyPriceFEB() {
         if (!buyPriceFebElement) return console.error("Error: Element 'buy-price-feb' not found.");
 
         const buyPriceFEB = await swapContract.methods.buyPriceFEB().call();
-        buyPriceFebElement.innerText = formatNumber(tronWeb.fromSun(buyPriceFEB));
+        buyPriceFebElement.innerText = formatNumber(tronWeb.fromSun(buyPriceFEB), 2); // 2 decimals
     } catch (error) {
         console.error('Error fetching FEB buy price:', error);
     }
 }
+
 
 
 // Buy CFT tokens
@@ -714,9 +715,13 @@ function calculateFebCFT() {
 }
 
 // Format numbers with commas, no decimals
-function formatNumber(num) {
-    return Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function formatNumber(num, decimals = 0) {
+    return Number(num).toLocaleString('en-US', { 
+        minimumFractionDigits: decimals, 
+        maximumFractionDigits: decimals 
+    });
 }
+
 
 
 // Attach event listeners
