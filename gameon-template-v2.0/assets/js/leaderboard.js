@@ -876,14 +876,18 @@ async function initializeTronWeb() {
 async function fetchAndDisplayStakers(token) {
     try {
         const stakersData = await stakingContracts[token].methods.getAllStakersAndAmounts().call();
-        let stakers = stakersData[0]; // Wallet addresses
+        let stakers = stakersData[0]; // Wallet addresses in HEX format
         let amountsRaw = stakersData[1]; // Staked amounts
 
         let decimals = tokenDetails[token].decimals;
-        let stakerList = stakers.map((wallet, index) => ({
-            wallet,
-            amount: Number(amountsRaw[index]) / Math.pow(10, decimals)
-        }));
+
+        let stakerList = stakers.map((wallet, index) => {
+            let tronAddress = tronWeb.address.fromHex(wallet); // Convert HEX to Base58
+            return {
+                wallet: tronAddress,
+                amount: Number(amountsRaw[index]) / Math.pow(10, decimals)
+            };
+        });
 
         // Sort by staked amount (descending)
         stakerList.sort((a, b) => b.amount - a.amount);
@@ -896,6 +900,13 @@ async function fetchAndDisplayStakers(token) {
 function displayStakers(stakerList, token) {
     let leaderboard = document.getElementById(`stakers-list-${token}`);
     leaderboard.innerHTML = ""; // Clear old data
+
+    let totalEntries = stakerList.length;
+    let totalPages = Math.ceil(totalEntries / rowsPerPage);
+
+    // Ensure currentPage stays within bounds
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
 
     let startIndex = (currentPage - 1) * rowsPerPage;
     let endIndex = startIndex + rowsPerPage;
@@ -916,7 +927,7 @@ function displayStakers(stakerList, token) {
     }).join('');
 
     leaderboard.innerHTML = stakersHTML;
-    updatePaginationControls(stakerList.length, token);
+    updatePaginationControls(totalEntries, token);
 }
 
 // ✅ Helper function to shorten wallet addresses if no name is available
@@ -924,27 +935,35 @@ function formatAddress(address) {
     return address.slice(0, 5) + "***"; // Show first 5 characters + ***
 }
 
-// ✅ Update pagination logic to display up to 4 pages, then an arrow
+// ✅ Update pagination logic to display up to 4 pages, then arrows for next/previous
 function updatePaginationControls(totalEntries, token) {
     let totalPages = Math.ceil(totalEntries / rowsPerPage);
     let paginationHTML = "";
+
+    // Previous page button (disabled if on first page)
+    if (currentPage > 1) {
+        paginationHTML += `<li><a href="#" class="prev page-numbers" onclick="changePage(${currentPage - 1}, '${token}')"><i class="icon-arrow-left"></i></a></li>`;
+    }
 
     for (let i = 1; i <= Math.min(4, totalPages); i++) {
         paginationHTML += `<li><a href="#" class="page-numbers ${i === currentPage ? 'current' : ''}" onclick="changePage(${i}, '${token}')">${i}</a></li>`;
     }
 
-    if (totalPages > 4) {
+    if (totalPages > 4 && currentPage < totalPages) {
         paginationHTML += `<li><a href="#" class="next page-numbers" onclick="changePage(${currentPage + 1}, '${token}')"><i class="icon-arrow-right"></i></a></li>`;
     }
 
     document.getElementById(`pagination-${token}`).innerHTML = paginationHTML;
 }
 
-// ✅ Change page function
+// ✅ Change page function (with boundary checks)
 function changePage(page, token) {
+    let totalPages = Math.ceil(stakerList.length / rowsPerPage);
+    if (page < 1 || page > totalPages) return; // Prevent invalid pages
     currentPage = page;
     fetchAndDisplayStakers(token);
 }
+
 
 
 // ✅ Update all stakers' lists
