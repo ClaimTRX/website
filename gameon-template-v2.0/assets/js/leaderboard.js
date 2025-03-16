@@ -872,7 +872,10 @@ async function initializeTronWeb() {
     }
 }
 
-// ✅ Fetch and display all stakers sorted in descending order with pagination
+let stakerList = []; // Declare globally so it can be accessed anywhere
+let currentPage = 1;
+const rowsPerPage = 10;
+
 async function fetchAndDisplayStakers(token) {
     try {
         const stakersData = await stakingContracts[token].methods.getAllStakersAndAmounts().call();
@@ -881,7 +884,8 @@ async function fetchAndDisplayStakers(token) {
 
         let decimals = tokenDetails[token].decimals;
 
-        let stakerList = stakers.map((wallet, index) => {
+        // Convert wallet addresses from HEX to Tron format and store in global stakerList
+        stakerList = stakers.map((wallet, index) => {
             let tronAddress = tronWeb.address.fromHex(wallet); // Convert HEX to Base58
             return {
                 wallet: tronAddress,
@@ -891,13 +895,14 @@ async function fetchAndDisplayStakers(token) {
 
         // Sort by staked amount (descending)
         stakerList.sort((a, b) => b.amount - a.amount);
-        displayStakers(stakerList, token);
+
+        displayStakers(token);
     } catch (error) {
         console.error(`Error fetching stakers for ${token}:`, error);
     }
 }
 
-function displayStakers(stakerList, token) {
+function displayStakers(token) {
     let leaderboard = document.getElementById(`stakers-list-${token}`);
     leaderboard.innerHTML = ""; // Clear old data
 
@@ -927,7 +932,7 @@ function displayStakers(stakerList, token) {
     }).join('');
 
     leaderboard.innerHTML = stakersHTML;
-    updatePaginationControls(totalEntries, token);
+    updatePaginationControls(token);
 }
 
 // ✅ Helper function to shorten wallet addresses if no name is available
@@ -936,8 +941,8 @@ function formatAddress(address) {
 }
 
 // ✅ Update pagination logic to display up to 4 pages, then arrows for next/previous
-function updatePaginationControls(totalEntries, token) {
-    let totalPages = Math.ceil(totalEntries / rowsPerPage);
+function updatePaginationControls(token) {
+    let totalPages = Math.ceil(stakerList.length / rowsPerPage);
     let paginationHTML = "";
 
     // Previous page button (disabled if on first page)
@@ -956,13 +961,14 @@ function updatePaginationControls(totalEntries, token) {
     document.getElementById(`pagination-${token}`).innerHTML = paginationHTML;
 }
 
-// ✅ Change page function (with boundary checks)
+// ✅ Change page function (now it can access `stakerList` globally)
 function changePage(page, token) {
     let totalPages = Math.ceil(stakerList.length / rowsPerPage);
     if (page < 1 || page > totalPages) return; // Prevent invalid pages
     currentPage = page;
-    fetchAndDisplayStakers(token);
+    displayStakers(token);
 }
+
 
 
 
