@@ -788,15 +788,25 @@ let currentPage = 1;
 
 // Initialize the app
 async function initialize() {
-    document.getElementById('connect-button').addEventListener('click', connectWallet);
-    if (await checkTronLinkInstalled()) {
-        await initializeTronWeb();
-        setInterval(updateAllUI, 60000); // Update UI every minute
-        setInterval(updateAllStakers, 60000); // Update stakers list every minute
-    } else {
-        console.error('TronLink is not installed.');
-    }
+    document.addEventListener('DOMContentLoaded', async () => {
+        const connectButton = document.getElementById('connect-button');
+
+        if (connectButton) {
+            connectButton.addEventListener('click', connectWallet);
+        } else {
+            console.error("Error: 'connect-button' not found in the DOM.");
+        }
+
+        if (await checkTronLinkInstalled()) {
+            await initializeTronWeb();
+            setInterval(updateAllUI, 60000); // Update UI every minute
+            setInterval(updateAllStakers, 60000); // Update stakers list every minute
+        } else {
+            console.error('TronLink is not installed.');
+        }
+    });
 }
+
 
 document.addEventListener('DOMContentLoaded', initialize);
 
