@@ -875,55 +875,36 @@ async function initializeTronWeb() {
 // ✅ Fetch and display all stakers sorted in descending order with pagination
 async function fetchAndDisplayStakers(token) {
     try {
-        console.log(`Fetching stakers for ${token}...`);
         const stakersData = await stakingContracts[token].methods.getAllStakersAndAmounts().call();
-        console.log(stakersData);  // ✅ Debug API Response
-
-        if (!stakersData || stakersData.length < 2) {
-            console.error("Invalid stakers data:", stakersData);
-            return;
-        }
-
         let stakers = stakersData[0]; // Wallet addresses
         let amountsRaw = stakersData[1]; // Staked amounts
 
         let decimals = tokenDetails[token].decimals;
-
-        // Convert amounts and pair with wallet addresses
         let stakerList = stakers.map((wallet, index) => ({
             wallet,
             amount: Number(amountsRaw[index]) / Math.pow(10, decimals)
         }));
 
-        // Sort by amount (descending)
+        // Sort by staked amount (descending)
         stakerList.sort((a, b) => b.amount - a.amount);
-
-        // Paginate the results
         displayStakers(stakerList, token);
     } catch (error) {
         console.error(`Error fetching stakers for ${token}:`, error);
     }
 }
 
-// ✅ Function to display paginated stakers
-
 function displayStakers(stakerList, token) {
     let leaderboard = document.getElementById(`stakers-list-${token}`);
-    leaderboard.innerHTML = ""; // Clear previous entries
+    leaderboard.innerHTML = ""; // Clear old data
 
     let startIndex = (currentPage - 1) * rowsPerPage;
     let endIndex = startIndex + rowsPerPage;
     let paginatedList = stakerList.slice(startIndex, endIndex);
 
-    // Generate table rows
     let stakersHTML = paginatedList.map((staker, index) => {
         let rank = startIndex + index + 1;
-
-        // Convert wallet address from hex to Base58 (Tron format)
-        let formattedWallet = tronWeb.address.fromHex(staker.wallet);
-
-        // If wallet has a name, use the name. Otherwise, show shortened address.
-        let displayName = walletNames[formattedWallet] || (formattedWallet.slice(0, 5) + "***");
+        let walletShort = formatAddress(staker.wallet);
+        let displayName = walletNames[staker.wallet] || walletShort;
 
         return `
             <tr>
@@ -935,28 +916,28 @@ function displayStakers(stakerList, token) {
     }).join('');
 
     leaderboard.innerHTML = stakersHTML;
-
-    // Update pagination controls
     updatePaginationControls(stakerList.length, token);
 }
 
+// ✅ Helper function to shorten wallet addresses if no name is available
+function formatAddress(address) {
+    return address.slice(0, 5) + "***"; // Show first 5 characters + ***
+}
 
-// ✅ Function to update pagination controls
+// ✅ Update pagination logic to display up to 4 pages, then an arrow
 function updatePaginationControls(totalEntries, token) {
-    let pagination = document.getElementById(`pagination-${token}`);
-    if (!pagination) {
-        console.error(`Pagination element not found: pagination-${token}`);
-        return;
-    }
-
     let totalPages = Math.ceil(totalEntries / rowsPerPage);
     let paginationHTML = "";
 
-    for (let i = 1; i <= totalPages; i++) {
+    for (let i = 1; i <= Math.min(4, totalPages); i++) {
         paginationHTML += `<li><a href="#" class="page-numbers ${i === currentPage ? 'current' : ''}" onclick="changePage(${i}, '${token}')">${i}</a></li>`;
     }
 
-    pagination.innerHTML = paginationHTML;
+    if (totalPages > 4) {
+        paginationHTML += `<li><a href="#" class="next page-numbers" onclick="changePage(${currentPage + 1}, '${token}')"><i class="icon-arrow-right"></i></a></li>`;
+    }
+
+    document.getElementById(`pagination-${token}`).innerHTML = paginationHTML;
 }
 
 // ✅ Change page function
@@ -964,6 +945,7 @@ function changePage(page, token) {
     currentPage = page;
     fetchAndDisplayStakers(token);
 }
+
 
 // ✅ Update all stakers' lists
 async function updateAllStakers() {
