@@ -775,42 +775,42 @@ const stakingContractAbi = [
         "type": "event"
     }
 ];
-// Store full wallet addresses mapped to custom names
+// Store wallet names (custom names for known addresses)
 const walletNames = {
     "TQLrSGjNtYwtUdttbm4HsXxD6vmbePWni4": "TheKingdom",
-    
-    // Add more wallet addresses and names here
 };
 
 // Number of rows per page
 const rowsPerPage = 10;
 let currentPage = 1;
 
-// Initialize the app
+// ✅ Ensure DOM is fully loaded
+document.addEventListener('DOMContentLoaded', () => {
+    initialize();
+});
+
+// ✅ Initialize the app
 async function initialize() {
-    document.addEventListener('DOMContentLoaded', async () => {
-        const connectButton = document.getElementById('connect-button');
+    console.log("Initializing app...");
+    const connectButton = document.getElementById('connect-button');
+    
+    if (connectButton) {
+        connectButton.addEventListener('click', connectWallet);
+    } else {
+        console.error("Error: 'connect-button' not found in the DOM.");
+    }
 
-        if (connectButton) {
-            connectButton.addEventListener('click', connectWallet);
-        } else {
-            console.error("Error: 'connect-button' not found in the DOM.");
-        }
-
-        if (await checkTronLinkInstalled()) {
-            await initializeTronWeb();
-            setInterval(updateAllUI, 60000); // Update UI every minute
-            setInterval(updateAllStakers, 60000); // Update stakers list every minute
-        } else {
-            console.error('TronLink is not installed.');
-        }
-    });
+    if (await checkTronLinkInstalled()) {
+        console.log("TronLink detected!");
+        await initializeTronWeb();
+        setInterval(updateAllUI, 60000);
+        setInterval(updateAllStakers, 60000);
+    } else {
+        console.error('TronLink is not installed.');
+    }
 }
 
-
-document.addEventListener('DOMContentLoaded', initialize);
-
-// Check if TronLink is installed
+// ✅ Check if TronLink is installed
 async function checkTronLinkInstalled() {
     return new Promise(resolve => {
         const interval = setInterval(() => {
@@ -822,7 +822,7 @@ async function checkTronLinkInstalled() {
     });
 }
 
-// Connect Wallet
+// ✅ Connect Wallet
 async function connectWallet() {
     try {
         await tronLink.request({ method: 'tron_requestAccounts' });
@@ -832,7 +832,7 @@ async function connectWallet() {
     }
 }
 
-// Initialize TronWeb and Contracts
+// ✅ Initialize TronWeb and Contracts
 async function initializeTronWeb() {
     try {
         tronWeb = window.tronWeb;
@@ -844,9 +844,6 @@ async function initializeTronWeb() {
             let details = tokenDetails[key];
             tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
             stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
-            if (!details.decimals) {
-                tokenDetails[key].decimals = await tokenContracts[key].methods.decimals().call();
-            }
         }
 
         await updateAllUI();
@@ -856,19 +853,20 @@ async function initializeTronWeb() {
     }
 }
 
-// Update UI for a specific token
-async function updateTokenUI(token) {
-    await updateTotalClaimedRewards(token);
-    await delay(400);
-}
-
-// Fetch and display all stakers sorted in descending order with pagination
+// ✅ Fetch and display all stakers sorted in descending order with pagination
 async function fetchAndDisplayStakers(token) {
     try {
+        console.log(`Fetching stakers for ${token}...`);
         const stakersData = await stakingContracts[token].methods.getAllStakersAndAmounts().call();
+        console.log(stakersData);  // ✅ Debug API Response
 
-        let stakers = stakersData[0]; // Array of full wallet addresses
-        let amountsRaw = stakersData[1]; // Array of staked amounts (big numbers)
+        if (!stakersData || stakersData.length < 2) {
+            console.error("Invalid stakers data:", stakersData);
+            return;
+        }
+
+        let stakers = stakersData[0]; // Wallet addresses
+        let amountsRaw = stakersData[1]; // Staked amounts
 
         let decimals = tokenDetails[token].decimals;
 
@@ -878,7 +876,7 @@ async function fetchAndDisplayStakers(token) {
             amount: Number(amountsRaw[index]) / Math.pow(10, decimals)
         }));
 
-        // Sort the list by staked amount (descending)
+        // Sort by amount (descending)
         stakerList.sort((a, b) => b.amount - a.amount);
 
         // Paginate the results
@@ -888,10 +886,14 @@ async function fetchAndDisplayStakers(token) {
     }
 }
 
-// Function to display paginated stakers
+// ✅ Function to display paginated stakers
 function displayStakers(stakerList, token) {
     let leaderboard = document.getElementById(`stakers-list-${token}`);
-    leaderboard.innerHTML = ""; // Clear previous entries
+    if (!leaderboard) {
+        console.error(`Leaderboard element not found: stakers-list-${token}`);
+        return;
+    }
+    leaderboard.innerHTML = ""; 
 
     let startIndex = (currentPage - 1) * rowsPerPage;
     let endIndex = startIndex + rowsPerPage;
@@ -900,8 +902,8 @@ function displayStakers(stakerList, token) {
     // Generate table rows
     let stakersHTML = paginatedList.map((staker, index) => {
         let rank = startIndex + index + 1;
-        let walletShort = staker.wallet.slice(0, 5) + "***"; // Hide most of wallet address
-        let name = walletNames[staker.wallet] || "Unknown"; // Use custom name if available
+        let walletShort = staker.wallet.slice(0, 5) + "***";
+        let name = walletNames[staker.wallet] || "Unknown";
 
         return `
             <tr>
@@ -915,12 +917,18 @@ function displayStakers(stakerList, token) {
 
     leaderboard.innerHTML = stakersHTML;
 
-    // Update pagination controls
+    // ✅ Update pagination controls
     updatePaginationControls(stakerList.length, token);
 }
 
-// Function to update pagination controls
+// ✅ Function to update pagination controls
 function updatePaginationControls(totalEntries, token) {
+    let pagination = document.getElementById(`pagination-${token}`);
+    if (!pagination) {
+        console.error(`Pagination element not found: pagination-${token}`);
+        return;
+    }
+
     let totalPages = Math.ceil(totalEntries / rowsPerPage);
     let paginationHTML = "";
 
@@ -928,23 +936,23 @@ function updatePaginationControls(totalEntries, token) {
         paginationHTML += `<li><a href="#" class="page-numbers ${i === currentPage ? 'current' : ''}" onclick="changePage(${i}, '${token}')">${i}</a></li>`;
     }
 
-    document.getElementById(`pagination-${token}`).innerHTML = paginationHTML;
+    pagination.innerHTML = paginationHTML;
 }
 
-// Change page function
+// ✅ Change page function
 function changePage(page, token) {
     currentPage = page;
     fetchAndDisplayStakers(token);
 }
 
-// Update all stakers' lists for all tokens
+// ✅ Update all stakers' lists
 async function updateAllStakers() {
     for (let key in tokenDetails) {
         await fetchAndDisplayStakers(key);
     }
 }
 
-// Delay function
+// ✅ Delay function
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
