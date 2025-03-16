@@ -47,7 +47,7 @@ const stakingContractAbi = [
     ],
     "stateMutability": "view",
     "type": "function"
-}
+},
 
     {
     "inputs": [],
