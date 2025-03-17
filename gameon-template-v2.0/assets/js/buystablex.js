@@ -86,6 +86,7 @@ const usddDecimals = 18;
 
 
 
+
 let tronWeb, userAddress, tokenContract, swapContract, usdtContract, usddContract;
 
 // Wait for DOM to load
@@ -171,7 +172,8 @@ async function initializeTronWeb() {
         console.log("✅ USDD Contract Initialized:", usddContract);
         console.log("✅ Swap Contract Initialized:", swapContract);
 
-        document.getElementById("connect-button").style.display = "none";
+        // Update the connect button text instead of hiding it
+        document.getElementById("connect-button").innerText = "Wallet Connected ✅";
     } catch (error) {
         console.error("❌ Error initializing TronWeb or Contracts:", error);
     }
@@ -182,16 +184,9 @@ async function buyTokensWithUSDT(amount) {
     try {
         const usdtSmallestUnits = new BigNumber(amount).times(new BigNumber(10).pow(usdtDecimals)).toFixed(0);
 
-        // Check if user has enough approved USDT
-        console.log("🔵 Checking USDT allowance...");
-        const currentAllowance = await usdtContract.methods.allowance(userAddress, swapContractAddress).call();
-        console.log("✅ USDT Allowance:", currentAllowance);
-
-        if (new BigNumber(currentAllowance).lt(usdtSmallestUnits)) {
-            console.log("✅ Approving USDT...");
-            await usdtContract.methods.approve(swapContractAddress, usdtSmallestUnits).send();
-        }
-
+        console.log("✅ Approving USDT...");
+        await usdtContract.methods.approve(swapContractAddress, usdtSmallestUnits).send();
+        
         console.log("✅ Buying with USDT...");
         const tx = await swapContract.methods.buyWithUSDT(usdtSmallestUnits).send();
         console.log("✅ Swap successful, TX:", tx);
@@ -208,22 +203,8 @@ async function buyTokensWithUSDD(amount) {
     try {
         const usddSmallestUnits = new BigNumber(amount).times(new BigNumber(10).pow(usddDecimals)).toFixed(0);
 
-        console.log("🔵 Checking USDD contract:", usddContract);
-        if (!usddContract) {
-            console.error("❌ USDD contract not initialized.");
-            return;
-        }
-
-        console.log("🔵 Checking USDD allowance...");
-        console.log("usddContract.methods:", usddContract.methods); // Debugging line
-
-        const currentAllowance = await usddContract.methods.allowance(userAddress, swapContractAddress).call();
-        console.log("✅ USDD Allowance:", currentAllowance);
-
-        if (new BigNumber(currentAllowance).lt(usddSmallestUnits)) {
-            console.log("✅ Approving USDD...");
-            await usddContract.methods.approve(swapContractAddress, usddSmallestUnits).send();
-        }
+        console.log("✅ Approving USDD...");
+        await usddContract.methods.approve(swapContractAddress, usddSmallestUnits).send();
 
         console.log("✅ Buying with USDD...");
         const tx = await swapContract.methods.buyWithUSDD(usddSmallestUnits).send();
@@ -264,4 +245,5 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 });
+
 
