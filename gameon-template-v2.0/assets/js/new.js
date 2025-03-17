@@ -922,15 +922,22 @@ async function updateAPR(token) {
 
 
 // Update claimable rewards
+// Update claimable rewards with token name
 async function updateClaimableRewards(token) {
     try {
         const claimableRewardsRaw = await stakingContracts[token].methods.viewPendingReward(userAddress).call();
         const claimableRewards = claimableRewardsRaw / Math.pow(10, tokenDetails[token].decimals);
-        document.getElementById(`claimable-rewards-${token}`).innerText = claimableRewards.toFixed(2);
+
+        // Get the token name dynamically
+        const tokenName = token.toUpperCase(); // Assuming token keys match the expected token name format
+
+        // Update the HTML element with formatted text
+        document.getElementById(`claimable-rewards-${token}`).innerText = claimableRewards.toFixed(2) + " " + tokenName;
     } catch (error) {
         console.error(`Error updating claimable rewards for ${token}:`, error);
     }
 }
+
 
 // Update total claimed rewards
 async function updateTotalClaimedRewards(token) {
