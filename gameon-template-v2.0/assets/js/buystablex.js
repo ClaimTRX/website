@@ -182,16 +182,31 @@ async function initializeTronWeb() {
 // Buy StableX with USDT
 async function buyTokensWithUSDT(amount) {
     try {
+        const usdtBalanceRaw = await usdtContract.methods.balanceOf(userAddress).call();
+        const usdtBalance = new BigNumber(usdtBalanceRaw).div(new BigNumber(10).pow(usdtDecimals)).toNumber();
         const usdtSmallestUnits = new BigNumber(amount).times(new BigNumber(10).pow(usdtDecimals)).toFixed(0);
 
-        console.log("✅ Approving USDT...");
-        await usdtContract.methods.approve(swapContractAddress, usdtSmallestUnits).send();
-        
-        console.log("✅ Buying with USDT...");
-        const tx = await swapContract.methods.buyWithUSDT(usdtSmallestUnits).send();
-        console.log("✅ Swap successful, TX:", tx);
+        if (usdtBalance < amount) {
+            alert("❌ Insufficient USDT balance.");
+            return;
+        }
 
-        alert("✅ Purchase successful!");
+        const trxBalance = await tronWeb.trx.getBalance(userAddress) / 1e6;
+        if (trxBalance < 1) {
+            alert("❌ Insufficient TRX for transaction fees.");
+            return;
+        }
+
+        console.log("✅ Approving USDT...");
+        const approvalTx = await usdtContract.methods.approve(swapContractAddress, usdtSmallestUnits).send();
+        console.log("✅ Approval successful, TX:", approvalTx);
+
+        console.log("✅ Buying with USDT...");
+        const swapTx = await swapContract.methods.buyWithUSDT(usdtSmallestUnits).send();
+        console.log("✅ Swap successful, TX:", swapTx);
+
+        await updateUI();
+        setTimeout(() => location.reload(), 2000);
     } catch (error) {
         console.error("❌ Error buying tokens with USDT:", error);
         alert("❌ Swap failed. Check console for details.");
@@ -201,21 +216,37 @@ async function buyTokensWithUSDT(amount) {
 // Buy StableX with USDD
 async function buyTokensWithUSDD(amount) {
     try {
+        const usddBalanceRaw = await usddContract.methods.balanceOf(userAddress).call();
+        const usddBalance = new BigNumber(usddBalanceRaw).div(new BigNumber(10).pow(usddDecimals)).toNumber();
         const usddSmallestUnits = new BigNumber(amount).times(new BigNumber(10).pow(usddDecimals)).toFixed(0);
 
+        if (usddBalance < amount) {
+            alert("❌ Insufficient USDD balance.");
+            return;
+        }
+
+        const trxBalance = await tronWeb.trx.getBalance(userAddress) / 1e6;
+        if (trxBalance < 1) {
+            alert("❌ Insufficient TRX for transaction fees.");
+            return;
+        }
+
         console.log("✅ Approving USDD...");
-        await usddContract.methods.approve(swapContractAddress, usddSmallestUnits).send();
+        const approvalTx = await usddContract.methods.approve(swapContractAddress, usddSmallestUnits).send();
+        console.log("✅ Approval successful, TX:", approvalTx);
 
         console.log("✅ Buying with USDD...");
-        const tx = await swapContract.methods.buyWithUSDD(usddSmallestUnits).send();
-        console.log("✅ Swap successful, TX:", tx);
+        const swapTx = await swapContract.methods.buyWithUSDD(usddSmallestUnits).send();
+        console.log("✅ Swap successful, TX:", swapTx);
 
-        alert("✅ Purchase successful!");
+        await updateUI();
+        setTimeout(() => location.reload(), 2000);
     } catch (error) {
         console.error("❌ Error buying tokens with USDD:", error);
         alert("❌ Swap failed. Check console for details.");
     }
 }
+
 
 // Calculate expected StableX tokens for USDT input
 function calculateTKNXUSDT() {
