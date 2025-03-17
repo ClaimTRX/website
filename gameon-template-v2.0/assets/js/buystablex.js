@@ -161,17 +161,28 @@ const tokenContractAddress = 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS'; // STBLX toke
     }
 
     async function updateAvailableTokens() {
-      try {
+    try {
         if (!userAddress) return;
-        const tokenContract = await tronWeb.contract(trc20Abi, tokenContractAddress);
-        const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
-        const decimals = await tokenContract.methods.decimals().call();
-        const balance = new BigNumber(balanceRaw).div(new BigNumber(10).pow(decimals)).toNumber();
-        document.getElementById('available-tokens-token1').innerText = formatNumber(balance) + " STBLX";
-      } catch (error) {
-        console.error("Error fetching available tokens:", error);
-      }
+
+        const tokenBalanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
+        const usdtBalanceRaw = await usdtContract.methods.balanceOf(userAddress).call();
+        const usddBalanceRaw = await usddContract.methods.balanceOf(userAddress).call();
+
+        const tokenDecimals = await tokenContract.methods.decimals().call();
+        const usdtDecimals = await usdtContract.methods.decimals().call();
+        const usddDecimals = await usddContract.methods.decimals().call();
+
+        const tokenBalance = new BigNumber(tokenBalanceRaw).div(new BigNumber(10).pow(tokenDecimals)).toNumber();
+        const usdtBalance = new BigNumber(usdtBalanceRaw).div(new BigNumber(10).pow(usdtDecimals)).toNumber();
+        const usddBalance = new BigNumber(usddBalanceRaw).div(new BigNumber(10).pow(usddDecimals)).toNumber();
+
+        document.getElementById('available-tokens-token1').innerText = formatNumber(tokenBalance) + " STBLX";
+        document.getElementById('available-usdt').innerText = formatNumber(usdtBalance) + " USDT";
+        document.getElementById('available-usdd').innerText = formatNumber(usddBalance) + " USDD";
+    } catch (error) {
+        console.error("Error fetching balances:", error);
     }
+}
 
     // Updated buy functions with BigNumber.js and balance checks
     async function buyTokensWithUSDT(amount) {
