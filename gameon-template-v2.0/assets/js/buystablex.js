@@ -210,16 +210,19 @@ async function buyTokensWithUSDD(amount) {
 
 // Calculate expected StableX tokens for USDT input
 function calculateTKNXUSDT() {
-    const amount = document.getElementById("usdt-amount").value;
-    document.getElementById("calculated-tknx-usdt").innerText =
-        "STBLX tokens you will get: " + formatNumber(amount || 0) + " STBLX";
+    const amount = document.getElementById("usdt-amount")?.value || 0;
+    const outputElement = document.getElementById("calculated-tknx-usdt");
+    if (outputElement) {
+        outputElement.innerText = `STBLX tokens you will get: ${formatNumber(amount)}`;
+    }
 }
 
-// Calculate expected StableX tokens for USDD input
 function calculateTKNXUSDD() {
-    const amount = document.getElementById("usdd-amount").value;
-    document.getElementById("calculated-tknx-usdd").innerText =
-        "STBLX tokens you will get: " + formatNumber(amount || 0) + " STBLX";
+    const amount = document.getElementById("usdd-amount")?.value || 0;
+    const outputElement = document.getElementById("calculated-tknx-usdd");
+    if (outputElement) {
+        outputElement.innerText = `STBLX tokens you will get: ${formatNumber(amount)}`;
+    }
 }
 
 // Format numbers with commas & decimals
