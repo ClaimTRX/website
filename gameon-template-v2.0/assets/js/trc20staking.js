@@ -15,19 +15,19 @@ const tokenDetails = {
         tokenAddress: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
         stakingAddress: 'TFVU3oMF8HTnLPds4emfk7JNhVfF2mUHYT',
         decimals: 6,
-        displayName: 'KING'  // Override name for display
+        displayName: 'CFT'  // Override name for display
     },
   fym: {
         tokenAddress: 'TCTvRkt5kVndeGKWJmMUxEc2rovdrGNoK3',
         stakingAddress: 'TQBcpWPi53FzuTtqVvT1uLd18N1P7X3UL2',
         decimals: 6,
-      displayName: 'FYM'  // Override name for display
+      displayName: 'CFT'  // Override name for display
     },
   hos: {
         tokenAddress: 'TDQKZTG7oj6UsYjSdxNS5QAuMGMat2XLEB',
         stakingAddress: 'TXrR6vcxhVmw53CDXqqEqjD2NWepQk6RYP',
         decimals: 6,
-      displayName: 'HOS'  // Override name for display
+      displayName: 'CFT'  // Override name for display
     }
 };
 
