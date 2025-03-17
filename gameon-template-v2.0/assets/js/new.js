@@ -8,15 +8,15 @@ const tokenDetails = {
     stablex: {
         tokenAddress: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
         stakingAddress: 'TRVn2h65VrbGb7zkASz3escJiHJWMSy7pV',
-        decimals: null
-        displayName: 'StableX' // Adding display name
+        decimals: null,
+        displayName: 'StableX' // ← Added missing comma here
     },
     cft: {
         tokenAddress: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
         stakingAddress: 'TUvHH8QtyXvMubLJRgKBdwfG7Y2TRLGSE6',
         decimals: 6,
-        price: 0.27
-        displayName: 'StableX' // Adding display name
+        price: 0.27,
+        displayName: 'CFT' // ← Added missing comma here
     }
 };
 
