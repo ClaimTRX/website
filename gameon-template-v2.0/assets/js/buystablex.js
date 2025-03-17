@@ -114,16 +114,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         await buyTokensWithUSDT(amount);
     });
 
-    document.getElementById("usdd-amount")?.addEventListener("input", calculateTKNXUSDD);
     document.getElementById("buy-usdd-button")?.addEventListener("click", async () => {
-        const amount = parseFloat(document.getElementById("usdd-amount").value);
-        if (isNaN(amount) || amount <= 0) {
-            alert("❌ Please enter a valid positive USDD amount.");
-            return;
-        }
-        await buyTokensWithUSDD(amount);
-    });
+    console.log("✅ Buy with USDD button clicked");
+    const amountStr = document.getElementById("usdd-amount").value;
+    const amount = parseFloat(amountStr);
+    if (isNaN(amount) || amount <= 0) {
+        alert("❌ Please enter a valid positive USDD amount.");
+        return;
+    }
+    await buyTokensWithUSDD(amount);
 });
+
 
 // Check if TronLink is installed
 async function checkTronLinkInstalled() {
