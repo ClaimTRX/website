@@ -630,7 +630,7 @@ async function updateTRXBalance() {
     try {
         const trxBalance = await tronWeb.trx.getBalance(userAddress);
         const formattedBalance = formatNumber(tronWeb.fromSun(trxBalance), 0); // No decimals
-        document.querySelectorAll("#available-trx").forEach(el => el.innerText = `${formattedBalance} TRX`);
+        document.querySelectorAll("#available-trx").forEach(el => el.innerText = `${formattedBalance} `);
     } catch (error) {
         console.error("Error fetching TRX balance:", error);
     }
@@ -641,7 +641,7 @@ async function updateAvailableCFT() {
     try {
         const tokenBalance = await tokenContract.methods.balanceOf(swapContractAddress).call();
         const formattedBalance = formatNumber(tronWeb.fromSun(tokenBalance), 0); // No decimals
-        document.querySelectorAll("#available-cft").forEach(el => el.innerText = `${formattedBalance} CFT Available`);
+        document.querySelectorAll("#available-cft").forEach(el => el.innerText = `${formattedBalance} `);
     } catch (error) {
         console.error("Error fetching available CFT:", error);
     }
