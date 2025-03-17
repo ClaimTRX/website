@@ -86,6 +86,8 @@ const usddDecimals = 18;
 
 let tronWeb, userAddress, tokenContract, swapContract, usdtContract, usddContract;
 
+
+
 // Wait for DOM to load
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("🚀 DOM Loaded");
@@ -101,7 +103,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.error("❌ TronLink is not installed.");
     }
 
-    // Event listeners for inputs & buy buttons
+    // Attach event listeners to input fields & buy buttons
     document.getElementById("usdt-amount")?.addEventListener("input", calculateTKNXUSDT);
     document.getElementById("buy-usdt-button")?.addEventListener("click", async () => {
         const amount = parseFloat(document.getElementById("usdt-amount").value);
@@ -177,8 +179,14 @@ async function buyTokensWithUSDT(amount) {
     try {
         const usdtSmallestUnits = new BigNumber(amount).times(new BigNumber(10).pow(usdtDecimals)).toFixed(0);
 
-        console.log("✅ Approving USDT...");
-        await usdtContract.methods.approve(swapContractAddress, usdtSmallestUnits).send();
+        // Check if user has enough approved USDT
+        const currentAllowance = await usdtContract.methods.allowance(userAddress, swapContractAddress).call();
+        if (new BigNumber(currentAllowance).lt(usdtSmallestUnits)) {
+            console.log("✅ Approving USDT...");
+            await usdtContract.methods.approve(swapContractAddress, usdtSmallestUnits).send();
+        } else {
+            console.log("✅ USDT approval sufficient, skipping approval.");
+        }
 
         console.log("✅ Buying with USDT...");
         await swapContract.methods.buyWithUSDT(usdtSmallestUnits).send();
@@ -195,8 +203,14 @@ async function buyTokensWithUSDD(amount) {
     try {
         const usddSmallestUnits = new BigNumber(amount).times(new BigNumber(10).pow(usddDecimals)).toFixed(0);
 
-        console.log("✅ Approving USDD...");
-        await usddContract.methods.approve(swapContractAddress, usddSmallestUnits).send();
+        // Check if user has enough approved USDD
+        const currentAllowance = await usddContract.methods.allowance(userAddress, swapContractAddress).call();
+        if (new BigNumber(currentAllowance).lt(usddSmallestUnits)) {
+            console.log("✅ Approving USDD...");
+            await usddContract.methods.approve(swapContractAddress, usddSmallestUnits).send();
+        } else {
+            console.log("✅ USDD approval sufficient, skipping approval.");
+        }
 
         console.log("✅ Buying with USDD...");
         await swapContract.methods.buyWithUSDD(usddSmallestUnits).send();
@@ -217,6 +231,7 @@ function calculateTKNXUSDT() {
     }
 }
 
+// Calculate expected StableX tokens for USDD input
 function calculateTKNXUSDD() {
     const amount = document.getElementById("usdd-amount")?.value || 0;
     const outputElement = document.getElementById("calculated-tknx-usdd");
@@ -230,3 +245,14 @@ function formatNumber(num) {
     return parseFloat(num).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// Mobile menu toggle
+document.addEventListener("DOMContentLoaded", function () {
+    const menuToggle = document.querySelector(".menu-toggle");
+    const sidebar = document.querySelector(".sidebar");
+
+    if (menuToggle && sidebar) {
+        menuToggle.addEventListener("click", function () {
+            sidebar.classList.toggle("active");
+        });
+    }
+});
