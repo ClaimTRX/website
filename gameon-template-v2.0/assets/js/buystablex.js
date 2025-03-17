@@ -1,9 +1,3 @@
-const tokenContractAddress = 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS'; // STBLX token address
-    const swapContractAddress = 'TUGprGUNtszQgc3pGwMcC9R3z3sDT31G9W'; // Deployed swap contract address
-    const usdtContractAddress = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // TRON USDT address
-    const usddContractAddress = 'TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz'; // TRON USDD address
-    const usdtDecimals = 6;
-    const usddDecimals = 18;
 
     const contractAbi = [
       {"inputs":[{"internalType":"contract ITRC20","name":"_token","type":"address"},{"internalType":"contract ITRC20","name":"_usdt","type":"address"},{"internalType":"contract ITRC20","name":"_usdd","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
@@ -79,205 +73,193 @@ const tokenContractAddress = 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS'; // STBLX toke
       {"inputs": [{"internalType": "address", "name": "newOwner", "type": "address"}], "name": "transferOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function"}
     ];
 
-    document.addEventListener('DOMContentLoaded', async () => {
-      document.getElementById('connect-button').addEventListener('click', connectWallet);
+   // Import BigNumber.js if needed
+if (typeof BigNumber === "undefined") {
+    console.error("BigNumber.js is not loaded. Please check your script imports.");
+}
 
-      if (await checkTronLinkInstalled()) {
+const tokenContractAddress = 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS'; // STBLX token
+const swapContractAddress = 'TUGprGUNtszQgc3pGwMcC9R3z3sDT31G9W'; // Swap contract
+const usdtContractAddress = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // TRC20 USDT
+const usddContractAddress = 'TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz'; // TRC20 USDD
+
+const usdtDecimals = 6;
+const usddDecimals = 18;
+
+let tronWeb, userAddress, tokenContract, usdtContract, usddContract, swapContract;
+
+document.addEventListener("DOMContentLoaded", async () => {
+    console.log("DOM Loaded");
+
+    const connectButton = document.getElementById("connect-button");
+    if (connectButton) {
+        connectButton.addEventListener("click", connectWallet);
+    }
+
+    if (await checkTronLinkInstalled()) {
         await initializeTronWeb();
         await updateUI();
-      } else {
-        console.error('TronLink is not installed.');
-      }
+    } else {
+        console.error("TronLink is not installed.");
+    }
 
-      // Event listeners for buying tokens with improved validation
-      document.getElementById('usdt-amount').addEventListener('input', calculateTKNXUSDT);
-      document.getElementById('buy-usdt-button').addEventListener('click', async () => {
-        const amountStr = document.getElementById('usdt-amount').value;
-        const amount = parseFloat(amountStr);
-        if (isNaN(amount) || amount <= 0) {
-          alert('Please enter a valid positive USDT amount.');
-          return;
-        }
-        await buyTokensWithUSDT(amount);
-      });
+    // Input validations and event listeners
+    const usdtAmountInput = document.getElementById("usdt-amount");
+    const buyUsdtButton = document.getElementById("buy-usdt-button");
+    const usddAmountInput = document.getElementById("usdd-amount");
+    const buyUsddButton = document.getElementById("buy-usdd-button");
 
-      document.getElementById('usdd-amount').addEventListener('input', calculateTKNXUSDD);
-      document.getElementById('buy-usdd-button').addEventListener('click', async () => {
-        const amountStr = document.getElementById('usdd-amount').value;
-        const amount = parseFloat(amountStr);
-        if (isNaN(amount) || amount <= 0) {
-          alert('Please enter a valid positive USDD amount.');
-          return;
-        }
-        await buyTokensWithUSDD(amount);
-      });
-    });
+    if (usdtAmountInput) usdtAmountInput.addEventListener("input", calculateTKNXUSDT);
+    if (buyUsdtButton) {
+        buyUsdtButton.addEventListener("click", async () => {
+            const amount = parseFloat(usdtAmountInput.value);
+            if (isNaN(amount) || amount <= 0) {
+                alert("Please enter a valid positive USDT amount.");
+                return;
+            }
+            await buyTokensWithUSDT(amount);
+        });
+    }
 
-    async function checkTronLinkInstalled() {
-      return new Promise((resolve) => {
+    if (usddAmountInput) usddAmountInput.addEventListener("input", calculateTKNXUSDD);
+    if (buyUsddButton) {
+        buyUsddButton.addEventListener("click", async () => {
+            const amount = parseFloat(usddAmountInput.value);
+            if (isNaN(amount) || amount <= 0) {
+                alert("Please enter a valid positive USDD amount.");
+                return;
+            }
+            await buyTokensWithUSDD(amount);
+        });
+    }
+});
+
+async function checkTronLinkInstalled() {
+    return new Promise((resolve) => {
         const interval = setInterval(() => {
-          if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
-            clearInterval(interval);
-            resolve(true);
-          }
+            if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+                clearInterval(interval);
+                resolve(true);
+            }
         }, 1000);
-      });
+    });
+}
+
+async function connectWallet() {
+    if (!window.tronWeb || !window.tronWeb.defaultAddress.base58) {
+        alert("TronLink is not installed or not logged in. Please install TronLink and log in.");
+        return;
     }
 
-    async function connectWallet() {
-      try {
-        await tronLink.request({ method: 'tron_requestAccounts' });
+    try {
+        await tronLink.request({ method: "tron_requestAccounts" });
         await initializeTronWeb();
-      } catch (e) {
-        console.error('Failed to connect to TronLink:', e);
-      }
+    } catch (e) {
+        console.error("Failed to connect to TronLink:", e);
+        alert("Failed to connect to TronLink. Please try again.");
     }
+}
 
-    async function initializeTronWeb() {
-      try {
+async function initializeTronWeb() {
+    try {
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58;
-        if (!userAddress) throw new Error('User address not available');
+        if (!userAddress) throw new Error("User address not available");
 
-        await new Promise(res => setTimeout(res, 1000));
-        tokenContract = await tronWeb.contract(trc20Abi, tokenContractAddress);
-        usdtContract = await tronWeb.contract(trc20Abi, usdtContractAddress);
-        usddContract = await tronWeb.contract(trc20Abi, usddContractAddress);
-        swapContract = await tronWeb.contract(contractAbi, swapContractAddress);
+        tokenContract = await tronWeb.contract().at(tokenContractAddress);
+        usdtContract = await tronWeb.contract().at(usdtContractAddress);
+        usddContract = await tronWeb.contract().at(usddContractAddress);
+        swapContract = await tronWeb.contract().at(swapContractAddress);
 
-        document.getElementById('connect-button').style.display = 'none';
+        document.getElementById("connect-button").style.display = "none";
         await updateUI();
-      } catch (error) {
-        console.error('Error initializing TronWeb or Contracts:', error);
-      }
+    } catch (error) {
+        console.error("Error initializing TronWeb or Contracts:", error);
     }
+}
 
-    async function updateUI() {
-      try {
+async function updateUI() {
+    try {
         await updateAvailableTokens();
-      } catch (error) {
+    } catch (error) {
         console.error("Error updating UI:", error);
-      }
     }
+}
 
-    async function updateAvailableTokens() {
+async function updateAvailableTokens() {
     try {
         if (!userAddress) return;
 
-        const tokenBalanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
-        const usdtBalanceRaw = await usdtContract.methods.balanceOf(userAddress).call();
-        const usddBalanceRaw = await usddContract.methods.balanceOf(userAddress).call();
+        const tokenBalanceRaw = await tokenContract.balanceOf(userAddress).call();
+        const usdtBalanceRaw = await usdtContract.balanceOf(userAddress).call();
+        const usddBalanceRaw = await usddContract.balanceOf(userAddress).call();
 
-        const tokenDecimals = await tokenContract.methods.decimals().call();
-        const usdtDecimals = await usdtContract.methods.decimals().call();
-        const usddDecimals = await usddContract.methods.decimals().call();
-
-        const tokenBalance = new BigNumber(tokenBalanceRaw).div(new BigNumber(10).pow(tokenDecimals)).toNumber();
+        const tokenBalance = new BigNumber(tokenBalanceRaw).div(new BigNumber(10).pow(usdtDecimals)).toNumber();
         const usdtBalance = new BigNumber(usdtBalanceRaw).div(new BigNumber(10).pow(usdtDecimals)).toNumber();
         const usddBalance = new BigNumber(usddBalanceRaw).div(new BigNumber(10).pow(usddDecimals)).toNumber();
 
-        document.getElementById('available-tokens-token1').innerText = formatNumber(tokenBalance) + " STBLX";
-        document.getElementById('available-usdt').innerText = formatNumber(usdtBalance) + " USDT";
-        document.getElementById('available-usdd').innerText = formatNumber(usddBalance) + " USDD";
+        document.getElementById("available-stablex").innerText = formatNumber(tokenBalance) + " STBLX";
+        document.getElementById("available-usdt").innerText = formatNumber(usdtBalance) + " USDT";
+        document.getElementById("available-usdd").innerText = formatNumber(usddBalance) + " USDD";
     } catch (error) {
         console.error("Error fetching balances:", error);
     }
 }
 
-    // Updated buy functions with BigNumber.js and balance checks
-    async function buyTokensWithUSDT(amount) {
-      try {
+async function buyTokensWithUSDT(amount) {
+    try {
         const usdtBalanceRaw = await usdtContract.balanceOf(userAddress).call();
         const usdtBalance = new BigNumber(usdtBalanceRaw).div(new BigNumber(10).pow(usdtDecimals)).toNumber();
         const usdtSmallestUnits = new BigNumber(amount).times(new BigNumber(10).pow(usdtDecimals)).toFixed(0);
 
         if (usdtBalance < amount) {
-          alert('Insufficient USDT balance.');
-          return;
+            alert("Insufficient USDT balance.");
+            return;
         }
 
-        const trxBalance = await tronWeb.trx.getBalance(userAddress) / 1e6;
-        if (trxBalance < 1) {
-          alert('Insufficient TRX for transaction fees.');
-          return;
-        }
-
-        console.log('Approving USDT:', { amount, usdtSmallestUnits });
-        const approvalTx = await usdtContract.approve(swapContractAddress, usdtSmallestUnits).send({ from: userAddress });
-        console.log('Approval successful, tx hash:', approvalTx);
-
-        console.log('Buying with USDT:', usdtSmallestUnits);
-        const swapTx = await swapContract.buyWithUSDT(usdtSmallestUnits).send({ from: userAddress });
-        console.log('Swap successful, tx hash:', swapTx);
+        await usdtContract.approve(swapContractAddress, usdtSmallestUnits).send();
+        await swapContract.buyWithUSDT(usdtSmallestUnits).send();
 
         await updateUI();
-        setTimeout(() => location.reload(), 2000);
-      } catch (error) {
-        console.error('Error buying tokens with USDT:', error);
-        alert('Swap failed. Check console for details.');
-      }
+    } catch (error) {
+        console.error("Error buying tokens with USDT:", error);
+        alert("Swap failed. Check console for details.");
     }
+}
 
-    async function buyTokensWithUSDD(amount) {
-      try {
+async function buyTokensWithUSDD(amount) {
+    try {
         const usddBalanceRaw = await usddContract.balanceOf(userAddress).call();
         const usddBalance = new BigNumber(usddBalanceRaw).div(new BigNumber(10).pow(usddDecimals)).toNumber();
         const usddSmallestUnits = new BigNumber(amount).times(new BigNumber(10).pow(usddDecimals)).toFixed(0);
 
         if (usddBalance < amount) {
-          alert('Insufficient USDD balance.');
-          return;
+            alert("Insufficient USDD balance.");
+            return;
         }
 
-        const trxBalance = await tronWeb.trx.getBalance(userAddress) / 1e6;
-        if (trxBalance < 1) {
-          alert('Insufficient TRX for transaction fees.');
-          return;
-        }
-
-        console.log('Approving USDD:', { amount, usddSmallestUnits });
-        const approvalTx = await usddContract.approve(swapContractAddress, usddSmallestUnits).send({ from: userAddress });
-        console.log('Approval successful, tx hash:', approvalTx);
-
-        console.log('Buying with USDD:', usddSmallestUnits);
-        const swapTx = await swapContract.buyWithUSDD(usddSmallestUnits).send({ from: userAddress });
-        console.log('Swap successful, tx hash:', swapTx);
+        await usddContract.approve(swapContractAddress, usddSmallestUnits).send();
+        await swapContract.buyWithUSDD(usddSmallestUnits).send();
 
         await updateUI();
-        setTimeout(() => location.reload(), 2000);
-      } catch (error) {
-        console.error('Error buying tokens with USDD:', error);
-        alert('Swap failed. Check console for details.');
-      }
+    } catch (error) {
+        console.error("Error buying tokens with USDD:", error);
+        alert("Swap failed. Check console for details.");
     }
+}
 
-    function calculateTKNXUSDT() {
-      const amount = document.getElementById('usdt-amount').value;
-      if (!amount || amount <= 0) {
-        document.getElementById('calculated-tknx-usdt').innerText = 'STBLX tokens you will get: 0 STBLX';
-        return;
-      }
-      document.getElementById('calculated-tknx-usdt').innerText = 'STBLX tokens you will get: ' + formatNumber(amount) + ' STBLX';
-    }
+function calculateTKNXUSDT() {
+    const amount = document.getElementById("usdt-amount").value;
+    document.getElementById("calculated-tknx-usdt").innerText = 
+        "STBLX tokens you will get: " + formatNumber(amount || 0) + " STBLX";
+}
 
-    function calculateTKNXUSDD() {
-      const amount = document.getElementById('usdd-amount').value;
-      if (!amount || amount <= 0) {
-        document.getElementById('calculated-tknx-usdd').innerText = 'STBLX tokens you will get: 0 STBLX';
-        return;
-      }
-      document.getElementById('calculated-tknx-usdd').innerText = 'STBLX tokens you will get: ' + formatNumber(amount) + ' STBLX';
-    }
+function calculateTKNXUSDD() {
+    const amount = document.getElementById("usdd-amount").value;
+    document.getElementById("calculated-tknx-usdd").innerText = 
+        "STBLX tokens you will get: " + formatNumber(amount || 0) + " STBLX";
+}
 
-    function formatNumber(num) {
-      return parseFloat(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-    const menuToggle = document.querySelector(".menu-toggle");
-    const sidebar = document.querySelector(".sidebar");
-
-    menuToggle.addEventListener("click", function () {
-        sidebar.classList.toggle("active");
-    });
-});
+function formatNumber(num) {
+    return parseFloat(num).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
