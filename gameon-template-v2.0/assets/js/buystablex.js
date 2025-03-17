@@ -1,3 +1,10 @@
+const tokenContractAddress = 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS'; // STBLX token
+const swapContractAddress = 'TUGprGUNtszQgc3pGwMcC9R3z3sDT31G9W'; // Swap contract
+const usdtContractAddress = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // TRC20 USDT
+const usddContractAddress = 'TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz'; // TRC20 USDD
+
+const usdtDecimals = 6;
+const usddDecimals = 18;
 
     const contractAbi = [
       {"inputs":[{"internalType":"contract ITRC20","name":"_token","type":"address"},{"internalType":"contract ITRC20","name":"_usdt","type":"address"},{"internalType":"contract ITRC20","name":"_usdd","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
@@ -73,18 +80,7 @@
       {"inputs": [{"internalType": "address", "name": "newOwner", "type": "address"}], "name": "transferOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function"}
     ];
 
-   // Import BigNumber.js if needed
-if (typeof BigNumber === "undefined") {
-    console.error("BigNumber.js is not loaded. Please check your script imports.");
-}
-
-const tokenContractAddress = 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS'; // STBLX token
-const swapContractAddress = 'TUGprGUNtszQgc3pGwMcC9R3z3sDT31G9W'; // Swap contract
-const usdtContractAddress = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // TRC20 USDT
-const usddContractAddress = 'TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz'; // TRC20 USDD
-
-const usdtDecimals = 6;
-const usddDecimals = 18;
+  
 
 let tronWeb, userAddress, tokenContract, usdtContract, usddContract, swapContract;
 
@@ -262,4 +258,9 @@ function calculateTKNXUSDD() {
 
 function formatNumber(num) {
     return parseFloat(num).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+ // Import BigNumber.js if needed
+if (typeof BigNumber === "undefined") {
+    console.error("BigNumber.js is not loaded. Please check your script imports.");
 }
