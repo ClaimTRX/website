@@ -9,21 +9,25 @@ const tokenDetails = {
         tokenAddress: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
         stakingAddress: 'TLQPUiSeCHZ92UcphkesN46XtPN55MkNcm',
         decimals: 8,
+        displayName: 'BBT'  // Override name for display
     },
     king: {
         tokenAddress: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
         stakingAddress: 'TFVU3oMF8HTnLPds4emfk7JNhVfF2mUHYT',
         decimals: 6,
+        displayName: 'KING'  // Override name for display
     },
   fym: {
         tokenAddress: 'TCTvRkt5kVndeGKWJmMUxEc2rovdrGNoK3',
         stakingAddress: 'TQBcpWPi53FzuTtqVvT1uLd18N1P7X3UL2',
         decimals: 6,
+      displayName: 'FYM'  // Override name for display
     },
   hos: {
         tokenAddress: 'TDQKZTG7oj6UsYjSdxNS5QAuMGMat2XLEB',
         stakingAddress: 'TXrR6vcxhVmw53CDXqqEqjD2NWepQk6RYP',
         decimals: 6,
+      displayName: 'HOS'  // Override name for display
     }
 };
 
@@ -920,18 +924,23 @@ async function updateProjectedRewards(token) {
 
 
 // Update claimable rewards
+// Update claimable rewards with token display name
 async function updateClaimableRewards(token) {
     try {
         const claimableRewardsRaw = await stakingContracts[token].methods.viewPendingReward(userAddress).call();
         const claimableRewards = claimableRewardsRaw / Math.pow(10, tokenDetails[token].decimals);
-        document.getElementById(`claimable-rewards-${token}`).innerText = Math.floor(claimableRewards).toLocaleString('en-US');
 
+        // Get the token's display name from tokenDetails
+        const tokenName = tokenDetails[token].displayName || token.toUpperCase();
 
-
+        // Update the HTML element with formatted text including token name
+        document.getElementById(`claimable-rewards-${token}`).innerText = 
+            Math.floor(claimableRewards).toLocaleString('en-US') + " " + tokenName;
     } catch (error) {
         console.error(`Error updating claimable rewards for ${token}:`, error);
     }
 }
+
 
 // Update total claimed rewards
 async function updateTotalClaimedRewards(token) {
