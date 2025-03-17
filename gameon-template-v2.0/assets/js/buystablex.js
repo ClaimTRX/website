@@ -82,14 +82,9 @@ const usddDecimals = 18;
 
   
 
-// Import BigNumber.js if needed
-if (typeof BigNumber === "undefined") {
-    console.error("BigNumber.js is not loaded. Please check your script imports.");
-}
 
 
-
-let tronWeb, userAddress, tokenContract, usdtContract, usddContract, swapContract;
+let tronWeb, userAddress, tokenContract, swapContract, usdtContract, usddContract;
 
 // Wait for DOM to load
 document.addEventListener("DOMContentLoaded", async () => {
@@ -102,7 +97,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (await checkTronLinkInstalled()) {
         await initializeTronWeb();
-        await updateUI();
     } else {
         console.error("❌ TronLink is not installed.");
     }
@@ -173,39 +167,8 @@ async function initializeTronWeb() {
         swapContract = await tronWeb.contract().at(swapContractAddress);
 
         document.getElementById("connect-button").style.display = "none";
-        await updateUI();
     } catch (error) {
         console.error("❌ Error initializing TronWeb or Contracts:", error);
-    }
-}
-
-// Update UI with balances
-async function updateUI() {
-    try {
-        await getUserBalances();
-    } catch (error) {
-        console.error("❌ Error updating UI:", error);
-    }
-}
-
-// Fetch user's USDT & USDD balances from their wallet
-async function getUserBalances() {
-    try {
-        if (!userAddress) return;
-
-        // Fetch balances from TRC20 contracts
-        const usdtBalanceRaw = await usdtContract.methods.balanceOf(userAddress).call();
-        const usddBalanceRaw = await usddContract.methods.balanceOf(userAddress).call();
-
-        // Convert to readable format
-        const usdtBalance = new BigNumber(usdtBalanceRaw).div(new BigNumber(10).pow(usdtDecimals)).toNumber();
-        const usddBalance = new BigNumber(usddBalanceRaw).div(new BigNumber(10).pow(usddDecimals)).toNumber();
-
-        // Update UI
-        document.getElementById("available-usdt").innerText = formatNumber(usdtBalance) + " USDT";
-        document.getElementById("available-usdd").innerText = formatNumber(usddBalance) + " USDD";
-    } catch (error) {
-        console.error("❌ Error fetching balances:", error);
     }
 }
 
@@ -221,7 +184,6 @@ async function buyTokensWithUSDT(amount) {
         await swapContract.methods.buyWithUSDT(usdtSmallestUnits).send();
 
         alert("✅ Purchase successful!");
-        await updateUI();
     } catch (error) {
         console.error("❌ Error buying tokens with USDT:", error);
         alert("❌ Swap failed. Check console for details.");
@@ -240,7 +202,6 @@ async function buyTokensWithUSDD(amount) {
         await swapContract.methods.buyWithUSDD(usddSmallestUnits).send();
 
         alert("✅ Purchase successful!");
-        await updateUI();
     } catch (error) {
         console.error("❌ Error buying tokens with USDD:", error);
         alert("❌ Swap failed. Check console for details.");
@@ -265,3 +226,4 @@ function calculateTKNXUSDD() {
 function formatNumber(num) {
     return parseFloat(num).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
