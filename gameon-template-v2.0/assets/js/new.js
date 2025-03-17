@@ -9,12 +9,14 @@ const tokenDetails = {
         tokenAddress: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
         stakingAddress: 'TRVn2h65VrbGb7zkASz3escJiHJWMSy7pV',
         decimals: null
+        displayName: 'StableX' // Adding display name
     },
     cft: {
         tokenAddress: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
         stakingAddress: 'TUvHH8QtyXvMubLJRgKBdwfG7Y2TRLGSE6',
         decimals: 6,
         price: 0.27
+        displayName: 'StableX' // Adding display name
     }
 };
 
@@ -921,22 +923,22 @@ async function updateAPR(token) {
 }
 
 
-// Update claimable rewards
-// Update claimable rewards with token name
 async function updateClaimableRewards(token) {
     try {
         const claimableRewardsRaw = await stakingContracts[token].methods.viewPendingReward(userAddress).call();
         const claimableRewards = claimableRewardsRaw / Math.pow(10, tokenDetails[token].decimals);
 
-        // Get the token name dynamically
-        const tokenName = token.toUpperCase(); // Assuming token keys match the expected token name format
+        // Get the token's display name, default to uppercase key if not found
+        const tokenName = tokenDetails[token].displayName || token.toUpperCase();
 
-        // Update the HTML element with formatted text
-        document.getElementById(`claimable-rewards-${token}`).innerText = claimableRewards.toFixed(2) + " " + tokenName;
+        // Update the UI with the correct token name
+        document.getElementById(`claimable-rewards-${token}`).innerText =
+            claimableRewards.toFixed(2) + " " + tokenName;
     } catch (error) {
         console.error(`Error updating claimable rewards for ${token}:`, error);
     }
 }
+
 
 
 // Update total claimed rewards
