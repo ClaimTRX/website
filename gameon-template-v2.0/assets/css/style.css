@@ -3023,40 +3023,33 @@ a.page-numbers:hover {
 
 
 
-/* Center the Energy Card */
 #energy-card {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center; 
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    text-align: center;
     width: 100%;
-    padding: 50px 0; /* Increase top & bottom spacing */
+    height: 250px; /* Increase height to allow for proper vertical centering */
 }
 
-/* Style the card */
+/* Ensure the inner card centers everything */
 .energy-card {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 50px; /* Adjusted padding for better spacing */
+    flex-direction: column; /* Stack elements */
+    justify-content: center; /* Center contents vertically */
+    align-items: center; /* Center contents horizontally */
+    padding: 50px;
     border-radius: 12px;
-    background-color: #16182D; /* Dark background for consistency */
+    background-color: #16182D;
+    height: 100%; /* Ensure full height usage */
 }
 
-/* Center and style the heading */
-.energy-card h4 {
-    font-size: 1.7rem; /* Slightly larger for emphasis */
-    font-weight: bold;
-    margin-bottom: 25px; /* More spacing below text */
-    color: white;
-}
-
+/* Center the button */
 #request-energy-button {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 15px 30px; /* Proper padding */
+    padding: 15px 30px;
     font-size: 1.1rem;
     font-weight: 700;
     border-radius: 10px;
@@ -3064,7 +3057,7 @@ a.page-numbers:hover {
     color: white;
     text-transform: uppercase;
     transition: all 0.3s ease-in-out;
-    margin: auto; /* Auto margins for centering */
+    margin: auto; /* This helps with centering */
 }
 
 #access-denied {
