@@ -3052,12 +3052,11 @@ a.page-numbers:hover {
     color: white;
 }
 
-/* Center and style the Energy Button */
 #request-energy-button {
-    display: inline-flex;
+    display: flex;
     justify-content: center;
     align-items: center;
-    padding: 15px 30px; /* Slightly bigger button */
+    padding: 15px 30px; /* Proper padding */
     font-size: 1.1rem;
     font-weight: 700;
     border-radius: 10px;
@@ -3065,7 +3064,7 @@ a.page-numbers:hover {
     color: white;
     text-transform: uppercase;
     transition: all 0.3s ease-in-out;
-    margin-top: 30px; /* Increase spacing between text & button */
+    margin: auto; /* Auto margins for centering */
 }
 
 #access-denied {
