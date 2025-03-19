@@ -262,22 +262,24 @@
     }
 
     // Check FEB token balance and update UI
-    async function checkFebBalance() {
-        try {
-            const balance = await febTokenContract.balanceOf(userAddress).call();
-            if (balance.gt(0)) {
-                document.getElementById('energy-card').style.display = 'block';
-                document.getElementById('access-denied').style.display = 'none';
-                document.getElementById('connect-wallet-message').style.display = 'none';
-            } else {
-                document.getElementById('energy-card').style.display = 'none';
-                document.getElementById('access-denied').style.display = 'block';
-                document.getElementById('connect-wallet-message').style.display = 'none';
-            }
-        } catch (error) {
-            console.error("Error checking FEB balance:", error);
+   async function checkFebBalance() {
+    try {
+        const balance = await febTokenContract.balanceOf(userAddress).call(); // Use send() if confirmed "nonpayable"
+        if (balance.gt(0)) {
+            document.getElementById('energy-card').style.display = 'block';
+            document.getElementById('access-denied').style.display = 'none';
+            document.getElementById('connect-wallet-message').style.display = 'none';
+        } else {
+            document.getElementById('energy-card').style.display = 'none';
+            document.getElementById('access-denied').style.display = 'block';
+            document.getElementById('connect-wallet-message').style.display = 'none';
         }
+    } catch (error) {
+        console.error("Error checking FEB balance:", error);
+        document.getElementById('msg').textContent = "Error checking FEB balance. Please try again later.";
+        setTimeout(() => document.getElementById('msg').textContent = '', 5000); // Clear message after 5 seconds
     }
+}
 
     // Request energy via API
     async function callDelegationEndpoint() {
