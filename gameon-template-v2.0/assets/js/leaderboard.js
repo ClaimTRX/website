@@ -881,14 +881,22 @@ async function fetchAndDisplayStakers(token) {
         let amountsRaw = stakersData[1]; // Staked amounts
 
         let decimals = tokenDetails[token].decimals;
+        let seenWallets = new Set(); // Track unique wallets
 
-        // Convert wallet addresses from HEX to Tron format and store in global stakerList
+        // Convert wallet addresses from HEX to Tron format and remove duplicates
         stakerList = stakers.map((wallet, index) => {
             let tronAddress = tronWeb.address.fromHex(wallet); // Convert HEX to Base58
             return {
                 wallet: tronAddress,
                 amount: Number(amountsRaw[index]) / Math.pow(10, decimals)
             };
+        }).filter(staker => {
+            if (seenWallets.has(staker.wallet)) {
+                return false; // Exclude duplicates
+            } else {
+                seenWallets.add(staker.wallet);
+                return true;
+            }
         });
 
         // Sort by staked amount (descending)
@@ -899,6 +907,7 @@ async function fetchAndDisplayStakers(token) {
         console.error(`Error fetching stakers for ${token}:`, error);
     }
 }
+
 
 function displayStakers(token) {
     let leaderboard = document.getElementById(`stakers-list-${token}`);
