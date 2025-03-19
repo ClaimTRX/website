@@ -1,0 +1,297 @@
+<!doctype html>
+<html class="no-js" lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <title>CFT Ecosystem - Energy for FEB Holders</title>
+    <link rel="icon" href="assets/img/favicon.png">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <style>
+        .energy-area { padding: 50px 0; }
+        .card {
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .card-image {
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        @media (max-width: 767.98px) {
+            .card-body .row { flex-direction: column; }
+            .card-image { max-width: 250px; margin: 0 auto 20px; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Preloader -->
+    <div id="gameon-preloader" class="gameon-preloader">
+        <div class="preloader-animation">
+            <div class="spinner"></div>
+            <p class="fw-5 text-center text-uppercase">Loading</p>
+        </div>
+        <div class="loader-animation">
+            <div class="row h-100">
+                <div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
+                <div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
+                <div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
+                <div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main">
+        <!-- Header -->
+        <header id="header">
+            <nav class="navbar gameon-navbar navbar-expand">
+                <div class="container header">
+                    <a class="navbar-brand" href="index.html">
+                        <img src="assets/img/logo/logo.png" alt="CFT Logo" />
+                    </a>
+                    <ul class="navbar-nav items mx-auto">
+                        <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
+                        <li class="nav-item"><a href="buycft.html" class="nav-link">Buy CFT</a></li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link">CFT VC <i class="icon-arrow-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li class="nav-item"><a href="blog-single.html" class="nav-link">Info</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link">Staking <i class="icon-arrow-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li class="nav-item"><a href="cftstaking.html" class="nav-link">CFT Staking</a></li>
+                                <li class="nav-item"><a href="stablexstaking.html" class="nav-link">StableX Staking</a></li>
+                                <li class="nav-item"><a href="trc20staking.html" class="nav-link">TRC20 Staking</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item"><a href="energy.html" class="nav-link active">Energy</a></li>
+                    </ul>
+                    <ul class="navbar-nav toggle">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
+                                <i class="icon-menu m-0"></i>
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav action">
+                        <li class="nav-item ms-2">
+                            <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
+                                <i class="icon-wallet me-md-2"></i> Wallet Connect
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="container">
+                <div class="row align-items-center justify-content-center">
+                    <div class="col-12 col-md-6 col-lg-9 text-center">
+                        <div class="hero-content">
+                            <div class="intro text-center mb-5">
+                                <span class="intro-text">CFT Ecosystem</span>
+                                <h1 class="mt-4">Energy for FEB Holders</h1>
+                                <p>Request 200,000 energy every 48 hours if you hold FEB tokens.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Energy Area -->
+        <section class="energy-area">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-10">
+                        <div id="connect-wallet-message" style="display: none;">
+                            <h2>Please connect your wallet</h2>
+                            <p>Connect your TronLink wallet to access the energy request feature.</p>
+                        </div>
+                        <div id="access-denied" style="display: none;">
+                            <h2>Sorry, only VIP access</h2>
+                            <p>You need to hold FEB tokens to access this page.</p>
+                        </div>
+                        <div id="energy-card" style="display: none;">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-12 col-md-6">
+                                            <h5 class="card-title">Request Energy</h5>
+                                            <p>FEB holders can request 200,000 energy every 48 hours.</p>
+                                            <p id="msg"></p>
+                                            <button id="request-energy-button" class="btn btn-success">Request Energy</button>
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <img src="https://raw.githubusercontent.com/ClaimTRX/Test/refs/heads/main/67bc2be19828a_download.jpg" class="card-image" alt="Token Image">
+                                            <div class="telegram-link mt-3">
+                                                <a href="https://t.me/cftecosystem" target="_blank">
+                                                    <i class="fab fa-telegram-plane"></i> Join our Telegram
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer-area">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-8 text-center">
+                        <div class="footer-items">
+                            <a class="navbar-brand" href="index.html">
+                                <img src="assets/img/logo/logo.png" alt="">
+                            </a>
+                            <div class="social-icons d-flex justify-content-center my-4">
+                                <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
+                                <a class="reddit" href="https://www.reddit.com/" target="_blank"><i class="fab fa-reddit"></i></a>
+                                <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
+                            </div>
+                            <div class="copyright-area py-4">©2025 CFT Ecosystem, All Rights Reserved</div>
+                        </div>
+                        <div id="scroll-to-top" class="scroll-to-top">
+                            <a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Responsive Menu Modal -->
+        <div id="menu" class="modal fade p-0">
+            <div class="modal-dialog dialog-animated">
+                <div class="modal-content h-100">
+                    <div class="modal-header" data-bs-dismiss="modal">
+                        Menu <i class="far fa-times-circle icon-close"></i>
+                    </div>
+                    <div class="menu modal-body">
+                        <div class="row w-100">
+                            <div class="items p-0 col-12 text-center"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/js/vendor/jquery.min.js"></script>
+    <script src="assets/js/vendor/popper.min.js"></script>
+    <script src="assets/js/vendor/bootstrap.min.js"></script>
+    <script src="assets/js/vendor/all.min.js"></script>
+    <script src="assets/js/vendor/gallery.min.js"></script>
+    <script src="assets/js/vendor/slider.min.js"></script>
+    <script src="assets/js/vendor/countdown.min.js"></script>
+    <script src="assets/js/vendor/shuffle.min.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+
+    <script>
+        const FEB_TOKEN_ADDRESS = "TCQDHRM1jurNXNSJGYzZuAwJk1gLLkRnF9";
+        const FEB_TOKEN_ABI = [{
+            "constant": true,
+            "inputs": [{ "name": "_owner", "type": "address" }],
+            "name": "balanceOf",
+            "outputs": [{ "name": "balance", "type": "uint256" }],
+            "type": "function"
+        }];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const connectButton = document.getElementById('connect-button');
+            connectButton.addEventListener('click', connectWallet);
+
+            if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+                await initializeTronWeb();
+            } else {
+                document.getElementById('connect-wallet-message').style.display = 'block';
+                document.getElementById('access-denied').style.display = 'none';
+                document.getElementById('energy-card').style.display = 'none';
+            }
+        });
+
+        async function connectWallet() {
+            try {
+                await tronLink.request({ method: 'tron_requestAccounts' });
+                await initializeTronWeb();
+            } catch (e) {
+                console.error('Failed to connect to TronLink:', e);
+            }
+        }
+
+        async function initializeTronWeb() {
+            try {
+                const userAddress = window.tronWeb.defaultAddress.base58;
+                if (!userAddress) {
+                    document.getElementById('connect-wallet-message').style.display = 'block';
+                    document.getElementById('access-denied').style.display = 'none';
+                    document.getElementById('energy-card').style.display = 'none';
+                    return;
+                }
+                const febContract = await window.tronWeb.contract(FEB_TOKEN_ABI, FEB_TOKEN_ADDRESS);
+                const balance = await febContract.balanceOf(userAddress).call();
+                if (balance.gt(0)) {
+                    document.getElementById('energy-card').style.display = 'block';
+                    document.getElementById('access-denied').style.display = 'none';
+                    document.getElementById('connect-wallet-message').style.display = 'none';
+                } else {
+                    document.getElementById('energy-card').style.display = 'none';
+                    document.getElementById('access-denied').style.display = 'block';
+                    document.getElementById('connect-wallet-message').style.display = 'none';
+                }
+                document.getElementById('connect-button').style.display = 'none';
+            } catch (error) {
+                console.error('Error initializing TronWeb:', error);
+            }
+        }
+
+        document.getElementById('request-energy-button').addEventListener('click', async () => {
+            await callDelegationEndpoint();
+        });
+
+        async function callDelegationEndpoint() {
+            const url = 'https://0rtix684bi.execute-api.eu-west-1.amazonaws.com/claimfreetrxtwo/claimfreetrxtwo';
+            const payload = {
+                AllocationAddress: window.tronWeb.defaultAddress.base58,
+                IsDelegation: true
+            };
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer abc'
+                    },
+                    body: JSON.stringify(payload),
+                });
+                const data = await response.json();
+                const messageElement = document.getElementById('msg');
+                messageElement.textContent = data.Message;
+                setTimeout(() => messageElement.textContent = '', 5000);
+            } catch (error) {
+                console.error("Network or server error:", error);
+                const messageElement = document.getElementById('msg');
+                messageElement.textContent = `Network or server error: ${error.message}`;
+                setTimeout(() => messageElement.textContent = '', 5000);
+            }
+        }
+    </script>
+</body>
+</html>
