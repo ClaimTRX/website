@@ -22,7 +22,23 @@ async function checkTronLinkInstalled() {
     });
 }
 
-// ✅ Connect Wallet
+// ✅ Auto-Connect Wallet if already authorized
+async function autoConnectWallet() {
+    if (window.tronWeb && window.tronLink) {
+        tronWeb = window.tronWeb;
+        userAddress = tronWeb.defaultAddress.base58;
+
+        if (userAddress && userAddress !== "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb") { 
+            console.log("Auto-connected wallet:", userAddress);
+            updateWalletUI(true);
+            await checkAllowedAddress();
+        } else {
+            console.log("TronLink detected, but wallet is not connected.");
+        }
+    }
+}
+
+// ✅ Connect Wallet (Manual Trigger)
 async function connectWallet() {
     if (!window.tronWeb || !window.tronLink) {
         alert("TronLink not found. Please install TronLink and log in.");
@@ -35,16 +51,23 @@ async function connectWallet() {
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58;
 
-        // Update button UI
-        const connectButton = document.getElementById("connect-button");
-        if (connectButton) {
-            connectButton.innerHTML = `<i class="icon-wallet"></i> Wallet Connected`;
-        }
-
+        updateWalletUI(true);
         console.log("Wallet connected:", userAddress);
         await checkAllowedAddress();
     } catch (e) {
         console.error("Wallet connection failed:", e);
+    }
+}
+
+// ✅ Update Wallet UI
+function updateWalletUI(isConnected) {
+    const connectButton = document.getElementById("connect-button");
+    if (connectButton) {
+        if (isConnected) {
+            connectButton.innerHTML = `<i class="icon-wallet"></i> Wallet Connected`;
+        } else {
+            connectButton.innerHTML = `<i class="icon-wallet"></i> Connect Wallet`;
+        }
     }
 }
 
@@ -99,19 +122,15 @@ async function callDelegationEndpoint() {
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("DOM fully loaded and parsed.");
 
+    // Attempt auto-connect
+    await autoConnectWallet();
+
     // Add event listener for connect button
     const connectButton = document.getElementById("connect-button");
     if (connectButton) {
         connectButton.addEventListener("click", connectWallet);
     } else {
         console.error("Connect button not found.");
-    }
-
-    // Check if TronLink is installed and connect if available
-    if (await checkTronLinkInstalled()) {
-        console.log("TronLink detected!");
-    } else {
-        console.error("TronLink is not installed.");
     }
 
     // Add event listener for energy request button
