@@ -8,65 +8,120 @@
     <link rel="icon" href="assets/img/favicon.png">
     <link rel="stylesheet" href="assets/css/style.css">
 
-    <style>
-        /* Center the Energy Button */
-#request-energy-button {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 auto; /* Centers horizontally */
-}
-
-/* Center the Energy Card */
-#energy-card {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center; 
-    width: 100%;
-}
-
-/* Center the Access Denied Message */
-#access-denied {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    flex-direction: column; /* Stack elements */
-    height: 200px; /* Adjust based on your layout */
-    margin: 0 auto; /* Centers horizontally */
-}
-
-/* Center the Connect Wallet Message */
-#connect-wallet-message {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    flex-direction: column;
-    height: 200px;
-    margin: 0 auto;
-}
-
-
-        .card-image {
-            width: 100%;
-            max-width: 400px;
-            height: auto;
-            border-radius: 10px;
-            margin-bottom: 10px;
-        }
-
-        @media (max-width: 767.98px) {
-            .card-body .row { flex-direction: column; }
-            .card-image { max-width: 250px; margin: 0 auto 20px; }
-        }
-    </style>
+    
 </head>
 
 <body>
+    <!--====== Preloader Area Start ======-->
+	<div id="gameon-preloader" class="gameon-preloader">
+		<!-- Preloader Animation -->
+		<div class="preloader-animation">
+			<!-- Spinner -->
+			<div class="spinner"></div>
+			<p class="fw-5 text-center text-uppercase">Loading</p>
+		</div>
+		<!-- Loader Animation -->
+		<div class="loader-animation">
+			<div class="row h-100">
+				<!-- Single Loader -->
+				<div class="col-3 single-loader p-0">
+					<div class="loader-bg"></div>
+				</div>
+				<!-- Single Loader -->
+				<div class="col-3 single-loader p-0">
+					<div class="loader-bg"></div>
+				</div>
+				<!-- Single Loader -->
+				<div class="col-3 single-loader p-0">
+					<div class="loader-bg"></div>
+				</div>
+				<!-- Single Loader -->
+				<div class="col-3 single-loader p-0">
+					<div class="loader-bg"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!--====== Preloader Area End ======-->
+
+	<div class="main">
+		<!-- ***** Header Start ***** -->
+		<header id="header">
+			<!-- Navbar -->
+			<nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
+				<div class="container header">
+
+					<!-- Logo -->
+					<a class="navbar-brand" href="index.html">
+						<img src="assets/img/logo/logo.png" alt="" />
+					</a>
+
+					<div class="ms-auto"></div>
+
+					<!-- Navbar Nav -->
+					<ul class="navbar-nav items mx-auto">
+						<li class="nav-item">
+							<a href="index.html" class="nav-link">Home</a>
+						</li>
+						<li class="nav-item">
+							<a href="buycft.html" class="nav-link">Buy CFT</a>
+						</li>
+						<li class="nav-item dropdown">
+							<a href="#" class="nav-link">CFT VC <i class="icon-arrow-down"></i></a>
+							<ul class="dropdown-menu">
+								<li class="nav-item">
+									<a href="blog-single.html" class="nav-link">Info</a>
+								</li>
+							</ul>
+						</li>
+						<li class="nav-item dropdown">
+							<a href="#" class="nav-link">Staking <i class="icon-arrow-down"></i></a>
+							<ul class="dropdown-menu">
+								<li class="nav-item">
+									<a href="cftstaking.html" class="nav-link">CFT Staking</a>
+								</li>
+								<li class="nav-item">
+									<a href="stablexstaking.html" class="nav-link">StableX Staking</a>
+								</li>
+								<li class="nav-item active">
+									<a href="trc20staking.html" class="nav-link active">TRC20 Staking</a>
+								</li>
+							</ul>
+						</li>
+						
+					</ul>
+
+					<!-- Navbar Icons -->
+					
+
+					<!-- Navbar Toggler -->
+					<ul class="navbar-nav toggle">
+						<li class="nav-item">
+							<a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
+								<i class="icon-menu m-0"></i>
+							</a>
+						</li>
+					</ul>
+
+					<!-- Navbar Action Button -->
+					<ul class="navbar-nav action">
+						<ul class="navbar-nav action">
+    <li class="nav-item ms-2">
+        <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
+            <i class="icon-wallet me-md-2"></i> Wallet Connect
+        </button>
+    </li>
+</ul>
+
+					</ul>
+
+				</div>
+			</nav>
+		</header>
+		<!-- ***** Header End ***** -->
+        
     <!-- Main Content -->
-    <div class="main">
+   
         <!-- Hero Section -->
         <section class="hero-section">
             <div class="container">
@@ -85,8 +140,8 @@
         </section>
 
        <!-- Energy Area -->
-       <section class="energy-area">
-            <div class="container">
+       <section class="staking-area">
+             <div id="gameon-accordion" class="container accordion">
                 <div class="row justify-content-center">
                     <div class="col-12 col-md-10">
                         <div id="connect-wallet-message" style="display: none;">
