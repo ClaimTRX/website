@@ -3023,14 +3023,14 @@ a.page-numbers:hover {
 
 
 
- /* Center the Energy Card */
+/* Center the Energy Card */
 #energy-card {
     display: flex;
     justify-content: center;
     align-items: center;
     text-align: center; 
     width: 100%;
-    padding: 40px; /* Adds spacing around the card */
+    padding: 50px 0; /* Increase top & bottom spacing */
 }
 
 /* Style the card */
@@ -3039,16 +3039,16 @@ a.page-numbers:hover {
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 40px; /* Adjusted padding for better spacing */
+    padding: 50px; /* Adjusted padding for better spacing */
     border-radius: 12px;
     background-color: #16182D; /* Dark background for consistency */
 }
 
 /* Center and style the heading */
 .energy-card h4 {
-    font-size: 1.5rem;
+    font-size: 1.7rem; /* Slightly larger for emphasis */
     font-weight: bold;
-    margin-bottom: 20px; /* Space below heading */
+    margin-bottom: 25px; /* More spacing below text */
     color: white;
 }
 
@@ -3057,73 +3057,39 @@ a.page-numbers:hover {
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    padding: 12px 24px;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: 8px;
+    padding: 15px 30px; /* Slightly bigger button */
+    font-size: 1.1rem;
+    font-weight: 700;
+    border-radius: 10px;
     background: linear-gradient(90deg, #0047FF 0%, #57048A 100%);
     color: white;
     text-transform: uppercase;
     transition: all 0.3s ease-in-out;
-    margin-top: 20px; /* Add spacing between text and button */
+    margin-top: 30px; /* Increase spacing between text & button */
 }
 
 /* Add hover effect */
 #request-energy-button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 15px rgba(0, 71, 255, 0.3);
-}
-
-/* Center the Access Denied Message */
-#access-denied {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    flex-direction: column;
-    height: 200px;
-    margin: 0 auto;
-}
-
-/* Center the Connect Wallet Message */
-#connect-wallet-message {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    flex-direction: column;
-    height: 200px;
-    margin: 0 auto;
-}
-
-/* Ensure card images are responsive */
-.card-image {
-    width: 100%;
-    max-width: 400px;
-    height: auto;
-    border-radius: 10px;
-    margin-bottom: 10px;
+    transform: scale(1.08);
+    box-shadow: 0 5px 18px rgba(0, 71, 255, 0.35);
 }
 
 /* Mobile adjustments */
 @media (max-width: 767.98px) {
-    .card-body .row {
-        flex-direction: column;
-    }
-
-    .card-image {
-        max-width: 250px;
-        margin: 0 auto 20px;
-    }
-
     .energy-card {
-        padding: 30px; /* Reduce padding for smaller screens */
+        padding: 35px; /* Reduce padding for smaller screens */
+    }
+
+    .energy-card h4 {
+        font-size: 1.4rem; /* Reduce text size for small screens */
+        margin-bottom: 20px;
     }
 
     #request-energy-button {
-        padding: 10px 20px;
-        font-size: 0.9rem;
+        padding: 12px 25px;
+        font-size: 1rem;
     }
 }
+
 
 
