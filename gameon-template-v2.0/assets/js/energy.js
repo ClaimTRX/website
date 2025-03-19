@@ -1,12 +1,12 @@
- const allowedAddresses = [
-            "TR2XJawheHUAcbxgzABVh1toDA59Eb4RbM",
-            "TQLrSGjNtYwtUdttbm4HsXxD6vmbePWni4",
-            "TL71zkkpC59dKmj8CeVf3woiXJuTNGBUfw"
-        ];
+const allowedAddresses = [
+    "TR2XJawheHUAcbxgzABVh1toDA59Eb4RbM",
+    "TQLrSGjNtYwtUdttbm4HsXxD6vmbePWni4",
+    "TL71zkkpC59dKmj8CeVf3woiXJuTNGBUfw"
+];
 
-        let tronWeb, userAddress;
+let tronWeb, userAddress;
 
-       // ✅ Check if TronLink is installed
+// ✅ Check if TronLink is installed
 async function checkTronLinkInstalled() {
     return new Promise((resolve) => {
         const interval = setInterval(() => {
@@ -24,14 +24,24 @@ async function checkTronLinkInstalled() {
 
 // ✅ Connect Wallet
 async function connectWallet() {
-    if (!window.tronWeb) {
+    if (!window.tronWeb || !window.tronLink) {
         alert("TronLink not found. Please install TronLink and log in.");
         return;
     }
     try {
         await window.tronLink.request({ method: "tron_requestAccounts" });
+
+        // Ensure tronWeb is initialized
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58;
+
+        // Update button UI
+        const connectButton = document.getElementById("connect-button");
+        if (connectButton) {
+            connectButton.innerHTML = `<i class="icon-wallet"></i> Wallet Connected`;
+        }
+
+        console.log("Wallet connected:", userAddress);
         await checkAllowedAddress();
     } catch (e) {
         console.error("Wallet connection failed:", e);
@@ -40,51 +50,75 @@ async function connectWallet() {
 
 // ✅ Check Allowed Address
 async function checkAllowedAddress() {
-    const energyCard = document.getElementById('energy-card');
-    const accessDenied = document.getElementById('access-denied');
-    const connectWalletMessage = document.getElementById('connect-wallet-message');
+    const energyCard = document.getElementById("energy-card");
+    const accessDenied = document.getElementById("access-denied");
+    const connectWalletMessage = document.getElementById("connect-wallet-message");
 
     if (!userAddress) return;
 
     if (allowedAddresses.includes(userAddress)) {
-        energyCard.style.display = 'block';
-        accessDenied.style.display = 'none';
-        connectWalletMessage.style.display = 'none';
+        energyCard.style.display = "block";
+        accessDenied.style.display = "none";
+        connectWalletMessage.style.display = "none";
     } else {
-        energyCard.style.display = 'none';
-        accessDenied.style.display = 'block';
-        connectWalletMessage.style.display = 'none';
+        energyCard.style.display = "none";
+        accessDenied.style.display = "block";
+        connectWalletMessage.style.display = "none";
     }
 }
 
 // ✅ Call Delegation Endpoint
 async function callDelegationEndpoint() {
-    const url = 'https://0rtix684bi.execute-api.eu-west-1.amazonaws.com/claimfreetrxtwo/claimfreetrxtwo';
+    if (!userAddress) {
+        alert("Please connect your wallet first.");
+        return;
+    }
+
+    const url = "https://0rtix684bi.execute-api.eu-west-1.amazonaws.com/claimfreetrxtwo/claimfreetrxtwo";
     const payload = { AllocationAddress: userAddress, IsDelegation: true };
 
     try {
         const response = await fetch(url, {
-            method: 'POST',
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer abc'
+                "Content-Type": "application/json",
+                "Authorization": "Bearer abc"
             },
             body: JSON.stringify(payload),
         });
 
         const data = await response.json();
-        document.getElementById('msg').textContent = data.Message;
+        document.getElementById("msg").textContent = data.Message;
     } catch (error) {
         console.error("Network error:", error);
-        document.getElementById('msg').textContent = "Error processing request.";
+        document.getElementById("msg").textContent = "Error processing request.";
     }
 }
 
+// ✅ Ensure event listeners are properly set
+document.addEventListener("DOMContentLoaded", async () => {
+    console.log("DOM fully loaded and parsed.");
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            if (await checkTronLinkInstalled()) {
-                await connectWallet();
-            }
+    // Add event listener for connect button
+    const connectButton = document.getElementById("connect-button");
+    if (connectButton) {
+        connectButton.addEventListener("click", connectWallet);
+    } else {
+        console.error("Connect button not found.");
+    }
 
-            document.getElementById('request-energy-button').addEventListener('click', callDelegationEndpoint);
-        });
+    // Check if TronLink is installed and connect if available
+    if (await checkTronLinkInstalled()) {
+        console.log("TronLink detected!");
+    } else {
+        console.error("TronLink is not installed.");
+    }
+
+    // Add event listener for energy request button
+    const requestEnergyButton = document.getElementById("request-energy-button");
+    if (requestEnergyButton) {
+        requestEnergyButton.addEventListener("click", callDelegationEndpoint);
+    } else {
+        console.error("Request Energy button not found.");
+    }
+});
