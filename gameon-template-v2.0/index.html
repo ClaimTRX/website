@@ -824,27 +824,60 @@
 		<!-- ***** Work Area End ***** -->
 
 		<!-- ***** CTA Area Start ***** -->
-		<section class="cta-area p-0">
-			<div class="container">
-				<div class="row">
-					<div class="col-12 card">
-						<div class="row align-items-center justify-content-center">
-							<div class="col-12 col-md-5 text-center">
-								<img src="assets/img/content/cftlogo300.png" alt="">
-							</div>
-							<div class="col-12 col-md-6 mt-4 mt-md-0">
-								<h2 class="m-0">Apply for project staking</h2>
-								<p>Earn weekly rewards from staked CFT to build your project</p>
-								<p>Soon available for projects on any chain</p>
-								<a class="btn btn-bordered active d-inline-block" ><i class="icon-rocket me-2"></i>Coming Soon</a>
-							</div>
-						</div>
-						<a class="cta-link" href="apply.html"></a>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- ***** CTA Area End ***** -->
+<section class="cta-area p-0">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 card">
+                <div class="row align-items-center justify-content-center">
+                    <div class="col-12 col-md-5 text-center">
+                        <!-- Video Container -->
+                        <video id="ctaVideo" width="100%" autoplay muted loop>
+                            <source src="assets/videos/video1.mp4" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                    <div class="col-12 col-md-6 mt-4 mt-md-0">
+                        <h2 class="m-0">Apply for project staking</h2>
+                        <p>Earn weekly rewards from staked CFT to build your project</p>
+                        <p>Soon available for projects on any chain</p>
+                        <a class="btn btn-bordered active d-inline-block"><i class="icon-rocket me-2"></i>Coming Soon</a>
+                    </div>
+                </div>
+                <a class="cta-link" href="apply.html"></a>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- ***** CTA Area End ***** -->
+
+<script>
+    // Array of video sources
+    const videos = [
+        "assets/video1.mp4",
+       
+    ];
+
+    // Function to pick a random video
+    function getRandomVideo() {
+        return videos[Math.floor(Math.random() * videos.length)];
+    }
+
+    // Get video element
+    const videoElement = document.getElementById("ctaVideo");
+
+    // Set initial random video on page load
+    videoElement.src = getRandomVideo();
+    videoElement.load();
+
+    // Change video every 10 seconds
+    setInterval(() => {
+        videoElement.src = getRandomVideo();
+        videoElement.load();
+        videoElement.play();
+    }, 10000); // 10 seconds
+
+</script>
+
 
 		<!--====== Footer Area Start ======-->
 		<footer class="footer-area">
