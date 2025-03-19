@@ -205,93 +205,128 @@
     <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
 
     <script>
-        const FEB_TOKEN_ADDRESS = "TCQDHRM1jurNXNSJGYzZuAwJk1gLLkRnF9";
-        const FEB_TOKEN_ABI = [{
+    // FEB Token Contract Details
+    const FEB_TOKEN_ADDRESS = "TCQDHRM1jurNXNSJGYzZuAwJk1gLLkRnF9";
+    const FEB_TOKEN_ABI = [
+        {
             "constant": true,
             "inputs": [{ "name": "_owner", "type": "address" }],
             "name": "balanceOf",
             "outputs": [{ "name": "balance", "type": "uint256" }],
             "type": "function"
-        }];
+        }
+    ];
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            const connectButton = document.getElementById('connect-button');
-            connectButton.addEventListener('click', connectWallet);
+    // Global variables
+    let tronWeb, userAddress, febTokenContract;
 
-            if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
-                await initializeTronWeb();
-            } else {
-                document.getElementById('connect-wallet-message').style.display = 'block';
-                document.getElementById('access-denied').style.display = 'none';
-                document.getElementById('energy-card').style.display = 'none';
-            }
+    // Check if TronLink is installed
+    async function checkTronLinkInstalled() {
+        return new Promise((resolve) => {
+            const interval = setInterval(() => {
+                if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+                    clearInterval(interval);
+                    resolve(true);
+                }
+            }, 1000);
         });
+    }
 
-        async function connectWallet() {
-            try {
-                await tronLink.request({ method: 'tron_requestAccounts' });
-                await initializeTronWeb();
-            } catch (e) {
-                console.error('Failed to connect to TronLink:', e);
-            }
+    // Connect to TronLink wallet
+    async function connectWallet() {
+        if (!window.tronWeb) {
+            alert("TronLink not found. Please install TronLink and log in.");
+            return;
         }
 
-        async function initializeTronWeb() {
-            try {
-                const userAddress = window.tronWeb.defaultAddress.base58;
-                if (!userAddress) {
-                    document.getElementById('connect-wallet-message').style.display = 'block';
-                    document.getElementById('access-denied').style.display = 'none';
-                    document.getElementById('energy-card').style.display = 'none';
-                    return;
-                }
-                const febContract = await window.tronWeb.contract(FEB_TOKEN_ABI, FEB_TOKEN_ADDRESS);
-                const balance = await febContract.balanceOf(userAddress).call();
-                if (balance.gt(0)) {
-                    document.getElementById('energy-card').style.display = 'block';
-                    document.getElementById('access-denied').style.display = 'none';
-                    document.getElementById('connect-wallet-message').style.display = 'none';
-                } else {
-                    document.getElementById('energy-card').style.display = 'none';
-                    document.getElementById('access-denied').style.display = 'block';
-                    document.getElementById('connect-wallet-message').style.display = 'none';
-                }
-                document.getElementById('connect-button').style.display = 'none';
-            } catch (error) {
-                console.error('Error initializing TronWeb:', error);
-            }
+        try {
+            await window.tronLink.request({ method: "tron_requestAccounts" });
+            tronWeb = window.tronWeb;
+            userAddress = tronWeb.defaultAddress.base58;
+            document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
+            console.log("Connected to TronLink:", userAddress);
+            await initializeContracts();
+            await checkFebBalance();
+        } catch (e) {
+            console.error("Failed to connect:", e);
         }
+    }
+
+    // Initialize FEB token contract
+    async function initializeContracts() {
+        try {
+            febTokenContract = await tronWeb.contract(FEB_TOKEN_ABI, FEB_TOKEN_ADDRESS);
+        } catch (error) {
+            console.error("Error initializing contracts:", error);
+        }
+    }
+
+    // Check FEB token balance and update UI
+    async function checkFebBalance() {
+        try {
+            const balance = await febTokenContract.balanceOf(userAddress).call();
+            if (balance.gt(0)) {
+                document.getElementById('energy-card').style.display = 'block';
+                document.getElementById('access-denied').style.display = 'none';
+                document.getElementById('connect-wallet-message').style.display = 'none';
+            } else {
+                document.getElementById('energy-card').style.display = 'none';
+                document.getElementById('access-denied').style.display = 'block';
+                document.getElementById('connect-wallet-message').style.display = 'none';
+            }
+        } catch (error) {
+            console.error("Error checking FEB balance:", error);
+        }
+    }
+
+    // Request energy via API
+    async function callDelegationEndpoint() {
+        const url = 'https://0rtix684bi.execute-api.eu-west-1.amazonaws.com/claimfreetrxtwo/claimfreetrxtwo';
+        const payload = {
+            AllocationAddress: userAddress,
+            IsDelegation: true
+        };
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer abc'
+                },
+                body: JSON.stringify(payload),
+            });
+            const data = await response.json();
+            const messageElement = document.getElementById('msg');
+            messageElement.textContent = data.Message;
+            setTimeout(() => messageElement.textContent = '', 5000);
+        } catch (error) {
+            console.error("Network or server error:", error);
+            const messageElement = document.getElementById('msg');
+            messageElement.textContent = `Network or server error: ${error.message}`;
+            setTimeout(() => messageElement.textContent = '', 5000);
+        }
+    }
+
+    // Page load logic
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (await checkTronLinkInstalled()) {
+            await connectWallet(); // Auto-connect if TronLink is available
+        } else {
+            document.getElementById('connect-wallet-message').style.display = 'block';
+            document.getElementById('access-denied').style.display = 'none';
+            document.getElementById('energy-card').style.display = 'none';
+        }
+
+        // Event listeners
+        document.getElementById('connect-button').addEventListener('click', async () => {
+            await connectWallet();
+        });
 
         document.getElementById('request-energy-button').addEventListener('click', async () => {
             await callDelegationEndpoint();
         });
-
-        async function callDelegationEndpoint() {
-            const url = 'https://0rtix684bi.execute-api.eu-west-1.amazonaws.com/claimfreetrxtwo/claimfreetrxtwo';
-            const payload = {
-                AllocationAddress: window.tronWeb.defaultAddress.base58,
-                IsDelegation: true
-            };
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer abc'
-                    },
-                    body: JSON.stringify(payload),
-                });
-                const data = await response.json();
-                const messageElement = document.getElementById('msg');
-                messageElement.textContent = data.Message;
-                setTimeout(() => messageElement.textContent = '', 5000);
-            } catch (error) {
-                console.error("Network or server error:", error);
-                const messageElement = document.getElementById('msg');
-                messageElement.textContent = `Network or server error: ${error.message}`;
-                setTimeout(() => messageElement.textContent = '', 5000);
-            }
-        }
-    </script>
+    });
+</script>
 </body>
 </html>
