@@ -9,14 +9,45 @@
     <link rel="stylesheet" href="assets/css/style.css">
 
     <style>
-        /* Ensures the Energy Card Matches the Staking Card */
-        .energy-card {
-            background-color: var(--card-bg-color); /* Uses the same background */
-            border-radius: 16px; /* Matches staking card */
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); /* Adds shadow for uniform look */
-            padding: 20px; /* Ensures proper spacing inside the card */
-            color: white; /* Ensures text color matches */
-        }
+        /* Center the Energy Button */
+#request-energy-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto; /* Centers horizontally */
+}
+
+/* Center the Energy Card */
+#energy-card {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center; 
+    width: 100%;
+}
+
+/* Center the Access Denied Message */
+#access-denied {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    flex-direction: column; /* Stack elements */
+    height: 200px; /* Adjust based on your layout */
+    margin: 0 auto; /* Centers horizontally */
+}
+
+/* Center the Connect Wallet Message */
+#connect-wallet-message {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    flex-direction: column;
+    height: 200px;
+    margin: 0 auto;
+}
+
 
         .card-image {
             width: 100%;
