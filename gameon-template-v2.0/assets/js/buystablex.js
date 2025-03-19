@@ -168,7 +168,7 @@ async function initializeTronWeb() {
         usddContract = await tronWeb.contract(trc20Abi, usddContractAddress);
         swapContract = await tronWeb.contract(contractAbi, swapContractAddress);
 
-        document.getElementById("connect-button").innerText = "Wallet Connected ✅";
+        document.getElementById("connect-button").innerText = "Wallet Connected";
         await updateUI();
     } catch (error) {
         console.error("❌ Error initializing TronWeb or Contracts:", error);
