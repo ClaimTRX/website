@@ -697,13 +697,15 @@ async function buyToken(listingId) {
             return;
         }
 
-        // Calculate price based on pricePerCFT
-        const pricePerCFT = tronWeb.toSun(listing.pricePerCFT) / 1e6; // Convert from 6 decimals
-        const totalPrice = amountToBuy * pricePerCFT;
+        // Price per CFT is already in TRX (not in sun)
+        const pricePerCFT = listing.pricePerCFT / 1e6; // Convert from 6 decimal scaling
+        const totalPrice = amountToBuy * pricePerCFT; // Correct TRX price
 
-        // Execute buy transaction
+        console.log(`Buying ${amountToBuy} CFT at ${pricePerCFT} TRX per CFT. Total price: ${totalPrice} TRX`);
+
+        // Execute buy transaction with correct TRX amount
         await marketplaceContract.methods.buyToken(listingId, tronWeb.toSun(amountToBuy)).send({
-            callValue: tronWeb.toSun(totalPrice)
+            callValue: tronWeb.toSun(totalPrice) // Convert totalPrice to sun
         });
 
         alert("Purchase successful!");
@@ -713,6 +715,7 @@ async function buyToken(listingId) {
         alert("Failed to buy token.");
     }
 }
+
 
 
 document.addEventListener("DOMContentLoaded", async () => {
