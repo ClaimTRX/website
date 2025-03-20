@@ -79,22 +79,25 @@ function updateWalletUI(isConnected) {
     }
 }
 
-// ✅ Check Allowed Address
 async function checkAllowedAddress() {
-    const energyCard = document.getElementById("energy-card");
-    const accessDenied = document.getElementById("access-denied");
-    const connectWalletMessage = document.getElementById("connect-wallet-message");
+    const restrictedSections = document.querySelectorAll(".restricted-section");
+    const walletMessage = document.getElementById("wallet-message");
 
     if (!userAddress) return;
 
     if (allowedAddresses.includes(userAddress)) {
-        energyCard.style.display = "block";
-        accessDenied.style.display = "none";
-        connectWalletMessage.style.display = "none";
+        // Show all sections if the wallet is whitelisted
+        restrictedSections.forEach(section => section.style.display = "block");
+        if (walletMessage) walletMessage.style.display = "none";
     } else {
-        energyCard.style.display = "none";
-        accessDenied.style.display = "block";
-        connectWalletMessage.style.display = "none";
+        // Keep sections hidden and update the message
+        restrictedSections.forEach(section => section.style.display = "none");
+        if (walletMessage) {
+            walletMessage.innerHTML = `
+                <h2>Access Denied</h2>
+                <p>Your wallet is not authorized to view this content.</p>
+            `;
+        }
     }
 }
 
