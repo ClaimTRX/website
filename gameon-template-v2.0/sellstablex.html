@@ -176,55 +176,59 @@
 
 		
 		<section class="staking-area">
-    <div id="gameon-accordion" class="container accordion">
-        <div class="row justify-content-center">
-            <div class="col-12 col-md-10">
-                <div class="single-accordion-item">
-                    <div class="card-header bg-inherit border-0 p-0">
-                        <h2 class="m-0">
-                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSell">
-                                <div class="row">
-                                    <div class="col-12 col-md-8">
-                                        <div class="media flex-column flex-md-row">
-                                            <img class="avatar-max-lg" src="assets/img/content/stablex.png" alt="">
-                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                <h4 class="m-0">Sell StableX</h4>
-                                                <p>Sell StableX 1:1 with USDD</p>
+            <div id="gameon-accordion" class="container accordion">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-10">
+                        <div class="single-accordion-item">
+                            <div class="card-header bg-inherit border-0 p-0">
+                                <h2 class="m-0">
+                                    <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSell">
+                                        <div class="row">
+                                            <div class="col-12 col-md-8">
+                                                <div class="media flex-column flex-md-row">
+                                                    <img class="avatar-max-lg" src="assets/img/content/stablex.png" alt="">
+                                                    <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                        <h4 class="m-0">Sell StableX</h4>
+                                                        <p>Sell StableX 1:1 with USDD</p>
+                                                    </div>
+                                                </div>
                                             </div>
+                                        </div>
+                                        <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                            <div class="col single-item">
+                                                <span id="user-stablex-balance">Loading...</span>
+                                                <span>Your StableX Balance</span>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="collapseSell" class="collapse" data-bs-parent="#gameon-accordion">
+                                <div class="card-body">
+                                    <div class="col-12 col-md-4 single-staking-item input-box">
+                                        <span class="item-title mb-2">Sell</span>
+                                        <div class="input-area d-flex flex-column">
+                                            <div class="input-text">
+                                                <input type="number" placeholder="Amount of StableX" id="sell-amount" class="form-control">
+                                            </div>
+                                            <a href="#" class="btn input-btn mt-2" id="list-button">List for Sale</a>
                                         </div>
                                     </div>
                                 </div>
-                               
-                            </button>
-                        </h2>
-                    </div>
-                    <div id="collapseSell" class="collapse" data-bs-parent="#gameon-accordion">
-                        <div class="card-body">
-                           <div class="col-12 col-md-4 single-staking-item input-box">
-    <span class="item-title mb-2">Sell</span>
-    <div class="input-area d-flex flex-column">
-        <div class="input-text">
-            <input type="number" placeholder="Amount of StableX" id="sell-amount" class="form-control">
-        </div>
-        <a href="#" class="btn input-btn mt-2" id="list-button">List for Sale</a>
-    </div>
-</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</section>
-
-    <section class="staking-area mt-4">
-    <div class="container">
-        <h3 class="text-center">Active Listings</h3>
-        <div id="listings-container" class="row justify-content-center">
-            <p class="text-center">Loading...</p>
-        </div>
-    </div>
-</section>
+        </section>
+        <section class="staking-area mt-4">
+            <div class="container">
+                <h3 class="text-center">Active Listings</h3>
+                <div id="listings-container" class="row justify-content-center">
+                    <p class="text-center">Loading...</p>
+                </div>
+            </div>
+        </section>
 
 
 		
