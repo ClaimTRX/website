@@ -662,7 +662,7 @@ async function listTokens() {
         }
 
         await marketplaceContract.methods.listToken(tokenAmountSun, pricePerCFTSun).send();
-        alert("Tokens listed successfully!");
+        
         fetchListings();
     } catch (error) {
         console.error("Error listing tokens:", error);
@@ -708,7 +708,7 @@ async function buyToken(listingId) {
             callValue: tronWeb.toSun(totalPrice) // Convert totalPrice to sun
         });
 
-        alert("Purchase successful!");
+       
         fetchListings();
     } catch (error) {
         console.error("Error buying token:", error);
