@@ -263,48 +263,80 @@ async function updateStableXBalance() {
 }
 
   // Fetch and display active listings
-  async function fetchMarketplaceListings() {
+ async function fetchListings() {
     try {
-        const result = await marketplaceContract.getActiveListings().call();
+        const result = await marketplaceContract.methods.getActiveListings().call();
         const listingIds = result[0];
         const listings = result[1];
-        const listingsContainer = document.getElementById('listings-container');
-        listingsContainer.innerHTML = '';
+        const container = document.getElementById("listings-container");
+        container.innerHTML = ""; // Clear previous listings
+
+        if (listingIds.length === 0) {
+            container.innerHTML = "<p class='text-center'>No active listings.</p>";
+            return;
+        }
+
         for (let i = 0; i < listingIds.length; i++) {
-            // Rest of the listing creation logic remains the same
-            // Example listing element creation:
-            const listingId = listingIds[i];
             const listing = listings[i];
-            if (listing.isActive) {
-                const tokenAmount = parseFloat(tronWeb.fromSun(listing.tokenAmount));
-                const listingElement = document.createElement('div');
-                listingElement.innerHTML = `
-                    <p>Seller: ${tronWeb.address.fromHex(listing.seller)}</p>
-                    <p>Token Amount: ${tokenAmount.toFixed(2)}</p>
-                    <button onclick="buyToken(${listingId}, ${tokenAmount})">Buy</button>
-                    ${tronWeb.address.fromHex(listing.seller) === userAddress ? `<button onclick="cancelListing(${listingId})">Cancel</button>` : ''}
-                `;
-                listingsContainer.appendChild(listingElement);
-            }
+            if (!listing.isActive) continue;
+
+            const seller = tronWeb.address.fromHex(listing.seller);
+            const amount = tronWeb.fromSun(listing.tokenAmount); // Convert from smallest units to whole tokens
+            const isSeller = seller === userAddress; // Check if the connected wallet is the seller
+
+            // Since StableX is pegged 1:1 with USDD, the total cost in USDD equals the amount in StableX
+            const totalCostInUSDD = amount; // In whole USDD units
+
+            // Create listing card matching the Sell CFT card style
+            const listingElement = document.createElement("div");
+            listingElement.className = "col-12 col-md-10 single-staking-item mb-4";
+
+            listingElement.innerHTML = `
+                <div class="card p-4">
+                    <div class="content">
+                        <h4 class="m-0 text-white">Seller: ${seller}</h4>
+                        <p class="mt-2 text-light"><strong>Amount:</strong> <span class="text-white">${amount} StableX</span></p>
+                        <p class="text-light"><strong>Total Cost:</strong> <span class="text-white">${totalCostInUSDD} USDD</span></p>
+                    </div>
+                    <div class="input-area d-flex flex-column mt-3">
+                        <div class="input-text">
+                            <input type="number" placeholder="Amount to buy" id="buyAmount_${listingIds[i]}" min="0.01" step="0.01" max="${amount}">
+                        </div>
+                        <a href="#" class="btn input-btn mt-2" onclick="buyToken(${listingIds[i]}, document.getElementById('buyAmount_${listingIds[i]}').value)">Buy</a>
+                        ${isSeller ? `<a href="#" class="btn btn-danger mt-2" onclick="cancelListing(${listingIds[i]})">Cancel</a>` : ""}
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(listingElement);
         }
     } catch (error) {
-        console.error('Error fetching listings:', error);
-        alert('Failed to fetch listings.');
+        console.error("Error fetching listings:", error);
+        document.getElementById("listings-container").innerHTML = "<p class='text-center'>Failed to load listings.</p>";
     }
 }
 
   // Buy tokens from the marketplace
-  async function buyToken(listingId, tokenAmount) {
+  async function buyToken(listingId, amountToBuy) {
     try {
-        const tokenUnits = tronWeb.toSun(tokenAmount);
-        const totalPrice = tokenAmount * (10 ** 12); // Adjust based on price logic
-        await usddContract.approve(marketplaceContractAddress, totalPrice.toString()).send();
+        // Convert amount to buy from whole tokens to smallest units (assuming 6 decimals for StableX)
+        const tokenUnits = tronWeb.toSun(amountToBuy); // e.g., "1" becomes "1000000"
+        
+        // Calculate total cost in USDD units (1 StableX = 1 USDD)
+        // If amountToBuy is "1" StableX, totalCost is "1" USDD = 10^18 USDD units
+        const totalCostInUSDDUnits = (parseFloat(amountToBuy) * 1e18).toFixed(0);
+
+        // Approve the marketplace to spend the required USDD
+        await usddContract.approve(marketplaceContractAddress, totalCostInUSDDUnits).send();
+        
+        // Execute the purchase
         await marketplaceContract.buyToken(listingId, tokenUnits).send();
-        alert('Token purchased successfully!');
-        updateUI(); // Refresh balance and listings
+        
+        alert("StableX purchased successfully!");
+        fetchListings(); // Refresh listings
     } catch (error) {
-        console.error('Error buying token:', error);
-        alert('Failed to buy tokens.');
+        console.error("Error buying StableX:", error);
+        alert("Failed to buy StableX.");
     }
 }
 
