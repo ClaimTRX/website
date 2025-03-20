@@ -317,21 +317,28 @@ async function updateStableXBalance() {
 }
 
   // Buy tokens from the marketplace
-  async function buyToken(listingId, amountToBuy) {
+ async function buyToken(listingId, amountToBuy) {
     try {
-        // Convert amount to buy from whole tokens to smallest units (assuming 6 decimals for StableX)
+        // Convert amount to buy from whole tokens to smallest units (6 decimals for StableX)
         const tokenUnits = tronWeb.toSun(amountToBuy); // e.g., "1" becomes "1000000"
-        
-        // Calculate total cost in USDD units (1 StableX = 1 USDD)
-        // If amountToBuy is "1" StableX, totalCost is "1" USDD = 10^18 USDD units
-        const totalCostInUSDDUnits = (parseFloat(amountToBuy) * 1e18).toFixed(0);
 
-        // Approve the marketplace to spend the required USDD
-        await usddContract.approve(marketplaceContractAddress, totalCostInUSDDUnits).send();
-        
+        // Calculate total cost in USDD units (1 StableX = 1 USDD, USDD has 18 decimals)
+        const totalCostInUSDDUnits = (parseFloat(amountToBuy) * 1e18).toFixed(0); // e.g., "1" StableX = 10^18 USDD units
+
+        // Check current allowance for marketplace to spend user's USDD
+        const currentAllowance = await usddContract.allowance(userAddress, marketplaceContractAddress).call();
+
+        // If current allowance is less than required, approve the exact amount
+        if (BigInt(currentAllowance) < BigInt(totalCostInUSDDUnits)) {
+            await usddContract.approve(marketplaceContractAddress, totalCostInUSDDUnits).send();
+            console.log(`Approved ${amountToBuy} USDD for marketplace.`);
+        } else {
+            console.log("Sufficient allowance already exists for buying.");
+        }
+
         // Execute the purchase
         await marketplaceContract.buyToken(listingId, tokenUnits).send();
-        
+
         alert("StableX purchased successfully!");
         fetchListings(); // Refresh listings
     } catch (error) {
@@ -353,10 +360,21 @@ async function updateStableXBalance() {
 }
 
   // Approve and list tokens for sale
- async function approveAndListTokens(tokenAmount) {
-    const tokenUnits = tronWeb.toSun(tokenAmount);
+async function approveAndListTokens(tokenAmount) {
+    const tokenUnits = tronWeb.toSun(tokenAmount); // Convert to smallest units (6 decimals, e.g., 1 StableX = 10^6 units)
     try {
-        await tokenContract.approve(marketplaceContractAddress, tokenUnits).send();
+        // Check current allowance for marketplace to spend user's StableX tokens
+        const currentAllowance = await tokenContract.allowance(userAddress, marketplaceContractAddress).call();
+
+        // If current allowance is less than required, approve the exact amount
+        if (BigInt(currentAllowance) < BigInt(tokenUnits)) {
+            await tokenContract.approve(marketplaceContractAddress, tokenUnits).send();
+            console.log(`Approved ${tokenAmount} StableX for marketplace.`);
+        } else {
+            console.log("Sufficient allowance already exists for listing.");
+        }
+
+        // List the tokens for sale
         await marketplaceContract.listToken(tokenUnits).send();
         alert('Tokens listed successfully!');
         updateUI(); // Refresh balance and listings
