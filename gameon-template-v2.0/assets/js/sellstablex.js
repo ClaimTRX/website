@@ -220,7 +220,7 @@ async function initializeTronWeb() {
 
         console.log('Connected to TronLink.');
         console.log('User Address:', userAddress);
-        document.getElementById('connect-button').style.display = 'none';
+        document.getElementById('connect-button').innerHTML = '<i class="icon-wallet me-md-2"></i> Wallet Connected';
         await updateUI();
         setupEventListeners();
     } catch (error) {
