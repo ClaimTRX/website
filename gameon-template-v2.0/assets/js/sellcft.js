@@ -523,7 +523,7 @@ const tokenContractAbi = [
 
 
 const tokenContractAddress = 'TAME19SjDjKxC3omaJG5HWMTxhbHMrzWMi';
-const marketplaceContractAddress = 'TENipBQxBKb9sysDGnv46xC8xDc9n6Zx8k';
+const marketplaceContractAddress = 'TP8boGqi7tcRccdFzam3Xcs8TgxqsALXnu';
 
 
 
