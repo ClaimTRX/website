@@ -3,9 +3,18 @@
 const tokenContractAddress = 'TAME19SjDjKxC3omaJG5HWMTxhbHMrzWMi';
 const marketplaceContractAddress = 'TXiu6DgdDsggDGhLjGSpUnzZsDZx9inS36';
 
-const allowedWallets = [
-    'TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA', // Example address (replace with actual allowed wallet addresses)
-   
+const allowedAddresses = [
+    "TR2XJawheHUAcbxgzABVh1toDA59Eb4RbM",  // Replace with your actual Tron addresses
+            "TQLrSGjNtYwtUdttbm4HsXxD6vmbePWni4",
+            "TL71zkkpC59dKmj8CeVf3woiXJuTNGBUfw",
+            "TKsFvPSTxZhym26K3uscKbbt8K29UbpVZd",
+            "TJDMQzjJSh5eC8WezVtnDXDuWXAwjV23eF",
+            "TFUQ7aqaxoDVskZ9ucWCCaLBeLKSSLa5hS",
+            "TCGsvNmNtezmeHZgnH2fd8gGa2KV5rUkHV",
+            "TC56nRBaobbqPWMCgS3FhMf7EjqyYZ7StR",
+            "TB6xoAXGdPY4D3j3cnojjkkcoWwrNGHox7",
+            "TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA",
+            "TB4euGueRixvU79TBbotkLtQ4ZtD2UJsy6"
 ];
 
 let tronWeb, userAddress, tokenContract, marketplaceContract;
