@@ -130,27 +130,32 @@ async function fetchListings() {
             if (!listing.isActive) continue;
 
             const seller = tronWeb.address.fromHex(listing.seller);
-            const amount = (listing.tokenAmount / 1e6).toFixed(2);
-            const pricePerCFT = (listing.pricePerCFT / 1e6).toFixed(2);
+            const amount = tronWeb.fromSun(listing.tokenAmount);
+            const pricePerCFT = tronWeb.fromSun(listing.pricePerCFT);
 
-            container.innerHTML += `
-                <div class="col-12 col-md-6">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <h5>Seller: ${seller}</h5>
-                            <p><strong>${amount} CFT</strong> at <strong>${pricePerCFT} TRX</strong> each</p>
-                            <input type="number" id="buy-amount-${listingIds[i]}" class="form-control mb-2" placeholder="Amount to Buy">
-                            <a href="#" class="btn input-btn mt-2" onclick="buyToken(${listingIds[i]})">Buy</a>
-                        </div>
+            const listingElement = document.createElement("div");
+            listingElement.className = "col-12 col-md-10 single-staking-item mb-4";
+            listingElement.innerHTML = `
+                <div class="card p-4">
+                    <div class="content">
+                        <h4 class="m-0 text-white">Seller: ${seller}</h4>
+                        <p class="mt-2 text-light"><strong>Amount:</strong> <span class="text-white">${amount} CFT</span></p>
+                        <p class="text-light"><strong>Price per CFT:</strong> <span class="text-white">${pricePerCFT} TRX</span></p>
+                    </div>
+                    <div class="input-area d-flex flex-column mt-3">
+                        <input type="number" id="buy-amount-${listingIds[i]}" class="form-control mb-2" placeholder="Amount to Buy">
+                        <a href="#" class="btn input-btn mt-2" onclick="buyToken(${listingIds[i]})">Buy</a>
                     </div>
                 </div>
             `;
+            container.appendChild(listingElement);
         }
     } catch (error) {
         console.error("Error fetching listings:", error);
         document.getElementById("listings-container").innerHTML = "<p class='text-center'>Failed to load listings.</p>";
     }
 }
+
 
 async function buyToken(listingId) {
     const amountToBuy = document.getElementById(`buy-amount-${listingId}`).value;
