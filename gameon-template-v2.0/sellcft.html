@@ -176,26 +176,66 @@
 
 		
 		<section class="staking-area">
-    <section class="staking-area">
-		<div class="container">
-			<h3 class="text-center">List Your CFT for Sale</h3>
-			<div class="row justify-content-center">
-				<div class="col-12 col-md-6 single-staking-item">
-					<span id="user-cft-balance">Loading...</span>
-
-					<span class="item-title mb-2">Amount to Sell</span>
-					<input type="number" id="sell-amount" class="form-control" placeholder="Enter CFT amount">
-
-					<span class="item-title mb-2 mt-3">Price Per CFT (in TRX)</span>
-					<input type="number" id="sell-price" class="form-control" placeholder="Set price per CFT">
-
-					<div class="input-area d-flex flex-column mt-3">
-						<a href="#" class="btn input-btn mt-2" id="list-button">List for Sale</a>
-					</div>
-				</div>
-			</div>
-		</div>
-	</section>
+    <div id="list-cft-accordion" class="container accordion">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-10">
+                <div class="single-accordion-item">
+                    <div class="card-header bg-inherit border-0 p-0">
+                        <h2 class="m-0">
+                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseListCFT">
+                                <div class="row">
+                                    <div class="col-12 col-md-8">
+                                        <div class="media flex-column flex-md-row">
+                                            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                <h4 class="m-0">List Your CFT for Sale</h4>
+                                                <p>Sell your CFT at your chosen price</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                    <div class="col single-item">
+                                        <span id="user-cft-balance">Loading...</span>
+                                        <span>Your CFT Balance</span>
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseListCFT" class="collapse" data-bs-parent="#list-cft-accordion">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Amount to Sell</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text">
+                                            <input type="number" id="sell-amount" class="form-control" placeholder="Enter CFT amount">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Price Per CFT (in TRX)</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text">
+                                            <input type="number" id="sell-price" class="form-control" placeholder="Set price per CFT">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Action</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <a href="#" class="btn input-btn mt-2" id="list-button">List for Sale</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
 	<!-- Active Listings Section -->
 	<section class="staking-area mt-4">
