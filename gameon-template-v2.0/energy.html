@@ -173,51 +173,32 @@
 			</div>
 		</section>
 		<!-- ***** Hero Area End ***** -->
-      
-		<section class="staking-area restricted-section">
-    <div id="gameon-accordion" class="container accordion">
-        <div class="row justify-content-center">
-            <div class="col-12 col-md-10">
-                <div id="connect-wallet-message" style="display: none;">
-                    <h2>Please connect your wallet</h2>
-                    <p>Connect your TronLink wallet to access this feature.</p>
-                </div>
-                <div id="access-denied" style="display: none;">
-                    <h2>Sorry, only FEB access</h2>
-                    <p>Your address is not whitelisted for this feature.</p>
-                </div>
-                <div id="energy-card" style="display: none;">
-                    <div class="card energy-card">
-                        <div class="card-body text-center">
-                            <p id="msg"></p>
-                            <button id="request-energy-button" class="btn btn-success">Request Energy</button>
+       <!-- Energy Area -->
+       <section class="staking-area">
+             <div id="gameon-accordion" class="container accordion">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-10">
+                        <div id="connect-wallet-message" style="display: none;">
+                            <h2>Please connect your wallet</h2>
+                            <p>Connect your TronLink wallet to access the energy request feature.</p>
+                        </div>
+                        <div id="access-denied" style="display: none;">
+                            <h2>Sorry, only FEB access</h2>
+                            <p>Your address is not whitelisted for this feature.</p>
+                        </div>
+                        <div id="energy-card" style="display: none;">
+                            <div class="card energy-card">
+                                <div class="card-body text-center">
+                                    <p id="msg"></p>
+					
+                                    <button id="request-energy-button" class="btn btn-success">Request Energy</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</section>
-
-<section class="staking-area mt-4 restricted-section">
-    <div class="container">
-        <div id="listings-connect-wallet-message" style="display: none;">
-            <h2>Please connect your wallet</h2>
-            <p>Connect your TronLink wallet to view active listings.</p>
-        </div>
-        <div id="listings-access-denied" style="display: none;">
-            <h2>Sorry, only allowed wallets can view listings</h2>
-            <p>Your address is not allowed to view this feature.</p>
-        </div>
-        <div id="listings-card" style="display: none;">
-            <h3 class="text-center">Active Listings</h3>
-            <div id="listings-container" class="row justify-content-center">
-                <p class="text-center">Loading...</p>
-            </div>
-        </div>
-    </div>
-</section>
-
+        </section>
 
        <!-- ***** CTA Area Start ***** -->
 		<section class="cta-area p-0">
@@ -365,10 +346,9 @@
 	<script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
 	<!-- Staking Script -->
 	<script src="assets/js/energy.js"></script>
-	<script src="assets/js/restricted.js"></script>
-
 
 
 <body/>
 
+   
    
