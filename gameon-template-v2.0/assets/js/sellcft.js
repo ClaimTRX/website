@@ -388,105 +388,142 @@ const tokenContractAbi = [
 ];
 
   
-  const marketplaceContractAbi = [ {
-  "inputs": [
+  const marketplaceContractAbi = [
     {
-      "internalType": "address",
-      "name": "tokenAddress",
-      "type": "address"
-    }
-  ],
-  "stateMutability": "nonpayable",
-  "type": "constructor"
-},
-{
-  "inputs": [
-    {
-      "internalType": "uint256",
-      "name": "tokenAmount",
-      "type": "uint256"
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "cftAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "initialTaxRecipient",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
     },
     {
-      "internalType": "uint256",
-      "name": "priceInTRX",
-      "type": "uint256"
-    }
-  ],
-  "name": "listToken",
-  "outputs": [],
-  "stateMutability": "nonpayable",
-  "type": "function"
-},
-{
-  "inputs": [
-    {
-      "internalType": "uint256",
-      "name": "listingId",
-      "type": "uint256"
-    }
-  ],
-  "name": "buyToken",
-  "outputs": [],
-  "stateMutability": "payable",
-  "type": "function"
-},
-{
-  "inputs": [
-    {
-      "internalType": "uint256",
-      "name": "listingId",
-      "type": "uint256"
-    }
-  ],
-  "name": "cancelListing",
-  "outputs": [],
-  "stateMutability": "nonpayable",
-  "type": "function"
-},
-{
-  "inputs": [],
-  "name": "getActiveListings",
-  "outputs": [
-    {
-      "internalType": "uint256[]",
-      "name": "",
-      "type": "uint256[]"
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "tokenAmount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "pricePerCFT",
+                "type": "uint256"
+            }
+        ],
+        "name": "listToken",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
     },
     {
-      "components": [
-        {
-          "internalType": "address",
-          "name": "seller",
-          "type": "address"
-        },
-        {
-          "internalType": "uint128",
-          "name": "tokenAmount",
-          "type": "uint128"
-        },
-        {
-          "internalType": "uint128",
-          "name": "priceInTRX",
-          "type": "uint128"
-        },
-        {
-          "internalType": "bool",
-          "name": "isActive",
-          "type": "bool"
-        }
-      ],
-      "internalType": "struct TokenMarketplace.Listing[]",
-      "name": "",
-      "type": "tuple[]"
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "listingId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokenAmount",
+                "type": "uint256"
+            }
+        ],
+        "name": "buyToken",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "listingId",
+                "type": "uint256"
+            }
+        ],
+        "name": "cancelListing",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getActiveListings",
+        "outputs": [
+            {
+                "internalType": "uint256[]",
+                "name": "",
+                "type": "uint256[]"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "seller",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint128",
+                        "name": "tokenAmount",
+                        "type": "uint128"
+                    },
+                    {
+                        "internalType": "uint128",
+                        "name": "pricePerCFT",
+                        "type": "uint128"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isActive",
+                        "type": "bool"
+                    }
+                ],
+                "internalType": "struct CFTTRXMarketplace.Listing[]",
+                "name": "",
+                "type": "tuple[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getTaxCollected",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "totalTrxTaxCollected",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "totalCftTaxCollected",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "withdrawTaxes",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
     }
-  ],
-  "stateMutability": "view",
-  "type": "function"
-}
 ];
 
-const tokenContractAddress = 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA';
-const marketplaceContractAddress = 'TQaF95pNKxZp8HEVKT7Y4V9WMJYofsEKra';
+
+const tokenContractAddress = 'TAME19SjDjKxC3omaJG5HWMTxhbHMrzWMi';
+const marketplaceContractAddress = 'TF9jKVXYKdihFZ5DxYiKbdpP9pmAYsDxhM';
 
 let tronWeb, userAddress, tokenContract, marketplaceContract;
 
@@ -532,9 +569,8 @@ async function initializeContracts() {
 async function updateUI() {
     try {
         await updateCFTBalance();
-        
         await fetchListings();
-
+        await updateTaxCollected();
     } catch (error) {
         console.error("Error updating UI:", error);
     }
@@ -568,10 +604,9 @@ async function fetchListings() {
 
             const seller = tronWeb.address.fromHex(listing.seller);
             const amount = tronWeb.fromSun(listing.tokenAmount);
-            const totalPrice = tronWeb.fromSun(listing.priceInTRX);
+            const pricePerCFT = tronWeb.fromSun(listing.pricePerCFT);
             const isSeller = seller === userAddress; // Check if the connected wallet is the seller
 
-            // Create listing card to match the Sell CFT card
             const listingElement = document.createElement("div");
             listingElement.className = "col-12 col-md-10 single-staking-item mb-4";
 
@@ -580,10 +615,11 @@ async function fetchListings() {
                     <div class="content">
                         <h4 class="m-0 text-white">Seller: ${seller}</h4>
                         <p class="mt-2 text-light"><strong>Amount:</strong> <span class="text-white">${amount} CFT</span></p>
-                        <p class="text-light"><strong>Total Price:</strong> <span class="text-white">${totalPrice} TRX</span></p>
+                        <p class="text-light"><strong>Price per CFT:</strong> <span class="text-white">${pricePerCFT} TRX</span></p>
                     </div>
                     <div class="input-area d-flex flex-column mt-3">
-                        <a href="#" class="btn input-btn mt-2" onclick="buyToken(${listingIds[i]}, ${totalPrice})">Buy</a>
+                        <input type="number" id="buy-amount-${listingIds[i]}" class="form-control mb-2" placeholder="Amount to Buy">
+                        <a href="#" class="btn input-btn mt-2" onclick="buyToken(${listingIds[i]})">Buy</a>
                         ${isSeller ? `<a href="#" class="btn btn-danger mt-2" onclick="cancelListing(${listingIds[i]})">Cancel</a>` : ""}
                     </div>
                 </div>
@@ -597,31 +633,25 @@ async function fetchListings() {
     }
 }
 
-
-
-
-
 async function listTokens() {
     const amount = document.getElementById("sell-amount").value;
-    const price = document.getElementById("sell-price").value;
+    const pricePerCFT = document.getElementById("sell-price").value;
 
-    if (!amount || amount <= 0 || !price || price <= 0) {
-        alert("Enter a valid amount and price.");
+    if (!amount || amount <= 0 || !pricePerCFT || pricePerCFT <= 0) {
+        alert("Enter a valid amount and price per CFT.");
         return;
     }
 
-    const totalPrice = amount * price; // Convert to total TRX value
     const tokenAmountSun = tronWeb.toSun(amount);
-    const totalPriceSun = tronWeb.toSun(totalPrice);
+    const pricePerCFTSun = tronWeb.toSun(pricePerCFT);
 
     try {
-        // Check if allowance is sufficient
         const allowance = await tokenContract.methods.allowance(userAddress, marketplaceContractAddress).call();
         if (parseInt(allowance) < parseInt(tokenAmountSun)) {
             await tokenContract.methods.approve(marketplaceContractAddress, tokenAmountSun).send();
         }
 
-        await marketplaceContract.methods.listToken(tokenAmountSun, totalPriceSun).send();
+        await marketplaceContract.methods.listToken(tokenAmountSun, pricePerCFTSun).send();
         alert("Tokens listed successfully!");
         fetchListings();
     } catch (error) {
@@ -630,9 +660,19 @@ async function listTokens() {
     }
 }
 
-async function buyToken(listingId, totalPrice) {
+async function buyToken(listingId) {
+    const amountToBuy = document.getElementById(`buy-amount-${listingId}`).value;
+    if (!amountToBuy || amountToBuy <= 0) {
+        alert("Enter a valid amount to buy.");
+        return;
+    }
+
     try {
-        await marketplaceContract.methods.buyToken(listingId).send({ callValue: tronWeb.toSun(totalPrice) });
+        const listing = await marketplaceContract.methods.getListing(listingId).call();
+        const pricePerCFT = tronWeb.fromSun(listing.pricePerCFT);
+        const totalPrice = amountToBuy * pricePerCFT;
+
+        await marketplaceContract.methods.buyToken(listingId, tronWeb.toSun(amountToBuy)).send({ callValue: tronWeb.toSun(totalPrice) });
         alert("Purchase successful!");
         fetchListings();
     } catch (error) {
@@ -641,42 +681,39 @@ async function buyToken(listingId, totalPrice) {
     }
 }
 
-async function cancelListing(listingId) {
+async function updateTaxCollected() {
     try {
-        await marketplaceContract.methods.cancelListing(listingId).send();
-        alert('Listing cancelled successfully! Your CFT has been refunded.');
-        fetchListings();
+        const taxData = await marketplaceContract.methods.getTaxCollected().call();
+        const totalTrxTax = tronWeb.fromSun(taxData[0]);
+        const totalCftTax = tronWeb.fromSun(taxData[1]);
+
+        document.getElementById("tax-collected").innerText = `Collected Taxes: ${totalTrxTax} TRX / ${totalCftTax} CFT`;
     } catch (error) {
-        console.error('Error cancelling listing:', error);
-        alert('Failed to cancel listing.');
+        console.error("Error fetching tax data:", error);
+    }
+}
+
+async function withdrawTaxes() {
+    try {
+        await marketplaceContract.methods.withdrawTaxes().send();
+        alert("Taxes withdrawn successfully!");
+        updateTaxCollected();
+    } catch (error) {
+        console.error("Error withdrawing taxes:", error);
+        alert("Failed to withdraw taxes.");
     }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("connect-button").addEventListener("click", connectWallet);
-    
-    // Add event listener for listing tokens
     document.getElementById("list-button").addEventListener("click", listTokens);
-
-    // Sell options buttons
-    document.querySelectorAll(".sell-option").forEach(button => {
-        button.addEventListener("click", () => {
-            const price = button.getAttribute("data-price");
-            document.getElementById("sell-price").value = price;
-        });
-    });
+    document.getElementById("withdraw-taxes").addEventListener("click", withdrawTaxes);
 
     if (await checkTronLinkInstalled()) {
         await connectWallet();
-        updateCFTBalance(); // Update CFT balance on load
+        updateCFTBalance();
     }
 });
 
-function formatNumber(num, decimals = 0) {
-    return Number(num).toLocaleString("en-US", {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals
-    });
-}
 
 
