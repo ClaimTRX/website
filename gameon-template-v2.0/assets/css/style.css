@@ -3102,4 +3102,46 @@ input[type="number"] {
     -moz-appearance: textfield;
 }
 
+.wheel-of-fortune {
+    padding: 90px 0;
+}
 
+.wheel-of-fortune h2 {
+    color: var(--white-color);
+    font-family: var(--primary-font);
+}
+
+.wheel-container {
+    position: relative;
+    display: inline-block;
+}
+
+#wheel {
+    max-width: 100%;
+}
+
+#balance, #result {
+    color: var(--primary-p-color);
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+#spin-button, #approve-button {
+    margin: 0 10px;
+}
+
+@media (max-width: 576px) {
+    .wheel-of-fortune {
+        padding: 60px 0;
+    }
+
+    .wheel-container {
+        width: 300px;
+        height: 300px;
+    }
+
+    #wheel {
+        width: 300px;
+        height: 300px;
+    }
+}
