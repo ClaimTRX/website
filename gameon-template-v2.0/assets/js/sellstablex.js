@@ -223,28 +223,27 @@ let tronWeb, userAddress, tokenContract, usddContract, marketplaceContract;
 
   async function updateUI() {
     try {
-      const balance = await tronWeb.trx.getBalance(userAddress);
-      console.log('Balance:', tronWeb.fromSun(balance), 'TRX');
-      await fetchMarketplaceListings();
+        await updateStableXBalance(); // Update StableX balance
+        await fetchMarketplaceListings(); // Update listings
     } catch (error) {
-      console.error('Error updating UI:', error);
+        console.error('Error updating UI:', error);
     }
-  }
+}
 
   function setupEventListeners() {
-    document.getElementById('approveAndListButton').addEventListener('click', async () => {
-      const tokenAmount = document.getElementById('tokenAmount').value;
-      if (tokenAmount) {
-        try {
-          await approveAndListTokens(tokenAmount);
-          setTimeout(refreshUI, 3000);
-        } catch (error) {
-          console.error('Error listing tokens:', error);
-          alert('Failed to list tokens.');
+    document.getElementById('list-button').addEventListener('click', async (event) => {
+        event.preventDefault(); // Prevent default link behavior
+        const tokenAmount = document.getElementById('sell-amount').value;
+        if (tokenAmount) {
+            try {
+                await approveAndListTokens(tokenAmount);
+            } catch (error) {
+                console.error('Error listing tokens:', error);
+                alert('Failed to list tokens.');
+            }
         }
-      }
     });
-  }
+}
 
   async function refreshUI() {
     const balance = await tronWeb.trx.getBalance(userAddress);
@@ -252,83 +251,88 @@ let tronWeb, userAddress, tokenContract, usddContract, marketplaceContract;
     await fetchMarketplaceListings();
   }
 
+async function updateStableXBalance() {
+    try {
+        const balance = await tokenContract.balanceOf(userAddress).call();
+        const formattedBalance = (balance / 1e6).toFixed(2); // Assuming 6 decimals
+        document.getElementById('user-stablex-balance').textContent = formattedBalance;
+    } catch (error) {
+        console.error('Error fetching StableX balance:', error);
+        document.getElementById('user-stablex-balance').textContent = 'Error';
+    }
+}
+
   // Fetch and display active listings
   async function fetchMarketplaceListings() {
     try {
-      const result = await marketplaceContract.getActiveListings().call();
-      const listingIds = result[0];
-      const listings = result[1];
-
-      const listingsContainer = document.getElementById('listings');
-      listingsContainer.innerHTML = '';
-
-      for (let i = 0; i < listingIds.length; i++) {
-        const listingId = listingIds[i];
-        const listing = listings[i];
-
-        if (listing.isActive) {
-          const tokenAmount = parseFloat(tronWeb.fromSun(listing.tokenAmount)); // Convert from 6 decimals to whole tokens
-          const pricePerToken = 1; // 1 USDD per token
-
-          const listingElement = document.createElement('div');
-          listingElement.className = 'listing';
-          listingElement.innerHTML = `
-            <p>Seller: ${tronWeb.address.fromHex(listing.seller)}</p>
-            <p>Token Amount: ${tokenAmount.toFixed(2)}</p>
-            <p>Price Per Token: ${pricePerToken} USDD</p>
-            <input type="number" id="buyAmount_${listingId}" value="${tokenAmount}" min="0.01" max="${tokenAmount}" step="0.01">
-            <button class="btn btn-success mb-2" onclick="buyToken(${listingId}, parseFloat(document.getElementById('buyAmount_${listingId}').value))">Buy</button>
-            ${tronWeb.address.fromHex(listing.seller) === userAddress ? `<button class="btn btn-danger" onclick="cancelListing(${listingId})">Cancel</button>` : ''}
-          `;
-          listingsContainer.appendChild(listingElement);
+        const result = await marketplaceContract.getActiveListings().call();
+        const listingIds = result[0];
+        const listings = result[1];
+        const listingsContainer = document.getElementById('listings-container');
+        listingsContainer.innerHTML = '';
+        for (let i = 0; i < listingIds.length; i++) {
+            // Rest of the listing creation logic remains the same
+            // Example listing element creation:
+            const listingId = listingIds[i];
+            const listing = listings[i];
+            if (listing.isActive) {
+                const tokenAmount = parseFloat(tronWeb.fromSun(listing.tokenAmount));
+                const listingElement = document.createElement('div');
+                listingElement.innerHTML = `
+                    <p>Seller: ${tronWeb.address.fromHex(listing.seller)}</p>
+                    <p>Token Amount: ${tokenAmount.toFixed(2)}</p>
+                    <button onclick="buyToken(${listingId}, ${tokenAmount})">Buy</button>
+                    ${tronWeb.address.fromHex(listing.seller) === userAddress ? `<button onclick="cancelListing(${listingId})">Cancel</button>` : ''}
+                `;
+                listingsContainer.appendChild(listingElement);
+            }
         }
-      }
     } catch (error) {
-      console.error('Error fetching listings:', error);
-      alert('Failed to fetch listings.');
+        console.error('Error fetching listings:', error);
+        alert('Failed to fetch listings.');
     }
-  }
+}
 
   // Buy tokens from the marketplace
   async function buyToken(listingId, tokenAmount) {
     try {
-      const tokenUnits = tronWeb.toSun(tokenAmount); // Convert whole tokens to token units (6 decimals)
-      const totalPrice = tokenAmount * (10 ** 12); // Total price in USDD units (18 decimals): tokenAmount * 10^(18-6)
-      await usddContract.approve(marketplaceContractAddress, totalPrice.toString()).send();
-      await marketplaceContract.buyToken(listingId, tokenUnits).send();
-      alert('Token purchased successfully!');
-      fetchMarketplaceListings();
+        const tokenUnits = tronWeb.toSun(tokenAmount);
+        const totalPrice = tokenAmount * (10 ** 12); // Adjust based on price logic
+        await usddContract.approve(marketplaceContractAddress, totalPrice.toString()).send();
+        await marketplaceContract.buyToken(listingId, tokenUnits).send();
+        alert('Token purchased successfully!');
+        updateUI(); // Refresh balance and listings
     } catch (error) {
-      console.error('Error buying token:', error);
-      alert('Failed to buy tokens.');
+        console.error('Error buying token:', error);
+        alert('Failed to buy tokens.');
     }
-  }
+}
 
   // Cancel a listing from the marketplace
   async function cancelListing(listingId) {
     try {
-      await marketplaceContract.cancelListing(listingId).send();
-      alert('Listing cancelled successfully!');
-      fetchMarketplaceListings();
+        await marketplaceContract.cancelListing(listingId).send();
+        alert('Listing cancelled successfully!');
+        updateUI(); // Refresh balance and listings
     } catch (error) {
-      console.error('Error cancelling listing:', error);
-      alert('Failed to cancel listing.');
+        console.error('Error cancelling listing:', error);
+        alert('Failed to cancel listing.');
     }
-  }
+}
 
   // Approve and list tokens for sale
-  async function approveAndListTokens(tokenAmount) {
-    const tokenUnits = tronWeb.toSun(tokenAmount); // Convert whole tokens to token units (6 decimals)
+ async function approveAndListTokens(tokenAmount) {
+    const tokenUnits = tronWeb.toSun(tokenAmount);
     try {
-      await tokenContract.approve(marketplaceContractAddress, tokenUnits).send();
-      await marketplaceContract.listToken(tokenUnits).send();
-      alert('Tokens listed successfully!');
-      fetchMarketplaceListings();
+        await tokenContract.approve(marketplaceContractAddress, tokenUnits).send();
+        await marketplaceContract.listToken(tokenUnits).send();
+        alert('Tokens listed successfully!');
+        updateUI(); // Refresh balance and listings
     } catch (error) {
-      console.error('Error listing tokens:', error);
-      alert('Failed to list tokens.');
+        console.error('Error listing tokens:', error);
+        throw error; // Propagates to event listener
     }
-  }
+}
 
   // Utility function to format numbers
   function formatNumber(num) {
