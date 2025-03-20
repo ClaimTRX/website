@@ -12,7 +12,7 @@ const allowedAddresses = [
             "TB4euGueRixvU79TBbotkLtQ4ZtD2UJsy6"
 ];
 
-
+let tronWeb, userAddress;
 
 // ✅ Check if TronLink is installed
 async function checkTronLinkInstalled() {
@@ -79,25 +79,22 @@ function updateWalletUI(isConnected) {
     }
 }
 
+// ✅ Check Allowed Address
 async function checkAllowedAddress() {
-    const restrictedSections = document.querySelectorAll(".restricted-section");
-    const walletMessage = document.getElementById("wallet-message");
+    const energyCard = document.getElementById("energy-card");
+    const accessDenied = document.getElementById("access-denied");
+    const connectWalletMessage = document.getElementById("connect-wallet-message");
 
     if (!userAddress) return;
 
     if (allowedAddresses.includes(userAddress)) {
-        // Show all sections if the wallet is whitelisted
-        restrictedSections.forEach(section => section.style.display = "block");
-        if (walletMessage) walletMessage.style.display = "none";
+        energyCard.style.display = "block";
+        accessDenied.style.display = "none";
+        connectWalletMessage.style.display = "none";
     } else {
-        // Keep sections hidden and update the message
-        restrictedSections.forEach(section => section.style.display = "none");
-        if (walletMessage) {
-            walletMessage.innerHTML = `
-                <h2>Access Denied</h2>
-                <p>Your wallet is not authorized to view this content.</p>
-            `;
-        }
+        energyCard.style.display = "none";
+        accessDenied.style.display = "block";
+        connectWalletMessage.style.display = "none";
     }
 }
 
