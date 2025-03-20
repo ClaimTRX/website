@@ -594,6 +594,7 @@ async function fetchListings() {
         }
 
         const result = await marketplaceContract.methods.getActiveListings().call();
+
         if (!result || result[0].length === 0) {
             console.log("No active listings found.");
             document.getElementById("listings-container").innerHTML = "<p class='text-center'>No active listings.</p>";
@@ -635,6 +636,7 @@ async function fetchListings() {
         document.getElementById("listings-container").innerHTML = "<p class='text-center'>Failed to load listings.</p>";
     }
 }
+
 
 async function listTokens() {
     if (!tronWeb) {
@@ -690,14 +692,27 @@ async function buyToken(listingId) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-    document.getElementById("connect-button")?.addEventListener("click", connectWallet);
-    document.getElementById("list-button")?.addEventListener("click", listTokens);
+    const connectButton = document.getElementById("connect-button");
+    const listButton = document.getElementById("list-button");
+
+    if (connectButton) {
+        connectButton.addEventListener("click", connectWallet);
+    } else {
+        console.error("Error: connect-button not found in the DOM.");
+    }
+
+    if (listButton) {
+        listButton.addEventListener("click", listTokens);
+    } else {
+        console.error("Error: list-button not found in the DOM.");
+    }
 
     if (await checkTronLinkInstalled()) {
         await connectWallet();
         updateCFTBalance();
     }
 });
+
 
 function formatNumber(num, decimals = 0) {
     return Number(num).toLocaleString("en-US", {
