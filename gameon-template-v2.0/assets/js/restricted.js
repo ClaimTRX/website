@@ -1,7 +1,7 @@
 
 
 const tokenContractAddress = 'TAME19SjDjKxC3omaJG5HWMTxhbHMrzWMi';
-const marketplaceContractAddress = 'THQdywJxWkjDRoPE8R4iHxuWgnY4sjLd3j';
+const marketplaceContractAddress = 'TXiu6DgdDsggDGhLjGSpUnzZsDZx9inS36';
 
 let tronWeb, userAddress, tokenContract, marketplaceContract;
 
