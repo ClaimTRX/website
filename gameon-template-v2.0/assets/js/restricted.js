@@ -1,10 +1,23 @@
-
-
 const tokenContractAddress = 'TAME19SjDjKxC3omaJG5HWMTxhbHMrzWMi';
 const marketplaceContractAddress = 'TXiu6DgdDsggDGhLjGSpUnzZsDZx9inS36';
 
+const allowedAddresses = [
+    "TR2XJawheHUAcbxgzABVh1toDA59Eb4RbM",
+    "TQLrSGjNtYwtUdttbm4HsXxD6vmbePWni4",
+    "TL71zkkpC59dKmj8CeVf3woiXJuTNGBUfw",
+    "TKsFvPSTxZhym26K3uscKbbt8K29UbpVZd",
+    "TJDMQzjJSh5eC8WezVtnDXDuWXAwjV23eF",
+    "TFUQ7aqaxoDVskZ9ucWCCaLBeLKSSLa5hS",
+    "TCGsvNmNtezmeHZgnH2fd8gGa2KV5rUkHV",
+    "TC56nRBaobbqPWMCgS3FhMf7EjqyYZ7StR",
+    "TB6xoAXGdPY4D3j3cnojjkkcoWwrNGHox7",
+    "TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA",
+    "TB4euGueRixvU79TBbotkLtQ4ZtD2UJsy6"
+];
+
 let tronWeb, userAddress, tokenContract, marketplaceContract;
 
+// ✅ Check if TronLink is installed
 async function checkTronLinkInstalled() {
     return new Promise((resolve) => {
         const interval = setInterval(() => {
@@ -13,47 +26,74 @@ async function checkTronLinkInstalled() {
                 resolve(true);
             }
         }, 1000);
+        setTimeout(() => {
+            clearInterval(interval);
+            resolve(false);
+        }, 10000);
     });
 }
 
-async function connectWallet() {
-    if (!window.tronWeb) {
-        alert("TronLink not found. Please install and log in.");
-        return;
-    }
-
-    try {
-        await window.tronLink.request({ method: "tron_requestAccounts" });
+// ✅ Auto-Connect Wallet if already authorized
+async function autoConnectWallet() {
+    if (window.tronWeb && window.tronLink) {
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58;
-        document.getElementById('connect-button').innerHTML = '<i class="icon-wallet me-md-2"></i> Wallet Connected';
-        console.log("Connected to TronLink:", userAddress);
-        await initializeContracts();
-        await updateUI();
+
+        if (userAddress) { 
+            console.log("Auto-connected wallet:", userAddress);
+            updateWalletUI(true);
+            await checkAllowedAddress();
+        } else {
+            console.log("TronLink detected, but wallet is not connected.");
+        }
+    }
+}
+
+// ✅ Connect Wallet (Manual Trigger)
+async function connectWallet() {
+    if (!window.tronWeb || !window.tronLink) {
+        alert("TronLink not found. Please install TronLink and log in.");
+        return;
+    }
+    try {
+        await window.tronLink.request({ method: "tron_requestAccounts" });
+
+        // Ensure tronWeb is initialized
+        tronWeb = window.tronWeb;
+        userAddress = tronWeb.defaultAddress.base58;
+
+        updateWalletUI(true);
+        console.log("Wallet connected:", userAddress);
+        await checkAllowedAddress();
     } catch (e) {
-        console.error("Failed to connect:", e);
+        console.error("Wallet connection failed:", e);
     }
 }
 
-async function initializeContracts() {
-    try {
-        tokenContract = await tronWeb.contract(tokenContractAbi, tokenContractAddress);
-        marketplaceContract = await tronWeb.contract(marketplaceContractAbi, marketplaceContractAddress);
-    } catch (error) {
-        console.error("Error initializing contracts:", error);
+// ✅ Update Wallet UI
+function updateWalletUI(isConnected) {
+    const connectButton = document.getElementById("connect-button");
+    if (connectButton) {
+        connectButton.innerHTML = isConnected ? `<i class="icon-wallet"></i> Wallet Connected` : `<i class="icon-wallet"></i> Connect Wallet`;
     }
 }
 
-async function updateUI() {
-    try {
-        await updateCFTBalance();
-        await loadSellerLimits();
-        await fetchListings();
-    } catch (error) {
-        console.error("Error updating UI:", error);
+// ✅ Check Allowed Address and Control "Buy CFT" Button
+async function checkAllowedAddress() {
+    const buyCFTButton = document.querySelector(".btn.btn-bordered.active[href='buycft.html']");
+
+    if (!userAddress) return;
+
+    if (allowedAddresses.includes(userAddress)) {
+        buyCFTButton.style.display = "inline-block"; // Show button
+        console.log(`✅ Wallet ${userAddress} is allowed. Showing "Buy CFT" button.`);
+    } else {
+        buyCFTButton.style.display = "none"; // Hide button
+        console.log(`❌ Wallet ${userAddress} is NOT allowed. Hiding "Buy CFT" button.`);
     }
 }
 
+// ✅ Fetch Token Balance
 async function updateCFTBalance() {
     try {
         const cftBalance = await tokenContract.methods.balanceOf(userAddress).call();
@@ -63,16 +103,7 @@ async function updateCFTBalance() {
     }
 }
 
-async function loadSellerLimits() {
-    try {
-        const limits = await marketplaceContract.methods.getSellerLimits(userAddress).call();
-        document.getElementById("remaining-cft").innerText = (limits.remainingCFT / 1e6).toFixed(2);
-        document.getElementById("remaining-trx").innerText = (limits.remainingTRX / 1e6).toFixed(2);
-    } catch (error) {
-        console.error("Error loading seller limits:", error);
-    }
-}
-
+// ✅ List Tokens for Sale
 async function listTokens() {
     if (!tronWeb) {
         alert("TronLink not detected. Please connect your wallet.");
@@ -89,7 +120,7 @@ async function listTokens() {
 
     try {
         const tokenAmountSun = amount * 1e6;
-        const pricePerCFTSun = parseInt(pricePerCFT); // Already in 6 decimals
+        const pricePerCFTSun = parseInt(pricePerCFT);
 
         const allowance = await tokenContract.methods.allowance(userAddress, marketplaceContractAddress).call();
         if (parseInt(allowance) < tokenAmountSun) {
@@ -99,13 +130,13 @@ async function listTokens() {
         await marketplaceContract.methods.listToken(tokenAmountSun, pricePerCFTSun).send();
         
         await fetchListings();
-        await loadSellerLimits();
     } catch (error) {
         console.error("Error listing tokens:", error);
         alert("Failed to list tokens.");
     }
 }
 
+// ✅ Fetch Active Listings
 async function fetchListings() {
     try {
         if (!marketplaceContract) {
@@ -142,82 +173,36 @@ async function fetchListings() {
                         <p class="mt-2 text-light"><strong>Amount:</strong> <span class="text-white">${amount} CFT</span></p>
                         <p class="text-light"><strong>Price per CFT:</strong> <span class="text-white">${pricePerCFT} TRX</span></p>
                     </div>
-                    <div class="input-area d-flex flex-column mt-3">
-                        <input type="number" id="buy-amount-${listingIds[i]}" class="form-control mb-2" placeholder="Amount to Buy">
-                        <a href="#" class="btn input-btn mt-2" onclick="buyToken(${listingIds[i]})">Buy</a>
-                    </div>
                 </div>
             `;
             container.appendChild(listingElement);
         }
     } catch (error) {
         console.error("Error fetching listings:", error);
-        document.getElementById("listings-container").innerHTML = "<p class='text-center'>Failed to load listings.</p>";
     }
 }
 
-
-async function buyToken(listingId) {
-    const amountToBuy = document.getElementById(`buy-amount-${listingId}`).value;
-    if (!amountToBuy || amountToBuy <= 0) {
-        alert("Enter a valid amount to buy.");
-        return;
-    }
-
-    try {
-        const result = await marketplaceContract.methods.getActiveListings().call();
-        const listingIds = result[0];
-        const listings = result[1];
-
-        let listing = null;
-        for (let i = 0; i < listingIds.length; i++) {
-            if (listingIds[i] == listingId) {
-                listing = listings[i];
-                break;
-            }
-        }
-
-        if (!listing) {
-            alert("Listing not found.");
-            return;
-        }
-
-        const pricePerCFT = listing.pricePerCFT / 1e6;
-        const totalPrice = amountToBuy * pricePerCFT;
-
-        await marketplaceContract.methods.buyToken(listingId, tronWeb.toSun(amountToBuy)).send({
-            callValue: tronWeb.toSun(totalPrice)
-        });
-
-        await fetchListings();
-        await loadSellerLimits();
-    } catch (error) {
-        console.error("Error buying token:", error);
-        alert("Failed to buy token.");
-    }
-}
-
+// ✅ Auto-connect wallet and check permissions on page load
 document.addEventListener("DOMContentLoaded", async () => {
-    const connectButton = document.getElementById("connect-button");
-    const listButton = document.getElementById("list-button");
+    console.log("🔄 DOM fully loaded. Checking wallet connection...");
 
+    await autoConnectWallet();
+
+    const connectButton = document.getElementById("connect-button");
     if (connectButton) {
         connectButton.addEventListener("click", connectWallet);
-    } else {
-        console.error("Error: connect-button not found in the DOM.");
     }
 
-    if (listButton) {
-        listButton.addEventListener("click", listTokens);
-    } else {
-        console.error("Error: list-button not found in the DOM.");
-    }
-
-    if (await checkTronLinkInstalled()) {
-        await connectWallet();
-        updateUI();
-    }
+    // Check wallet every 5 seconds in case the user switches accounts
+    setInterval(async () => {
+        if (window.tronWeb && window.tronWeb.defaultAddress.base58 !== userAddress) {
+            console.log("🔄 Wallet changed. Rechecking access...");
+            userAddress = window.tronWeb.defaultAddress.base58;
+            await checkAllowedAddress();
+        }
+    }, 5000);
 });
+
 
 const tokenContractAbi = [
     {
