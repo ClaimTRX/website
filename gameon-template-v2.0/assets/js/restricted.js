@@ -1,7 +1,7 @@
 
 
-const tokenContractAddress = 'TAME19SjDjKxC3omaJG5HWMTxhbHMrzWMi';
-const marketplaceContractAddress = 'TXiu6DgdDsggDGhLjGSpUnzZsDZx9inS36';
+const tokenContractAddress = 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA';
+const marketplaceContractAddress = 'TTNd1JfvcqixSRbvuy2iuLwwTdqphT8Bib';
 
 const allowedWallets = [
     "TR2XJawheHUAcbxgzABVh1toDA59Eb4RbM",  // Replace with your actual Tron addresses
