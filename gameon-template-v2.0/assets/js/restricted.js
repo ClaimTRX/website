@@ -3,6 +3,11 @@
 const tokenContractAddress = 'TAME19SjDjKxC3omaJG5HWMTxhbHMrzWMi';
 const marketplaceContractAddress = 'TXiu6DgdDsggDGhLjGSpUnzZsDZx9inS36';
 
+const allowedWallets = [
+    'TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA', // Example address (replace with actual allowed wallet addresses)
+   
+];
+
 let tronWeb, userAddress, tokenContract, marketplaceContract;
 
 async function checkTronLinkInstalled() {
@@ -125,6 +130,9 @@ async function fetchListings() {
         const container = document.getElementById("listings-container");
         container.innerHTML = "";
 
+        // Check if the connected wallet is allowed
+        const isAllowed = allowedWallets.includes(userAddress);
+
         for (let i = 0; i < listingIds.length; i++) {
             const listing = listings[i];
             if (!listing.isActive) continue;
@@ -144,7 +152,7 @@ async function fetchListings() {
                     </div>
                     <div class="input-area d-flex flex-column mt-3">
                         <input type="number" id="buy-amount-${listingIds[i]}" class="form-control mb-2" placeholder="Amount to Buy">
-                        <a href="#" class="btn input-btn mt-2" onclick="buyToken(${listingIds[i]})">Buy</a>
+                        ${isAllowed ? `<a href="#" class="btn input-btn mt-2" onclick="buyToken(${listingIds[i]})">Buy</a>` : ''}
                     </div>
                 </div>
             `;
