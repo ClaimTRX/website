@@ -678,11 +678,34 @@ async function buyToken(listingId) {
     }
 
     try {
-         const result = await marketplaceContract.methods.getActiveListings().call();
-        const pricePerCFT = tronWeb.fromSun(listing.pricePerCFT);
+        // Fetch all active listings
+        const result = await marketplaceContract.methods.getActiveListings().call();
+        const listingIds = result[0];
+        const listings = result[1];
+
+        // Find the listing in the array
+        let listing = null;
+        for (let i = 0; i < listingIds.length; i++) {
+            if (listingIds[i] == listingId) {
+                listing = listings[i];
+                break;
+            }
+        }
+
+        if (!listing) {
+            alert("Listing not found.");
+            return;
+        }
+
+        // Calculate price based on pricePerCFT
+        const pricePerCFT = tronWeb.toSun(listing.pricePerCFT) / 1e6; // Convert from 6 decimals
         const totalPrice = amountToBuy * pricePerCFT;
 
-        await marketplaceContract.methods.buyToken(listingId, tronWeb.toSun(amountToBuy)).send({ callValue: tronWeb.toSun(totalPrice) });
+        // Execute buy transaction
+        await marketplaceContract.methods.buyToken(listingId, tronWeb.toSun(amountToBuy)).send({
+            callValue: tronWeb.toSun(totalPrice)
+        });
+
         alert("Purchase successful!");
         fetchListings();
     } catch (error) {
@@ -690,6 +713,7 @@ async function buyToken(listingId) {
         alert("Failed to buy token.");
     }
 }
+
 
 document.addEventListener("DOMContentLoaded", async () => {
     const connectButton = document.getElementById("connect-button");
