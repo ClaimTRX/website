@@ -634,6 +634,11 @@ async function fetchListings() {
 }
 
 async function listTokens() {
+    if (!tronWeb) {
+        alert("TronLink not detected. Please connect your wallet.");
+        return;
+    }
+
     const amount = document.getElementById("sell-amount").value;
     const pricePerCFT = document.getElementById("sell-price").value;
 
@@ -642,10 +647,10 @@ async function listTokens() {
         return;
     }
 
-    const tokenAmountSun = tronWeb.toSun(amount);
-    const pricePerCFTSun = tronWeb.toSun(pricePerCFT);
-
     try {
+        const tokenAmountSun = tronWeb.toSun(amount);
+        const pricePerCFTSun = tronWeb.toSun(pricePerCFT);
+
         const allowance = await tokenContract.methods.allowance(userAddress, marketplaceContractAddress).call();
         if (parseInt(allowance) < parseInt(tokenAmountSun)) {
             await tokenContract.methods.approve(marketplaceContractAddress, tokenAmountSun).send();
@@ -659,6 +664,7 @@ async function listTokens() {
         alert("Failed to list tokens.");
     }
 }
+
 
 async function buyToken(listingId) {
     const amountToBuy = document.getElementById(`buy-amount-${listingId}`).value;
@@ -707,7 +713,7 @@ async function withdrawTaxes() {
 document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("connect-button").addEventListener("click", connectWallet);
     document.getElementById("list-button").addEventListener("click", listTokens);
-    document.getElementById("withdraw-taxes").addEventListener("click", withdrawTaxes);
+    
 
     if (await checkTronLinkInstalled()) {
         await connectWallet();
