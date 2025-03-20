@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CFT Spin Wheel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #16182D;
+            color: white;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .wheel-container {
+            position: relative;
+            display: inline-block;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: conic-gradient(
+                #ff0000 0% 70%, 
+                #00ff00 70% 95%, 
+                #0000ff 95% 100%
+            );
+            transition: transform 4s ease-out;
+        }
+        .spin-btn {
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            background-color: #57048A;
+            color: white;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: background 0.3s;
+        }
+        .spin-btn:hover {
+            background-color: #7200ea;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CFT Spin Wheel</h1>
+        <div class="wheel-container" id="wheel"></div>
+        <button class="spin-btn" onclick="spinWheel()">Spin</button>
+        <p class="result" id="result">Press spin to play!</p>
+    </div>
+
+    <script>
+        const contractAddress = "TYmnqRGEQyjz3yUX482F9uZTaee8YprYRf";
+        const cftTokenAddress = "TAME19SjDjKxC3omaJG5HWMTxhbHMrzWMi";
+        let tronWeb;
+        
+        async function spinWheel() {
+            if (!window.tronWeb || !window.tronWeb.defaultAddress.base58) {
+                alert("Please connect your Tron wallet");
+                return;
+            }
+            tronWeb = window.tronWeb;
+            const contract = await tronWeb.contract().at(contractAddress);
+
+            try {
+                await contract.spin().send({ feeLimit: 100000000 });
+                document.getElementById("result").innerText = "Spinning...";
+                let rotation = 3600 + Math.floor(Math.random() * 360);
+                document.getElementById("wheel").style.transform = `rotate(${rotation}deg)`;
+                
+                setTimeout(() => {
+                    document.getElementById("result").innerText = "Check your balance!";
+                }, 4000);
+            } catch (error) {
+                console.error("Transaction failed", error);
+                document.getElementById("result").innerText = "Transaction Failed!";
+            }
+        }
+    </script>
+</body>
+</html>
