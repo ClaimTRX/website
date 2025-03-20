@@ -678,7 +678,7 @@ async function buyToken(listingId) {
     }
 
     try {
-        const listing = await marketplaceContract.methods.getListing(listingId).call();
+         const result = await marketplaceContract.methods.getActiveListings().call();
         const pricePerCFT = tronWeb.fromSun(listing.pricePerCFT);
         const totalPrice = amountToBuy * pricePerCFT;
 
