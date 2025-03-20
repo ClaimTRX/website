@@ -1,238 +1,240 @@
 let tronWeb, userAddress, tokenContract, usddContract, marketplaceContract;
-    const tokenContractAddress = 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS'; // CFT Token Address
-    const usddContractAddress = 'TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz'; // Replace with actual USDD contract address
-    const marketplaceContractAddress = 'TDxSTFQvsxeSfsSgokKxMU2e8uXKAgp3vw'; // Marketplace Contract Address
-    const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+const tokenContractAddress = 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS';
+const usddContractAddress = 'TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz';
+const marketplaceContractAddress = 'TDxSTFQvsxeSfsSgokKxMU2e8uXKAgp3vw';
+const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
-    // Token Contract ABI (Standard TRC20 ABI for CFT and USDD)
-    const tokenContractAbi = [
-      {
+const tokenContractAbi = [
+    {
         "inputs": [],
         "stateMutability": "nonpayable",
         "type": "constructor"
-      },
-      {
+    },
+    {
         "inputs": [],
         "name": "name",
         "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
         "stateMutability": "view",
         "type": "function"
-      },
-      {
+    },
+    {
         "inputs": [],
         "name": "symbol",
         "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
         "stateMutability": "view",
         "type": "function"
-      },
-      {
+    },
+    {
         "inputs": [],
         "name": "decimals",
         "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }],
         "stateMutability": "view",
         "type": "function"
-      },
-      {
+    },
+    {
         "inputs": [],
         "name": "totalSupply",
         "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
         "stateMutability": "view",
         "type": "function"
-      },
-      {
+    },
+    {
         "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
         "name": "balanceOf",
         "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
         "stateMutability": "view",
         "type": "function"
-      },
-      {
+    },
+    {
         "inputs": [
-          { "internalType": "address", "name": "_to", "type": "address" },
-          { "internalType": "uint256", "name": "_value", "type": "uint256" }
+            { "internalType": "address", "name": "_to", "type": "address" },
+            { "internalType": "uint256", "name": "_value", "type": "uint256" }
         ],
         "name": "transfer",
         "outputs": [{ "internalType": "bool", "name": "success", "type": "bool" }],
         "stateMutability": "nonpayable",
         "type": "function"
-      },
-      {
+    },
+    {
         "inputs": [
-          { "internalType": "address", "name": "_spender", "type": "address" },
-          { "internalType": "uint256", "name": "_value", "type": "uint256" }
+            { "internalType": "address", "name": "_spender", "type": "address" },
+            { "internalType": "uint256", "name": "_value", "type": "uint256" }
         ],
         "name": "approve",
         "outputs": [{ "internalType": "bool", "name": "success", "type": "bool" }],
         "stateMutability": "nonpayable",
         "type": "function"
-      },
-      {
+    },
+    {
         "inputs": [
-          { "internalType": "address", "name": "_from", "type": "address" },
-          { "internalType": "address", "name": "_to", "type": "address" },
-          { "internalType": "uint256", "name": "_value", "type": "uint256" }
+            { "internalType": "address", "name": "_from", "type": "address" },
+            { "internalType": "address", "name": "_to", "type": "address" },
+            { "internalType": "uint256", "name": "_value", "type": "uint256" }
         ],
         "name": "transferFrom",
         "outputs": [{ "internalType": "bool", "name": "success", "type": "bool" }],
         "stateMutability": "nonpayable",
         "type": "function"
-      },
-      {
+    },
+    {
         "inputs": [
-          { "internalType": "address", "name": "", "type": "address" },
-          { "internalType": "address", "name": "", "type": "address" }
+            { "internalType": "address", "name": "", "type": "address" },
+            { "internalType": "address", "name": "", "type": "address" }
         ],
         "name": "allowance",
         "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
         "stateMutability": "view",
         "type": "function"
-      },
-      {
+    },
+    {
         "anonymous": false,
         "inputs": [
-          { "indexed": true, "internalType": "address", "name": "from", "type": "address" },
-          { "indexed": true, "internalType": "address", "name": "to", "type": "address" },
-          { "indexed": false, "internalType": "uint256", "name": "value", "type": "uint256" }
+            { "indexed": true, "internalType": "address", "name": "from", "type": "address" },
+            { "indexed": true, "internalType": "address", "name": "to", "type": "address" },
+            { "indexed": false, "internalType": "uint256", "name": "value", "type": "uint256" }
         ],
         "name": "Transfer",
         "type": "event"
-      },
-      {
+    },
+    {
         "anonymous": false,
         "inputs": [
-          { "indexed": true, "internalType": "address", "name": "owner", "type": "address" },
-          { "indexed": true, "internalType": "address", "name": "spender", "type": "address" },
-          { "indexed": false, "internalType": "uint256", "name": "value", "type": "uint256" }
+            { "indexed": true, "internalType": "address", "name": "owner", "type": "address" },
+            { "indexed": true, "internalType": "address", "name": "spender", "type": "address" },
+            { "indexed": false, "internalType": "uint256", "name": "value", "type": "uint256" }
         ],
         "name": "Approval",
         "type": "event"
-      }
-    ];
+    }
+];
 
-    // Updated Marketplace Contract ABI
-    const marketplaceContractAbi = [
-      {
+const marketplaceContractAbi = [
+    {
         "inputs": [
-          { "internalType": "address", "name": "tokenAddress", "type": "address" },
-          { "internalType": "address", "name": "usddAddress", "type": "address" }
+            { "internalType": "address", "name": "tokenAddress", "type": "address" },
+            { "internalType": "address", "name": "usddAddress", "type": "address" }
         ],
         "stateMutability": "nonpayable",
         "type": "constructor"
-      },
-      {
+    },
+    {
         "inputs": [
-          { "internalType": "uint256", "name": "tokenAmount", "type": "uint256" }
+            { "internalType": "uint256", "name": "tokenAmount", "type": "uint256" }
         ],
         "name": "listToken",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
-      },
-      {
+    },
+    {
         "inputs": [
-          { "internalType": "uint256", "name": "listingId", "type": "uint256" },
-          { "internalType": "uint256", "name": "tokenAmount", "type": "uint256" }
+            { "internalType": "uint256", "name": "listingId", "type": "uint256" },
+            { "internalType": "uint256", "name": "tokenAmount", "type": "uint256" }
         ],
         "name": "buyToken",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
-      },
-      {
+    },
+    {
         "inputs": [
-          { "internalType": "uint256", "name": "listingId", "type": "uint256" }
+            { "internalType": "uint256", "name": "listingId", "type": "uint256" }
         ],
         "name": "cancelListing",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
-      },
-      {
+    },
+    {
         "inputs": [],
         "name": "getActiveListings",
         "outputs": [
-          { "internalType": "uint256[]", "name": "", "type": "uint256[]" },
-          {
-            "components": [
-              { "internalType": "address", "name": "seller", "type": "address" },
-              { "internalType": "uint128", "name": "tokenAmount", "type": "uint128" },
-              { "internalType": "bool", "name": "isActive", "type": "bool" }
-            ],
-            "internalType": "struct TokenMarketplace.Listing[]",
-            "name": "",
-            "type": "tuple[]"
-          }
+            { "internalType": "uint256[]", "name": "", "type": "uint256[]" },
+            {
+                "components": [
+                    { "internalType": "address", "name": "seller", "type": "address" },
+                    { "internalType": "uint128", "name": "tokenAmount", "type": "uint128" },
+                    { "internalType": "bool", "name": "isActive", "type": "bool" }
+                ],
+                "internalType": "struct TokenMarketplace.Listing[]",
+                "name": "",
+                "type": "tuple[]"
+            }
         ],
         "stateMutability": "view",
         "type": "function"
-      }
-    ];
+    }
+];
 
-    // TronLink connection
-    document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('connect-button').addEventListener('click', connectWallet);
 
     if (await checkTronLinkInstalled()) {
-      await initializeTronWeb();
-      setInterval(updateUI, 60000); // Update UI every minute
+        await initializeTronWeb();
+        setInterval(updateUI, 60000);
     } else {
-      console.error('TronLink is not installed.');
+        console.error('TronLink is not installed.');
     }
-  });
+});
 
-  async function checkTronLinkInstalled() {
+async function checkTronLinkInstalled() {
     return new Promise((resolve) => {
-      const interval = setInterval(() => {
-        if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
-          clearInterval(interval);
-          resolve(true);
-        }
-      }, 1000);
+        const interval = setInterval(() => {
+            if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+                clearInterval(interval);
+                resolve(true);
+            }
+        }, 1000);
     });
-  }
+}
 
-  async function connectWallet() {
+async function connectWallet() {
     try {
-      await window.tronLink.request({ method: 'tron_requestAccounts' });
-      await initializeTronWeb();
+        await window.tronLink.request({ method: 'tron_requestAccounts' });
+        await initializeTronWeb();
     } catch (e) {
-      console.error('Failed to connect to TronLink:', e);
+        console.error('Failed to connect to TronLink:', e);
     }
-  }
+}
 
-  async function initializeTronWeb() {
+async function initializeTronWeb() {
     try {
-      tronWeb = window.tronWeb;
-      userAddress = tronWeb.defaultAddress.base58;
+        tronWeb = window.tronWeb;
+        userAddress = tronWeb.defaultAddress.base58;
 
-      if (!userAddress) throw new Error('User address not available');
+        if (!userAddress) throw new Error('User address not available');
 
-      tokenContract = await tronWeb.contract(tokenContractAbi, tokenContractAddress);
-      usddContract = await tronWeb.contract(tokenContractAbi, usddContractAddress);
-      marketplaceContract = await tronWeb.contract(marketplaceContractAbi, marketplaceContractAddress);
+        tokenContract = await tronWeb.contract(tokenContractAbi, tokenContractAddress);
+        usddContract = await tronWeb.contract(tokenContractAbi, usddContractAddress);
+        marketplaceContract = await tronWeb.contract(marketplaceContractAbi, marketplaceContractAddress);
 
-      console.log('Connected to TronLink.');
-      console.log('User Address:', userAddress);
-      document.getElementById('connect-button').style.display = 'none';
-      await updateUI();
-      setupEventListeners();
+        console.log('Connected to TronLink.');
+        console.log('User Address:', userAddress);
+        document.getElementById('connect-button').style.display = 'none';
+        await updateUI();
+        setupEventListeners();
     } catch (error) {
-      console.error('Error initializing TronWeb or Contracts:', error);
+        console.error('Error initializing TronWeb or Contracts:', error);
     }
-  }
+}
 
-  async function updateUI() {
+async function updateUI() {
     try {
-        await updateStableXBalance(); // Update StableX balance
-        await fetchMarketplaceListings(); // Update listings
+        await updateStableXBalance();
+        await fetchListings();
     } catch (error) {
         console.error('Error updating UI:', error);
     }
 }
 
-  function setupEventListeners() {
-    document.getElementById('list-button').addEventListener('click', async (event) => {
-        event.preventDefault(); // Prevent default link behavior
+function setupEventListeners() {
+    const listButton = document.getElementById('list-button');
+    if (!listButton) {
+        console.error("Element with ID 'list-button' not found in the DOM.");
+        return;
+    }
+    listButton.addEventListener('click', async (event) => {
+        event.preventDefault();
         const tokenAmount = document.getElementById('sell-amount').value;
         if (tokenAmount) {
             try {
@@ -245,31 +247,39 @@ let tronWeb, userAddress, tokenContract, usddContract, marketplaceContract;
     });
 }
 
-  async function refreshUI() {
+async function refreshUI() {
     const balance = await tronWeb.trx.getBalance(userAddress);
     console.log('Balance refreshed:', tronWeb.fromSun(balance), 'TRX');
-    await fetchMarketplaceListings();
-  }
+    await fetchListings();
+}
 
 async function updateStableXBalance() {
+    const balanceElement = document.getElementById('user-stablex-balance');
+    if (!balanceElement) {
+        console.error("Element with ID 'user-stablex-balance' not found in the DOM.");
+        return;
+    }
     try {
         const balance = await tokenContract.balanceOf(userAddress).call();
-        const formattedBalance = (balance / 1e6).toFixed(2); // Assuming 6 decimals
-        document.getElementById('user-stablex-balance').textContent = formattedBalance;
+        const formattedBalance = (balance / 1e6).toFixed(2);
+        balanceElement.textContent = formattedBalance;
     } catch (error) {
         console.error('Error fetching StableX balance:', error);
-        document.getElementById('user-stablex-balance').textContent = 'Error';
+        balanceElement.textContent = 'Error';
     }
 }
 
-  // Fetch and display active listings
- async function fetchListings() {
+async function fetchListings() {
+    const container = document.getElementById("listings-container");
+    if (!container) {
+        console.error("Element with ID 'listings-container' not found in the DOM.");
+        return;
+    }
     try {
-        const result = await marketplaceContract.methods.getActiveListings().call();
+        const result = await marketplaceContract.getActiveListings().call();
         const listingIds = result[0];
         const listings = result[1];
-        const container = document.getElementById("listings-container");
-        container.innerHTML = ""; // Clear previous listings
+        container.innerHTML = "";
 
         if (listingIds.length === 0) {
             container.innerHTML = "<p class='text-center'>No active listings.</p>";
@@ -281,13 +291,10 @@ async function updateStableXBalance() {
             if (!listing.isActive) continue;
 
             const seller = tronWeb.address.fromHex(listing.seller);
-            const amount = tronWeb.fromSun(listing.tokenAmount); // Convert from smallest units to whole tokens
-            const isSeller = seller === userAddress; // Check if the connected wallet is the seller
+            const amount = tronWeb.fromSun(listing.tokenAmount);
+            const isSeller = seller === userAddress;
+            const totalCostInUSDD = amount;
 
-            // Since StableX is pegged 1:1 with USDD, the total cost in USDD equals the amount in StableX
-            const totalCostInUSDD = amount; // In whole USDD units
-
-            // Create listing card matching the Sell CFT card style
             const listingElement = document.createElement("div");
             listingElement.className = "col-12 col-md-10 single-staking-item mb-4";
 
@@ -312,23 +319,17 @@ async function updateStableXBalance() {
         }
     } catch (error) {
         console.error("Error fetching listings:", error);
-        document.getElementById("listings-container").innerHTML = "<p class='text-center'>Failed to load listings.</p>";
+        container.innerHTML = "<p class='text-center'>Failed to load listings.</p>";
     }
 }
 
-  // Buy tokens from the marketplace
- async function buyToken(listingId, amountToBuy) {
+async function buyToken(listingId, amountToBuy) {
     try {
-        // Convert amount to buy from whole tokens to smallest units (6 decimals for StableX)
-        const tokenUnits = tronWeb.toSun(amountToBuy); // e.g., "1" becomes "1000000"
+        const tokenUnits = tronWeb.toSun(amountToBuy);
+        const totalCostInUSDDUnits = (parseFloat(amountToBuy) * 1e18).toFixed(0);
 
-        // Calculate total cost in USDD units (1 StableX = 1 USDD, USDD has 18 decimals)
-        const totalCostInUSDDUnits = (parseFloat(amountToBuy) * 1e18).toFixed(0); // e.g., "1" StableX = 10^18 USDD units
-
-        // Check current allowance for marketplace to spend user's USDD
         const currentAllowance = await usddContract.allowance(userAddress, marketplaceContractAddress).call();
 
-        // If current allowance is less than required, approve the exact amount
         if (BigInt(currentAllowance) < BigInt(totalCostInUSDDUnits)) {
             await usddContract.approve(marketplaceContractAddress, totalCostInUSDDUnits).send();
             console.log(`Approved ${amountToBuy} USDD for marketplace.`);
@@ -336,37 +337,32 @@ async function updateStableXBalance() {
             console.log("Sufficient allowance already exists for buying.");
         }
 
-        // Execute the purchase
         await marketplaceContract.buyToken(listingId, tokenUnits).send();
 
         alert("StableX purchased successfully!");
-        fetchListings(); // Refresh listings
+        fetchListings();
     } catch (error) {
         console.error("Error buying StableX:", error);
         alert("Failed to buy StableX.");
     }
 }
 
-  // Cancel a listing from the marketplace
-  async function cancelListing(listingId) {
+async function cancelListing(listingId) {
     try {
         await marketplaceContract.cancelListing(listingId).send();
         alert('Listing cancelled successfully!');
-        updateUI(); // Refresh balance and listings
+        updateUI();
     } catch (error) {
         console.error('Error cancelling listing:', error);
         alert('Failed to cancel listing.');
     }
 }
 
-  // Approve and list tokens for sale
 async function approveAndListTokens(tokenAmount) {
-    const tokenUnits = tronWeb.toSun(tokenAmount); // Convert to smallest units (6 decimals, e.g., 1 StableX = 10^6 units)
+    const tokenUnits = tronWeb.toSun(tokenAmount);
     try {
-        // Check current allowance for marketplace to spend user's StableX tokens
         const currentAllowance = await tokenContract.allowance(userAddress, marketplaceContractAddress).call();
 
-        // If current allowance is less than required, approve the exact amount
         if (BigInt(currentAllowance) < BigInt(tokenUnits)) {
             await tokenContract.approve(marketplaceContractAddress, tokenUnits).send();
             console.log(`Approved ${tokenAmount} StableX for marketplace.`);
@@ -374,31 +370,19 @@ async function approveAndListTokens(tokenAmount) {
             console.log("Sufficient allowance already exists for listing.");
         }
 
-        // List the tokens for sale
         await marketplaceContract.listToken(tokenUnits).send();
         alert('Tokens listed successfully!');
-        updateUI(); // Refresh balance and listings
+        updateUI();
     } catch (error) {
         console.error('Error listing tokens:', error);
-        throw error; // Propagates to event listener
+        throw error;
     }
 }
 
-  // Utility function to format numbers
-  function formatNumber(num) {
+function formatNumber(num) {
     return parseFloat(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
+}
 
-  // Utility function to format whole numbers
-  function formatWholeNumber(num) {
+function formatWholeNumber(num) {
     return Math.floor(parseFloat(num)).toLocaleString('en-US');
-  }
-
-     document.addEventListener("DOMContentLoaded", function () {
-    const menuToggle = document.querySelector(".menu-toggle");
-    const sidebar = document.querySelector(".sidebar");
-
-    menuToggle.addEventListener("click", function () {
-        sidebar.classList.toggle("active");
-    });
-});
+}
