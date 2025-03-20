@@ -12,7 +12,7 @@ const allowedAddresses = [
             "TB4euGueRixvU79TBbotkLtQ4ZtD2UJsy6"
 ];
 
-let tronWeb, userAddress;
+
 
 // ✅ Check if TronLink is installed
 async function checkTronLinkInstalled() {
