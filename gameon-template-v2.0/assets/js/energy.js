@@ -119,10 +119,14 @@ async function callDelegationEndpoint() {
         });
 
         const data = await response.json();
-        document.getElementById("msg").textContent = data.Message;
+        const msgElement = document.getElementById("msg");
+        msgElement.textContent = data.Message;
+        msgElement.style.color = "white"; // Ensures message is displayed in white
     } catch (error) {
         console.error("Network error:", error);
-        document.getElementById("msg").textContent = "Error processing request.";
+        const msgElement = document.getElementById("msg");
+        msgElement.textContent = "Error processing request.";
+        msgElement.style.color = "white"; // Ensures error message is displayed in white
     }
 }
 
