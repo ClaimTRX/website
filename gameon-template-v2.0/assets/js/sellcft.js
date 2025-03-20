@@ -525,6 +525,8 @@ const tokenContractAbi = [
 const tokenContractAddress = 'TAME19SjDjKxC3omaJG5HWMTxhbHMrzWMi';
 const marketplaceContractAddress = 'TF9jKVXYKdihFZ5DxYiKbdpP9pmAYsDxhM';
 
+
+
 let tronWeb, userAddress, tokenContract, marketplaceContract;
 
 async function checkTronLinkInstalled() {
@@ -570,7 +572,6 @@ async function updateUI() {
     try {
         await updateCFTBalance();
         await fetchListings();
-        await updateTaxCollected();
     } catch (error) {
         console.error("Error updating UI:", error);
     }
@@ -587,16 +588,22 @@ async function updateCFTBalance() {
 
 async function fetchListings() {
     try {
+        if (!marketplaceContract) {
+            console.error("Marketplace contract is not initialized yet.");
+            return;
+        }
+
         const result = await marketplaceContract.methods.getActiveListings().call();
+        if (!result || result[0].length === 0) {
+            console.log("No active listings found.");
+            document.getElementById("listings-container").innerHTML = "<p class='text-center'>No active listings.</p>";
+            return;
+        }
+
         const listingIds = result[0];
         const listings = result[1];
         const container = document.getElementById("listings-container");
-        container.innerHTML = ""; // Clear previous listings
-
-        if (listingIds.length === 0) {
-            container.innerHTML = "<p class='text-center'>No active listings.</p>";
-            return;
-        }
+        container.innerHTML = "";
 
         for (let i = 0; i < listingIds.length; i++) {
             const listing = listings[i];
@@ -605,11 +612,9 @@ async function fetchListings() {
             const seller = tronWeb.address.fromHex(listing.seller);
             const amount = tronWeb.fromSun(listing.tokenAmount);
             const pricePerCFT = tronWeb.fromSun(listing.pricePerCFT);
-            const isSeller = seller === userAddress; // Check if the connected wallet is the seller
 
             const listingElement = document.createElement("div");
             listingElement.className = "col-12 col-md-10 single-staking-item mb-4";
-
             listingElement.innerHTML = `
                 <div class="card p-4">
                     <div class="content">
@@ -620,11 +625,9 @@ async function fetchListings() {
                     <div class="input-area d-flex flex-column mt-3">
                         <input type="number" id="buy-amount-${listingIds[i]}" class="form-control mb-2" placeholder="Amount to Buy">
                         <a href="#" class="btn input-btn mt-2" onclick="buyToken(${listingIds[i]})">Buy</a>
-                        ${isSeller ? `<a href="#" class="btn btn-danger mt-2" onclick="cancelListing(${listingIds[i]})">Cancel</a>` : ""}
                     </div>
                 </div>
             `;
-
             container.appendChild(listingElement);
         }
     } catch (error) {
@@ -665,7 +668,6 @@ async function listTokens() {
     }
 }
 
-
 async function buyToken(listingId) {
     const amountToBuy = document.getElementById(`buy-amount-${listingId}`).value;
     if (!amountToBuy || amountToBuy <= 0) {
@@ -687,33 +689,9 @@ async function buyToken(listingId) {
     }
 }
 
-async function updateTaxCollected() {
-    try {
-        const taxData = await marketplaceContract.methods.getTaxCollected().call();
-        const totalTrxTax = tronWeb.fromSun(taxData[0]);
-        const totalCftTax = tronWeb.fromSun(taxData[1]);
-
-        document.getElementById("tax-collected").innerText = `Collected Taxes: ${totalTrxTax} TRX / ${totalCftTax} CFT`;
-    } catch (error) {
-        console.error("Error fetching tax data:", error);
-    }
-}
-
-async function withdrawTaxes() {
-    try {
-        await marketplaceContract.methods.withdrawTaxes().send();
-        alert("Taxes withdrawn successfully!");
-        updateTaxCollected();
-    } catch (error) {
-        console.error("Error withdrawing taxes:", error);
-        alert("Failed to withdraw taxes.");
-    }
-}
-
 document.addEventListener("DOMContentLoaded", async () => {
-    document.getElementById("connect-button").addEventListener("click", connectWallet);
-    document.getElementById("list-button").addEventListener("click", listTokens);
-    
+    document.getElementById("connect-button")?.addEventListener("click", connectWallet);
+    document.getElementById("list-button")?.addEventListener("click", listTokens);
 
     if (await checkTronLinkInstalled()) {
         await connectWallet();
@@ -721,5 +699,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
+function formatNumber(num, decimals = 0) {
+    return Number(num).toLocaleString("en-US", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+    });
+}
 
 
