@@ -1,4 +1,4 @@
-let tronWeb, userAddress;
+
 const tokenContractAddress = 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA';
 const stakingContractAddress = 'TPLECu1WkQnQS5Hnm97TwxsWJYpr6ZeGcA';
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
