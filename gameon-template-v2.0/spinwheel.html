@@ -175,26 +175,36 @@
 		<!-- ***** Hero Area End ***** -->
 
 		
-		<!-- ***** Wheel of Fortune Area Start ***** -->
-<section class="wheel-of-fortune p-0">
+		<section class="wheel-of-fortune">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-12 col-md-10 text-center">
-                <h2 class="mb-5">Wheel of Fortune</h2>
+                <h2 class="mb-5 text-white">Wheel of Fortune</h2>
                 <div class="card p-4">
-                    <div class="wheel-container mb-4">
-                        <canvas id="wheel" width="400" height="400"></canvas>
+                    <p id="balance" class="mb-3 text-light">Your balance: 0 CFT</p>
+                    <div class="wheel-container">
+                        <ul class="wheel">
+                            <li class="segment lose" style="--_i: 0"><span>Lose</span></li>
+                            <li class="segment lose" style="--_i: 1"><span>Lose</span></li>
+                            <li class="segment lose" style="--_i: 2"><span>Lose</span></li>
+                            <li class="segment lose" style="--_i: 3"><span>Lose</span></li>
+                            <li class="segment lose" style="--_i: 4"><span>Lose</span></li>
+                            <li class="segment lose" style="--_i: 5"><span>Lose</span></li>
+                            <li class="segment lose" style="--_i: 6"><span>Lose</span></li>
+                            <li class="segment win2x" style="--_i: 7"><span>2x</span></li>
+                            <li class="segment win2x" style="--_i: 8"><span>2x</span></li>
+                            <li class="segment win3x" style="--_i: 9"><span>3x</span></li>
+                        </ul>
+                        <div class="pointer"></div>
                     </div>
-                    <p id="balance" class="mb-3">Your balance: 0 CFT</p>
                     <button id="approve-button" class="btn btn-bordered-white mb-3" style="display: none;">Approve</button>
-                    <button id="spin-button" class="btn btn-bordered active">Spin (50 CFT)</button>
-                    <p id="result" class="mt-3"></p>
+                    <button id="spin-button" class="btn btn-primary">Spin (50 CFT)</button>
+                    <p id="result" class="mt-3 text-light"></p>
                 </div>
             </div>
         </div>
     </div>
 </section>
-<!-- ***** Wheel of Fortune Area End ***** -->
 
 		<!-- ***** Hero Area Start ***** -->
 		<section class="hero-section">
