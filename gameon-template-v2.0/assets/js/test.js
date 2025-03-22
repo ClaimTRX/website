@@ -354,7 +354,7 @@ const stakingConfigs = {
         "stateMutability": "view",
         "type": "function"
     }
-]
+];
 
 
         tokenContractAbi: [
