@@ -1,64 +1,42 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // Replace with your deployed contract and token addresses
+    // Contract and token addresses
     const contractAddress = "TYmnqRGEQyjz3yUX482F9uZTaee8YprYRf";
     const tokenAddress = "TAME19SjDjKxC3omaJG5HWMTxhbHMrzWMi";
-    const tronWeb = window.tronWeb;
 
-    // Check for TronLink
+    // Check for TronLink and get TronWeb instance
+    const tronWeb = window.tronWeb;
     if (!tronWeb || !tronWeb.defaultAddress.base58) {
         alert("Please install TronLink and connect your wallet.");
         return;
     }
 
-    // Contract instances
+    // Initialize contracts
     const contract = await tronWeb.contract().at(contractAddress);
     const token = await tronWeb.contract().at(tokenAddress);
 
-    // Initialize the wheel
-    const theWheel = new Winwheel({
-        'numSegments': 10,
-        'outerRadius': 180,
-        'textFontSize': 16,
-        'segments': [
-            { 'fillStyle': '#ff4d4d', 'text': 'Lose' },
-            { 'fillStyle': '#ff4d4d', 'text': 'Lose' },
-            { 'fillStyle': '#ff4d4d', 'text': 'Lose' },
-            { 'fillStyle': '#ff4d4d', 'text': 'Lose' },
-            { 'fillStyle': '#ff4d4d', 'text': 'Lose' },
-            { 'fillStyle': '#ff4d4d', 'text': 'Lose' },
-            { 'fillStyle': '#ff4d4d', 'text': 'Lose' },
-            { 'fillStyle': '#00cc00', 'text': '2x' },
-            { 'fillStyle': '#00cc00', 'text': '2x' },
-            { 'fillStyle': '#ffd700', 'text': '3x' }
-        ],
-        'animation': {
-            'type': 'spinToStop',
-            'duration': 5,
-            'spins': 8,
-            'callbackFinished': () => {
-                const result = document.getElementById('result').innerText;
-                document.getElementById('spin-button').disabled = false;
-            }
-        }
-    });
-
-    // Elements
+    // Get UI elements
+    const wheel = document.querySelector('.wheel');
     const spinButton = document.getElementById('spin-button');
     const approveButton = document.getElementById('approve-button');
     const balanceDisplay = document.getElementById('balance');
     const resultDisplay = document.getElementById('result');
 
-    // Update balance
+    // Spin cost: 50 CFT tokens (assuming 6 decimals)
+    const spinCost = 50e6;
+
+    // Function to update and display user's token balance
     async function updateBalance() {
         const balance = await token.balanceOf(tronWeb.defaultAddress.base58).call();
-        balanceDisplay.innerText = `Your balance: ${(balance / 1e6).toFixed(2)} CFT`;
-        return balance;
+        const balanceNum = balance.toNumber();
+        balanceDisplay.innerText = `Your balance: ${(balanceNum / 1e6).toFixed(2)} CFT`;
+        return balanceNum;
     }
 
-    // Check and toggle approval
+    // Function to check if the contract is allowed to spend tokens
     async function checkAllowance() {
         const allowance = await token.allowance(tronWeb.defaultAddress.base58, contractAddress).call();
-        if (allowance < 50e6) {
+        const allowanceNum = allowance.toNumber();
+        if (allowanceNum < spinCost) {
             approveButton.style.display = 'inline-block';
             spinButton.style.display = 'none';
         } else {
@@ -67,11 +45,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Approve token spending
+    // Event listener for approving token spending
     approveButton.addEventListener('click', async () => {
         try {
             approveButton.disabled = true;
-            await token.approve(contractAddress, '1000000000').send({
+            // Approve a large amount to avoid frequent approvals
+            await token.approve(contractAddress, '1000000000000').send({
                 feeLimit: 100000000
             });
             await checkAllowance();
@@ -83,10 +62,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Spin the wheel
+    // Event listener for spinning the wheel
     spinButton.addEventListener('click', async () => {
         const balance = await updateBalance();
-        if (balance < 50e6) {
+        if (balance < spinCost) {
             resultDisplay.innerText = "Insufficient balance";
             return;
         }
@@ -95,14 +74,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         resultDisplay.innerText = "Spinning...";
 
         try {
-            // Send spin transaction
+            // Send the spin transaction
             await contract.spin().send({
-                callValue: 0,
+                callValue: 0, // No TRX required; tokens are handled by the contract
                 feeLimit: 100000000,
                 shouldPollResponse: false
             });
 
-            // Listen for SpinResult event
+            // Watch for the SpinResult event
             contract.SpinResult().watch((err, event) => {
                 if (err) {
                     console.error("Event watch error:", err);
@@ -111,30 +90,46 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
 
+                // Check if the event is for the current user
                 if (event.player.toLowerCase() === tronWeb.defaultAddress.hex.toLowerCase()) {
                     const multiplier = Number(event.multiplier);
-                    let segmentIndex;
 
+                    // Map multiplier to wheel segments (10 segments total)
+                    let segmentIndices;
                     if (multiplier === 0) {
-                        segmentIndex = Math.floor(Math.random() * 7) + 1; // Segments 1-7
+                        segmentIndices = [0, 1, 2, 3, 4, 5, 6]; // 7 "Lose" segments
                     } else if (multiplier === 2) {
-                        segmentIndex = Math.floor(Math.random() * 2) + 8; // Segments 8-9
+                        segmentIndices = [7, 8]; // 2 "2x" segments
                     } else if (multiplier === 3) {
-                        segmentIndex = 10; // Segment 10
+                        segmentIndices = [9]; // 1 "3x" segment
                     }
 
-                    const segment = theWheel.segments[segmentIndex];
-                    const stopAngle = segment.startAngle + Math.random() * (segment.endAngle - segment.startAngle);
-                    theWheel.animation.stopAngle = stopAngle;
-                    theWheel.startAnimation();
+                    // Choose a random segment from the possible indices
+                    const chosenIndex = segmentIndices[Math.floor(Math.random() * segmentIndices.length)];
+                    const centerAngle = chosenIndex * 36 + 18; // Center of the segment
+                    const targetRotation = ((270 - centerAngle) % 360 + 360) % 360; // Align with top pointer
+                    const fullSpins = 1440; // 4 full spins
+                    const rotation = fullSpins + targetRotation;
 
-                    resultDisplay.innerText = multiplier === 0 ? "You lost!" : `You won ${multiplier}x!`;
-                    updateBalance();
+                    // Animate the wheel
+                    wheel.style.transform = `rotate(${rotation}deg)`;
+
+                    // Display result after animation (5 seconds)
+                    setTimeout(() => {
+                        resultDisplay.innerText = multiplier === 0 ? "You lost!" : `You won ${multiplier}x!`;
+                        updateBalance();
+                        spinButton.disabled = false;
+                    }, 5000);
                 }
             });
         } catch (error) {
-            console.error("Spin failed:", error);
-            resultDisplay.innerText = "Spin failed. Please try again.";
+            // Handle transaction errors
+            if (error === 'Confirmation declined by user') {
+                resultDisplay.innerText = "Transaction declined.";
+            } else {
+                console.error("Spin failed:", error);
+                resultDisplay.innerText = "Spin failed. Please try again.";
+            }
             spinButton.disabled = false;
         }
     });
