@@ -1395,12 +1395,23 @@ async function initializeTronWeb() {
 async function updateAllUI() {
     for (let type in stakingConfigs) {
         await updateAvailableTokens(type);
+        await delay(400);
         await updateStakedAmount(type);
+        await delay(400);
         await updateEstimatedAPR(type);
+        await delay(400);
         await updateClaimableRewards(type);
+        await delay(400);
         await updateTotalClaimedRewards(type);
+        await delay(400);
     }
 }
+
+// Utility delay function
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 
 // UI update functions
 async function updateAvailableTokens(type) {
