@@ -196,8 +196,8 @@
                                         <div class="media flex-column flex-md-row">
                                             <img class="avatar-max-lg" src="assets/img/content/turu.png" alt="">
                                             <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                <h4 class="m-0">Stake BBT for BBT Rewards</h4>
-                                                <p>Stake BBT tokens for BBT rewards.</p>
+                                                <h4 class="m-0">BBT Staking</h4>
+                                                <p>Stake BBT for BBT rewards.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -254,8 +254,8 @@
                                         <div class="media flex-column flex-md-row">
                                             <img class="avatar-max-lg" src="assets/img/content/king.png" alt="">
                                             <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                <h4 class="m-0">Stake KING for CFT Rewards</h4>
-                                                <p>Stake KING tokens for CFT rewards.</p>
+                                                <h4 class="m-0">KING Staking</h4>
+                                                <p>Stake KING for CFT rewards.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -271,8 +271,32 @@
                     <div id="collapseKING" class="collapse" data-bs-parent="#gameon-accordion">
                         <div class="card-body">
                             <div class="row">
-                                <!-- Repeat input areas (deposit, withdraw, rewards) using appropriate IDs like stake-amount-king -->
-                                <!-- ... (same as above but using 'king' in IDs) ... -->
+                                <!-- Deposit -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Deposit</span>
+                                    <span id="available-tokens-king"></span> available
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="stake-amount-king"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="stake-button-king">Stake</a>
+                                    </div>
+                                </div>
+                                <!-- Withdraw -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Withdraw</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-king"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="unstake-button-king">Withdraw</a>
+                                    </div>
+                                </div>
+                                <!-- Rewards -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Pending Rewards</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <h4 class="price m-0" id="claimable-rewards-king">0 CFT</h4>
+                                        <span class="reward my-2">Energy cost applies</span>
+                                        <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-king"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -288,8 +312,8 @@
                                         <div class="media flex-column flex-md-row">
                                             <img class="avatar-max-lg" src="assets/img/content/fym.png" alt="">
                                             <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                <h4 class="m-0">Stake FYM for CFT Rewards</h4>
-                                                <p>Stake FYM tokens for CFT rewards.</p>
+                                                <h4 class="m-0">FYM Staking</h4>
+                                                <p>Stake FYM for CFT rewards.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -305,7 +329,32 @@
                     <div id="collapseFYM" class="collapse" data-bs-parent="#gameon-accordion">
                         <div class="card-body">
                             <div class="row">
-                                <!-- Repeat input areas using 'fym' in IDs -->
+                                <!-- Deposit -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Deposit</span>
+                                    <span id="available-tokens-fym"></span> available
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="stake-amount-fym"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="stake-button-fym">Stake</a>
+                                    </div>
+                                </div>
+                                <!-- Withdraw -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Withdraw</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-fym"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="unstake-button-fym">Withdraw</a>
+                                    </div>
+                                </div>
+                                <!-- Rewards -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Pending Rewards</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <h4 class="price m-0" id="claimable-rewards-fym">0 CFT</h4>
+                                        <span class="reward my-2">Energy cost applies</span>
+                                        <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-fym"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -321,8 +370,8 @@
                                         <div class="media flex-column flex-md-row">
                                             <img class="avatar-max-lg" src="assets/img/content/hos.png" alt="">
                                             <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                <h4 class="m-0">Stake HOS for CFT Rewards</h4>
-                                                <p>Stake HOS tokens for CFT rewards.</p>
+                                                <h4 class="m-0">HOS Staking</h4>
+                                                <p>Stake HOS for CFT rewards.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -338,18 +387,44 @@
                     <div id="collapseHOS" class="collapse" data-bs-parent="#gameon-accordion">
                         <div class="card-body">
                             <div class="row">
-                                <!-- Repeat input areas using 'hos' in IDs -->
+                                <!-- Deposit -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Deposit</span>
+                                    <span id="available-tokens-hos"></span> available
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="stake-amount-hos"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="stake-button-hos">Stake</a>
+                                    </div>
+                                </div>
+                                <!-- Withdraw -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Withdraw</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-hos"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="unstake-button-hos">Withdraw</a>
+                                    </div>
+                                </div>
+                                <!-- Rewards -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Pending Rewards</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <h4 class="price m-0" id="claimable-rewards-hos">0 CFT</h4>
+                                        <span class="reward my-2">Energy cost applies</span>
+                                        <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-hos"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- End of All Staking Panels -->
+                <!-- End of Unified Staking Sections -->
             </div>
         </div>
     </div>
 </section>
 <!-- ***** Staking Area End ***** -->
+
 
 
 		<!-- ***** CTA Area Start ***** -->
