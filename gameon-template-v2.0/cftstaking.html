@@ -182,216 +182,216 @@
 
 		<!-- Staking Area -->
     <section class="staking-area">
-        <div id="gameon-accordion" class="container accordion">
-            <div class="row justify-content-center">
-                <div class="col-12 col-md-10">
-                    <!-- CFT Staking -->
-                    <div class="single-accordion-item">
-                        <div class="card-header bg-inherit border-0 p-0">
-                            <h2 class="m-0">
-                                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
-                                    <div class="row">
-                                        <div class="col-12 col-md-8">
-                                            <div class="media flex-column flex-md-row">
-                                                <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
-                                                <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                    <h4 class="m-0">Stake CFT for CFT Rewards</h4>
-                                                    <p>Stake your CFT tokens for daily CFT rewards.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
-                                        <div class="col single-item">
-                                            <span id="staked-amount-token1"></span>
-                                            <span>Staked</span>
-                                        </div>
-                                        <div class="col single-item">
-                                            <span id="estimated-apr-token1"></span>
-                                            <span>APY</span>
-                                        </div>
-                                        <div class="col single-item">
-                                            <span id="total-claimed-rewards-token1"></span>
-                                            <span>Total Claimed</span>
-                                        </div>
-                                    </div>
-                                </button>
-                            </h2>
-                        </div>
-                        <div id="collapseOne" class="collapse" data-bs-parent="#gameon-accordion">
-                            <div class="card-body">
+    <div id="gameon-accordion" class="container accordion">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-10">
+                <!-- CFT Staking -->
+                <div class="single-accordion-item">
+                    <div class="card-header bg-inherit border-0 p-0">
+                        <h2 class="m-0">
+                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
                                 <div class="row">
-                                    <div class="col-12 col-md-4 single-staking-item input-box">
-                                        <span class="item-title mb-2">Deposit</span>
-                                        <span id="available-tokens-token1"></span> available
-                                        <div class="input-area d-flex flex-column">
-                                            <div class="input-text">
-                                                <input type="text" placeholder="0" id="stake-amount-token1">
+                                    <div class="col-12 col-md-8">
+                                        <div class="media flex-column flex-md-row">
+                                            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                <h4 class="m-0">Stake CFT for CFT Rewards</h4>
+                                                <p>Stake your CFT tokens for daily CFT rewards.</p>
                                             </div>
-                                            <a href="#" class="btn input-btn mt-2" id="stake-button-token1">Stake</a>
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-md-4 single-staking-item input-box">
-                                        <span class="item-title mb-2">Withdraw</span>
-                                        <div class="input-area d-flex flex-column">
-                                            <div class="input-text">
-                                                <input type="text" placeholder="0" id="withdraw-amount-token1">
-                                            </div>
-                                            <a href="#" class="btn input-btn mt-2" id="unstake-button-token1">Withdraw</a>
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-md-4 single-staking-item input-box">
-                                        <span class="item-title mb-2">Pending Rewards</span>
-                                        <div class="input-area d-flex flex-column">
-                                            <h4 class="price m-0" id="claimable-rewards-token1">0 CFT</h4>
-                                            <span class="reward my-2">Energy cost applies</span>
-                                            <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-token1"><i class="fa-solid fa-lock me-1"></i> Claim</a>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TRX Staking -->
-                    <div class="single-accordion-item">
-                        <div class="card-header bg-inherit border-0 p-0">
-                            <h2 class="m-0">
-                                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
-                                    <div class="row">
-                                        <div class="col-12 col-md-8">
-                                            <div class="media flex-column flex-md-row">
-                                                <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
-                                                <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                    <h4 class="m-0">Stake CFT for TRX Rewards</h4>
-                                                    <p>Stake your CFT tokens for TRX rewards.</p>
-                                                </div>
-                                            </div>
-                                        </div>
+                                <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                    <div class="col single-item">
+                                        <span id="staked-amount-cft"></span>
+                                        <span>Staked</span>
                                     </div>
-                                    <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
-                                        <div class="col single-item">
-                                            <span id="staked-amount-token2"></span>
-                                            <span>Staked</span>
-                                        </div>
-                                        <div class="col single-item">
-                                            <span id="estimated-apr-token2"></span>
-                                            <span>APR</span>
-                                        </div>
-                                        <div class="col single-item">
-                                            <span id="total-claimed-rewards-token2"></span>
-                                            <span>Total Claimed</span>
-                                        </div>
+                                    <div class="col single-item">
+                                        <span id="estimated-apr-cft"></span>
+                                        <span>APY</span>
                                     </div>
-                                </button>
-                            </h2>
-                        </div>
-                        <div id="collapseTwo" class="collapse" data-bs-parent="#gameon-accordion">
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-12 col-md-4 single-staking-item input-box">
-                                        <span class="item-title mb-2">Deposit</span>
-                                        <span id="available-tokens-token2"></span> available
-                                        <div class="input-area d-flex flex-column">
-                                            <div class="input-text">
-                                                <input type="text" placeholder="0" id="stake-amount-token2">
-                                            </div>
-                                            <a href="#" class="btn input-btn mt-2" id="stake-button-token2">Stake</a>
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-md-4 single-staking-item input-box">
-                                        <span class="item-title mb-2">Withdraw</span>
-                                        <div class="input-area d-flex flex-column">
-                                            <div class="input-text">
-                                                <input type="text" placeholder="0" id="withdraw-amount-token2">
-                                            </div>
-                                            <a href="#" class="btn input-btn mt-2" id="unstake-button-token2">Withdraw</a>
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-md-4 single-staking-item input-box">
-                                        <span class="item-title mb-2">Pending Rewards</span>
-                                        <div class="input-area d-flex flex-column">
-                                            <h4 class="price m-0" id="claimable-rewards-token2">0 TRX</h4>
-                                            <span class="reward my-2">Energy cost applies</span>
-                                            <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-token2"><i class="fa-solid fa-lock me-1"></i> Claim</a>
-                                        </div>
+                                    <div class="col single-item">
+                                        <span id="total-claimed-rewards-cft"></span>
+                                        <span>Total Claimed</span>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+                            </button>
+                        </h2>
                     </div>
-
-                    <!-- USDT Staking -->
-                    <div class="single-accordion-item">
-                        <div class="card-header bg-inherit border-0 p-0">
-                            <h2 class="m-0">
-                                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
-                                    <div class="row">
-                                        <div class="col-12 col-md-8">
-                                            <div class="media flex-column flex-md-row">
-                                                <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
-                                                <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                    <h4 class="m-0">Stake CFT for USDT Rewards</h4>
-                                                    <p>Stake your CFT tokens for USDT rewards.</p>
-                                                </div>
-                                            </div>
+                    <div id="collapseOne" class="collapse" data-bs-parent="#gameon-accordion">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Deposit</span>
+                                    <span id="available-tokens-cft"></span> available
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text">
+                                            <input type="text" placeholder="0" id="stake-amount-cft">
                                         </div>
+                                        <a href="#" class="btn input-btn mt-2" id="stake-button-cft">Stake</a>
                                     </div>
-                                    <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
-                                        <div class="col single-item">
-                                            <span id="staked-amount-token3"></span>
-                                            <span>Staked</span>
+                                </div>
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Withdraw</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text">
+                                            <input type="text" placeholder="0" id="withdraw-amount-cft">
                                         </div>
-                                        <div class="col single-item">
-                                            <span id="estimated-apr-token3"></span>
-                                            <span>APR</span>
-                                        </div>
-                                        <div class="col single-item">
-                                            <span id="total-claimed-rewards-token3"></span>
-                                            <span>Total Claimed</span>
-                                        </div>
+                                        <a href="#" class="btn input-btn mt-2" id="unstake-button-cft">Withdraw</a>
                                     </div>
-                                </button>
-                            </h2>
-                        </div>
-                        <div id="collapseThree" class="collapse" data-bs-parent="#gameon-accordion">
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-12 col-md-4 single-staking-item input-box">
-                                        <span class="item-title mb-2">Deposit</span>
-                                        <span id="available-tokens-token3"></span> available
-                                        <div class="input-area d-flex flex-column">
-                                            <div class="input-text">
-                                                <input type="text" placeholder="0" id="stake-amount-token3">
-                                            </div>
-                                            <a href="#" class="btn input-btn mt-2" id="stake-button-token3">Stake</a>
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-md-4 single-staking-item input-box">
-                                        <span class="item-title mb-2">Withdraw</span>
-                                        <div class="input-area d-flex flex-column">
-                                            <div class="input-text">
-                                                <input type="text" placeholder="0" id="withdraw-amount-token3">
-                                            </div>
-                                            <a href="#" class="btn input-btn mt-2" id="unstake-button-token3">Withdraw</a>
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-md-4 single-staking-item input-box">
-                                        <span class="item-title mb-2">Pending Rewards</span>
-                                        <div class="input-area d-flex flex-column">
-                                            <h4 class="price m-0" id="claimable-rewards-token3">0 USDT</h4>
-                                            <span class="reward my-2">Energy cost applies</span>
-                                            <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-token3"><i class="fa-solid fa-lock me-1"></i> Claim</a>
-                                        </div>
+                                </div>
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Pending Rewards</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <h4 class="price m-0" id="claimable-rewards-cft">0 CFT</h4>
+                                        <span class="reward my-2">Energy cost applies</span>
+                                        <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-cft"><i class="fa-solid fa-lock me-1"></i> Claim</a>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- TRX Staking -->
+                <div class="single-accordion-item">
+                    <div class="card-header bg-inherit border-0 p-0">
+                        <h2 class="m-0">
+                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                                <div class="row">
+                                    <div class="col-12 col-md-8">
+                                        <div class="media flex-column flex-md-row">
+                                            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                <h4 class="m-0">Stake CFT for TRX Rewards</h4>
+                                                <p>Stake your CFT tokens for TRX rewards.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                    <div class="col single-item">
+                                        <span id="staked-amount-trx"></span>
+                                        <span>Staked</span>
+                                    </div>
+                                    <div class="col single-item">
+                                        <span id="estimated-apr-trx"></span>
+                                        <span>APR</span>
+                                    </div>
+                                    <div class="col single-item">
+                                        <span id="total-claimed-rewards-trx"></span>
+                                        <span>Total Claimed</span>
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseTwo" class="collapse" data-bs-parent="#gameon-accordion">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Deposit</span>
+                                    <span id="available-tokens-trx"></span> available
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text">
+                                            <input type="text" placeholder="0" id="stake-amount-trx">
+                                        </div>
+                                        <a href="#" class="btn input-btn mt-2" id="stake-button-trx">Stake</a>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Withdraw</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text">
+                                            <input type="text" placeholder="0" id="withdraw-amount-trx">
+                                        </div>
+                                        <a href="#" class="btn input-btn mt-2" id="unstake-button-trx">Withdraw</a>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Pending Rewards</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <h4 class="price m-0" id="claimable-rewards-trx">0 TRX</h4>
+                                        <span class="reward my-2">Energy cost applies</span>
+                                        <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-trx"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- USDT Staking -->
+                <div class="single-accordion-item">
+                    <div class="card-header bg-inherit border-0 p-0">
+                        <h2 class="m-0">
+                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                                <div class="row">
+                                    <div class="col-12 col-md-8">
+                                        <div class="media flex-column flex-md-row">
+                                            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                <h4 class="m-0">Stake CFT for USDT Rewards</h4>
+                                                <p>Stake your CFT tokens for USDT rewards.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                    <div class="col single-item">
+                                        <span id="staked-amount-usdt"></span>
+                                        <span>Staked</span>
+                                    </div>
+                                    <div class="col single-item">
+                                        <span id="estimated-apr-usdt"></span>
+                                        <span>APR</span>
+                                    </div>
+                                    <div class="col single-item">
+                                        <span id="total-claimed-rewards-usdt"></span>
+                                        <span>Total Claimed</span>
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseThree" class="collapse" data-bs-parent="#gameon-accordion">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Deposit</span>
+                                    <span id="available-tokens-usdt"></span> available
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text">
+                                            <input type="text" placeholder="0" id="stake-amount-usdt">
+                                        </div>
+                                        <a href="#" class="btn input-btn mt-2" id="stake-button-usdt">Stake</a>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Withdraw</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text">
+                                            <input type="text" placeholder="0" id="withdraw-amount-usdt">
+                                        </div>
+                                        <a href="#" class="btn input-btn mt-2" id="unstake-button-usdt">Withdraw</a>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Pending Rewards</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <h4 class="price m-0" id="claimable-rewards-usdt">0 USDT</h4>
+                                        <span class="reward my-2">Energy cost applies</span>
+                                        <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-usdt"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- End USDT -->
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
 		<!-- ***** FAQ Area Start ***** -->
 		<section class="faq-area pt-0">
