@@ -1496,11 +1496,20 @@ async function stakeTokens(type) {
     const tokenContract = tokenContracts[type];
     const stakingContract = stakingContracts[type];
     const decimals = await tokenContract.methods.decimals().call();
-    const amountToStake = BigInt(amount) * BigInt(10 ** decimals);
-    await tokenContract.methods.approve(stakingConfigs[type].stakingContractAddress, maxUint256).send();
+    const amountToStake = BigInt(parseFloat(amount) * (10 ** decimals));
+
+    const allowance = await tokenContract.methods.allowance(userAddress, stakingConfigs[type].stakingContractAddress).call();
+    const allowanceBigInt = BigInt(allowance);
+
+    if (allowanceBigInt < amountToStake) {
+        await tokenContract.methods.approve(stakingConfigs[type].stakingContractAddress, maxUint256).send();
+        await delay(1000); // slight delay to allow allowance update to propagate
+    }
+
     await stakingContract.methods.stake(amountToStake.toString()).send();
     setTimeout(() => updateAllUI(), 3000);
 }
+
 
 async function unstakeTokens(type) {
     const amount = document.getElementById(`withdraw-amount-${type}`).value;
