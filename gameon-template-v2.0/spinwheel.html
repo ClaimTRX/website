@@ -1,384 +1,235 @@
-<!doctype html>
-<html class="no-js" lang="en">
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<meta name="description" content="">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-
-	<!-- The above 4 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-
-	<!-- Title  -->
-	<title>CFT Ecosystem. The first treasury VC on Tron</title>
-
-	<!-- Favicon  -->
-	<link rel="icon" href="assets/img/favicon.png">
-
-	<!-- ***** All CSS Files ***** -->
-
-	<!-- Style css -->
-	<link rel="stylesheet" href="assets/css/style.css">
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wheel of Fortune</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css"> <!-- Your custom CSS -->
+    <style>
+        /* Custom CSS for the wheel */
+        .wheel-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            margin: 0 auto;
+        }
+        .wheel {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+            transform: rotate(0deg);
+            transition: transform 5s ease-out;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        }
+        .segment {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            transform-origin: 100% 100%;
+            clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+        .lose { background: linear-gradient(45deg, #ff4d4d, #ff8080); }
+        .win2x { background: linear-gradient(45deg, #00cc00, #66ff66); }
+        .win3x { background: linear-gradient(45deg, #ffd700, #fff700); }
+        .pointer {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 40px solid #ffffff;
+            z-index: 10;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+        }
+        .btn-primary { background-color: #007bff; border: none; }
+        .btn-primary:hover { background-color: #0056b3; }
+        .btn-bordered-white { border: 2px solid white; color: white; background: transparent; }
+        .card { background: #1a1e33; border: none; border-radius: 10px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); }
+        .text-light { color: #d3d3d3; }
+        @media (max-width: 576px) {
+            .wheel-container { width: 300px; height: 300px; }
+            .segment { font-size: 14px; }
+            .btn-primary, .btn-bordered-white { padding: 8px 16px; font-size: 14px; }
+        }
+    </style>
 </head>
-
 <body>
-	<!--====== Preloader Area Start ======-->
-	<div id="gameon-preloader" class="gameon-preloader">
-		<!-- Preloader Animation -->
-		<div class="preloader-animation">
-			<!-- Spinner -->
-			<div class="spinner"></div>
-			<p class="fw-5 text-center text-uppercase">Loading</p>
-		</div>
-		<!-- Loader Animation -->
-		<div class="loader-animation">
-			<div class="row h-100">
-				<!-- Single Loader -->
-				<div class="col-3 single-loader p-0">
-					<div class="loader-bg"></div>
-				</div>
-				<!-- Single Loader -->
-				<div class="col-3 single-loader p-0">
-					<div class="loader-bg"></div>
-				</div>
-				<!-- Single Loader -->
-				<div class="col-3 single-loader p-0">
-					<div class="loader-bg"></div>
-				</div>
-				<!-- Single Loader -->
-				<div class="col-3 single-loader p-0">
-					<div class="loader-bg"></div>
-				</div>
-			</div>
-		</div>
-	</div>
-	<!--====== Preloader Area End ======-->
-
-	<div class="main">
-		<!-- ***** Header Start ***** -->
-		<header id="header">
-			<!-- Navbar -->
-			<nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
-				<div class="container header">
-
-					<!-- Logo -->
-					<a class="navbar-brand" href="index.html">
-						<img src="assets/img/logo/logo.png" alt="" />
-					</a>
-
-					<div class="ms-auto"></div>
-
-					<!-- Navbar Nav -->
-					<ul class="navbar-nav items mx-auto">
-						<li class="nav-item">
-							<a href="index.html" class="nav-link">Home</a>
-						</li>
-						<li class="nav-item dropdown">
-							<a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
-							<ul class="dropdown-menu">
-								<li class="nav-item">
-									<a href="buycft.html" class="nav-link">Buy CFT</a>
-								</li>
-								<li class="nav-item">
-									<a href="cftstaking.html" class="nav-link">Stake CFT</a>
-								</li>
-								<li class="nav-item">
-									<a href="trc20staking.html" class="nav-link">Stake TRC20</a>
-								</li>
-							</ul>
-						</li>
-						<li class="nav-item dropdown">
-							<a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
-							<ul class="dropdown-menu">
-								<li class="nav-item">
-									<a href="buystablex.html" class="nav-link">Buy StableX</a>
-								</li>
-								<li class="nav-item">
-									<a href="stablexstaking.html" class="nav-link">Stake StableX</a>
-								</li>
-							</ul>
-						</li>
-						<li class="nav-item dropdown">
-							<a href="#" class="nav-link">CFT VC <i class="icon-arrow-down"></i></a>
-							<ul class="dropdown-menu">
-								<li class="nav-item">
-									<a href="blog-single.html" class="nav-link">Info</a>
-								</li>
-							</ul>
-						</li>
-
-						<li class="nav-item">
-									<a href="energy.html" class="nav-link">VIP</a>
-								</li>
-						
-						
-					</ul>
-
-					<!-- Navbar Icons -->
-					
-
-					<!-- Navbar Toggler -->
-					<ul class="navbar-nav toggle">
-						<li class="nav-item">
-							<a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
-								<i class="icon-menu m-0"></i>
-							</a>
-						</li>
-					</ul>
-
-					<!-- Navbar Action Button -->
-					<ul class="navbar-nav action">
-						<ul class="navbar-nav action">
-    <li class="nav-item ms-2">
-        <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
-            <i class="icon-wallet me-md-2"></i> Wallet Connect
-        </button>
-    </li>
-</ul>
-
-					</ul>
-
-				</div>
-			</nav>
-		</header>
-		<!-- ***** Header End ***** -->
-
-		<!-- ***** Hero Area Start ***** -->
-		<section class="hero-section">
-			<div class="container">
-				<div class="row align-items-center justify-content-center">
-					<div class="col-12 col-md-6 col-lg-9 text-center">
-						<!-- Hero Content -->
-						<div class="hero-content">
-							<div class="intro text-center mb-5">
-								<span class="intro-text">CFT Ecosystem</span>
-								<h1 class="mt-4">Buy CFT</h1>
-								<p>Grow your project through staking rewards</p>
-							</div>
-							<!-- Buttons -->
-							<div class="button-group">
-								<a class="btn btn-bordered active" href="buycft.html">
-    <i class="icon-rocket me-2"></i>Buy CFT
-</a>
-
-								<a class="btn btn-bordered-white" ><i class="icon-note me-2"></i>Coming Soon</a>
-								<a class="btn btn-bordered-white" href="cftstaking.html"><i class="fa-solid fa-coins me-2"></i> Stake Now</a>
-
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- ***** Hero Area End ***** -->
-
-		
-		<section class="wheel-of-fortune">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-12 col-md-10 text-center">
-                <h2 class="mb-5 text-white">Wheel of Fortune</h2>
-                <div class="card p-4">
-                    <p id="balance" class="mb-3 text-light">Your balance: 0 CFT</p>
-                    <div class="wheel-container">
-                        <ul class="wheel">
-                            <li class="segment lose" style="--_i: 0"><span>Lose</span></li>
-                            <li class="segment lose" style="--_i: 1"><span>Lose</span></li>
-                            <li class="segment lose" style="--_i: 2"><span>Lose</span></li>
-                            <li class="segment lose" style="--_i: 3"><span>Lose</span></li>
-                            <li class="segment lose" style="--_i: 4"><span>Lose</span></li>
-                            <li class="segment lose" style="--_i: 5"><span>Lose</span></li>
-                            <li class="segment lose" style="--_i: 6"><span>Lose</span></li>
-                            <li class="segment win2x" style="--_i: 7"><span>2x</span></li>
-                            <li class="segment win2x" style="--_i: 8"><span>2x</span></li>
-                            <li class="segment win3x" style="--_i: 9"><span>3x</span></li>
-                        </ul>
-                        <div class="pointer"></div>
+    <section class="wheel-of-fortune p-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-12 col-md-10 text-center">
+                    <h2 class="mb-5 text-white">Wheel of Fortune</h2>
+                    <div class="card p-4">
+                        <p id="balance" class="mb-3 text-light">Your balance: 0 CFT</p>
+                        <div class="wheel-container">
+                            <div class="wheel" id="wheel">
+                                <div class="segment lose" style="transform: rotate(0deg);"><span>Lose</span></div>
+                                <div class="segment lose" style="transform: rotate(36deg);"><span>Lose</span></div>
+                                <div class="segment lose" style="transform: rotate(72deg);"><span>Lose</span></div>
+                                <div class="segment lose" style="transform: rotate(108deg);"><span>Lose</span></div>
+                                <div class="segment lose" style="transform: rotate(144deg);"><span>Lose</span></div>
+                                <div class="segment lose" style="transform: rotate(180deg);"><span>Lose</span></div>
+                                <div class="segment lose" style="transform: rotate(216deg);"><span>Lose</span></div>
+                                <div class="segment win2x" style="transform: rotate(252deg);"><span>2x</span></div>
+                                <div class="segment win2x" style="transform: rotate(288deg);"><span>2x</span></div>
+                                <div class="segment win3x" style="transform: rotate(324deg);"><span>3x</span></div>
+                            </div>
+                            <div class="pointer"></div>
+                        </div>
+                        <button id="approve-button" class="btn btn-bordered-white mb-3" style="display: none;">Approve</button>
+                        <button id="spin-button" class="btn btn-primary">Spin (50 CFT)</button>
+                        <p id="result" class="mt-3 text-light"></p>
                     </div>
-                    <button id="approve-button" class="btn btn-bordered-white mb-3" style="display: none;">Approve</button>
-                    <button id="spin-button" class="btn btn-primary">Spin (50 CFT)</button>
-                    <p id="result" class="mt-3 text-light"></p>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-		<!-- ***** Hero Area Start ***** -->
-		<section class="hero-section">
-			<div class="container">
-				<div class="row align-items-center justify-content-center">
-					<div class="col-12 col-md-6 col-lg-9 text-center">
-						<!-- Hero Content -->
-						<div class="hero-content">
-							<div class="intro text-center mb-5">
-								
-							<!-- Buttons -->
-							<div class="button-group">
-								
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Contract and token addresses
+            const contractAddress = "TYmnqRGEQyjz3yUX482F9uZTaee8YprYRf";
+            const tokenAddress = "TAME19SjDjKxC3omaJG5HWMTxhbHMrzWMi";
 
-								
-								<a class="btn btn-bordered-white" href="sellcft.html"><i class="fa-solid fa-coins me-2"></i>Sell CFT</a>
+            // Check for TronLink
+            const tronWeb = window.tronWeb;
+            if (!tronWeb || !tronWeb.defaultAddress.base58) {
+                alert("Please install TronLink and connect your wallet.");
+                return;
+            }
 
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- ***** Hero Area End ***** -->
+            // Initialize contracts
+            const contract = await tronWeb.contract().at(contractAddress);
+            const token = await tronWeb.contract().at(tokenAddress);
 
-		
+            // UI elements
+            const wheel = document.getElementById('wheel');
+            const spinButton = document.getElementById('spin-button');
+            const approveButton = document.getElementById('approve-button');
+            const balanceDisplay = document.getElementById('balance');
+            const resultDisplay = document.getElementById('result');
 
-		
+            // Spin cost: 50 CFT tokens (assuming 6 decimals)
+            const spinCost = 50e6;
 
-		<!-- ***** CTA Area Start ***** -->
-		<section class="cta-area p-0">
-			<div class="container">
-				<div class="row">
-					<div class="col-12 card">
-						<div class="row align-items-center justify-content-center">
-							<div class="col-12 col-md-5 text-center">
-								<img src="assets/img/content/cftlogo300.png" alt="">
-							</div>
-							<div class="col-12 col-md-6 mt-4 mt-md-0">
-								<h2 class="m-0">Apply for project staking</h2>
-								<p>Earn weekly rewards from staked CFT to build your project</p>
-								<p>Soon available for projects on any chain</p>
-								<a class="btn btn-bordered active d-inline-block" ><i class="icon-rocket me-2"></i>Coming Soon</a>
-							</div>
-						</div>
-						<a class="cta-link" href="apply.html"></a>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- ***** CTA Area End ***** -->
+            // Update balance
+            async function updateBalance() {
+                const balance = await token.balanceOf(tronWeb.defaultAddress.base58).call();
+                const balanceNum = balance.toNumber();
+                balanceDisplay.innerText = `Your balance: ${(balanceNum / 1e6).toFixed(2)} CFT`;
+                return balanceNum;
+            }
 
-		<!--====== Footer Area Start ======-->
-		<footer class="footer-area">
-			<div class="container">
-				<div class="row justify-content-center">
-					<div class="col-12 col-md-8 text-center">
-						<!-- Footer Items -->
-						<div class="footer-items">
-							<!-- Logo -->
-							<a class="navbar-brand" href="index.html">
-								<img src="assets/img/logo/logo.png" alt="">
-							</a>
-							<!-- Social Icons -->
-							<div class="social-icons d-flex justify-content-center my-4">
-    <!-- X (Formerly Twitter) -->
-    <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank">
-        <i class="fab fa-x-twitter"></i>
-    </a>
+            // Check allowance
+            async function checkAllowance() {
+                const allowance = await token.allowance(tronWeb.defaultAddress.base58, contractAddress).call();
+                const allowanceNum = allowance.toNumber();
+                if (allowanceNum < spinCost) {
+                    approveButton.style.display = 'inline-block';
+                    spinButton.style.display = 'none';
+                } else {
+                    approveButton.style.display = 'none';
+                    spinButton.style.display = 'inline-block';
+                }
+            }
 
-    <!-- Reddit -->
-    <a class="reddit" href="https://www.reddit.com/" target="_blank">
-        <i class="fab fa-reddit"></i>
-    </a>
+            // Approve token spending
+            approveButton.addEventListener('click', async () => {
+                try {
+                    approveButton.disabled = true;
+                    await token.approve(contractAddress, '1000000000000').send({
+                        feeLimit: 100000000
+                    });
+                    await checkAllowance();
+                } catch (error) {
+                    console.error("Approval failed:", error);
+                    resultDisplay.innerText = "Approval failed. Please try again.";
+                } finally {
+                    approveButton.disabled = false;
+                }
+            });
 
-    <!-- Telegram -->
-    <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank">
-        <i class="fab fa-telegram-plane"></i>
-    </a>
-</div>
+            // Spin the wheel
+            spinButton.addEventListener('click', async () => {
+                const balance = await updateBalance();
+                if (balance < spinCost) {
+                    resultDisplay.innerText = "Insufficient balance";
+                    return;
+                }
 
+                spinButton.disabled = true;
+                resultDisplay.innerText = "Spinning...";
 
-							
-							<!-- Copyright Area -->
-							<div class="copyright-area py-4">&copy;2025 CFT Ecosystem, All Rights Reserved </div>
-						</div>
-						<!-- Scroll To Top -->
-						<div id="scroll-to-top" class="scroll-to-top">
-							<a href="#header" class="smooth-anchor">
-								<i class="fa-solid fa-arrow-up"></i>
-							</a>
-						</div>
-					</div>
-				</div>
-			</div>
-		</footer>
-		<!--====== Footer Area End ======-->
+                try {
+                    await contract.spin().send({
+                        callValue: 0,
+                        feeLimit: 100000000,
+                        shouldPollResponse: false
+                    });
 
-		<!--====== Modal Search Area Start ======-->
-		<div id="search" class="modal fade p-0">
-			<div class="modal-dialog dialog-animated">
-				<div class="modal-content h-100">
-					<div class="modal-header" data-bs-dismiss="modal">
-						Search <i class="far fa-times-circle icon-close"></i>
-					</div>
-					<div class="modal-body">
-						<form class="row">
-							<div class="col-12 align-self-center">
-								<div class="row">
-									<div class="col-12 pb-3">
-										<h2 class="search-title mt-0 mb-3">What are you looking for?</h2>
-										<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-									</div>
-								</div>
-								<div class="row">
-									<div class="col-12 input-group mt-md-4">
-										<input type="text" placeholder="Enter your keywords">
-									</div>
-								</div>
-								<div class="row">
-									<div class="col-12 input-group align-self-center">
-										<button class="btn btn-bordered-white mt-3">Search</button>
-									</div>
-								</div>
-							</div>
-						</form>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!--====== Modal Search Area End ======-->
+                    contract.SpinResult().watch((err, event) => {
+                        if (err) {
+                            console.error("Event watch error:", err);
+                            resultDisplay.innerText = "Error processing spin.";
+                            spinButton.disabled = false;
+                            return;
+                        }
 
-		<!--====== Modal Responsive Menu Area Start ======-->
-		<div id="menu" class="modal fade p-0">
-			<div class="modal-dialog dialog-animated">
-				<div class="modal-content h-100">
-					<div class="modal-header" data-bs-dismiss="modal">
-						Menu <i class="far fa-times-circle icon-close"></i>
-					</div>
-					<div class="menu modal-body">
-						<div class="row w-100">
-							<div class="items p-0 col-12 text-center"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!--====== Modal Responsive Menu Area End ======-->
+                        if (event.player.toLowerCase() === tronWeb.defaultAddress.hex.toLowerCase()) {
+                            const multiplier = Number(event.multiplier);
+                            let segmentIndices;
+                            if (multiplier === 0) {
+                                segmentIndices = [0, 1, 2, 3, 4, 5, 6]; // Lose
+                            } else if (multiplier === 2) {
+                                segmentIndices = [7, 8]; // 2x
+                            } else if (multiplier === 3) {
+                                segmentIndices = [9]; // 3x
+                            }
 
-	</div>
+                            const chosenIndex = segmentIndices[Math.floor(Math.random() * segmentIndices.length)];
+                            const centerAngle = chosenIndex * 36 + 18;
+                            const targetRotation = ((270 - centerAngle) % 360 + 360) % 360;
+                            const fullSpins = 1440;
+                            const rotation = fullSpins + targetRotation;
 
-	<!-- ***** All jQuery Plugins ***** -->
+                            wheel.style.transform = `rotate(${rotation}deg)`;
 
-	<!-- jQuery(necessary for all JavaScript plugins) -->
-	<script src="assets/js/vendor/jquery.min.js"></script>
+                            setTimeout(() => {
+                                resultDisplay.innerText = multiplier === 0 ? "You lost!" : `You won ${multiplier}x!`;
+                                updateBalance();
+                                spinButton.disabled = false;
+                            }, 5000);
+                        }
+                    });
+                } catch (error) {
+                    if (error === 'Confirmation declined by user') {
+                        resultDisplay.innerText = "Transaction declined.";
+                    } else {
+                        console.error("Spin failed:", error);
+                        resultDisplay.innerText = "Spin failed. Please try again.";
+                    }
+                    spinButton.disabled = false;
+                }
+            });
 
-	<!-- Bootstrap js -->
-	<script src="assets/js/vendor/popper.min.js"></script>
-	<script src="assets/js/vendor/bootstrap.min.js"></script>
-
-	<!-- Plugins js -->
-	<script src="assets/js/vendor/all.min.js"></script>
-	<script src="assets/js/vendor/gallery.min.js"></script>
-	<script src="assets/js/vendor/slider.min.js"></script>
-	<script src="assets/js/vendor/countdown.min.js"></script>
-	<script src="assets/js/vendor/shuffle.min.js"></script>
-
-	<!-- Main js -->
-	<script src="assets/js/main.js"></script>
-	<!-- Wheel of Fortune Dependencies -->
-<script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
-
-	<!-- Staking Script -->
-<script src="assets/js/wheel.js"></script>
-
+            // Initial setup
+            await updateBalance();
+            await checkAllowance();
+        });
+    </script>
 </body>
+</html>
