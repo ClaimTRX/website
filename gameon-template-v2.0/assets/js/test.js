@@ -356,7 +356,7 @@ const stakingConfigs = {
     }
 ]
 
-;
+
         tokenContractAbi: [
     {
         "inputs": [
