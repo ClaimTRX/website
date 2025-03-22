@@ -1,236 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wheel of Fortune</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/css/wheel.css"> <!-- Your custom CSS -->
-    <link rel="stylesheet" href="assets/css/style.css"> <!-- Your custom CSS -->
-    <style>
-        /* Custom CSS for the wheel */
-        .wheel-container {
-            position: relative;
-            width: 400px;
-            height: 400px;
-            margin: 0 auto;
-        }
-        .wheel {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            overflow: hidden;
-            transform: rotate(0deg);
-            transition: transform 5s ease-out;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
-        }
-        .segment {
-            position: absolute;
-            width: 50%;
-            height: 50%;
-            transform-origin: 100% 100%;
-            clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            color: white;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-        }
-        .lose { background: linear-gradient(45deg, #ff4d4d, #ff8080); }
-        .win2x { background: linear-gradient(45deg, #00cc00, #66ff66); }
-        .win3x { background: linear-gradient(45deg, #ffd700, #fff700); }
-        .pointer {
-            position: absolute;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 20px solid transparent;
-            border-right: 20px solid transparent;
-            border-top: 40px solid #ffffff;
-            z-index: 10;
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-        }
-        .btn-primary { background-color: #007bff; border: none; }
-        .btn-primary:hover { background-color: #0056b3; }
-        .btn-bordered-white { border: 2px solid white; color: white; background: transparent; }
-        .card { background: #1a1e33; border: none; border-radius: 10px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); }
-        .text-light { color: #d3d3d3; }
-        @media (max-width: 576px) {
-            .wheel-container { width: 300px; height: 300px; }
-            .segment { font-size: 14px; }
-            .btn-primary, .btn-bordered-white { padding: 8px 16px; font-size: 14px; }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wheel of Fortune</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="wheel.css" />
 </head>
 <body>
-    <section class="wheel-of-fortune p-5">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-12 col-md-10 text-center">
-                    <h2 class="mb-5 text-white">Wheel of Fortune</h2>
-                    <div class="card p-4">
-                        <p id="balance" class="mb-3 text-light">Your balance: 0 CFT</p>
-                        <div class="wheel-container">
-                            <div class="wheel" id="wheel">
-                                <div class="segment lose" style="transform: rotate(0deg);"><span>Lose</span></div>
-                                <div class="segment lose" style="transform: rotate(36deg);"><span>Lose</span></div>
-                                <div class="segment lose" style="transform: rotate(72deg);"><span>Lose</span></div>
-                                <div class="segment lose" style="transform: rotate(108deg);"><span>Lose</span></div>
-                                <div class="segment lose" style="transform: rotate(144deg);"><span>Lose</span></div>
-                                <div class="segment lose" style="transform: rotate(180deg);"><span>Lose</span></div>
-                                <div class="segment lose" style="transform: rotate(216deg);"><span>Lose</span></div>
-                                <div class="segment win2x" style="transform: rotate(252deg);"><span>2x</span></div>
-                                <div class="segment win2x" style="transform: rotate(288deg);"><span>2x</span></div>
-                                <div class="segment win3x" style="transform: rotate(324deg);"><span>3x</span></div>
-                            </div>
-                            <div class="pointer"></div>
-                        </div>
-                        <button id="approve-button" class="btn btn-bordered-white mb-3" style="display: none;">Approve</button>
-                        <button id="spin-button" class="btn btn-primary">Spin (50 CFT)</button>
-                        <p id="result" class="mt-3 text-light"></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+  <div class="container py-5 text-center text-white">
+    <h1 class="mb-4">Wheel of Fortune</h1>
+    <div id="wallet-status" class="mb-3">Not connected</div>
+    <button id="connect-button" class="btn btn-warning">Connect Wallet</button>
+    <div id="balance" class="mt-3">Your balance: -</div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Contract and token addresses
-            const contractAddress = "TYmnqRGEQyjz3yUX482F9uZTaee8YprYRf";
-            const tokenAddress = "TAME19SjDjKxC3omaJG5HWMTxhbHMrzWMi";
+    <div class="wheel-container">
+      <div class="wheel" id="wheel">
+        <div class="segment lose" style="transform: rotate(0deg);"><span>Lose</span></div>
+        <div class="segment lose" style="transform: rotate(36deg);"><span>Lose</span></div>
+        <div class="segment lose" style="transform: rotate(72deg);"><span>Lose</span></div>
+        <div class="segment lose" style="transform: rotate(108deg);"><span>Lose</span></div>
+        <div class="segment lose" style="transform: rotate(144deg);"><span>Lose</span></div>
+        <div class="segment lose" style="transform: rotate(180deg);"><span>Lose</span></div>
+        <div class="segment lose" style="transform: rotate(216deg);"><span>Lose</span></div>
+        <div class="segment win2x" style="transform: rotate(252deg);"><span>2x</span></div>
+        <div class="segment win2x" style="transform: rotate(288deg);"><span>2x</span></div>
+        <div class="segment win3x" style="transform: rotate(324deg);"><span>3x</span></div>
+      </div>
+      <div class="pointer"></div>
+    </div>
 
-            // Check for TronLink
-            const tronWeb = window.tronWeb;
-            if (!tronWeb || !tronWeb.defaultAddress.base58) {
-                alert("Please install TronLink and connect your wallet.");
-                return;
-            }
+    <button id="approve-button" class="btn btn-outline-light mt-3" style="display: none;">Approve</button>
+    <button id="spin-button" class="btn btn-primary mt-3" style="display: none;">Spin (50 CFT)</button>
+    <div id="result" class="mt-3 fs-5"></div>
+  </div>
 
-            // Initialize contracts
-            const contract = await tronWeb.contract().at(contractAddress);
-            const token = await tronWeb.contract().at(tokenAddress);
-
-            // UI elements
-            const wheel = document.getElementById('wheel');
-            const spinButton = document.getElementById('spin-button');
-            const approveButton = document.getElementById('approve-button');
-            const balanceDisplay = document.getElementById('balance');
-            const resultDisplay = document.getElementById('result');
-
-            // Spin cost: 50 CFT tokens (assuming 6 decimals)
-            const spinCost = 50e6;
-
-            // Update balance
-            async function updateBalance() {
-                const balance = await token.balanceOf(tronWeb.defaultAddress.base58).call();
-                const balanceNum = balance.toNumber();
-                balanceDisplay.innerText = `Your balance: ${(balanceNum / 1e6).toFixed(2)} CFT`;
-                return balanceNum;
-            }
-
-            // Check allowance
-            async function checkAllowance() {
-                const allowance = await token.allowance(tronWeb.defaultAddress.base58, contractAddress).call();
-                const allowanceNum = allowance.toNumber();
-                if (allowanceNum < spinCost) {
-                    approveButton.style.display = 'inline-block';
-                    spinButton.style.display = 'none';
-                } else {
-                    approveButton.style.display = 'none';
-                    spinButton.style.display = 'inline-block';
-                }
-            }
-
-            // Approve token spending
-            approveButton.addEventListener('click', async () => {
-                try {
-                    approveButton.disabled = true;
-                    await token.approve(contractAddress, '1000000000000').send({
-                        feeLimit: 100000000
-                    });
-                    await checkAllowance();
-                } catch (error) {
-                    console.error("Approval failed:", error);
-                    resultDisplay.innerText = "Approval failed. Please try again.";
-                } finally {
-                    approveButton.disabled = false;
-                }
-            });
-
-            // Spin the wheel
-            spinButton.addEventListener('click', async () => {
-                const balance = await updateBalance();
-                if (balance < spinCost) {
-                    resultDisplay.innerText = "Insufficient balance";
-                    return;
-                }
-
-                spinButton.disabled = true;
-                resultDisplay.innerText = "Spinning...";
-
-                try {
-                    await contract.spin().send({
-                        callValue: 0,
-                        feeLimit: 100000000,
-                        shouldPollResponse: false
-                    });
-
-                    contract.SpinResult().watch((err, event) => {
-                        if (err) {
-                            console.error("Event watch error:", err);
-                            resultDisplay.innerText = "Error processing spin.";
-                            spinButton.disabled = false;
-                            return;
-                        }
-
-                        if (event.player.toLowerCase() === tronWeb.defaultAddress.hex.toLowerCase()) {
-                            const multiplier = Number(event.multiplier);
-                            let segmentIndices;
-                            if (multiplier === 0) {
-                                segmentIndices = [0, 1, 2, 3, 4, 5, 6]; // Lose
-                            } else if (multiplier === 2) {
-                                segmentIndices = [7, 8]; // 2x
-                            } else if (multiplier === 3) {
-                                segmentIndices = [9]; // 3x
-                            }
-
-                            const chosenIndex = segmentIndices[Math.floor(Math.random() * segmentIndices.length)];
-                            const centerAngle = chosenIndex * 36 + 18;
-                            const targetRotation = ((270 - centerAngle) % 360 + 360) % 360;
-                            const fullSpins = 1440;
-                            const rotation = fullSpins + targetRotation;
-
-                            wheel.style.transform = `rotate(${rotation}deg)`;
-
-                            setTimeout(() => {
-                                resultDisplay.innerText = multiplier === 0 ? "You lost!" : `You won ${multiplier}x!`;
-                                updateBalance();
-                                spinButton.disabled = false;
-                            }, 5000);
-                        }
-                    });
-                } catch (error) {
-                    if (error === 'Confirmation declined by user') {
-                        resultDisplay.innerText = "Transaction declined.";
-                    } else {
-                        console.error("Spin failed:", error);
-                        resultDisplay.innerText = "Spin failed. Please try again.";
-                    }
-                    spinButton.disabled = false;
-                }
-            });
-
-            // Initial setup
-            await updateBalance();
-            await checkAllowance();
-        });
-    </script>
+  <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+  <script src="wheel.js"></script>
 </body>
 </html>
+
