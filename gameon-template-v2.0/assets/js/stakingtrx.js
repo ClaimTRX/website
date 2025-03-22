@@ -1,7 +1,7 @@
 
 const tokenContractAddress = 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA';
 const stakingContractAddress = 'TPLECu1WkQnQS5Hnm97TwxsWJYpr6ZeGcA';
-const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+
 const priceCFT = 1; // USD per CFT
 const priceTRX = 1; // USD per TRX
 let stakingContract, tokenContract;
