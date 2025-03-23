@@ -614,6 +614,12 @@ async function fetchListings() {
             const amount = tronWeb.fromSun(listing.tokenAmount);
             const pricePerCFT = tronWeb.fromSun(listing.pricePerCFT);
 
+            const isUserSeller = seller === userAddress;
+
+            const cancelButton = isUserSeller
+                ? `<a href="#" class="btn btn-danger mt-2" onclick="cancelListing(${listingIds[i]})">Cancel Listing</a>`
+                : "";
+
             const listingElement = document.createElement("div");
             listingElement.className = "col-12 col-md-10 single-staking-item mb-4";
             listingElement.innerHTML = `
@@ -626,6 +632,7 @@ async function fetchListings() {
                     <div class="input-area d-flex flex-column mt-3">
                         <input type="number" id="buy-amount-${listingIds[i]}" class="form-control mb-2" placeholder="Amount to Buy">
                         <a href="#" class="btn input-btn mt-2" onclick="buyToken(${listingIds[i]})">Buy</a>
+                        ${cancelButton}
                     </div>
                 </div>
             `;
@@ -636,6 +643,7 @@ async function fetchListings() {
         document.getElementById("listings-container").innerHTML = "<p class='text-center'>Failed to load listings.</p>";
     }
 }
+
 
 
 async function listTokens() {
@@ -707,6 +715,25 @@ async function buyToken(listingId) {
         await marketplaceContract.methods.buyToken(listingId, tronWeb.toSun(amountToBuy)).send({
             callValue: tronWeb.toSun(totalPrice) // Convert totalPrice to sun
         });
+
+        async function cancelListing(listingId) {
+    if (!tronWeb || !marketplaceContract) {
+        alert("Wallet not connected or contracts not initialized.");
+        return;
+    }
+
+    if (!confirm("Are you sure you want to cancel this listing?")) return;
+
+    try {
+        await marketplaceContract.methods.cancelListing(listingId).send();
+        alert("Listing cancelled successfully.");
+        fetchListings(); // Refresh UI
+    } catch (error) {
+        console.error("Error cancelling listing:", error);
+        alert("Failed to cancel listing.");
+    }
+}
+
 
        
         fetchListings();
