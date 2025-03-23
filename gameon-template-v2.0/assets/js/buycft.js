@@ -584,7 +584,7 @@ async function checkTronLinkInstalled() {
 // Function to connect to Tron wallet
 async function connectWallet() {
     if (!window.tronWeb) {
-        alert("TronLink not found. Please install TronLink and log in.");
+        alert("TronLink not found. Please install and log in.");
         return;
     }
 
@@ -592,9 +592,7 @@ async function connectWallet() {
         await window.tronLink.request({ method: "tron_requestAccounts" });
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58;
-
-        document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
-
+        document.getElementById('connect-button').innerHTML = '<i class="icon-wallet me-md-2"></i> Wallet Connected';
         console.log("Connected to TronLink:", userAddress);
         await initializeContracts();
         await updateUI();
