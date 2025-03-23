@@ -553,9 +553,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Ensure the "Connect Wallet" button still works manually
-    document.getElementById('connect-button').addEventListener('click', async function () {
+    const connectBtn = document.getElementById('connect-button');
+if (connectBtn) {
+    connectBtn.addEventListener('click', async () => {
         await connectWallet();
     });
+} else {
+    console.error("Connect button not found in DOM.");
+}
 
     // Attach event listeners for buying tokens
     document.getElementById('trx-amount').addEventListener('input', calculateCFT);
