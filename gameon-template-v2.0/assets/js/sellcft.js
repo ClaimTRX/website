@@ -716,7 +716,19 @@ async function buyToken(listingId) {
             callValue: tronWeb.toSun(totalPrice) // Convert totalPrice to sun
         });
 
-        async function cancelListing(listingId) {
+        
+
+
+
+       
+        fetchListings();
+    } catch (error) {
+        console.error("Error buying token:", error);
+        alert("Failed to buy token.");
+    }
+}
+
+async function cancelListing(listingId) {
     if (!tronWeb || !marketplaceContract) {
         alert("Wallet not connected or contracts not initialized.");
         return;
@@ -727,19 +739,10 @@ async function buyToken(listingId) {
     try {
         await marketplaceContract.methods.cancelListing(listingId).send();
         alert("Listing cancelled successfully.");
-        fetchListings(); // Refresh UI
+        fetchListings(); // Refresh the listings
     } catch (error) {
         console.error("Error cancelling listing:", error);
         alert("Failed to cancel listing.");
-    }
-}
-
-
-       
-        fetchListings();
-    } catch (error) {
-        console.error("Error buying token:", error);
-        alert("Failed to buy token.");
     }
 }
 
