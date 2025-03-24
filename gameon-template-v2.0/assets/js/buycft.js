@@ -546,21 +546,24 @@ const swapContractAddress = 'TSaGTyDQwFK2LPY99H6GcucqjQrQUGXnLF';
 // Store contract instances globally
 let tronWeb, userAddress, tokenContract, swapContract;
 
-// Check if TronLink is installed and auto-connect on page load
 document.addEventListener('DOMContentLoaded', async () => {
     if (await checkTronLinkInstalled()) {
         await connectWallet();  // Auto-connect
+    } else {
+        console.error("TronLink not detected after timeout.");
+        alert("Please install TronLink to use this page.");
     }
 
     // Ensure the "Connect Wallet" button still works manually
     const connectBtn = document.getElementById('connect-button');
-if (connectBtn) {
-    connectBtn.addEventListener('click', async () => {
-        await connectWallet();
-    });
-} else {
-    console.error("Connect button not found in DOM.");
-}
+    if (connectBtn) {
+        connectBtn.addEventListener('click', async () => {
+            console.log("Connect Wallet button clicked");
+            await connectWallet();
+        });
+    } else {
+        console.error("Connect button not found in DOM.");
+    }
 
     // Attach event listeners for buying tokens
     document.getElementById('trx-amount').addEventListener('input', calculateCFT);
@@ -577,32 +580,45 @@ if (connectBtn) {
 // Function to check if TronLink is installed
 async function checkTronLinkInstalled() {
     return new Promise((resolve) => {
+        let attempts = 0;
+        const maxAttempts = 10; // Timeout after 10 seconds
         const interval = setInterval(() => {
-            if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+            if (window.tronLink || window.tronWeb) {
                 clearInterval(interval);
-                resolve(true);
+                resolve(true); // TronLink is detected, even if not logged in
+            } else if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                resolve(false); // Timeout, TronLink not detected
             }
+            attempts++;
         }, 1000);
     });
 }
 
 // Function to connect to Tron wallet
 async function connectWallet() {
-    if (!window.tronWeb) {
-        alert("TronLink not found. Please install and log in.");
+    if (!window.tronLink || !window.tronWeb) {
+        alert("TronLink not found. Please install the TronLink extension.");
         return;
     }
 
     try {
-        await window.tronLink.request({ method: "tron_requestAccounts" });
+        console.log("Attempting to connect to TronLink...");
+        const response = await window.tronLink.request({ method: "tron_requestAccounts" });
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58;
+
+        if (!userAddress) {
+            throw new Error("No account selected or TronLink not logged in.");
+        }
+
         document.getElementById('connect-button').innerHTML = '<i class="icon-wallet me-md-2"></i> Wallet Connected';
         console.log("Connected to TronLink:", userAddress);
         await initializeContracts();
         await updateUI();
-    } catch (e) {
-        console.error("Failed to connect:", e);
+    } catch (error) {
+        console.error("Connection error:", error);
+        alert("Failed to connect to TronLink. Please ensure it’s installed, unlocked, and logged in.");
     }
 }
 
