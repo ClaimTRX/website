@@ -74,19 +74,29 @@ function updateWalletUI(isConnected) {
     }
 }
 
-// Fetch available energy from the server
+// Fetch available energy from the server with retry logic
 async function fetchAvailableEnergy() {
-    try {
-        const response = await fetch(`${SERVER_URL}/api/available-energy`);
-        const data = await response.json();
-        if (data.success) {
-            document.getElementById("available-energy").textContent = data.availableEnergy;
-        } else {
-            document.getElementById("available-energy").textContent = "Error fetching available energy";
+    const maxRetries = 3;
+    let retries = 0;
+
+    while (retries < maxRetries) {
+        try {
+            const response = await fetch(`${SERVER_URL}/api/available-energy`);
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById("available-energy").textContent = data.availableEnergy;
+                return;
+            } else {
+                throw new Error("Failed to fetch available energy");
+            }
+        } catch (error) {
+            console.error(`Error fetching available energy (attempt ${retries + 1}):`, error);
+            retries++;
+            if (retries === maxRetries) {
+                document.getElementById("available-energy").textContent = "Error fetching available energy";
+            }
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retrying
         }
-    } catch (error) {
-        console.error("Error fetching available energy:", error);
-        document.getElementById("available-energy").textContent = "Error fetching available energy";
     }
 }
 
