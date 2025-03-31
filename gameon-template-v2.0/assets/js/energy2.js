@@ -130,16 +130,21 @@ async function buyEnergy() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ energyAmount, receiverAddress, trxPrice, userAddress })
         });
+
         const data = await response.json();
 
         if (data.success) {
-            document.getElementById("payment-instructions").style.display = "block";
-            document.getElementById("payment-message").innerHTML = `
-                Send <strong>${trxPrice} TRX</strong> to <strong>${PAYMENT_ADDRESS}</strong> from your wallet.
-                Energy delegation will begin once payment is confirmed.
-            `;
-            // Poll for delegation status
-            pollDelegationStatus(data.requestId);
+            // Trigger wallet send
+            const result = await tronWeb.trx.sendTransaction(PAYMENT_ADDRESS, trxPrice * 1e6);
+            console.log("Transaction sent:", result);
+
+            if (result.result) {
+                document.getElementById("delegation-status").style.display = "block";
+                document.getElementById("delegation-message").textContent = `Waiting for energy delegation...`;
+                pollDelegationStatus(data.requestId);
+            } else {
+                alert("Transaction was rejected or failed.");
+            }
         } else {
             alert("Error: " + data.message);
         }
@@ -148,6 +153,7 @@ async function buyEnergy() {
         alert("An error occurred. Please try again.");
     }
 }
+
 
 // Poll for delegation status
 async function pollDelegationStatus(requestId) {
