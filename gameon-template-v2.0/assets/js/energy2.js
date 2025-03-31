@@ -13,7 +13,8 @@ const priceMap = {
 const PAYMENT_ADDRESS = "TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn"; // Replace with your actual Tron address
 
 // Server address for API calls
-const SERVER_URL = "http://144.126.198.238:3000";
+const SERVER_URL = "https://api.cftecosystem.com";
+
 
 // Check if TronLink is installed
 async function checkTronLinkInstalled() {
