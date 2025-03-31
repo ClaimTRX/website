@@ -179,43 +179,39 @@
 			</div>
 		</section>
 		<!-- ***** Hero Area End ***** -->
-      <section class="staking-area">
-    <div id="gameon-accordion" class="container accordion">
-        <div class="row justify-content-center">
-            <div class="col-12 col-md-10">
-                <div id="connect-wallet-message" style="display: none;">
-                    <h2>Please connect your wallet</h2>
-                    <p>Connect your TronLink wallet to access the energy request feature.</p>
-                </div>
-                <div id="access-denied" style="display: none;">
-                    <h2>Sorry, only FEB access</h2>
-                    <p>Your address is not whitelisted for this feature.</p>
-                </div>
-                <div id="energy-card" style="display: none;">
-                    <div class="card energy-card">
-                        <div class="card-body text-center">
-                            <h3>Request Energy Delegation</h3>
-                            <p>Select the amount of energy you want to delegate:</p>
-                            <select id="energy-amount" class="form-select mb-3">
-                                <option value="100000">100,000 Energy - 2.5 TRX</option>
-                                <option value="200000">200,000 Energy - 5 TRX</option>
-                                <option value="300000">300,000 Energy - 7.5 TRX</option>
-                                <option value="400000">400,000 Energy - 10 TRX</option>
-                                <option value="500000">500,000 Energy - 12.5 TRX</option>
-                            </select>
-                            <p>Price: <span id="trx-price">2.5</span> TRX</p>
-                            <input type="text" id="receiver-address" class="form-control mb-3" placeholder="Enter your Tron wallet address">
-                            <button id="buy-energy-button" class="btn btn-success">Buy Energy</button>
-                            <div id="payment-instructions" style="display: none;">
-                                <p id="payment-message"></p>
-                            </div>
+      <section class="energy-area">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-12 col-md-10">
+                    <div id="energy-card" class="energy-card">
+                        <h3>Request Energy Delegation</h3>
+                        <p>Available Energy for Rent: <span id="available-energy">Loading...</span> units</p>
+                        <p>Select energy amount:</p>
+                        <select id="energy-amount" class="form-select mb-3">
+                            <option value="100000">100,000 Energy - 2.5 TRX</option>
+                            <option value="200000">200,000 Energy - 5 TRX</option>
+                            <option value="300000">300,000 Energy - 7.5 TRX</option>
+                            <option value="400000">400,000 Energy - 10 TRX</option>
+                            <option value="500000">500,000 Energy - 12.5 TRX</option>
+                        </select>
+                        <p>Price: <span id="trx-price">2.5</span> TRX</p>
+                        <input type="text" id="receiver-address" class="form-control mb-3" placeholder="Your Tron wallet address">
+                        <button id="buy-energy-button" class="btn btn-success">Buy Energy</button>
+                        <div id="payment-instructions" style="display: none;">
+                            <p id="payment-message"></p>
                         </div>
+                        <div id="delegation-status" class="status-message" style="display: none;">
+                            <p id="delegation-message"></p>
+                            <p>Transaction Hash: <a id="delegation-hash" href="#" target="_blank"></a></p>
+                        </div>
+                        <button id="connect-button" class="btn btn-primary mt-3">
+                            <i class="icon-wallet"></i> Connect Wallet
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
        <!-- ***** CTA Area Start ***** -->
 		<section class="cta-area p-0">
@@ -362,7 +358,7 @@
 	<script src="assets/js/main.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
 	<!-- Staking Script -->
-	<script src="assets/js/energy.js"></script>
+	<script src="assets/js/energy2.js"></script>
 
 
 <body/>
