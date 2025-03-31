@@ -10,11 +10,10 @@ const priceMap = {
 };
 
 // Your Tron address for receiving payments
-const PAYMENT_ADDRESS = "TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn"; // Replace with your actual Tron address
+const PAYMENT_ADDRESS = "TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn";
 
 // Server address for API calls
 const SERVER_URL = "https://api.cftecosystem.com";
-
 
 // Check if TronLink is installed
 async function checkTronLinkInstalled() {
@@ -125,6 +124,7 @@ async function buyEnergy() {
     }
 
     try {
+        // Step 1: Notify the server of the request
         const response = await fetch(`${SERVER_URL}/api/request-energy`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -133,20 +133,45 @@ async function buyEnergy() {
 
         const data = await response.json();
 
-        if (data.success) {
-            // Trigger wallet send
-            const result = await tronWeb.trx.sendTransaction(PAYMENT_ADDRESS, trxPrice * 1e6);
-            console.log("Transaction sent:", result);
+        if (!data.success) {
+            alert("Error: " + data.message);
+            return;
+        }
 
-            if (result.result) {
+        // Step 2: Send the payment
+        const result = await tronWeb.trx.sendTransaction(PAYMENT_ADDRESS, trxPrice * 1e6);
+        console.log("Transaction sent:", result);
+
+        if (result.result) {
+            // Step 3: Wait for the transaction to be confirmed
+            let confirmed = false;
+            let attempts = 0;
+            const maxAttempts = 12; // 12 x 5s = 60s
+
+            while (!confirmed && attempts < maxAttempts) {
+                try {
+                    const txInfo = await tronWeb.trx.getTransactionInfo(result.txid);
+                    if (txInfo && txInfo.receipt && txInfo.receipt.result === "SUCCESS") {
+                        confirmed = true;
+                    }
+                } catch (error) {
+                    console.error("Error checking transaction status:", error);
+                }
+                if (!confirmed) {
+                    attempts++;
+                    await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+                }
+            }
+
+            if (confirmed) {
                 document.getElementById("delegation-status").style.display = "block";
                 document.getElementById("delegation-message").textContent = `Waiting for energy delegation...`;
                 pollDelegationStatus(data.requestId);
             } else {
-                alert("Transaction was rejected or failed.");
+                alert("Transaction was not confirmed within 60 seconds.");
             }
         } else {
-            alert("Error: " + data.message);
+            alert("Transaction was rejected or failed.");
         }
     } catch (error) {
         console.error("Error requesting energy:", error);
@@ -154,12 +179,14 @@ async function buyEnergy() {
     }
 }
 
-
 // Poll for delegation status
 async function pollDelegationStatus(requestId) {
     const interval = setInterval(async () => {
         try {
-            const response = await fetch(`${SERVER_URL}/api/delegation-status?requestId=${requestId}`);
+            const response = await fetch(`${SERVER_URL}/api/delegation-status?requestId=${requestId}`, {
+                method: "GET",
+                headers: { "Content-Type": "application/json" }
+            });
             const data = await response.json();
             if (data.status === "delegated") {
                 clearInterval(interval);
