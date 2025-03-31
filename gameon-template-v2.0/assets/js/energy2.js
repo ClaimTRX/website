@@ -12,6 +12,9 @@ const priceMap = {
 // Your Tron address for receiving payments
 const PAYMENT_ADDRESS = "TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn"; // Replace with your actual Tron address
 
+// Server address for API calls
+const SERVER_URL = "http://144.126.169.238:3000";
+
 // Check if TronLink is installed
 async function checkTronLinkInstalled() {
     return new Promise((resolve) => {
@@ -74,7 +77,7 @@ function updateWalletUI(isConnected) {
 // Fetch available energy from the server
 async function fetchAvailableEnergy() {
     try {
-        const response = await fetch("https://your-ubuntu-server.com/api/available-energy");
+        const response = await fetch(`${SERVER_URL}/api/available-energy`);
         const data = await response.json();
         if (data.success) {
             document.getElementById("available-energy").textContent = data.availableEnergy;
@@ -111,7 +114,7 @@ async function buyEnergy() {
     }
 
     try {
-        const response = await fetch("https://your-ubuntu-server.com/api/request-energy", {
+        const response = await fetch(`${SERVER_URL}/api/request-energy`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ energyAmount, receiverAddress, trxPrice, userAddress })
@@ -139,7 +142,7 @@ async function buyEnergy() {
 async function pollDelegationStatus(requestId) {
     const interval = setInterval(async () => {
         try {
-            const response = await fetch(`https://your-ubuntu-server.com/api/delegation-status?requestId=${requestId}`);
+            const response = await fetch(`${SERVER_URL}/api/delegation-status?requestId=${requestId}`);
             const data = await response.json();
             if (data.status === "delegated") {
                 clearInterval(interval);
