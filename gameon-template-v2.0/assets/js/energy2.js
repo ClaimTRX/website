@@ -125,6 +125,8 @@ async function buyEnergy() {
 
     try {
         // Step 1: Notify the server of the request
+        document.getElementById("delegation-status").style.display = "block";
+        document.getElementById("delegation-message").textContent = `Notifying server of your request...`;
         const response = await fetch(`${SERVER_URL}/api/request-energy`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -134,16 +136,18 @@ async function buyEnergy() {
         const data = await response.json();
 
         if (!data.success) {
-            alert("Error: " + data.message);
+            document.getElementById("delegation-message").textContent = `Error: ${data.message}`;
             return;
         }
 
         // Step 2: Send the payment
+        document.getElementById("delegation-message").textContent = `Sending payment of ${trxPrice} TRX to ${PAYMENT_ADDRESS}...`;
         const result = await tronWeb.trx.sendTransaction(PAYMENT_ADDRESS, trxPrice * 1e6);
         console.log("Transaction sent:", result);
 
         if (result.result) {
             // Step 3: Wait for the transaction to be confirmed
+            document.getElementById("delegation-message").textContent = `Waiting for transaction confirmation...`;
             let confirmed = false;
             let attempts = 0;
             const maxAttempts = 12; // 12 x 5s = 60s
@@ -164,24 +168,33 @@ async function buyEnergy() {
             }
 
             if (confirmed) {
-                document.getElementById("delegation-status").style.display = "block";
+                // Step 4: Wait an additional 5 seconds to ensure the server detects the payment
+                document.getElementById("delegation-message").textContent = `Transaction confirmed! Waiting for server to process payment...`;
+                await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+
+                // Step 5: Start polling for delegation status
                 document.getElementById("delegation-message").textContent = `Waiting for energy delegation...`;
                 pollDelegationStatus(data.requestId);
             } else {
-                alert("Transaction was not confirmed within 60 seconds.");
+                document.getElementById("delegation-message").textContent = `Transaction was not confirmed within 60 seconds.`;
             }
         } else {
-            alert("Transaction was rejected or failed.");
+            document.getElementById("delegation-message").textContent = `Transaction was rejected or failed.`;
         }
     } catch (error) {
         console.error("Error requesting energy:", error);
-        alert("An error occurred. Please try again.");
+        document.getElementById("delegation-message").textContent = `Error: ${error.message}`;
     }
 }
 
 // Poll for delegation status
 async function pollDelegationStatus(requestId) {
+    const maxPollAttempts = 12; // 12 x 5s = 60s
+    let pollAttempts = 0;
+
     const interval = setInterval(async () => {
+        pollAttempts++;
+
         try {
             const response = await fetch(`${SERVER_URL}/api/delegation-status?requestId=${requestId}`, {
                 method: "GET",
@@ -194,15 +207,24 @@ async function pollDelegationStatus(requestId) {
                 document.getElementById("delegation-message").textContent = `Energy delegated successfully!`;
                 document.getElementById("delegation-hash").textContent = data.txId;
                 document.getElementById("delegation-hash").href = `https://tronscan.org/#/transaction/${data.txId}`;
-            } else if (data.status === "failed") {
+            } else if (data.status === "failed" || data.status === "expired") {
                 clearInterval(interval);
                 document.getElementById("delegation-status").style.display = "block";
                 document.getElementById("delegation-message").textContent = `Delegation failed: ${data.message}`;
+            } else if (pollAttempts >= maxPollAttempts) {
+                clearInterval(interval);
+                document.getElementById("delegation-status").style.display = "block";
+                document.getElementById("delegation-message").textContent = `Delegation timed out after 60 seconds.`;
             }
         } catch (error) {
             console.error("Error polling delegation status:", error);
+            if (pollAttempts >= maxPollAttempts) {
+                clearInterval(interval);
+                document.getElementById("delegation-status").style.display = "block";
+                document.getElementById("delegation-message").textContent = `Error polling delegation status: ${error.message}`;
+            }
         }
-    }, 10000); // Check every 10 seconds
+    }, 5000); // Check every 5 seconds
 }
 
 // Event listeners
