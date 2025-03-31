@@ -10,7 +10,7 @@ const priceMap = {
 };
 
 // Your Tron address for receiving payments
-const PAYMENT_ADDRESS = "YOUR_SPECIFIC_TRON_ADDRESS"; // Replace with your actual Tron address
+const PAYMENT_ADDRESS = "TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn"; // Replace with your actual Tron address
 
 // Check if TronLink is installed
 async function checkTronLinkInstalled() {
@@ -36,6 +36,7 @@ async function autoConnectWallet() {
         if (userAddress && userAddress !== "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb") {
             console.log("Auto-connected wallet:", userAddress);
             updateWalletUI(true);
+            fetchAvailableEnergy();
         } else {
             console.log("TronLink detected, but wallet not connected.");
         }
@@ -54,6 +55,7 @@ async function connectWallet() {
         userAddress = tronWeb.defaultAddress.base58;
         updateWalletUI(true);
         console.log("Wallet connected:", userAddress);
+        fetchAvailableEnergy();
     } catch (e) {
         console.error("Wallet connection failed:", e);
     }
@@ -66,6 +68,22 @@ function updateWalletUI(isConnected) {
         connectButton.innerHTML = isConnected
             ? `<i class="icon-wallet"></i> Wallet Connected`
             : `<i class="icon-wallet"></i> Connect Wallet`;
+    }
+}
+
+// Fetch available energy from the server
+async function fetchAvailableEnergy() {
+    try {
+        const response = await fetch("https://your-ubuntu-server.com/api/available-energy");
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById("available-energy").textContent = data.availableEnergy;
+        } else {
+            document.getElementById("available-energy").textContent = "Error fetching available energy";
+        }
+    } catch (error) {
+        console.error("Error fetching available energy:", error);
+        document.getElementById("available-energy").textContent = "Error fetching available energy";
     }
 }
 
@@ -106,6 +124,8 @@ async function buyEnergy() {
                 Send <strong>${trxPrice} TRX</strong> to <strong>${PAYMENT_ADDRESS}</strong> from your wallet.
                 Energy delegation will begin once payment is confirmed.
             `;
+            // Poll for delegation status
+            pollDelegationStatus(data.requestId);
         } else {
             alert("Error: " + data.message);
         }
@@ -113,6 +133,29 @@ async function buyEnergy() {
         console.error("Error requesting energy:", error);
         alert("An error occurred. Please try again.");
     }
+}
+
+// Poll for delegation status
+async function pollDelegationStatus(requestId) {
+    const interval = setInterval(async () => {
+        try {
+            const response = await fetch(`https://your-ubuntu-server.com/api/delegation-status?requestId=${requestId}`);
+            const data = await response.json();
+            if (data.status === "delegated") {
+                clearInterval(interval);
+                document.getElementById("delegation-status").style.display = "block";
+                document.getElementById("delegation-message").textContent = `Energy delegated successfully!`;
+                document.getElementById("delegation-hash").textContent = data.txId;
+                document.getElementById("delegation-hash").href = `https://tronscan.org/#/transaction/${data.txId}`;
+            } else if (data.status === "failed") {
+                clearInterval(interval);
+                document.getElementById("delegation-status").style.display = "block";
+                document.getElementById("delegation-message").textContent = `Delegation failed: ${data.message}`;
+            }
+        } catch (error) {
+            console.error("Error polling delegation status:", error);
+        }
+    }, 10000); // Check every 10 seconds
 }
 
 // Event listeners
