@@ -84,7 +84,8 @@ async function fetchAvailableEnergy() {
             const response = await fetch(`${SERVER_URL}/api/available-energy`);
             const data = await response.json();
             if (data.success) {
-                document.getElementById("available-energy").textContent = data.availableEnergy;
+                document.getElementById("available-energy").textContent = Number(data.availableEnergy).toLocaleString();
+
                 return;
             } else {
                 throw new Error("Failed to fetch available energy");
