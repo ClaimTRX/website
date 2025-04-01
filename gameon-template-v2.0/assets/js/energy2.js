@@ -152,7 +152,7 @@ async function buyEnergy() {
             document.getElementById("delegation-message").textContent = `Waiting for transaction confirmation...`;
             let confirmed = false;
             let attempts = 0;
-            const maxAttempts = 24; // 24 x 5s = 120s (increased timeout)
+            const maxAttempts = 24; // 24 x 5s = 120s
 
             while (!confirmed && attempts < maxAttempts) {
                 try {
@@ -160,20 +160,19 @@ async function buyEnergy() {
                     console.log(`Transaction info for ${result.txid}:`, txInfo);
                     if (txInfo && txInfo.receipt && txInfo.receipt.result === "SUCCESS") {
                         confirmed = true;
+                        break; // Exit loop immediately upon confirmation
                     }
                 } catch (error) {
                     console.error("Error checking transaction status:", error);
                 }
-                if (!confirmed) {
-                    attempts++;
-                    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
-                }
+                attempts++;
+                await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
             }
 
             if (confirmed) {
-                // Step 4: Wait an additional 5 seconds to ensure the server detects the payment
+                // Step 4: Wait a shorter time to ensure the server detects the payment
                 document.getElementById("delegation-message").textContent = `Transaction confirmed! Waiting for server to process payment...`;
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 5 seconds
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds (reduced from 5 seconds)
             } else {
                 console.warn("Transaction not confirmed within 120 seconds, proceeding to poll delegation status anyway...");
                 document.getElementById("delegation-message").textContent = `Transaction confirmation delayed, checking delegation status...`;
