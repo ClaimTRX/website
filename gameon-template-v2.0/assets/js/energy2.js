@@ -145,17 +145,19 @@ async function buyEnergy() {
         document.getElementById("delegation-message").textContent = `Sending payment of ${trxPrice} TRX to ${PAYMENT_ADDRESS}...`;
         const result = await tronWeb.trx.sendTransaction(PAYMENT_ADDRESS, trxPrice * 1e6);
         console.log("Transaction sent:", result);
+        console.log("Payment transaction ID:", result.txid);
 
         if (result.result) {
             // Step 3: Wait for the transaction to be confirmed
             document.getElementById("delegation-message").textContent = `Waiting for transaction confirmation...`;
             let confirmed = false;
             let attempts = 0;
-            const maxAttempts = 12; // 12 x 5s = 60s
+            const maxAttempts = 24; // 24 x 5s = 120s (increased timeout)
 
             while (!confirmed && attempts < maxAttempts) {
                 try {
                     const txInfo = await tronWeb.trx.getTransactionInfo(result.txid);
+                    console.log(`Transaction info for ${result.txid}:`, txInfo);
                     if (txInfo && txInfo.receipt && txInfo.receipt.result === "SUCCESS") {
                         confirmed = true;
                     }
@@ -172,13 +174,14 @@ async function buyEnergy() {
                 // Step 4: Wait an additional 5 seconds to ensure the server detects the payment
                 document.getElementById("delegation-message").textContent = `Transaction confirmed! Waiting for server to process payment...`;
                 await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
-
-                // Step 5: Start polling for delegation status
-                document.getElementById("delegation-message").textContent = `Waiting for energy delegation...`;
-                pollDelegationStatus(data.requestId);
             } else {
-                document.getElementById("delegation-message").textContent = `Transaction was not confirmed within 60 seconds.`;
+                console.warn("Transaction not confirmed within 120 seconds, proceeding to poll delegation status anyway...");
+                document.getElementById("delegation-message").textContent = `Transaction confirmation delayed, checking delegation status...`;
             }
+
+            // Step 5: Start polling for delegation status
+            document.getElementById("delegation-message").textContent = `Waiting for energy delegation...`;
+            pollDelegationStatus(data.requestId);
         } else {
             document.getElementById("delegation-message").textContent = `Transaction was rejected or failed.`;
         }
