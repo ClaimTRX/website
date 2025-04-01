@@ -136,12 +136,12 @@ async function buyEnergy() {
             return;
         }
 
-        // Step 2: Notify the server of the request after signing
+        // Step 2: Notify the server of the request after signing, including the payment transaction ID
         document.getElementById("delegation-message").textContent = `Notifying server of your request...`;
         const response = await fetch(`${SERVER_URL}/api/request-energy`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ energyAmount, receiverAddress, trxPrice, userAddress })
+            body: JSON.stringify({ energyAmount, receiverAddress, trxPrice, userAddress, paymentTxId: result.txid })
         });
 
         const data = await response.json();
@@ -163,6 +163,8 @@ async function buyEnergy() {
         document.getElementById("delegation-message").textContent = `Error: ${error.message}`;
     }
 }
+
+
 // Poll for delegation status
 async function pollDelegationStatus(requestId) {
     console.log(`Starting to poll delegation status for request ${requestId}...`);
