@@ -179,37 +179,79 @@
 			</div>
 		</section>
 		<!-- ***** Hero Area End ***** -->
-      <section class="energy-area">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-12 col-md-10">
-                    <div id="energy-card" class="energy-card">
-                        <h3>Request Energy Delegation</h3>
-                        <p>Available Energy for Rent: <span id="available-energy">Loading...</span> units</p>
-                        <p>Select energy amount:</p>
-                        <select id="energy-amount" class="form-select mb-3">
-                            <option value="100000">100,000 Energy - 2.5 TRX</option>
-                            <option value="200000">200,000 Energy - 5 TRX</option>
-                            <option value="300000">300,000 Energy - 7.5 TRX</option>
-                            <option value="400000">400,000 Energy - 10 TRX</option>
-                            <option value="500000">500,000 Energy - 12.5 TRX</option>
-                        </select>
-                        <p>Price: <span id="trx-price">2.5</span> TRX</p>
-                        <input type="text" id="receiver-address" class="form-control mb-3" placeholder="Your Tron wallet address">
-                        <button id="buy-energy-button" class="btn btn-success">Buy Energy</button>
-                        <div id="payment-instructions" style="display: none;">
-                            <p id="payment-message"></p>
+     <section class="energy-area">
+    <div id="energy-accordion" class="container accordion">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-10">
+                <div class="single-accordion-item">
+                    <div class="card-header bg-inherit border-0 p-0">
+                        <h2 class="m-0">
+                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button">
+                                <div class="row">
+                                    <div class="col-12 col-md-8">
+                                        <div class="media flex-column flex-md-row">
+                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                <h4 class="m-0">Request Energy Delegation</h4>
+                                                <p>Rent energy for your Tron transactions</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                    <div class="col single-item">
+                                        <span id="available-energy">Loading...</span>
+                                        <span>Available Energy</span>
+                                    </div>
+                                    <div class="col single-item">
+                                        <span id="trx-price">2.5</span>
+                                        <span>TRX Price</span>
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12 col-md-6 single-staking-item input-box">
+                                <span class="item-title mb-2">Select Energy Amount</span>
+                                <div class="input-area d-flex flex-column">
+                                    <select id="energy-amount" class="form-select mb-3">
+                                        <option value="100000">100,000 Energy - 2.5 TRX</option>
+                                        <option value="200000">200,000 Energy - 5 TRX</option>
+                                        <option value="300000">300,000 Energy - 7.5 TRX</option>
+                                        <option value="400000">400,000 Energy - 10 TRX</option>
+                                        <option value="500000">500,000 Energy - 12.5 TRX</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6 single-staking-item input-box">
+                                <span class="item-title mb-2">Receiver Address</span>
+                                <div class="input-area d-flex flex-column">
+                                    <div class="input-text">
+                                        <input type="text" id="receiver-address" class="form-control" placeholder="Your Tron wallet address">
+                                    </div>
+                                    <a href="#" class="btn input-btn mt-2" id="buy-energy-button">Buy Energy</a>
+					<p>Energy reclaimed after 5 minutes</p>
+                                </div>
+                            </div>
                         </div>
-                        <div id="delegation-status" class="status-message" style="display: none;">
-                            <p id="delegation-message"></p>
-                            <p>Transaction Hash: <a id="delegation-hash" href="#" target="_blank"></a></p>
+                        <div class="row mt-4">
+                            <div class="col-12 single-staking-item">
+                                <div id="payment-instructions" style="display: none;">
+                                    <p id="payment-message" class="reward"></p>
+                                </div>
+                                <div id="delegation-status" class="status-message" style="display: none;">
+                                    <p id="delegation-message" class="reward"></p>
+                                    <p>Transaction Hash: <a id="delegation-hash" href="#" target="_blank" class="reward"></a></p>
+                                </div>
+                            </div>
                         </div>
-                        
                     </div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
        <!-- ***** CTA Area Start ***** -->
 		<section class="cta-area p-0">
