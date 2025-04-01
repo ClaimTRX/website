@@ -192,7 +192,7 @@ async function buyEnergy() {
 
 // Poll for delegation status
 async function pollDelegationStatus(requestId) {
-    const maxPollAttempts = 12; // 12 x 5s = 60s
+    const maxPollAttempts = 30; // 30 x 2s = 60s
     let pollAttempts = 0;
 
     const interval = setInterval(async () => {
@@ -262,7 +262,7 @@ async function pollDelegationStatus(requestId) {
                 }
             }
         }
-    }, 2000); // Check every 5 seconds
+    }, 2000); // Check every 2 seconds (reduced from 5 seconds)
 }
 
 // Event listeners
