@@ -197,11 +197,14 @@ async function pollDelegationStatus(requestId) {
         pollAttempts++;
 
         try {
+            console.log(`Polling delegation status for request ${requestId}, attempt ${pollAttempts}...`);
             const response = await fetch(`${SERVER_URL}/api/delegation-status?requestId=${requestId}`, {
                 method: "GET",
                 headers: { "Content-Type": "application/json" }
             });
             const data = await response.json();
+            console.log(`Received delegation status for request ${requestId}:`, data);
+
             if (data.status === "delegated") {
                 clearInterval(interval);
                 document.getElementById("delegation-status").style.display = "block";
@@ -218,7 +221,7 @@ async function pollDelegationStatus(requestId) {
                 document.getElementById("delegation-message").textContent = `Delegation timed out after 60 seconds.`;
             }
         } catch (error) {
-            console.error("Error polling delegation status:", error);
+            console.error(`Error polling delegation status for request ${requestId}:`, error);
             if (pollAttempts >= maxPollAttempts) {
                 clearInterval(interval);
                 document.getElementById("delegation-status").style.display = "block";
