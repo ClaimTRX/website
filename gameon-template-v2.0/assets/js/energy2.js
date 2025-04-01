@@ -166,14 +166,14 @@ async function buyEnergy() {
                 }
                 if (!confirmed) {
                     attempts++;
-                    await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+                    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
                 }
             }
 
             if (confirmed) {
                 // Step 4: Wait an additional 5 seconds to ensure the server detects the payment
                 document.getElementById("delegation-message").textContent = `Transaction confirmed! Waiting for server to process payment...`;
-                await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 5 seconds
             } else {
                 console.warn("Transaction not confirmed within 120 seconds, proceeding to poll delegation status anyway...");
                 document.getElementById("delegation-message").textContent = `Transaction confirmation delayed, checking delegation status...`;
@@ -263,7 +263,7 @@ async function pollDelegationStatus(requestId) {
                 }
             }
         }
-    }, 5000); // Check every 5 seconds
+    }, 2000); // Check every 5 seconds
 }
 
 // Event listeners
