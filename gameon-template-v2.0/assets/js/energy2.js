@@ -124,8 +124,19 @@ async function buyEnergy() {
     }
 
     try {
-        // Step 1: Notify the server of the request
+        // Step 1: Send the payment (prompt user to sign in TronLink)
         document.getElementById("delegation-status").style.display = "block";
+        document.getElementById("delegation-message").textContent = `Sending payment of ${trxPrice} TRX to ${PAYMENT_ADDRESS}...`;
+        const result = await tronWeb.trx.sendTransaction(PAYMENT_ADDRESS, trxPrice * 1e6);
+        console.log("Transaction sent:", result);
+        console.log("Payment transaction ID:", result.txid);
+
+        if (!result.result) {
+            document.getElementById("delegation-message").textContent = `Transaction was rejected or failed.`;
+            return;
+        }
+
+        // Step 2: Notify the server of the request after signing
         document.getElementById("delegation-message").textContent = `Notifying server of your request...`;
         const response = await fetch(`${SERVER_URL}/api/request-energy`, {
             method: "POST",
@@ -140,23 +151,13 @@ async function buyEnergy() {
             return;
         }
 
-        // Step 2: Send the payment
-        document.getElementById("delegation-message").textContent = `Sending payment of ${trxPrice} TRX to ${PAYMENT_ADDRESS}...`;
-        const result = await tronWeb.trx.sendTransaction(PAYMENT_ADDRESS, trxPrice * 1e6);
-        console.log("Transaction sent:", result);
-        console.log("Payment transaction ID:", result.txid);
+        // Step 3: Wait 3 seconds to allow the server to detect the payment
+        document.getElementById("delegation-message").textContent = `Waiting for server to process payment...`;
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
 
-        if (result.result) {
-            // Step 3: Wait 3 seconds to allow the server to detect the payment
-            document.getElementById("delegation-message").textContent = `Waiting for server to process payment...`;
-            await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
-
-            // Step 4: Start polling for delegation status
-            document.getElementById("delegation-message").textContent = `Waiting for energy delegation...`;
-            pollDelegationStatus(data.requestId);
-        } else {
-            document.getElementById("delegation-message").textContent = `Transaction was rejected or failed.`;
-        }
+        // Step 4: Start polling for delegation status
+        document.getElementById("delegation-message").textContent = `Waiting for energy delegation...`;
+        pollDelegationStatus(data.requestId);
     } catch (error) {
         console.error("Error requesting energy:", error);
         document.getElementById("delegation-message").textContent = `Error: ${error.message}`;
