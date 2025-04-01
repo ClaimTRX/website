@@ -202,30 +202,62 @@ async function pollDelegationStatus(requestId) {
                 method: "GET",
                 headers: { "Content-Type": "application/json" }
             });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status} (${response.statusText})`);
+            }
+
             const data = await response.json();
             console.log(`Received delegation status for request ${requestId}:`, data);
 
             if (data.status === "delegated") {
                 clearInterval(interval);
-                document.getElementById("delegation-status").style.display = "block";
-                document.getElementById("delegation-message").textContent = `Energy delegated successfully!`;
-                document.getElementById("delegation-hash").textContent = data.txId;
-                document.getElementById("delegation-hash").href = `https://tronscan.org/#/transaction/${data.txId}`;
+                const statusElement = document.getElementById("delegation-status");
+                const messageElement = document.getElementById("delegation-message");
+                const hashElement = document.getElementById("delegation-hash");
+
+                if (statusElement && messageElement && hashElement) {
+                    statusElement.style.display = "block";
+                    messageElement.textContent = `Energy delegated successfully!`;
+                    hashElement.textContent = data.txId;
+                    hashElement.href = `https://tronscan.org/#/transaction/${data.txId}`;
+                    hashElement.style.display = "block"; // Ensure the hash is visible
+                } else {
+                    console.error("UI elements not found:", { statusElement, messageElement, hashElement });
+                }
             } else if (data.status === "failed" || data.status === "expired") {
                 clearInterval(interval);
-                document.getElementById("delegation-status").style.display = "block";
-                document.getElementById("delegation-message").textContent = `Delegation failed: ${data.message}`;
+                const statusElement = document.getElementById("delegation-status");
+                const messageElement = document.getElementById("delegation-message");
+                if (statusElement && messageElement) {
+                    statusElement.style.display = "block";
+                    messageElement.textContent = `Delegation failed: ${data.message}`;
+                } else {
+                    console.error("UI elements not found:", { statusElement, messageElement });
+                }
             } else if (pollAttempts >= maxPollAttempts) {
                 clearInterval(interval);
-                document.getElementById("delegation-status").style.display = "block";
-                document.getElementById("delegation-message").textContent = `Delegation timed out after 60 seconds.`;
+                const statusElement = document.getElementById("delegation-status");
+                const messageElement = document.getElementById("delegation-message");
+                if (statusElement && messageElement) {
+                    statusElement.style.display = "block";
+                    messageElement.textContent = `Delegation timed out after 60 seconds.`;
+                } else {
+                    console.error("UI elements not found:", { statusElement, messageElement });
+                }
             }
         } catch (error) {
             console.error(`Error polling delegation status for request ${requestId}:`, error);
             if (pollAttempts >= maxPollAttempts) {
                 clearInterval(interval);
-                document.getElementById("delegation-status").style.display = "block";
-                document.getElementById("delegation-message").textContent = `Error polling delegation status: ${error.message}`;
+                const statusElement = document.getElementById("delegation-status");
+                const messageElement = document.getElementById("delegation-message");
+                if (statusElement && messageElement) {
+                    statusElement.style.display = "block";
+                    messageElement.textContent = `Error polling delegation status: ${error.message}`;
+                } else {
+                    console.error("UI elements not found:", { statusElement, messageElement });
+                }
             }
         }
     }, 5000); // Check every 5 seconds
