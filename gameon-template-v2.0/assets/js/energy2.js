@@ -148,8 +148,11 @@ async function buyEnergy() {
         console.log("Payment transaction ID:", result.txid);
 
         if (result.result) {
-            // Step 3: Wait for the transaction to be confirmed
-            document.getElementById("delegation-message").textContent = `Waiting for transaction confirmation...`;
+            // Step 3: Start polling for delegation status immediately
+            document.getElementById("delegation-message").textContent = `Waiting for energy delegation...`;
+            pollDelegationStatus(data.requestId);
+
+            // Step 4: Optionally confirm the transaction in the background
             let confirmed = false;
             let attempts = 0;
             const maxAttempts = 24; // 24 x 5s = 120s
@@ -160,7 +163,15 @@ async function buyEnergy() {
                     console.log(`Transaction info for ${result.txid}:`, txInfo);
                     if (txInfo && txInfo.receipt && txInfo.receipt.result === "SUCCESS") {
                         confirmed = true;
-                        break; // Exit loop immediately upon confirmation
+                        console.log("Payment transaction confirmed:", result.txid);
+                        // Optionally update the UI with the payment transaction ID
+                        const paymentHashElement = document.getElementById("payment-hash");
+                        if (paymentHashElement) {
+                            paymentHashElement.textContent = result.txid;
+                            paymentHashElement.href = `https://tronscan.org/#/transaction/${result.txid}`;
+                            paymentHashElement.style.display = "block";
+                        }
+                        break;
                     }
                 } catch (error) {
                     console.error("Error checking transaction status:", error);
@@ -169,18 +180,9 @@ async function buyEnergy() {
                 await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
             }
 
-            if (confirmed) {
-                // Step 4: Wait a shorter time to ensure the server detects the payment
-                document.getElementById("delegation-message").textContent = `Transaction confirmed! Waiting for server to process payment...`;
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds (reduced from 5 seconds)
-            } else {
-                console.warn("Transaction not confirmed within 120 seconds, proceeding to poll delegation status anyway...");
-                document.getElementById("delegation-message").textContent = `Transaction confirmation delayed, checking delegation status...`;
+            if (!confirmed) {
+                console.warn("Payment transaction not confirmed within 120 seconds, but delegation may have already completed.");
             }
-
-            // Step 5: Start polling for delegation status
-            document.getElementById("delegation-message").textContent = `Waiting for energy delegation...`;
-            pollDelegationStatus(data.requestId);
         } else {
             document.getElementById("delegation-message").textContent = `Transaction was rejected or failed.`;
         }
@@ -189,7 +191,6 @@ async function buyEnergy() {
         document.getElementById("delegation-message").textContent = `Error: ${error.message}`;
     }
 }
-
 // Poll for delegation status
 async function pollDelegationStatus(requestId) {
     const maxPollAttempts = 30; // 30 x 2s = 60s
