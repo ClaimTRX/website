@@ -84,25 +84,31 @@ async function fetchAvailableEnergy() {
     let retries = 0;
     const buyEnergyButton = document.getElementById("buy-energy-button");
 
+    if (!buyEnergyButton) {
+        console.error("Buy Energy button not found in DOM. Check ID 'buy-energy-button'.");
+        return;
+    }
+
     while (retries < maxRetries) {
         try {
             const response = await fetch(`${SERVER_URL}/api/available-energy`);
             const data = await response.json();
             if (data.success) {
                 const availableEnergy = Number(data.availableEnergy);
+                console.log(`Available energy fetched: ${availableEnergy}`);
                 document.getElementById("available-energy").textContent = availableEnergy.toLocaleString();
 
                 // Enable/disable the buy button based on energy threshold
-                if (buyEnergyButton) {
-                    if (availableEnergy < MIN_ENERGY_THRESHOLD) {
-                        buyEnergyButton.disabled = true;
-                        buyEnergyButton.title = "Not enough energy available (minimum 500,000 required)";
-                        buyEnergyButton.style.opacity = "0.5"; // Optional: visual cue
-                    } else {
-                        buyEnergyButton.disabled = false;
-                        buyEnergyButton.title = "Buy energy now";
-                        buyEnergyButton.style.opacity = "1";
-                    }
+                if (availableEnergy < MIN_ENERGY_THRESHOLD) {
+                    buyEnergyButton.disabled = true;
+                    buyEnergyButton.title = "Not enough energy available (minimum 500,000 required)";
+                    buyEnergyButton.style.opacity = "0.5";
+                    console.log("Buy button disabled: Energy below 500,000");
+                } else {
+                    buyEnergyButton.disabled = false;
+                    buyEnergyButton.title = "Buy energy now";
+                    buyEnergyButton.style.opacity = "1";
+                    console.log("Buy button enabled: Energy sufficient");
                 }
                 return;
             } else {
@@ -113,13 +119,12 @@ async function fetchAvailableEnergy() {
             retries++;
             if (retries === maxRetries) {
                 document.getElementById("available-energy").textContent = "Error fetching available energy";
-                if (buyEnergyButton) {
-                    buyEnergyButton.disabled = true; // Disable on error
-                    buyEnergyButton.title = "Energy availability check failed";
-                    buyEnergyButton.style.opacity = "0.5";
-                }
+                buyEnergyButton.disabled = true;
+                buyEnergyButton.title = "Energy availability check failed";
+                buyEnergyButton.style.opacity = "0.5";
+                console.log("Buy button disabled: Max retries reached");
             }
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retrying
+            await new Promise(resolve => setTimeout(resolve, 2000));
         }
     }
 }
@@ -133,6 +138,12 @@ function updatePriceDisplay() {
 
 // Initiate payment process
 async function buyEnergy() {
+    const buyEnergyButton = document.getElementById("buy-energy-button");
+    if (buyEnergyButton.disabled) {
+        console.log("Buy Energy button is disabled; transaction prevented.");
+        return;
+    }
+
     if (!userAddress) {
         alert("Please connect your wallet first.");
         return;
@@ -272,7 +283,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (energyAmountSelect) energyAmountSelect.addEventListener("change", updatePriceDisplay);
 
     const buyEnergyButton = document.getElementById("buy-energy-button");
-    if (buyEnergyButton) buyEnergyButton.addEventListener("click", buyEnergy);
+    if (buyEnergyButton) {
+        buyEnergyButton.addEventListener("click", buyEnergy);
+    } else {
+        console.error("Buy Energy button not found during initialization. Check ID 'buy-energy-button'.");
+    }
 
     // Initial fetch of available energy to set button state
     fetchAvailableEnergy();
