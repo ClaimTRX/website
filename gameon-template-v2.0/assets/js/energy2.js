@@ -95,19 +95,24 @@ async function fetchAvailableEnergy() {
             const data = await response.json();
             if (data.success) {
                 const availableEnergy = Number(data.availableEnergy);
-                console.log(`Available energy fetched: ${availableEnergy}`);
-                document.getElementById("available-energy").textContent = availableEnergy.toLocaleString();
+                const displayEnergy = availableEnergy - MIN_ENERGY_THRESHOLD; // Subtract 500,000 for display
+                console.log(`Available energy fetched: ${availableEnergy}, Displayed energy: ${displayEnergy}`);
+                document.getElementById("available-energy").textContent = displayEnergy.toLocaleString();
 
-                // Enable/disable the buy button based on energy threshold
+                // Enable/disable the buy button based on actual energy threshold
                 if (availableEnergy < MIN_ENERGY_THRESHOLD) {
                     buyEnergyButton.disabled = true;
                     buyEnergyButton.title = "Not enough energy available (minimum 500,000 required)";
                     buyEnergyButton.style.opacity = "0.5";
+                    buyEnergyButton.style.cursor = "not-allowed";
+                    buyEnergyButton.style.pointerEvents = "none";
                     console.log("Buy button disabled: Energy below 500,000");
                 } else {
                     buyEnergyButton.disabled = false;
                     buyEnergyButton.title = "Buy energy now";
                     buyEnergyButton.style.opacity = "1";
+                    buyEnergyButton.style.cursor = "pointer";
+                    buyEnergyButton.style.pointerEvents = "auto";
                     console.log("Buy button enabled: Energy sufficient");
                 }
                 return;
@@ -122,6 +127,8 @@ async function fetchAvailableEnergy() {
                 buyEnergyButton.disabled = true;
                 buyEnergyButton.title = "Energy availability check failed";
                 buyEnergyButton.style.opacity = "0.5";
+                buyEnergyButton.style.cursor = "not-allowed";
+                buyEnergyButton.style.pointerEvents = "none";
                 console.log("Buy button disabled: Max retries reached");
             }
             await new Promise(resolve => setTimeout(resolve, 2000));
