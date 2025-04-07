@@ -8,7 +8,6 @@ const priceMap = {
     "150000": 9,
     "200000": 12,
     "250000": 15
-    
 };
 
 // Your Tron address for receiving payments
@@ -16,6 +15,9 @@ const PAYMENT_ADDRESS = "TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn";
 
 // Server address for API calls
 const SERVER_URL = "https://api.cftecosystem.com";
+
+// Minimum energy threshold to enable the buy button
+const MIN_ENERGY_THRESHOLD = 2500000;
 
 // Check if TronLink is installed
 async function checkTronLinkInstalled() {
@@ -76,18 +78,32 @@ function updateWalletUI(isConnected) {
     }
 }
 
-// Fetch available energy from the server with retry logic
+// Fetch available energy from the server with retry logic and button control
 async function fetchAvailableEnergy() {
     const maxRetries = 3;
     let retries = 0;
+    const buyEnergyButton = document.getElementById("buy-energy-button");
 
     while (retries < maxRetries) {
         try {
             const response = await fetch(`${SERVER_URL}/api/available-energy`);
             const data = await response.json();
             if (data.success) {
-                document.getElementById("available-energy").textContent = Number(data.availableEnergy).toLocaleString();
+                const availableEnergy = Number(data.availableEnergy);
+                document.getElementById("available-energy").textContent = availableEnergy.toLocaleString();
 
+                // Enable/disable the buy button based on energy threshold
+                if (buyEnergyButton) {
+                    if (availableEnergy < MIN_ENERGY_THRESHOLD) {
+                        buyEnergyButton.disabled = true;
+                        buyEnergyButton.title = "Not enough energy available (minimum 500,000 required)";
+                        buyEnergyButton.style.opacity = "0.5"; // Optional: visual cue
+                    } else {
+                        buyEnergyButton.disabled = false;
+                        buyEnergyButton.title = "Buy energy now";
+                        buyEnergyButton.style.opacity = "1";
+                    }
+                }
                 return;
             } else {
                 throw new Error("Failed to fetch available energy");
@@ -97,6 +113,11 @@ async function fetchAvailableEnergy() {
             retries++;
             if (retries === maxRetries) {
                 document.getElementById("available-energy").textContent = "Error fetching available energy";
+                if (buyEnergyButton) {
+                    buyEnergyButton.disabled = true; // Disable on error
+                    buyEnergyButton.title = "Energy availability check failed";
+                    buyEnergyButton.style.opacity = "0.5";
+                }
             }
             await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retrying
         }
@@ -127,7 +148,6 @@ async function buyEnergy() {
     }
 
     try {
-        // Step 1: Send the payment (prompt user to sign in TronLink)
         document.getElementById("delegation-status").style.display = "block";
         document.getElementById("delegation-message").textContent = `Sending payment of ${trxPrice} TRX to ${PAYMENT_ADDRESS}...`;
         const result = await tronWeb.trx.sendTransaction(PAYMENT_ADDRESS, trxPrice * 1e6);
@@ -139,7 +159,6 @@ async function buyEnergy() {
             return;
         }
 
-        // Step 2: Notify the server of the request after signing, including the payment transaction ID
         document.getElementById("delegation-message").textContent = `Notifying server of your request...`;
         const response = await fetch(`${SERVER_URL}/api/request-energy`, {
             method: "POST",
@@ -154,11 +173,9 @@ async function buyEnergy() {
             return;
         }
 
-        // Step 3: Wait 3 seconds to allow the server to detect the payment
         document.getElementById("delegation-message").textContent = `Waiting for server to process payment...`;
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
+        await new Promise(resolve => setTimeout(resolve, 3000));
 
-        // Step 4: Start polling for delegation status
         document.getElementById("delegation-message").textContent = `Waiting for energy delegation...`;
         pollDelegationStatus(data.requestId);
     } catch (error) {
@@ -167,11 +184,10 @@ async function buyEnergy() {
     }
 }
 
-
 // Poll for delegation status
 async function pollDelegationStatus(requestId) {
     console.log(`Starting to poll delegation status for request ${requestId}...`);
-    const maxPollAttempts = 30; // 30 x 2s = 60s
+    const maxPollAttempts = 30;
     let pollAttempts = 0;
 
     const interval = setInterval(async () => {
@@ -202,7 +218,7 @@ async function pollDelegationStatus(requestId) {
                     messageElement.textContent = `Energy delegated successfully!`;
                     hashElement.textContent = data.txId;
                     hashElement.href = `https://tronscan.org/#/transaction/${data.txId}`;
-                    hashElement.style.display = "block"; // Ensure the hash is visible
+                    hashElement.style.display = "block";
                 } else {
                     console.error("UI elements not found:", { statusElement, messageElement, hashElement });
                 }
@@ -241,7 +257,7 @@ async function pollDelegationStatus(requestId) {
                 }
             }
         }
-    }, 2000); // Check every 2 seconds
+    }, 2000);
 }
 
 // Event listeners
@@ -257,4 +273,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const buyEnergyButton = document.getElementById("buy-energy-button");
     if (buyEnergyButton) buyEnergyButton.addEventListener("click", buyEnergy);
+
+    // Initial fetch of available energy to set button state
+    fetchAvailableEnergy();
 });
