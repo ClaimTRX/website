@@ -2,11 +2,12 @@ let tronWeb, userAddress;
 
 // Hardcoded price mapping (energy amount to TRX)
 const priceMap = {
-    "50000": 3.5,
-    "100000": 7,
-    "150000": 10.5,
-    "200000": 14,
-    "250000": 17.5
+    "32000": 2,
+    "50000": 3,
+    "100000": 6,
+    "150000": 9,
+    "200000": 12,
+    "250000": 15
     
 };
 
