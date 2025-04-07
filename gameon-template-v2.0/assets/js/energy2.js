@@ -17,7 +17,7 @@ const PAYMENT_ADDRESS = "TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn";
 const SERVER_URL = "https://api.cftecosystem.com";
 
 // Minimum energy threshold to enable the buy button
-const MIN_ENERGY_THRESHOLD = 2500000;
+const MIN_ENERGY_THRESHOLD = 500000;
 
 // Check if TronLink is installed
 async function checkTronLinkInstalled() {
