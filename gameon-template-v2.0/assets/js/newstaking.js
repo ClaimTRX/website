@@ -228,7 +228,7 @@ async function updateStakedAmount() {
 async function updateEstimatedAPR() {
     const aprRaw = await stakingContract.methods.calculateAPR().call();
     const apr = Number(aprRaw) / 10**18; // Convert BigInt to Number and adjust for 1e18 precision
-    const aprFormatted = (apr / 100).toFixed(2) + '%'; // Divide by 100 as contract multiplies by 100
+    const aprFormatted = apr.toFixed(2) + '%'; // No need to divide by 100
     document.getElementById('estimated-apr-cft').innerText = aprFormatted;
 }
 
