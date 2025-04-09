@@ -216,33 +216,33 @@ function delay(ms) {
 async function updateAvailableTokens() {
     const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
     const decimals = await tokenContract.methods.decimals().call();
-    document.getElementById('available-tokens-cft').innerText = formatNumber(balanceRaw / 10 ** decimals);
+    document.getElementById('available-tokens-cft').innerText = formatNumber(Number(balanceRaw) / 10 ** decimals);
 }
 
 async function updateStakedAmount() {
     const stakedAmountRaw = await stakingContract.methods.viewStakedAmount(userAddress).call();
     const decimals = await tokenContract.methods.decimals().call();
-    document.getElementById('staked-amount-cft').innerText = formatWholeNumber(stakedAmountRaw / 10 ** decimals);
+    document.getElementById('staked-amount-cft').innerText = formatWholeNumber(Number(stakedAmountRaw) / 10 ** decimals);
 }
 
 async function updateEstimatedAPR() {
     const aprRaw = await stakingContract.methods.calculateAPR().call();
-    const apr = aprRaw / BigInt(10**18);
-    const aprFormatted = (Number(apr) / 100).toFixed(2) + '%';
+    const apr = Number(aprRaw) / 10**18; // Convert BigInt to Number and adjust for 1e18 precision
+    const aprFormatted = (apr / 100).toFixed(2) + '%'; // Divide by 100 as contract multiplies by 100
     document.getElementById('estimated-apr-cft').innerText = aprFormatted;
 }
 
 async function updateClaimableRewards() {
     const claimableRewardsRaw = await stakingContract.methods.viewPendingReward(userAddress).call();
     const decimals = await tokenContract.methods.decimals().call();
-    const claimableRewards = claimableRewardsRaw / 10 ** decimals;
+    const claimableRewards = Number(claimableRewardsRaw) / 10 ** decimals;
     document.getElementById('claimable-rewards-cft').innerText = formatNumber(claimableRewards) + ' CFT';
 }
 
 async function updateTotalClaimedRewards() {
     const totalClaimedRaw = await stakingContract.methods.viewTotalClaimedRewards(userAddress).call();
     const decimals = await tokenContract.methods.decimals().call();
-    const totalClaimed = totalClaimedRaw / 10 ** decimals;
+    const totalClaimed = Number(totalClaimedRaw) / 10 ** decimals;
     document.getElementById('total-claimed-rewards-cft').innerText = formatNumber(totalClaimed);
 }
 
@@ -250,7 +250,7 @@ async function updateTotalClaimedRewards() {
 async function stakeTokens() {
     const amount = document.getElementById('stake-amount-cft').value;
     const decimals = await tokenContract.methods.decimals().call();
-    const amountToStake = BigInt(parseFloat(amount) * (10 ** decimals));
+    const amountToStake = BigInt(Math.floor(parseFloat(amount) * (10 ** decimals))); // Ensure integer value
 
     const allowance = await tokenContract.methods.allowance(userAddress, stakingConfig.stakingContractAddress).call();
     const allowanceBigInt = BigInt(allowance);
@@ -267,7 +267,7 @@ async function stakeTokens() {
 async function unstakeTokens() {
     const amount = document.getElementById('withdraw-amount-cft').value;
     const decimals = await tokenContract.methods.decimals().call();
-    const amountToUnstake = BigInt(amount) * BigInt(10 ** decimals);
+    const amountToUnstake = BigInt(Math.floor(parseFloat(amount) * (10 ** decimals))); // Ensure integer value
     await stakingContract.methods.withdraw(amountToUnstake.toString()).send();
     setTimeout(() => updateUI(), 3000);
 }
