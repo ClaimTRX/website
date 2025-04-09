@@ -507,7 +507,7 @@ async function connectWallet() {
 
 async function initializeContracts() {
     try {
-        cftV1Contract = await tronWeb.contract(tokenContractAbi, cftV1ContractAddress); // For approve
+        cftV1Contract = await tronWeb.contract(tokenContractAbi, cftV1ContractAddress); // For approve and balance
         swapContract = await tronWeb.contract(swapContractAbi, swapContractAddress); // For swap and balances
     } catch (error) {
         console.error("Error initializing contracts:", error);
@@ -516,15 +516,22 @@ async function initializeContracts() {
 
 async function updateUI() {
     try {
+        // Fetch contract balances (CFT V1 and V2 in the swap contract)
         const balances = await swapContract.getContractBalances().call();
-        const cftV2Balance = tronWeb.fromSun(balances[2]); // CFT V2 balance
-        const cftV1Balance = tronWeb.fromSun(balances[1]); // CFT V1 balance
+        const cftV2Balance = tronWeb.fromSun(balances[2]); // CFT V2 balance in contract
+        const cftV1Balance = tronWeb.fromSun(balances[1]); // CFT V1 balance in contract
         const totalSupply = 10000000; // 10M total supply
         const swappedPercentage = (cftV1Balance / totalSupply) * 100;
 
+        // Fetch user's CFT V1 balance
+        const userCFTV1BalanceRaw = await cftV1Contract.balanceOf(userAddress).call();
+        const userCFTV1Balance = tronWeb.fromSun(userCFTV1BalanceRaw);
+
+        // Update UI elements
         document.getElementById('available-cft-v2').innerText = `${formatNumber(cftV2Balance, 0)}`;
         document.getElementById('collected-cft-v1').innerText = `${formatNumber(cftV1Balance, 0)}`;
         document.getElementById('swap-progress').innerText = `${swappedPercentage.toFixed(2)}%`;
+        document.getElementById('user-cft-v1-balance').innerText = `${formatNumber(userCFTV1Balance, 0)}`;
     } catch (error) {
         console.error("Error updating UI:", error);
     }
