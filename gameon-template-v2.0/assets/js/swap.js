@@ -387,6 +387,7 @@
     }
 ];
 
+
 const swapContractAbi = [
     {
         "inputs": [
@@ -456,6 +457,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         alert("Please install TronLink to use this page.");
     }
 
+    // Event listeners for swap functionality
     document.getElementById('cft-v1-amount').addEventListener('input', calculateCFTV2);
     document.getElementById('swap-button').addEventListener('click', async (e) => {
         e.preventDefault();
@@ -505,8 +507,8 @@ async function connectWallet() {
 
 async function initializeContracts() {
     try {
-        cftV1Contract = await tronWeb.contract(tokenContractAbi, cftV1ContractAddress);
-        swapContract = await tronWeb.contract(swapContractAbi, swapContractAddress);
+        cftV1Contract = await tronWeb.contract(tokenContractAbi, cftV1ContractAddress); // For approve
+        swapContract = await tronWeb.contract(swapContractAbi, swapContractAddress); // For swap and balances
     } catch (error) {
         console.error("Error initializing contracts:", error);
     }
