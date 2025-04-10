@@ -117,7 +117,7 @@ const cftStakingContractAbi = [
 // Configuration for CFT staking contract
 const stakingConfig = {
     tokenContractAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-    stakingContractAddress: 'TFVjx6YBLSZWT1UkBqyfCwmf9TZKrUEAqu',
+    stakingContractAddress: 'TMrDKEu6vSBSwstToiiooAiwB5xKNghEy8',
     stakingContractAbi: cftStakingContractAbi,
     tokenContractAbi: [
         {
