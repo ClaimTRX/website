@@ -90,7 +90,7 @@ const cftStakingContractAbi = [
 // Configuration for CFT staking contract
 const stakingConfig = {
     tokenContractAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-    stakingContractAddress: 'TFVjx6YBLSZWT1UkBqyfCwmf9TZKrUEAqu',
+    stakingContractAddress: 'TMrDKEu6vSBSwstToiiooAiwB5xKNghEy8',
     stakingContractAbi: cftStakingContractAbi,
     tokenContractAbi: [
         {
@@ -178,33 +178,44 @@ async function connectWallet() {
         await initializeTronWeb();
     } catch (e) {
         console.error('Failed to connect to TronLink:', e);
+        alert('Failed to connect to TronLink. Please ensure TronLink is installed and try again.');
     }
 }
 
 // Initialize TronWeb and contracts
 async function initializeTronWeb() {
-    tronWeb = window.tronWeb;
-    userAddress = tronWeb.defaultAddress.base58;
-    document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
+    try {
+        tronWeb = window.tronWeb;
+        userAddress = tronWeb.defaultAddress.base58;
+        document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
 
-    stakingContract = await tronWeb.contract(stakingConfig.stakingContractAbi, stakingConfig.stakingContractAddress);
-    tokenContract = await tronWeb.contract(stakingConfig.tokenContractAbi, stakingConfig.tokenContractAddress);
+        stakingContract = await tronWeb.contract(stakingConfig.stakingContractAbi, stakingConfig.stakingContractAddress);
+        tokenContract = await tronWeb.contract(stakingConfig.tokenContractAbi, stakingConfig.tokenContractAddress);
 
-    setInterval(() => updateUI(), 60000);
-    await updateUI();
+        setInterval(() => updateUI(), 60000);
+        await updateUI();
+    } catch (e) {
+        console.error('Failed to initialize TronWeb:', e);
+        alert('Failed to initialize contracts. Please refresh the page and try again.');
+    }
 }
 
 // Update UI
 async function updateUI() {
-    await updateAvailableTokens();
-    await delay(400);
-    await updateStakedAmount();
-    await delay(400);
-    await updateEstimatedAPR();
-    await delay(400);
-    await updateClaimableRewards();
-    await delay(400);
-    await updateTotalClaimedRewards();
+    try {
+        await updateAvailableTokens();
+        await delay(400);
+        await updateStakedAmount();
+        await delay(400);
+        await updateEstimatedAPR();
+        await delay(400);
+        await updateClaimableRewards();
+        await delay(400);
+        await updateTotalClaimedRewards();
+    } catch (e) {
+        console.error('Error updating UI:', e);
+        alert('Error updating UI. Some data may not be displayed correctly.');
+    }
 }
 
 // Utility delay function
@@ -214,67 +225,107 @@ function delay(ms) {
 
 // UI update functions
 async function updateAvailableTokens() {
-    const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
-    const decimals = await tokenContract.methods.decimals().call();
-    document.getElementById('available-tokens-cft').innerText = formatNumber(Number(balanceRaw) / 10 ** decimals);
+    try {
+        const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
+        const decimals = await tokenContract.methods.decimals().call();
+        document.getElementById('available-tokens-cft').innerText = formatNumber(Number(balanceRaw) / 10 ** decimals);
+    } catch (e) {
+        console.error('Error updating available tokens:', e);
+        document.getElementById('available-tokens-cft').innerText = 'Error';
+    }
 }
 
 async function updateStakedAmount() {
-    const stakedAmountRaw = await stakingContract.methods.viewStakedAmount(userAddress).call();
-    const decimals = await tokenContract.methods.decimals().call();
-    document.getElementById('staked-amount-cft').innerText = formatWholeNumber(Number(stakedAmountRaw) / 10 ** decimals);
+    try {
+        const stakedAmountRaw = await stakingContract.methods.viewStakedAmount(userAddress).call();
+        const decimals = await tokenContract.methods.decimals().call();
+        document.getElementById('staked-amount-cft').innerText = formatWholeNumber(Number(stakedAmountRaw) / 10 ** decimals);
+    } catch (e) {
+        console.error('Error updating staked amount:', e);
+        document.getElementById('staked-amount-cft').innerText = 'Error';
+    }
 }
 
 async function updateEstimatedAPR() {
-    const aprRaw = await stakingContract.methods.calculateAPR().call();
-    const apr = Number(aprRaw) / 10**18; // Convert BigInt to Number and adjust for 1e18 precision
-    const aprFormatted = apr.toFixed(2) + '%'; // No need to divide by 100
-    document.getElementById('estimated-apr-cft').innerText = aprFormatted;
+    try {
+        const aprRaw = await stakingContract.methods.calculateAPR().call();
+        const apr = Number(aprRaw) / 10**18;
+        const aprFormatted = apr.toFixed(2) + '%';
+        document.getElementById('estimated-apr-cft').innerText = aprFormatted;
+    } catch (e) {
+        console.error('Error updating estimated APR:', e);
+        document.getElementById('estimated-apr-cft').innerText = 'Error';
+    }
 }
 
 async function updateClaimableRewards() {
-    const claimableRewardsRaw = await stakingContract.methods.viewPendingReward(userAddress).call();
-    const decimals = await tokenContract.methods.decimals().call();
-    const claimableRewards = Number(claimableRewardsRaw) / 10 ** decimals;
-    document.getElementById('claimable-rewards-cft').innerText = formatNumber(claimableRewards) + ' CFT';
+    try {
+        const claimableRewardsRaw = await stakingContract.methods.viewPendingReward(userAddress).call();
+        const decimals = await tokenContract.methods.decimals().call();
+        const claimableRewards = Number(claimableRewardsRaw) / 10 ** decimals;
+        document.getElementById('claimable-rewards-cft').innerText = formatNumber(claimableRewards) + ' CFT';
+    } catch (e) {
+        console.error('Error updating claimable rewards:', e);
+        document.getElementById('claimable-rewards-cft').innerText = 'Error';
+    }
 }
 
 async function updateTotalClaimedRewards() {
-    const totalClaimedRaw = await stakingContract.methods.viewTotalClaimedRewards(userAddress).call();
-    const decimals = await tokenContract.methods.decimals().call();
-    const totalClaimed = Number(totalClaimedRaw) / 10 ** decimals;
-    document.getElementById('total-claimed-rewards-cft').innerText = formatNumber(totalClaimed);
+    try {
+        const totalClaimedRaw = await stakingContract.methods.viewTotalClaimedRewards(userAddress).call();
+        const decimals = await tokenContract.methods.decimals().call();
+        const totalClaimed = Number(totalClaimedRaw) / 10 ** decimals;
+        document.getElementById('total-claimed-rewards-cft').innerText = formatNumber(totalClaimed);
+    } catch (e) {
+        console.error('Error updating total claimed rewards:', e);
+        document.getElementById('total-claimed-rewards-cft').innerText = 'Error';
+    }
 }
 
 // Staking actions
 async function stakeTokens() {
-    const amount = document.getElementById('stake-amount-cft').value;
-    const decimals = await tokenContract.methods.decimals().call();
-    const amountToStake = BigInt(Math.floor(parseFloat(amount) * (10 ** decimals))); // Ensure integer value
+    try {
+        const amount = document.getElementById('stake-amount-cft').value;
+        const decimals = await tokenContract.methods.decimals().call();
+        const amountToStake = BigInt(Math.floor(parseFloat(amount) * (10 ** decimals)));
 
-    const allowance = await tokenContract.methods.allowance(userAddress, stakingConfig.stakingContractAddress).call();
-    const allowanceBigInt = BigInt(allowance);
+        const allowance = await tokenContract.methods.allowance(userAddress, stakingConfig.stakingContractAddress).call();
+        const allowanceBigInt = BigInt(allowance);
 
-    if (allowanceBigInt < amountToStake) {
-        await tokenContract.methods.approve(stakingConfig.stakingContractAddress, maxUint256).send();
-        await delay(1000);
+        if (allowanceBigInt < amountToStake) {
+            await tokenContract.methods.approve(stakingConfig.stakingContractAddress, maxUint256).send();
+            await delay(1000);
+        }
+
+        await stakingContract.methods.stake(amountToStake.toString()).send();
+        setTimeout(() => updateUI(), 3000);
+    } catch (e) {
+        console.error('Error staking tokens:', e);
+        alert('Failed to stake tokens. Please try again.');
     }
-
-    await stakingContract.methods.stake(amountToStake.toString()).send();
-    setTimeout(() => updateUI(), 3000);
 }
 
 async function unstakeTokens() {
-    const amount = document.getElementById('withdraw-amount-cft').value;
-    const decimals = await tokenContract.methods.decimals().call();
-    const amountToUnstake = BigInt(Math.floor(parseFloat(amount) * (10 ** decimals))); // Ensure integer value
-    await stakingContract.methods.withdraw(amountToUnstake.toString()).send();
-    setTimeout(() => updateUI(), 3000);
+    try {
+        const amount = document.getElementById('withdraw-amount-cft').value;
+        const decimals = await tokenContract.methods.decimals().call();
+        const amountToUnstake = BigInt(Math.floor(parseFloat(amount) * (10 ** decimals)));
+        await stakingContract.methods.withdraw(amountToUnstake.toString()).send();
+        setTimeout(() => updateUI(), 3000);
+    } catch (e) {
+        console.error('Error unstaking tokens:', e);
+        alert('Failed to unstake tokens. Please try again.');
+    }
 }
 
 async function claimRewards() {
-    await stakingContract.methods.claimReward().send();
-    setTimeout(() => updateUI(), 3000);
+    try {
+        await stakingContract.methods.claimReward().send();
+        setTimeout(() => updateUI(), 3000);
+    } catch (e) {
+        console.error('Error claiming rewards:', e);
+        alert('Failed to claim rewards. Please try again.');
+    }
 }
 
 // Utility functions
