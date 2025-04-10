@@ -1,0 +1,262 @@
+<!doctype html>
+<html class="no-js" lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+    <!-- Title -->
+    <title>CFT Ecosystem - Admin Panel</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="assets/img/favicon.png">
+
+    <!-- Style css -->
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body>
+    <!--====== Preloader Area Start ======-->
+    <div id="gameon-preloader" class="gameon-preloader">
+        <div class="preloader-animation">
+            <div class="spinner"></div>
+            <p class="fw-5 text-center text-uppercase">Loading</p>
+        </div>
+        <div class="loader-animation">
+            <div class="row h-100">
+                <div class="col-3 single-loader p-0">
+                    <div class="loader-bg"></div>
+                </div>
+                <div class="col-3 single-loader p-0">
+                    <div class="loader-bg"></div>
+                </div>
+                <div class="col-3 single-loader p-0">
+                    <div class="loader-bg"></div>
+                </div>
+                <div class="col-3 single-loader p-0">
+                    <div class="loader-bg"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--====== Preloader Area End ======-->
+
+    <div class="main">
+        <!-- ***** Header Start ***** -->
+        <header id="header">
+            <nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
+                <div class="container header">
+                    <a class="navbar-brand" href="index.html">
+                        <img src="assets/img/logo/logo.png" alt="" />
+                    </a>
+                    <div class="ms-auto"></div>
+                    <ul class="navbar-nav items mx-auto">
+                        <li class="nav-item">
+                            <a href="index.html" class="nav-link">Home</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li class="nav-item">
+                                    <a href="buycft.html" class="nav-link">Buy CFT</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="sellcft.html" class="nav-link">Sell CFT</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="cftstaking.html" class="nav-link">Stake CFT</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="trc20staking.html" class="nav-link">Stake TRC20</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li class="nav-item">
+                                    <a href="buystablex.html" class="nav-link">Buy StableX</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="sellstablex.html" class="nav-link">Sell StableX</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="stablexstaking.html" class="nav-link">Stake StableX</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link">CFT VC <i class="icon-arrow-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li class="nav-item">
+                                    <a href="blog-single.html" class="nav-link">Info</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="energy.html" class="nav-link">VIP</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="energy2.html" class="nav-link">Rent Energy</a>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav toggle">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
+                                <i class="icon-menu m-0"></i>
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav action">
+                        <li class="nav-item ms-2">
+                            <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
+                                <i class="icon-wallet me-md-2"></i> Wallet Connect
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </header>
+        <!-- ***** Header End ***** -->
+
+        <!-- ***** Hero Area Start ***** -->
+        <section class="hero-section">
+            <div class="container">
+                <div class="row align-items-center justify-content-center">
+                    <div class="col-12 col-md-6 col-lg-9 text-center">
+                        <div class="hero-content">
+                            <div class="intro text-center mb-5">
+                                <span class="intro-text">CFT Ecosystem</span>
+                                <h1 class="mt-4">Admin Panel</h1>
+                                <p>Manage CFT staking rewards</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- ***** Hero Area End ***** -->
+
+        <!-- Admin Area -->
+        <section class="admin-area">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-10">
+                        <!-- Access Denied Message -->
+                        <div id="access-denied" class="alert alert-danger text-center" style="display: none;">
+                            Access Denied: Only the admin wallet can access this page.
+                        </div>
+                        <!-- Admin Panel -->
+                        <div id="admin-panel" style="display: none;">
+                            <!-- Deposit Rewards -->
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <h4 class="card-title">Deposit Rewards</h4>
+                                    <div class="row">
+                                        <div class="col-12 col-md-6">
+                                            <span class="d-block mb-2">Available CFT: <span id="available-tokens-admin"></span></span>
+                                            <div class="input-area d-flex flex-column">
+                                                <div class="input-text">
+                                                    <input type="text" placeholder="0" id="deposit-amount">
+                                                </div>
+                                                <button class="btn input-btn mt-2" id="deposit-button">Deposit Rewards</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Rewards Information -->
+                            <div class="card">
+                                <div class="card-body">
+                                    <h4 class="card-title">Rewards Information</h4>
+                                    <div class="row">
+                                        <div class="col-12 col-md-4 single-item">
+                                            <span id="rewards-left"></span>
+                                            <span>Rewards Left (CFT)</span>
+                                        </div>
+                                        <div class="col-12 col-md-4 single-item">
+                                            <span id="daily-rewards"></span>
+                                            <span>Daily Rewards (CFT)</span>
+                                        </div>
+                                        <div class="col-12 col-md-4 single-item">
+                                            <span id="days-left"></span>
+                                            <span>Days of Rewards Left</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!--====== Footer Area Start ======-->
+        <footer class="footer-area">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-8 text-center">
+                        <div class="footer-items">
+                            <a class="navbar-brand" href="index.html">
+                                <img src="assets/img/logo/logo.png" alt="">
+                            </a>
+                            <div class="social-icons d-flex justify-content-center my-4">
+                                <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank">
+                                    <i class="fab fa-x-twitter"></i>
+                                </a>
+                                <a class="reddit" href="https://www.reddit.com/" target="_blank">
+                                    <i class="fab fa-reddit"></i>
+                                </a>
+                                <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank">
+                                    <i class="fab fa-telegram-plane"></i>
+                                </a>
+                            </div>
+                            <div class="copyright-area py-4">©2025 CFT Ecosystem, All Rights Reserved</div>
+                        </div>
+                        <div id="scroll-to-top" class="scroll-to-top">
+                            <a href="#header" class="smooth-anchor">
+                                <i class="fa-solid fa-arrow-up"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+        <!--====== Footer Area End ======-->
+
+        <!--====== Modal Responsive Menu Area Start ======-->
+        <div id="menu" class="modal fade p-0">
+            <div class="modal-dialog dialog-animated">
+                <div class="modal-content h-100">
+                    <div class="modal-header" data-bs-dismiss="modal">
+                        Menu <i class="far fa-times-circle icon-close"></i>
+                    </div>
+                    <div class="menu modal-body">
+                        <div class="row w-100">
+                            <div class="items p-0 col-12 text-center"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--====== Modal Responsive Menu Area End ======-->
+    </div>
+
+    <!-- ***** All jQuery Plugins ***** -->
+    <script src="assets/js/vendor/jquery.min.js"></script>
+    <script src="assets/js/vendor/popper.min.js"></script>
+    <script src="assets/js/vendor/bootstrap.min.js"></script>
+    <script src="assets/js/vendor/all.min.js"></script>
+    <script src="assets/js/vendor/gallery.min.js"></script>
+    <script src="assets/js/vendor/slider.min.js"></script>
+    <script src="assets/js/vendor/countdown.min.js"></script>
+    <script src="assets/js/vendor/shuffle.min.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+    <script src="assets/js/admin.js"></script>
+</body>
+
+</html>
