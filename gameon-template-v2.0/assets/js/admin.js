@@ -252,29 +252,35 @@ async function updateAvailableTokens() {
 async function updateRewardsInfo() {
     const decimals = await tokenContract.methods.decimals().call();
     
-    // Get total deposited rewards (total amount of CFT)
-    const totalDepositedRaw = await stakingContract.methods.viewTotalDepositedRewards().call();
-    const totalDeposited = Number(totalDepositedRaw) / 10 ** decimals;
+    // Get total CFT in the contract (contract's balance of CFT)
+    const contractBalanceRaw = await tokenContract.methods.balanceOf(stakingConfig.stakingContractAddress).call();
+    const contractBalance = Number(contractBalanceRaw) / 10 ** decimals;
+    console.log('Contract Balance (CFT):', contractBalance);
 
     // Get total staked CFT
     const totalStakedRaw = await stakingContract.methods.viewTotalStaked().call();
     const totalStaked = Number(totalStakedRaw) / 10 ** decimals;
+    console.log('Total Staked (CFT):', totalStaked);
 
     // Get total unclaimed rewards
     const totalUnclaimedRaw = await stakingContract.methods.viewTotalUnclaimedRewards().call();
     const totalUnclaimed = Number(totalUnclaimedRaw) / 10 ** decimals;
+    console.log('Total Unclaimed Rewards (CFT):', totalUnclaimed);
 
     // Calculate rewards left
-    const rewardsLeft = totalDeposited - totalStaked - totalUnclaimed;
+    const rewardsLeft = contractBalance - totalStaked - totalUnclaimed;
+    console.log('Rewards Left (CFT):', rewardsLeft);
     document.getElementById('rewards-left').innerText = formatNumber(rewardsLeft);
 
     // Get current daily rewards
     const dailyRewardsRaw = await stakingContract.methods.viewDailyReward().call();
     const dailyRewards = Number(dailyRewardsRaw) / 10 ** decimals;
+    console.log('Daily Rewards (CFT):', dailyRewards);
     document.getElementById('daily-rewards').innerText = formatNumber(dailyRewards);
 
     // Calculate days of rewards left
     const daysLeft = dailyRewards > 0 ? (rewardsLeft / dailyRewards).toFixed(2) : '0.00';
+    console.log('Days Left:', daysLeft);
     document.getElementById('days-left').innerText = daysLeft;
 }
 
