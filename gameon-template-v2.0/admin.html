@@ -18,11 +18,16 @@
     <link rel="stylesheet" href="assets/css/style.css">
 
     <!-- Custom CSS for white text -->
-    <style>
-        .admin-area .single-item span {
-            color: white !important;
-        }
-    </style>
+   <style>
+    .admin-area, 
+    .admin-area * {
+        color: white !important;
+    }
+    .admin-area input::placeholder {
+        color: white !important;
+        opacity: 0.7; /* Optional: slightly dim placeholder for contrast */
+    }
+</style>
 </head>
 
 <body>
@@ -161,7 +166,7 @@
                             <!-- Deposit Rewards -->
                             <div class="card mb-4">
                                 <div class="card-body">
-                                    <h4 class="card-title single-item">Deposit Rewards</h4>
+                                    <h4 class="card-title">Deposit Rewards</h4>
                                     <div class="row">
                                         <div class="col-12 col-md-6 single-item">
                                             <span class="d-block mb-2">Available CFT: <span id="available-tokens-admin"></span></span>
@@ -178,7 +183,7 @@
                             <!-- Rewards Information -->
                             <div class="card">
                                 <div class="card-body">
-                                    <h4 class="card-title single-item">Rewards Information</h4>
+                                    <h4 class="card-title">Rewards Information</h4>
                                     <div class="row">
                                         <div class="col-12 col-md-4 single-item">
                                             <span id="rewards-left"></span>
