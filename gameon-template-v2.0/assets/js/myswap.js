@@ -394,7 +394,8 @@ async function updateExpectedOutput() {
     try {
         let amountOutBigInt;
         // Convert amountIn to smallest unit (e.g., SUN for TRX) as a clean integer string
-        const amountInScaled = (amountIn * 10 ** DECIMALS[tokenFrom]).toFixed(0);
+        const amountInScaled = (amountIn * 10 ** DECIMALS[tokenFrom]).toFixed(0).replace(/,/g, '');
+
         let amountInBigInt = BigInt(amountInScaled);
 
         if (tokenFrom === 'TRX') {
