@@ -1,9 +1,10 @@
+
 // Constants
 const SUNSWAP_ROUTER = 'TXF1xDbVGdxFGbovmmmXvBGu8ZiE3Lq4mR'; // SunSwap V2 Router
 const WTRX_ADDRESS = 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR';
 
 const TOKENS = {
-    TRX: 'TRX',
+    TRX: 'T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb',
     KING: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
     CFT: 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA',
     BBT: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
@@ -339,7 +340,7 @@ async function updateBalances() {
         } else {
             const contract = await tronWeb.contract(ERC20_ABI, TOKENS[tokenFrom]);
             balance = await contract.balanceOf(userAddress).call();
-            console.log(`Balance for ${tokenFrom}:`, balance.toString()); // Debugging
+            console.log(`Balance for ${tokenFrom}:`, balance.toString());
         }
 
         const formattedBalance = balance && balance > 0
@@ -370,7 +371,15 @@ async function updateExpectedOutput() {
         return;
     }
 
-    amountIn = parseFloat(amountIn.replace(/,/g, ''));
+    // Clean input: remove commas and ensure valid number
+    amountIn = amountIn.replace(/[^0-9.]/g, ''); // Keep only digits and decimal point
+    amountIn = parseFloat(amountIn);
+    if (isNaN(amountIn) || amountIn <= 0) {
+        document.getElementById('to-amount').value = '';
+        document.getElementById('status-msg').textContent = 'Invalid input amount.';
+        await updateBalances();
+        return;
+    }
 
     const possibleKey1 = `${tokenFrom}-${tokenTo}`;
     const possibleKey2 = `${tokenTo}-${tokenFrom}`;
@@ -384,7 +393,9 @@ async function updateExpectedOutput() {
 
     try {
         let amountOutBigInt;
-        let amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
+        // Convert amountIn to smallest unit (e.g., SUN for TRX) as a clean integer string
+        const amountInScaled = (amountIn * 10 ** DECIMALS[tokenFrom]).toFixed(0);
+        let amountInBigInt = BigInt(amountInScaled);
 
         if (tokenFrom === 'TRX') {
             // Use router's getAmountsOut for TRX swaps
@@ -408,12 +419,13 @@ async function updateExpectedOutput() {
 
         const rate = amountOut / amountIn;
         const formattedRate = formatNumber(rate);
-        document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = ${formattedRate} ${tokenTo}`;
+        document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = ${formattedRate} ${tokenTo} | Balance: ${document.getElementById('rate-info').textContent.split('Balance: ')[1] || '0'}`;
         window.expectedOutBigInt = amountOutBigInt;
         window.amountInBigInt = amountInBigInt;
     } catch (error) {
         console.error('updateExpectedOutput error:', error);
         document.getElementById('to-amount').value = 'Error';
+        document.getElementById('status-msg').textContent = 'Failed to calculate swap amount. Please try again.';
         await updateBalances();
     }
 }
@@ -434,7 +446,9 @@ async function executeSwap() {
         return;
     }
 
-    const amountInBigInt = window.amountInBigInt;
+    // Clean input for swap
+    const cleanAmountIn = amountIn.replace(/[^0-9.]/g, '');
+    const amountInBigInt = BigInt((parseFloat(cleanAmountIn) * 10 ** DECIMALS[tokenFrom]).toFixed(0));
     const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
 
     try {
