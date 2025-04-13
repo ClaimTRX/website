@@ -1,4 +1,6 @@
 
+
+
 // Constants
 const SUNSWAP_ROUTER = 'TXF1xDbVGdxFGbovmmmXvBGu8ZiE3Lq4mR'; // SunSwap V2 Router
 const WTRX_ADDRESS = 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR';
@@ -371,8 +373,8 @@ async function updateExpectedOutput() {
         return;
     }
 
-    // Clean input: remove commas and ensure valid number
-    amountIn = amountIn.replace(/[^0-9.]/g, ''); // Keep only digits and decimal point
+    // Clean input: remove non-numeric characters except decimal point
+    amountIn = amountIn.replace(/[^0-9.]/g, '');
     amountIn = parseFloat(amountIn);
     if (isNaN(amountIn) || amountIn <= 0) {
         document.getElementById('to-amount').value = '';
@@ -393,9 +395,10 @@ async function updateExpectedOutput() {
 
     try {
         let amountOutBigInt;
-        // Convert amountIn to smallest unit (e.g., SUN for TRX) as a clean integer string
-        const amountInScaled = (amountIn * 10 ** DECIMALS[tokenFrom]).toFixed(0).replace(/,/g, '');
-
+        // Scale input amount to smallest unit (e.g., SUN for TRX)
+        const decimals = DECIMALS[tokenFrom];
+        // Avoid floating-point precision issues by multiplying first, then converting to string
+        const amountInScaled = Math.floor(amountIn * Math.pow(10, decimals)).toString();
         let amountInBigInt = BigInt(amountInScaled);
 
         if (tokenFrom === 'TRX') {
@@ -449,7 +452,8 @@ async function executeSwap() {
 
     // Clean input for swap
     const cleanAmountIn = amountIn.replace(/[^0-9.]/g, '');
-    const amountInBigInt = BigInt((parseFloat(cleanAmountIn) * 10 ** DECIMALS[tokenFrom]).toFixed(0));
+    const decimals = DECIMALS[tokenFrom];
+    const amountInBigInt = BigInt(Math.floor(parseFloat(cleanAmountIn) * Math.pow(10, decimals)).toString());
     const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
 
     try {
