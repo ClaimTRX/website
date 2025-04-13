@@ -1,7 +1,7 @@
 const SUNSWAP_ROUTER = 'TXF1xDbVGdxFGbovmmmXvBGu8ZiE3Lq4mR';
 
 const TOKENS = {
-    TRX: null, // TRX is native, not a token
+    TRX: null,
     WTRX: 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR',
     KING: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
     CFT:  'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA',
@@ -26,59 +26,75 @@ const DECIMALS = {
     WIN: 6, TWX: 18, ARB: 6, JST: 18, TEM: 6, TUSD: 18, BTC: 8
 };
 
+const POOLS = {
+    'CFT-KING':  { addr: 'TRRevVDqvM31DdUQb73qViCEcDyCffYJTA', token0: 'CFT', token1: 'KING' },
+    'CFT-BBT':   { addr: 'TLWPwGteW4gZ1AU5CWCPYmfLdEm8yqduNb', token0: 'CFT', token1: 'BBT' },
+    'TWX-CFT':   { addr: 'TE5X2A4rhXyoSheojRGiqow5qjapSQdrPY', token0: 'CFT', token1: 'TWX' },
+    'CFT-TEM':   { addr: 'TKNxcR2i2G191XEJpC3PpFTm9TvMvbww3R', token0: 'CFT', token1: 'TEM' },
+    'WTRX-KING': { addr: 'TQ2HCSvpir3ELSJg3J2wKG6TskePh74rz8', token0: 'KING', token1: 'WTRX' },
+    'WTRX-BBT':  { addr: 'TTJ9VB8kUptB1bztysnQZtcqaR5cYCbzAW', token0: 'BBT', token1: 'WTRX' },
+    'WTRX-USDT': { addr: 'TFGDbUyP8xez44C76fin3bn3Ss6jugoUwJ', token0: 'WTRX', token1: 'USDT' },
+    'WTRX-TEM':  { addr: 'TEJAugHke9ahqaDPBoz4ZRQPz5qpu8cDua', token0: 'TEM', token1: 'WTRX' },
+    'WTRX-JM':   { addr: 'TNyDrrafFWR8nWPfrJqZkcc7qFhb8UKio2', token0: 'WTRX', token1: 'JM' },
+    'JM-PROS':   { addr: 'TNcGWGJySGrWavPnq4g6Pw3EKhUGacJDvU', token0: 'PROS', token1: 'JM' },
+    'PROS-WTRX': { addr: 'TVcaFufasLEzZ8hyyRwtz5aK8ae5E76rGi', token0: 'PROS', token1: 'WTRX' },
+    'ARB-CFT':   { addr: 'TXw4Yj38EXzmk6MDxMSDyKnauS89Bpcv1P', token0: 'CFT', token1: 'ARB' },
+    'WIN-WTRX':  { addr: 'TDq9PCXQM5RfpN14T8sc6ePYJRFecPJCut', token0: 'WIN', token1: 'WTRX' },
+};
+
 const ROUTER_ABI = [
     {
-        "name": "swapExactTokensForTokens",
-        "type": "function",
-        "inputs": [
-            { "name": "amountIn", "type": "uint256" },
-            { "name": "amountOutMin", "type": "uint256" },
-            { "name": "path", "type": "address[]" },
-            { "name": "to", "type": "address" },
-            { "name": "deadline", "type": "uint256" }
+        name: "swapExactTokensForTokens",
+        type: "function",
+        inputs: [
+            { name: "amountIn", type: "uint256" },
+            { name: "amountOutMin", type: "uint256" },
+            { name: "path", type: "address[]" },
+            { name: "to", type: "address" },
+            { name: "deadline", type: "uint256" }
         ],
-        "outputs": [{ "name": "amounts", "type": "uint256[]" }],
-        "stateMutability": "nonpayable"
+        outputs: [{ name: "amounts", type: "uint256[]" }],
+        stateMutability: "nonpayable"
     },
     {
-        "name": "swapExactTRXForTokens",
-        "type": "function",
-        "inputs": [
-            { "name": "amountOutMin", "type": "uint256" },
-            { "name": "path", "type": "address[]" },
-            { "name": "to", "type": "address" },
-            { "name": "deadline", "type": "uint256" }
+        name: "swapExactTRXForTokens",
+        type: "function",
+        inputs: [
+            { name: "amountOutMin", type: "uint256" },
+            { name: "path", type: "address[]" },
+            { name: "to", type: "address" },
+            { name: "deadline", type: "uint256" }
         ],
-        "outputs": [{ "name": "amounts", "type": "uint256[]" }],
-        "stateMutability": "payable"
+        outputs: [{ name: "amounts", type: "uint256[]" }],
+        stateMutability: "payable"
     }
 ];
 
 const ERC20_ABI = [
     {
-        "constant": true,
-        "inputs": [{ "name": "_owner", "type": "address" }],
-        "name": "balanceOf",
-        "outputs": [{ "name": "balance", "type": "uint256" }],
-        "stateMutability": "view"
+        constant: true,
+        inputs: [{ name: "_owner", type: "address" }],
+        name: "balanceOf",
+        outputs: [{ name: "balance", type: "uint256" }],
+        stateMutability: "view"
     },
     {
-        "constant": true,
-        "inputs": [{ "name": "_owner", "type": "address" }, { "name": "_spender", "type": "address" }],
-        "name": "allowance",
-        "outputs": [{ "name": "remaining", "type": "uint256" }],
-        "stateMutability": "view"
+        constant: true,
+        inputs: [{ name: "_owner", type: "address" }, { name: "_spender", type: "address" }],
+        name: "allowance",
+        outputs: [{ name: "remaining", type: "uint256" }],
+        stateMutability: "view"
     },
     {
-        "constant": false,
-        "inputs": [{ "name": "_spender", "type": "address" }, { "name": "_value", "type": "uint256" }],
-        "name": "approve",
-        "outputs": [{ "name": "success", "type": "bool" }],
-        "stateMutability": "nonpayable"
+        constant: false,
+        inputs: [{ name: "_spender", type: "address" }, { name: "_value", type: "uint256" }],
+        name: "approve",
+        outputs: [{ name: "success", type: "bool" }],
+        stateMutability: "nonpayable"
     }
 ];
 
-// Globals
+// Continues in Part 2 →
 let tronWeb;
 let userAddress;
 let isWalletConnected = false;
@@ -99,10 +115,10 @@ async function connectWallet() {
             populateTokenSelectors();
             await updateBalances();
         } else {
-            alert('TronLink not detected. Please install it.');
+            alert('TronLink not detected.');
         }
     } catch (e) {
-        alert('Wallet connection failed.');
+        alert('Failed to connect wallet.');
         console.error(e);
     }
 }
@@ -110,6 +126,8 @@ async function connectWallet() {
 function populateTokenSelectors() {
     const fromSelect = document.getElementById('from-token');
     const toSelect = document.getElementById('to-token');
+    fromSelect.innerHTML = '';
+    toSelect.innerHTML = '';
 
     Object.keys(TOKENS).forEach(token => {
         const opt = document.createElement('option');
@@ -128,8 +146,8 @@ function updateToDropdown(fromToken) {
     toSelect.innerHTML = '';
 
     const pairs = new Set();
-    Object.keys(POOLS).forEach(pool => {
-        const [a, b] = pool.split('-');
+    Object.keys(POOLS).forEach(key => {
+        const [a, b] = key.split('-');
         if (a === fromToken) pairs.add(b);
         else if (b === fromToken) pairs.add(a);
     });
@@ -147,21 +165,21 @@ function updateToDropdown(fromToken) {
 }
 
 async function updateBalances() {
-    const tokenFrom = document.getElementById('from-token').value;
+    const token = document.getElementById('from-token').value;
     try {
         let balance = '0';
-        if (tokenFrom === 'TRX') {
+        if (token === 'TRX') {
             const sun = await tronWeb.trx.getBalance(userAddress);
-            balance = formatNumber(sun / 10 ** DECIMALS['TRX']);
+            balance = formatNumber(sun / 1e6);
         } else {
-            const contract = await tronWeb.contract(ERC20_ABI, TOKENS[tokenFrom]);
+            const contract = await tronWeb.contract(ERC20_ABI, TOKENS[token]);
             const res = await contract.balanceOf(userAddress).call();
-            balance = formatNumber(Number(res) / 10 ** DECIMALS[tokenFrom]);
+            balance = formatNumber(Number(res) / 10 ** DECIMALS[token]);
         }
 
-        document.getElementById('rate-info').textContent = `Balance: ${balance} ${tokenFrom}`;
+        document.getElementById('rate-info').textContent = `Balance: ${balance} ${token}`;
     } catch (e) {
-        document.getElementById('rate-info').textContent = `Balance: 0 ${tokenFrom}`;
+        document.getElementById('rate-info').textContent = `Balance: 0 ${token}`;
     }
 }
 
@@ -173,14 +191,9 @@ function getAmountOut(amountIn, reserveIn, reserveOut) {
 }
 
 async function fetchReserves(poolAddress) {
-    try {
-        const contract = await tronWeb.contract([{ name: "getReserves", type: "function", outputs: [{ name: "_reserve0", type: "uint112" }, { name: "_reserve1", type: "uint112" }] }], poolAddress);
-        const r = await contract.getReserves().call();
-        return { reserve0: BigInt(r._reserve0), reserve1: BigInt(r._reserve1) };
-    } catch (e) {
-        document.getElementById('status-msg').textContent = 'Reserve fetch failed.';
-        throw e;
-    }
+    const contract = await tronWeb.contract([{ name: "getReserves", type: "function", outputs: [{ name: "_reserve0", type: "uint112" }, { name: "_reserve1", type: "uint112" }] }], poolAddress);
+    const r = await contract.getReserves().call();
+    return { reserve0: BigInt(r._reserve0), reserve1: BigInt(r._reserve1) };
 }
 
 async function checkAllowance(tokenAddress, owner, spender) {
@@ -210,7 +223,6 @@ async function updateExpectedOutput() {
     const key1 = `${tokenFrom}-${tokenTo}`;
     const key2 = `${tokenTo}-${tokenFrom}`;
     const pool = POOLS[key1] || POOLS[key2];
-
     if (!pool) {
         document.getElementById('to-amount').value = 'No pool';
         return;
@@ -236,7 +248,6 @@ async function updateExpectedOutput() {
 async function executeSwap() {
     const tokenFrom = document.getElementById('from-token').value;
     const tokenTo = document.getElementById('to-token').value;
-
     const amountInBigInt = window.amountInBigInt;
     const expectedOutBigInt = window.expectedOutBigInt;
     const minOutBigInt = expectedOutBigInt * BigInt(99) / BigInt(100);
@@ -278,18 +289,15 @@ async function executeSwap() {
 }
 
 document.getElementById('connect-button').addEventListener('click', connectWallet);
-
 document.getElementById('from-token').addEventListener('change', async () => {
     updateToDropdown(document.getElementById('from-token').value);
     await updateBalances();
     await updateExpectedOutput();
 });
-
 document.getElementById('to-token').addEventListener('change', async () => {
     await updateBalances();
     await updateExpectedOutput();
 });
-
 document.getElementById('from-amount').addEventListener('input', updateExpectedOutput);
 document.getElementById('swap-button').addEventListener('click', executeSwap);
 
