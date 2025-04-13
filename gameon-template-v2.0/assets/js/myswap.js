@@ -26,37 +26,37 @@ const DECIMALS = {
 };
 
 const POOLS = {
-    'TRX-KING': { addr: 'TQ2HCSvpir3ELSJg3J2wKG6TskePh74rz8', token0: 'KING', token1: 'WTRX' },
+    'WTRX-KING': { addr: 'TQ2HCSvpir3ELSJg3J2wKG6TskePh74rz8', token0: 'KING', token1: 'WTRX' },
     'CFT-KING': { addr: 'TRRevVDqvM31DdUQb73qViCEcDyCffYJTA', token0: 'CFT', token1: 'KING' },
     'CFT-BBT': { addr: 'TLWPwGteW4gZ1AU5CWCPYmfLdEm8yqduNb', token0: 'CFT', token1: 'BBT' },
-    'TRX-BBT': { addr: 'TTJ9VB8kUptB1bztysnQZtcqaR5cYCbzAW', token0: 'BBT', token1: 'WTRX' },
-    'TRX-USDT': { addr: 'TFGDbUyP8xez44C76fin3bn3Ss6jugoUwJ', token0: 'WTRX', token1: 'USDT' },
-    'PROS-TRX': { addr: 'TVcaFufasLEzZ8hyyRwtz5aK8ae5E76rGi', token0: 'PROS', token1: 'WTRX' },
+    'WTRX-BBT': { addr: 'TTJ9VB8kUptB1bztysnQZtcqaR5cYCbzAW', token0: 'BBT', token1: 'WTRX' },
+    'WTRX-USDT': { addr: 'TFGDbUyP8xez44C76fin3bn3Ss6jugoUwJ', token0: 'WTRX', token1: 'USDT' },
+    'PROS-WTRX': { addr: 'TVcaFufasLEzZ8hyyRwtz5aK8ae5E76rGi', token0: 'PROS', token1: 'WTRX' },
     'PROS-USDT': { addr: 'TQNyKQSSWTyN98zd8iMXgtsmTknXfEqaFV', token0: 'PROS', token1: 'USDT' },
-    'JM-TRX': { addr: 'TNyDrrafFWR8nWPfrJqZkcc7qFhb8UKio2', token0: 'WTRX', token1: 'JM' },
+    'JM-WTRX': { addr: 'TNyDrrafFWR8nWPfrJqZkcc7qFhb8UKio2', token0: 'WTRX', token1: 'JM' },
     'JM-PROS': { addr: 'TNcGWGJySGrWavPnq4g6Pw3EKhUGacJDvU', token0: 'PROS', token1: 'JM' },
     'PROS-SUN': { addr: 'TKJH4nF2v8TX7VjzyhSigaHrDP3toh21iU', token0: 'PROS', token1: 'SUN' },
     'PROS-USDD': { addr: 'TA13jjXLmj72cNiDMm9Z4xuAa2d988PDd7', token0: 'PROS', token1: 'USDD' },
     'SUN-USDT': { addr: 'TTdeCobmYxhfFBYUZbiQqbZ56zrFkSE5DG', token0: 'USDT', token1: 'SUN' },
-    'SUN-TRX': { addr: 'THu6ConqvZ3phYHeNTDyW9aE3pGypwBsP6', token0: 'WTRX', token1: 'SUN' },
-    'TRX-USDD': { addr: 'TEjpEVwm3Xr5VHfa2CWYLqcyKZEGE9CGUz', token0: 'WTRX', token1: 'USDD' },
+    'SUN-WTRX': { addr: 'THu6ConqvZ3phYHeNTDyW9aE3pGypwBsP6', token0: 'WTRX', token1: 'SUN' },
+    'WTRX-USDD': { addr: 'TEjpEVwm3Xr5VHfa2CWYLqcyKZEGE9CGUz', token0: 'WTRX', token1: 'USDD' },
     'WIN-USDT': { addr: 'TC1GhhC5iGFLuuUthriuUu183P8YWPmQsK', token0: 'WIN', token1: 'USDT' },
     'WIN-PROS': { addr: 'TAeSpozQr3JyuYnuQmDB75GPvDzvXXe7LR', token0: 'PROS', token1: 'WIN' },
-    'WIN-TRX': { addr: 'TDq9PCXQM5RfpN14T8sc6ePYJRFecPJCut', token0: 'WIN', token1: 'WTRX' },
-    'TWX-TRX': { addr: 'TGfr9GrRLadatJj1d69D6B7JH6RFEvmvsh', token0: 'WTRX', token1: 'TWX' },
+    'WIN-WTRX': { addr: 'TDq9PCXQM5RfpN14T8sc6ePYJRFecPJCut', token0: 'WIN', token1: 'WTRX' },
+    'TWX-WTRX': { addr: 'TGfr9GrRLadatJj1d69D6B7JH6RFEvmvsh', token0: 'WTRX', token1: 'TWX' },
     'TWX-CFT': { addr: 'TE5X2A4rhXyoSheojRGiqow5qjapSQdrPY', token0: 'CFT', token1: 'TWX' },
-    'ARB-TRX': { addr: 'TXHmQG2XQNvn6uFyJJBSxhKFVZFESbJYAb', token0: 'ARB', token1: 'WTRX' },
+    'ARB-WTRX': { addr: 'TXHmQG2XQNvn6uFyJJBSxhKFVZFESbJYAb', token0: 'ARB', token1: 'WTRX' },
     'ARB-TWX': { addr: 'TSMLAjkrUYmyYeBFoWiSsMp2YMdm9MYGqb', token0: 'ARB', token1: 'TWX' },
     'ARB-KING': { addr: 'TN6CLkCjBmURXg4Q39VjrTZooxcCMj7f5N', token0: 'KING', token1: 'ARB' },
     'ARB-JM': { addr: 'TNDcGUzMa4bYqCof2bYs4NZgktTx6Ymdtp', token0: 'ARB', token1: 'JM' },
-    'JST-TRX': { addr: 'TUDo1PuMG6j4aDSg6rsCNiz5gR5cnQaNTT', token0: 'JST', token1: 'WTRX' },
+    'JST-WTRX': { addr: 'TUDo1PuMG6j4aDSg6rsCNiz5gR5cnQaNTT', token0: 'JST', token1: 'WTRX' },
     'JST-USDT': { addr: 'TW68dBGdy9gtk16BfzmvaCZ9pEti3KFkk2', token0: 'JST', token1: 'USDT' },
     'JST-PROS': { addr: 'TEFiG7LFnAMedthyUXTMDZz777Cmj3Mnpe', token0: 'JST', token1: 'PROS' },
     'ARB-CFT': { addr: 'TXw4Yj38EXzmk6MDxMSDyKnauS89Bpcv1P', token0: 'CFT', token1: 'ARB' },
     'ARB-TEM': { addr: 'TSwf1LFcwCax2ArKvQfv3uXXCNdPgb8b4N', token0: 'TEM', token1: 'ARB' },
-    'TRX-TEM': { addr: 'TEJAugHke9ahqaDPBoz4ZRQPz5qpu8cDua', token0: 'TEM', token1: 'WTRX' },
+    'WTRX-TEM': { addr: 'TEJAugHke9ahqaDPBoz4ZRQPz5qpu8cDua', token0: 'TEM', token1: 'WTRX' },
     'CFT-TEM': { addr: 'TKNxcR2i2G191XEJpC3PpFTm9TvMvbww3R', token0: 'CFT', token1: 'TEM' },
-    'TRX-TUSD': { addr: 'TMr7LizLihDymctG2w2ezLxjZDrv9S53p6', token0: 'WTRX', token1: 'TUSD' },
+    'WTRX-TUSD': { addr: 'TMr7LizLihDymctG2w2ezLxjZDrv9S53p6', token0: 'WTRX', token1: 'TUSD' },
     'USDT-TUSD': { addr: 'TR4fHizLc7xCy6v1UVdTqLxYzTW1QHCds6', token0: 'USDT', token1: 'TUSD' },
     'TUSD-PROS': { addr: 'TBdUFz5UkMTxkd78fyudovYkpMT47hriqb', token0: 'PROS', token1: 'TUSD' },
     'BTC-USDT': { addr: 'TTQpjqQUjMJjF3MAvWWVURn3YrRxg2quTM', token0: 'BTC', token1: 'USDT' },
@@ -221,10 +221,11 @@ function updateToDropdown(fromToken) {
     const pairedTokens = new Set();
     Object.keys(POOLS).forEach(poolKey => {
         const [tokenA, tokenB] = poolKey.split('-');
-        if (tokenA === fromToken) {
-            pairedTokens.add(tokenB);
-        } else if (tokenB === fromToken) {
-            pairedTokens.add(tokenA);
+        const normalizedFrom = fromToken === 'TRX' ? 'WTRX' : fromToken;
+        if (tokenA === normalizedFrom) {
+            pairedTokens.add(tokenB === 'WTRX' ? 'TRX' : tokenB);
+        } else if (tokenB === normalizedFrom) {
+            pairedTokens.add(tokenA === 'WTRX' ? 'TRX' : tokenA);
         }
     });
 
@@ -354,8 +355,10 @@ async function updateExpectedOutput() {
         return;
     }
 
-    const possibleKey1 = `${tokenFrom}-${tokenTo}`;
-    const possibleKey2 = `${tokenTo}-${tokenFrom}`;
+    const normalizedFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
+    const normalizedTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
+    const possibleKey1 = `${normalizedFrom}-${normalizedTo}`;
+    const possibleKey2 = `${normalizedTo}-${normalizedFrom}`;
     const pool = POOLS[possibleKey1] || POOLS[possibleKey2];
 
     if (!pool) {
@@ -366,30 +369,23 @@ async function updateExpectedOutput() {
 
     try {
         let amountOutBigInt;
-        // Scale input amount to smallest unit (e.g., SUN for TRX)
+        // Scale input amount to smallest unit (e.g., SUN for TRX/WTRX)
         const decimals = DECIMALS[tokenFrom];
         const amountInScaled = Math.floor(amountIn * Math.pow(10, decimals)).toString();
         const inputAmountBigInt = BigInt(amountInScaled);
         console.log(`Input amountBigInt: ${inputAmountBigInt.toString()}`); // Debug input
 
-        if (tokenFrom === 'TRX') {
-            // Use router's getAmountsOut for TRX swaps
-            const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
-            const path = [WTRX_ADDRESS, TOKENS[tokenTo]];
-            const amounts = await router.getAmountsOut(inputAmountBigInt.toString(), path).call();
-            console.log(`getAmountsOut: [${amounts.map(a => a.toString()).join(', ')}]`); // Debug amounts
-            amountOutBigInt = BigInt(amounts[amounts.length - 1]);
-        } else {
-            // Token-to-token swap
-            const reserves = await fetchReserves(pool.addr);
-            const isToken0From = TOKENS[tokenFrom] === TOKENS[pool.token0];
-            const reserveIn = isToken0From ? reserves.reserve0 : reserves.reserve1;
-            const reserveOut = isToken0From ? reserves.reserve1 : reserves.reserve0;
+        // Use getAmountsOut for all swaps to align with WTRX pools
+        const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
+        const path = tokenFrom === 'TRX'
+            ? [WTRX_ADDRESS, TOKENS[tokenTo]]
+            : [TOKENS[tokenFrom], tokenTo === 'TRX' ? WTRX_ADDRESS : TOKENS[tokenTo]];
+        const amounts = await router.getAmountsOut(inputAmountBigInt.toString(), path).call();
+        console.log(`getAmountsOut: [${amounts.map(a => a.toString()).join(', ')}]`); // Debug amounts
+        amountOutBigInt = BigInt(amounts[amounts.length - 1]);
 
-            amountOutBigInt = getAmountOut(inputAmountBigInt, reserveIn, reserveOut);
-        }
-
-        const amountOut = Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo];
+        const outputDecimals = DECIMALS[tokenTo];
+        const amountOut = Number(amountOutBigInt) / 10 ** outputDecimals;
         const formattedAmountOut = formatNumber(amountOut);
         document.getElementById('to-amount').value = formattedAmountOut;
 
@@ -457,7 +453,7 @@ async function executeSwap() {
                 await approveToken(tokenAddress, inputAmountBigInt);
             }
 
-            const path = [TOKENS[tokenFrom], TOKENS[tokenTo]];
+            const path = [TOKENS[tokenFrom], tokenTo === 'TRX' ? WTRX_ADDRESS : TOKENS[tokenTo]];
             document.getElementById('status-msg').textContent = 'Processing swap...';
             const tx = await router.swapExactTokensForTokens(
                 inputAmountBigInt.toString(),
