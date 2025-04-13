@@ -1,74 +1,347 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html class="no-js" lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CFT Swap</title>
+    <meta name="description" content="">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+    <!-- Title -->
+    <title>CFT Ecosystem. The first treasury VC on Tron</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="assets/img/favicon.png">
+
+    <!-- ***** All CSS Files ***** -->
     <link rel="stylesheet" href="assets/css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bignumber.js"></script>
+
+    <!-- Inline CSS for Black Text -->
+    <style>
+        body, select, input, p, button, span {
+            color: black !important;
+        }
+        input[type="number"], input[type="text"] {
+            color: black !important;
+        }
+    </style>
 </head>
 
 <body>
-    <section class="staking-area">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-12 col-md-10">
-                    <div class="single-accordion-item">
-                        <div class="card-header bg-inherit border-0 p-0">
-                            <h2 class="m-0">
-                                <div class="btn staking-btn d-block text-start w-100 py-4">
-                                    <div class="row">
-                                        <div class="col-12 col-md-8">
-                                            <div class="media flex-column flex-md-row">
-                                                <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
-                                                <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                    <h4 class="m-0">Swap CFT</h4>
-                                                    <p>Swap CFT across various pools</p>
+    <!--====== Preloader Area Start ======-->
+    <div id="gameon-preloader" class="gameon-preloader">
+        <div class="preloader-animation">
+            <div class="spinner"></div>
+            <p class="fw-5 text-center text-uppercase">Loading</p>
+        </div>
+        <div class="loader-animation">
+            <div class="row h-100">
+                <div class="col-3 single-loader p-0">
+                    <div class="loader-bg"></div>
+                </div>
+                <div class="col-3 single-loader p-0">
+                    <div class="loader-bg"></div>
+                </div>
+                <div class="col-3 single-loader p-0">
+                    <div class="loader-bg"></div>
+                </div>
+                <div class="col-3 single-loader p-0">
+                    <div class="loader-bg"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--====== Preloader Area End ======-->
+
+    <div class="main">
+        <!-- ***** Header Start ***** -->
+        <header id="header">
+            <nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
+                <div class="container header">
+                    <!-- Logo -->
+                    <a class="navbar-brand" href="index.html">
+                        <img src="assets/img/logo/logo.png" alt="" />
+                    </a>
+                    <div class="ms-auto"></div>
+                    <!-- Navbar Nav -->
+                    <ul class="navbar-nav items mx-auto">
+                        <li class="nav-item">
+                            <a href="index.html" class="nav-link">Home</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li class="nav-item">
+                                    <a href="buycft.html" class="nav-link">Buy CFT</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="sellcft.html" class="nav-link">Sell CFT</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="cftstaking.html" class="nav-link">Stake CFT</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="trc20staking.html" class="nav-link">Stake TRC20</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li class="nav-item">
+                                    <a href="buystablex.html" class="nav-link">Buy StableX</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="sellstablex.html" class="nav-link">Sell StableX</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="stablexstaking.html" class="nav-link">Stake StableX</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link">CFT VC <i class="icon-arrow-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li class="nav-item">
+                                    <a href="blog-single.html" class="nav-link">Info</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="energy.html" class="nav-link">VIP</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="energy2.html" class="nav-link">Rent Energy</a>
+                        </li>
+                    </ul>
+                    <!-- Navbar Toggler -->
+                    <ul class="navbar-nav toggle">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
+                                <i class="icon-menu m-0"></i>
+                            </a>
+                        </li>
+                    </ul>
+                    <!-- Navbar Action Button -->
+                    <ul class="navbar-nav action">
+                        <li class="nav-item ms-2">
+                            <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
+                                <i class="icon-wallet me-md-2"></i> Wallet Connect
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </header>
+        <!-- ***** Header End ***** -->
+
+        <!-- ***** Hero Area Start ***** -->
+        <section class="hero-section">
+            <div class="container">
+                <div class="row align-items-center justify-content-center">
+                    <div class="col-12 col-md-6 col-lg-9 text-center">
+                        <!-- Hero Content -->
+                        <div class="hero-content">
+                            <div class="intro text-center mb-5">
+                                <span class="intro-text">CFT Ecosystem</span>
+                                <h1 class="mt-4">Swap CFT</h1>
+                                <p>Swap CFT across various pools</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- ***** Hero Area End ***** -->
+
+        <!-- ***** Swap Area Start ***** -->
+        <section class="staking-area">
+            <div id="gameon-accordion" class="container accordion">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-10">
+                        <!-- Swap Section -->
+                        <div class="single-accordion-item">
+                            <div class="card-header bg-inherit border-0 p-0">
+                                <h2 class="m-0">
+                                    <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSwap">
+                                        <div class="row">
+                                            <div class="col-12 col-md-8">
+                                                <div class="media flex-column flex-md-row">
+                                                    <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                                                    <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                        <h4 class="m-0">Swap CFT</h4>
+                                                        <p>Swap CFT across various pools</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="collapseSwap" class="collapse show" data-bs-parent="#gameon-accordion">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-12 col-md-6">
+                                            <label for="from-token">From</label>
+                                            <select id="from-token" class="form-select"></select>
+                                            <input type="number" id="from-amount" placeholder="0" class="form-control mt-2">
+                                            <button class="btn btn-sm btn-bordered mt-2" id="max-button">MAX</button>
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label for="to-token">To</label>
+                                            <select id="to-token" class="form-select"></select>
+                                            <input type="text" id="to-amount" readonly class="form-control mt-2">
+                                        </div>
                                     </div>
-                                </div>
-                            </h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-12 col-md-6">
-                                    <label for="from-token">From</label>
-                                    <select id="from-token" class="form-select"></select>
-                                    <input type="number" id="from-amount" placeholder="0" class="form-control mt-2">
-                                    <button class="btn btn-sm btn-bordered mt-2" id="max-button">MAX</button>
-                                </div>
-                                <div class="col-12 col-md-6">
-                                    <label for="to-token">To</label>
-                                    <select id="to-token" class="form-select"></select>
-                                    <input type="text" id="to-amount" readonly class="form-control mt-2">
-                                </div>
-                            </div>
-                            <div class="row mt-3">
-                                <div class="col-md-6">
-                                    <label for="slippage">Slippage (%)</label>
-                                    <input type="number" id="slippage" class="form-control" value="1">
-                                </div>
-                                <div class="col-md-6 d-flex align-items-end">
-                                    <button class="btn btn-primary w-100" id="swap-button">Swap Now</button>
-                                </div>
-                            </div>
-                            <div class="row mt-3">
-                                <div class="col-12">
-                                    <p id="rate-info">Rate: --</p>
-                                    <p id="status-msg" class="text-warning"></p>
+                                    <div class="row mt-3">
+                                        <div class="col-md-12 d-flex align-items-end">
+                                            <button class="btn btn-primary w-100" id="swap-button">Swap Now</button>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <p id="rate-info">Rate: --</p>
+                                            <p id="status-msg" class="text-warning"></p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+        <!-- ***** Swap Area End ***** -->
 
+        <!-- ***** CTA Area Start ***** -->
+        <section class="cta-area p-0">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 card">
+                        <div class="row align-items-center justify-content-center">
+                            <div class="col-12 col-md-5 text-center">
+                                <img src="assets/img/content/cftlogo300.png" alt="">
+                            </div>
+                            <div class="col-12 col-md-6 mt-4 mt-md-0">
+                                <h2 class="m-0">Apply for project staking</h2>
+                                <p>Earn weekly rewards from staked CFT to build your project</p>
+                                <p>Soon available for projects on any chain</p>
+                                <a class="btn btn-bordered active d-inline-block"><i class="icon-rocket me-2"></i>Coming Soon</a>
+                            </div>
+                        </div>
+                        <a class="cta-link" href="apply.html"></a>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- ***** CTA Area End ***** -->
+
+        <!--====== Footer Area Start ======-->
+        <footer class="footer-area">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-8 text-center">
+                        <!-- Footer Items -->
+                        <div class="footer-items">
+                            <!-- Logo -->
+                            <a class="navbar-brand" href="index.html">
+                                <img src="assets/img/logo/logo.png" alt="">
+                            </a>
+                            <!-- Social Icons -->
+                            <div class="social-icons d-flex justify-content-center my-4">
+                                <!-- X (Formerly Twitter) -->
+                                <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank">
+                                    <i class="fab fa-x-twitter"></i>
+                                </a>
+                                <!-- Reddit -->
+                                <a class="reddit" href="https://www.reddit.com/" target="_blank">
+                                    <i class="fab fa-reddit"></i>
+                                </a>
+                                <!-- Telegram -->
+                                <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank">
+                                    <i class="fab fa-telegram-plane"></i>
+                                </a>
+                            </div>
+                            <!-- Copyright Area -->
+                            <div class="copyright-area py-4">©2025 CFT Ecosystem, All Rights Reserved</div>
+                        </div>
+                        <!-- Scroll To Top -->
+                        <div id="scroll-to-top" class="scroll-to-top">
+                            <a href="#header" class="smooth-anchor">
+                                <i class="fa-solid fa-arrow-up"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+        <!--====== Footer Area End ======-->
+
+        <!--====== Modal Search Area Start ======-->
+        <div id="search" class="modal fade p-0">
+            <div class="modal-dialog dialog-animated">
+                <div class="modal-content h-100">
+                    <div class="modal-header" data-bs-dismiss="modal">
+                        Search <i class="far fa-times-circle icon-close"></i>
+                    </div>
+                    <div class="modal-body">
+                        <form class="row">
+                            <div class="col-12 align-self-center">
+                                <div class="row">
+                                    <div class="col-12 pb-3">
+                                        <h2 class="search-title mt-0 mb-3">What are you looking for?</h2>
+                                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12 input-group mt-md-4">
+                                        <input type="text" placeholder="Enter your keywords">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12 input-group align-self-center">
+                                        <button class="btn btn-bordered-white mt-3">Search</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--====== Modal Search Area End ======-->
+
+        <!--====== Modal Responsive Menu Area Start ======-->
+        <div id="menu" class="modal fade p-0">
+            <div class="modal-dialog dialog-animated">
+                <div class="modal-content h-100">
+                    <div class="modal-header" data-bs-dismiss="modal">
+                        Menu <i class="far fa-times-circle icon-close"></i>
+                    </div>
+                    <div class="menu modal-body">
+                        <div class="row w-100">
+                            <div class="items p-0 col-12 text-center"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--====== Modal Responsive Menu Area End ======-->
+    </div>
+
+    <!-- ***** All jQuery Plugins ***** -->
+    <script src="assets/js/vendor/jquery.min.js"></script>
+    <script src="assets/js/vendor/popper.min.js"></script>
+    <script src="assets/js/vendor/bootstrap.min.js"></script>
+    <script src="assets/js/vendor/all.min.js"></script>
+    <script src="assets/js/vendor/gallery.min.js"></script>
+    <script src="assets/js/vendor/slider.min.js"></script>
+    <script src="assets/js/vendor/countdown.min.js"></script>
+    <script src="assets/js/vendor/shuffle.min.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bignumber.js"></script>
     <script src="assets/js/myswap.js"></script>
 </body>
 
