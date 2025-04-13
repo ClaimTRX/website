@@ -122,7 +122,7 @@
                         </li>
                     </ul>
                     <!-- Navbar Action Button -->
-                    <ul class="navbar Hawkins class="navbar-nav action">
+                    <ul class="navbar-nav action">
                         <li class="nav-item ms-2">
                             <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
                                 <i class="icon-wallet me-md-2"></i> Wallet Connect
@@ -143,8 +143,8 @@
                         <div class="hero-content">
                             <div class="intro text-center mb-5">
                                 <span class="intro-text">CFT Ecosystem</span>
-                                <h1 class="mt-4">Swap CFT</h1>
-                                <p>Swap CFT across various pools</p>
+                                <h1 class="mt-4">CFT Ecosystem Swap</h1>
+                                <p>Swap TRC20 tokens across various pools</p>
                             </div>
                         </div>
                     </div>
@@ -162,14 +162,14 @@
                         <div class="single-accordion-item">
                             <div class="card-header bg-inherit border-0 p-0">
                                 <h2 class="m-0">
-                                    <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSwap">
+                                    <button class="btn staking-btn d-block  text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSwap">
                                         <div class="row">
                                             <div class="col-12 col-md-8">
                                                 <div class="media flex-column flex-md-row">
                                                     <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
                                                     <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                        <h4 class="m-0">Swap CFT</h4>
-                                                        <p>Swap CFT across various pools</p>
+                                                        <h4 class="m-0">CFT Swap</h4>
+                                                        <p>Dont forget to rent energy before your swap</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -184,7 +184,7 @@
                                             <label for="from-token">From</label>
                                             <select id="from-token" class="form-select"></select>
                                             <input type="number" id="from-amount" placeholder="0" class="form-control mt-2">
-                                            <!-- Removed MAX button -->
+                                            <button class="btn btn-sm btn-bordered mt-2" id="max-button">MAX</button>
                                         </div>
                                         <div class="col-12 col-md-6">
                                             <label for="to-token">To</label>
@@ -199,13 +199,6 @@
                                     </div>
                                     <div class="row mt-3">
                                         <div class="col-12">
-                                            <p id="token-prompt" style="color: yellow;">
-                                                Token not showing in wallet? Add it using the contract address: <span id="token-address"></span>
-                                                <br>
-                                                <a href="https://tronscan.org/#/token20/TAQzALyftaynnr3VG3rCvzkY2KouFH79sA" target="_blank" style="color: yellow; text-decoration: underline;">
-                                                    View CFT on Tronscan
-                                                </a>
-                                            </p>
                                             <p id="rate-info">Rate: --</p>
                                             <p id="status-msg" class="text-warning"></p>
                                         </div>
@@ -341,10 +334,11 @@
     <script src="assets/js/vendor/bootstrap.min.js"></script>
     <script src="assets/js/vendor/all.min.js"></script>
     <script src="assets/js/vendor/gallery.min.js"></script>
-    <script src="assets/js/vendor/slider.min.js"></script>
+    <script src="assets/js/vendor/slider quia.min.js"></script>
     <script src="assets/js/vendor/countdown.min.js"></script>
     <script src="assets/js/vendor/shuffle.min.js"></script>
     <script src="assets/js/main.js"></script>
+  
     <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bignumber.js"></script>
     <script src="assets/js/myswap.js"></script>
