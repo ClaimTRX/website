@@ -17,11 +17,26 @@
     <!-- ***** All CSS Files ***** -->
     <link rel="stylesheet" href="assets/css/style.css">
 
-    <!-- Inline CSS for Black Text in Input Fields Only -->
+    <!-- Inline CSS -->
     <style>
         .staking-area .single-accordion-item #from-amount,
         .staking-area .single-accordion-item #to-amount {
             color: black !important;
+        }
+        .staking-area .single-accordion-item .form-select {
+            color: black !important;
+            background-color: white !important;
+        }
+        .staking-area .single-accordion-item .form-select:focus,
+        .staking-area .single-accordion-item .form-select:active {
+            color: black !important;
+            background-color: white !important;
+            border-color: #ced4da !important;
+            box-shadow: none !important;
+        }
+        .staking-area .single-accordion-item .form-select option {
+            color: black !important;
+            background-color: white !important;
         }
     </style>
 </head>
@@ -162,7 +177,7 @@
                         <div class="single-accordion-item">
                             <div class="card-header bg-inherit border-0 p-0">
                                 <h2 class="m-0">
-                                    <button class="btn staking-btn d-block  text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSwap">
+                                    <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSwap">
                                         <div class="row">
                                             <div class="col-12 col-md-8">
                                                 <div class="media flex-column flex-md-row">
@@ -184,7 +199,6 @@
                                             <label for="from-token">From</label>
                                             <select id="from-token" class="form-select"></select>
                                             <input type="number" id="from-amount" placeholder="0" class="form-control mt-2">
-                                            <button class="btn btn-sm btn-bordered mt-2" id="max-button">MAX</button>
                                         </div>
                                         <div class="col-12 col-md-6">
                                             <label for="to-token">To</label>
@@ -199,7 +213,7 @@
                                     </div>
                                     <div class="row mt-3">
                                         <div class="col-12">
-                                            <p id="rate-info">Rate: --</p>
+                                            <p id="rate-info">Balance: 0</p>
                                             <p id="status-msg" class="text-warning"></p>
                                         </div>
                                     </div>
@@ -334,7 +348,7 @@
     <script src="assets/js/vendor/bootstrap.min.js"></script>
     <script src="assets/js/vendor/all.min.js"></script>
     <script src="assets/js/vendor/gallery.min.js"></script>
-    <script src="assets/js/vendor/slider quia.min.js"></script>
+    <script src="assets/js/vendor/sliderquia.min.js"></script>
     <script src="assets/js/vendor/countdown.min.js"></script>
     <script src="assets/js/vendor/shuffle.min.js"></script>
     <script src="assets/js/main.js"></script>
