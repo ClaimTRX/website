@@ -94,6 +94,21 @@ const ERC20_ABI = [
     }
 ];
 
+const RESERVES_ABI = [
+  {
+    name: "getReserves",
+    type: "function",
+    stateMutability: "view", // ✅ FIXED
+    inputs: [],
+    outputs: [
+      { name: "_reserve0", type: "uint112" },
+      { name: "_reserve1", type: "uint112" },
+      { name: "_blockTimestampLast", type: "uint32" }
+    ]
+  }
+];
+
+
 // Continues in Part 2 →
 let tronWeb;
 let userAddress;
