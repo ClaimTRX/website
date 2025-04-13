@@ -1,45 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MySwap - Token Swap</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; }
-        #swap-interface { display: none; }
-        .token-section { margin: 20px 0; }
-        select, input { width: 100%; padding: 8px; margin-top: 5px; }
-        button { padding: 10px 20px; margin-top: 10px; cursor: pointer; }
-        .balance { font-size: 0.9em; color: #555; }
-    </style>
+    <title>CFT Swap</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bignumber.js"></script>
 </head>
+
 <body>
-    <div id="wallet-connect">
-        <h2>MySwap</h2>
-        <button onclick="connectWallet()">Connect TronLink Wallet</button>
-    </div>
-
-    <div id="swap-interface">
-        <h2>Swap Tokens</h2>
-        <div class="token-section">
-            <label>From:</label>
-            <select id="token-from"></select>
-            <input type="number" id="amount-in" placeholder="Amount" min="0" step="0.01">
-            <span id="balance-from" class="balance"></span>
-        </div>
-        <div class="token-section">
-            <label>To:</label>
-            <select id="token-to"></select>
-            <span id="expected-out"></span>
-            <span id="balance-to" class="balance"></span>
-        </div>
-        <div>
-            <button id="approve-btn" style="display: none;" onclick="approveToken()">Approve</button>
-            <button id="swap-btn" style="display: none;" onclick="executeSwap()">Swap</button>
-        </div>
-    </div>
-
-    <script src="assets/js/myswap.js"></script>
-</body>
-</html>
+    <section class="staking-area">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-12 col-md-10">
+                    <div class="single-accordion-item">
+                        <div class="card-header bg-inherit border-0 p-0">
+                            <h2 class="m-0">
+                                <div class="btn staking-btn d-block text-start w-100 py-4">
+                                    <div class="row">
+                                        <div class="col-12 col-md-8">
+                                            <div class="media flex-column flex-md-row">
+                                                <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                                                <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                    <h4 class="m-0">Swap CFT</h4>
+                                                    <p>Swap CFT across various pools</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12 col-md-6">
+                                    <label for="from-token">From</label>
+                                    <select id="from-token" class="form-select"></select>
+                                    <input type="number" id="from-amount" placeholder="0" class="form-control mt-2">
+                                    <button class="btn btn-sm btn-bordered mt-2" id="max-button">MAX</button>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="to-token">To</label>
+                                    <select id="to-token" class="form-select"></select>
+                                    <input type="text" id="to-amount" readonly class="form-control mt-2">
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <label for="slippage">Slippage (%)</label>
+                                    <input type="number" id="slippage" class="form-control" value="1">
+                                </div>
+                                <div class="col-md-6 d-flex align-items-end">
+                                    <button class="btn btn-primary w-100" id="swap-button">Swap Now</button>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <p id="rate-info">Rate: --</p>
+                                    <p id="status-msg" class="text-warning"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
