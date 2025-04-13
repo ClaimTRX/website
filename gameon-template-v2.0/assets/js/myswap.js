@@ -117,84 +117,93 @@ async function connectWallet() {
     }
 }
 
-// Populate token selectors and filter based on pairings
-function populateTokenSelectors() {
-    const fromSelect = document.getElementById('from-token');
-    const toSelect = document.getElementById('to-token');
-
-    // Populate "From" dropdown with all tokens
+// Build a graph of token pairs for arbitrage routing
+function buildTokenGraph() {
+    const graph = {};
     Object.keys(TOKENS).forEach(token => {
-        const option = document.createElement('option');
-        option.value = token;
-        option.text = token;
-        fromSelect.appendChild(option.cloneNode(true));
+        graph[token] = [];
     });
 
-    // Initially populate "To" dropdown based on default "From" selection (CFT)
-    updateToDropdown('CFT');
-
-    fromSelect.value = 'CFT'; // Default to CFT
-    toSelect.value = 'KING'; // Default to KING (since CFT-KING is a valid pair)
-}
-
-// Update "To" dropdown based on selected "From" token
-function updateToDropdown(fromToken) {
-    const toSelect = document.getElementById('to-token');
-    toSelect.innerHTML = ''; // Clear existing options
-
-    // Find all tokens paired with fromToken in POOLS
-    const pairedTokens = new Set();
     Object.keys(POOLS).forEach(poolKey => {
         const [tokenA, tokenB] = poolKey.split('-');
-        if (tokenA === fromToken) {
-            pairedTokens.add(tokenB);
-        } else if (tokenB === fromToken) {
-            pairedTokens.add(tokenA);
-        }
+        const pool = POOLS[poolKey];
+        graph[tokenA].push({ token: tokenB, pool: pool });
+        graph[tokenB].push({ token: tokenA, pool: pool });
     });
 
-    // Populate "To" dropdown with paired tokens
-    pairedTokens.forEach(token => {
-        const option = document.createElement('option');
-        option.value = token;
-        option.text = token;
-        toSelect.appendChild(option);
-    });
-
-    // Set default "To" token (first paired token, if available)
-    if (pairedTokens.size > 0) {
-        toSelect.value = Array.from(pairedTokens)[0];
-    }
+    return graph;
 }
 
-// Update "From" dropdown based on selected "To" token
-function updateFromDropdown(toToken) {
-    const fromSelect = document.getElementById('from-token');
-    fromSelect.innerHTML = ''; // Clear existing options
+// Find all possible routes between startToken and endToken (up to maxHops)
+function findAllRoutes(startToken, endToken, maxHops = 3) {
+    const graph = buildTokenGraph();
+    const routes = [];
+    const queue = [[startToken]];
+    const visited = new Set();
 
-    // Find all tokens paired with toToken in POOLS
-    const pairedTokens = new Set();
-    Object.keys(POOLS).forEach(poolKey => {
-        const [tokenA, tokenB] = poolKey.split('-');
-        if (tokenA === toToken) {
-            pairedTokens.add(tokenB);
-        } else if (tokenB === toToken) {
-            pairedTokens.add(tokenA);
+    while (queue.length > 0) {
+        const path = queue.shift();
+        const lastToken = path[path.length - 1];
+
+        if (path.length > maxHops + 1) continue; // Skip paths longer than maxHops
+
+        if (lastToken === endToken && path.length > 1) {
+            routes.push(path);
+            continue;
         }
-    });
 
-    // Populate "From" dropdown with paired tokens
-    pairedTokens.forEach(token => {
-        const option = document.createElement('option');
-        option.value = token;
-        option.text = token;
-        fromSelect.appendChild(option);
-    });
-
-    // Set default "From" token (first paired token, if available)
-    if (pairedTokens.size > 0) {
-        fromSelect.value = Array.from(pairedTokens)[0];
+        graph[lastToken].forEach(neighbor => {
+            const nextToken = neighbor.token;
+            const pathStr = [...path, nextToken].join('->');
+            if (!visited.has(pathStr)) {
+                visited.add(pathStr);
+                queue.push([...path, nextToken]);
+            }
+        });
     }
+
+    return routes;
+}
+
+// Calculate the output amount for a given route
+async function calculateRouteOutput(amountInBigInt, route) {
+    let currentAmount = amountInBigInt;
+    for (let i = 0; i < route.length - 1; i++) {
+        const tokenFrom = route[i];
+        const tokenTo = route[i + 1];
+        const poolKey1 = `${tokenFrom}-${tokenTo}`;
+        const poolKey2 = `${tokenTo}-${tokenFrom}`;
+        const pool = POOLS[poolKey1] || POOLS[poolKey2];
+
+        if (!pool) return BigInt(0); // Invalid route
+
+        const reserves = await fetchReserves(pool.addr);
+        const isToken0From = TOKENS[tokenFrom] === TOKENS[pool.token0];
+        const reserveIn = isToken0From ? reserves.reserve0 : reserves.reserve1;
+        const reserveOut = isToken0From ? reserves.reserve1 : reserves.reserve0;
+
+        currentAmount = getAmountOut(currentAmount, reserveIn, reserveOut);
+    }
+    return currentAmount;
+}
+
+// Find the best route that maximizes the output amount
+async function findBestRoute(amountInBigInt, startToken, endToken, maxHops = 3) {
+    const routes = findAllRoutes(startToken, endToken, maxHops);
+    if (routes.length === 0) return { route: null, amountOut: BigInt(0) };
+
+    let bestRoute = null;
+    let bestAmountOut = BigInt(0);
+
+    for (const route of routes) {
+        const amountOut = await calculateRouteOutput(amountInBigInt, route);
+        if (amountOut > bestAmountOut) {
+            bestAmountOut = amountOut;
+            bestRoute = route;
+        }
+    }
+
+    return { route: bestRoute, amountOut: bestAmountOut };
 }
 
 // Fetch reserves for a pool
@@ -213,7 +222,7 @@ async function fetchReserves(poolAddress) {
     }
 }
 
-// Calculate output amount
+// Calculate output amount for a single hop
 function getAmountOut(amountIn, reserveIn, reserveOut) {
     const amountInWithFee = amountIn * BigInt(997);
     const numerator = amountInWithFee * reserveOut;
@@ -278,7 +287,7 @@ async function updateBalances() {
     }
 }
 
-// Update expected output and rate
+// Update expected output and find the best route
 async function updateExpectedOutput() {
     if (!isWalletConnected) {
         document.getElementById('to-amount').value = '';
@@ -299,34 +308,31 @@ async function updateExpectedOutput() {
     // Remove commas from amountIn for calculation
     amountIn = parseFloat(amountIn.replace(/,/g, ''));
 
-    const possibleKey1 = `${tokenFrom}-${tokenTo}`;
-    const possibleKey2 = `${tokenTo}-${tokenFrom}`;
-    const pool = POOLS[possibleKey1] || POOLS[possibleKey2];
-
-    if (!pool) {
-        document.getElementById('to-amount').value = 'No direct pool';
-        document.getElementById('rate-info').textContent = 'Rate: --';
-        return;
-    }
-
     try {
-        const reserves = await fetchReserves(pool.addr);
-        const isToken0From = TOKENS[tokenFrom] === TOKENS[pool.token0];
-        const reserveIn = isToken0From ? reserves.reserve0 : reserves.reserve1;
-        const reserveOut = isToken0From ? reserves.reserve1 : reserves.reserve0;
-
         const amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
-        const amountOutBigInt = getAmountOut(amountInBigInt, reserveIn, reserveOut);
-        const amountOut = Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo];
+        
+        // Find the best route
+        const { route, amountOut } = await findBestRoute(amountInBigInt, tokenFrom, tokenTo, 3);
+        
+        if (!route) {
+            document.getElementById('to-amount').value = 'No route found';
+            document.getElementById('rate-info').textContent = 'Rate: --';
+            return;
+        }
 
-        const formattedAmountOut = formatNumber(amountOut);
+        const amountOutNum = Number(amountOut) / 10 ** DECIMALS[tokenTo];
+        const formattedAmountOut = formatNumber(amountOutNum);
+
         document.getElementById('to-amount').value = formattedAmountOut;
 
-        const rate = amountOut / amountIn;
+        const rate = amountOutNum / amountIn;
         const formattedRate = formatNumber(rate);
-        document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = ${formattedRate} ${tokenTo}`;
-        window.expectedOutBigInt = amountOutBigInt;
+        const routeDisplay = `Route: ${route.join(' -> ')}`;
+        document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = ${formattedRate} ${tokenTo} | ${routeDisplay}`;
+
+        window.expectedOutBigInt = amountOut;
         window.amountInBigInt = amountInBigInt;
+        window.bestRoute = route;
     } catch (error) {
         console.error('Error in updateExpectedOutput:', error);
         document.getElementById('to-amount').value = 'Error';
@@ -347,7 +353,7 @@ function setMaxAmount() {
     updateExpectedOutput();
 }
 
-// Execute the swap
+// Execute the swap using the best route
 async function executeSwap() {
     if (!isWalletConnected) {
         alert('Please connect your wallet first.');
@@ -365,7 +371,13 @@ async function executeSwap() {
 
     const tokenAddress = TOKENS[tokenFrom];
     const amountInBigInt = window.amountInBigInt;
+    const bestRoute = window.bestRoute;
     
+    if (!bestRoute) {
+        document.getElementById('status-msg').textContent = 'No route found for the swap.';
+        return;
+    }
+
     try {
         // Check allowance for the SunSwap router
         const allowance = await checkAllowance(tokenAddress, userAddress, SUNSWAP_ROUTER);
@@ -375,10 +387,10 @@ async function executeSwap() {
             await approveToken(tokenAddress, amountInBigInt);
         }
 
-        // Execute the swap using the SunSwap router
+        // Execute the swap using the best route
         const slippage = 1; // Default slippage of 1%
         const minOutBigInt = window.expectedOutBigInt * BigInt(100 - slippage) / BigInt(100);
-        const path = [TOKENS[tokenFrom], TOKENS[tokenTo]];
+        const path = bestRoute.map(token => TOKENS[token]);
         const deadline = Math.floor(Date.now() / 1000) + 600;
 
         const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
