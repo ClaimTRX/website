@@ -1,5 +1,7 @@
 // Constants
 const SUNSWAP_ROUTER = 'TXF1xDbVGdxFGbovmmmXvBGu8ZiE3Lq4mR';
+const FEE_WALLET_ADDRESS = 'TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA'; // Replace with your Tron wallet address to collect fees
+const FEE_PERCENTAGE = 0.5; // 0.5% fee
 
 const TOKENS = {
     WTRX: 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR',
@@ -74,7 +76,8 @@ const RESERVES_ABI = [
 const ERC20_ABI = [
     {"constant": true, "inputs": [{"name": "_owner", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "balance", "type": "uint256"}], "payable": false, "stateMutability": "view", "type": "function"},
     {"constant": true, "inputs": [{"name": "_owner", "type": "address"}, {"name": "_spender", "type": "address"}], "name": "allowance", "outputs": [{"name": "remaining", "type": "uint256"}], "payable": false, "stateMutability": "view", "type": "function"},
-    {"constant": false, "inputs": [{"name": "_spender", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "approve", "outputs": [{"name": "success", "type": "bool"}], "payable": false, "stateMutability": "nonpayable", "type": "function"}
+    {"constant": false, "inputs": [{"name": "_spender", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "approve", "outputs": [{"name": "success", "type": "bool"}], "payable": false, "stateMutability": "nonpayable", "type": "function"},
+    {"constant": false, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "success", "type": "bool"}], "payable": false, "stateMutability": "nonpayable", "type": "function"}
 ];
 
 // Global variables
@@ -288,7 +291,7 @@ async function updateBalances() {
     }
 }
 
-// Update expected output and rate
+// Update expected output and rate, accounting for the 0.5% fee
 async function updateExpectedOutput() {
     if (!isWalletConnected) {
         document.getElementById('to-amount').value = '';
@@ -325,17 +328,24 @@ async function updateExpectedOutput() {
         const reserveIn = isToken0From ? reserves.reserve0 : reserves.reserve1;
         const reserveOut = isToken0From ? reserves.reserve1 : reserves.reserve0;
 
-        const amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
+        // Calculate the fee (0.5% of amountIn)
+        const feeAmount = amountIn * (FEE_PERCENTAGE / 100);
+        const amountInAfterFee = amountIn * (1 - FEE_PERCENTAGE / 100);
+
+        const amountInBigInt = BigInt(Math.floor(amountInAfterFee * 10 ** DECIMALS[tokenFrom]));
         const amountOutBigInt = getAmountOut(amountInBigInt, reserveIn, reserveOut);
         const amountOut = Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo];
 
         const formattedAmountOut = formatNumber(amountOut);
         document.getElementById('to-amount').value = formattedAmountOut;
 
-        const rate = amountOut / amountIn;
+        const rate = amountOut / amountInAfterFee;
         const formattedRate = formatNumber(rate);
-        document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = ${formattedRate} ${tokenTo}`;
+        const formattedFee = formatNumber(feeAmount);
+        document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = ${formattedRate} ${tokenTo} | Fee: ${formattedFee} ${tokenFrom} (${FEE_PERCENTAGE}%)`;
         window.expectedOutBigInt = amountOutBigInt;
+        window.feeAmountBigInt = BigInt(Math.floor(feeAmount * 10 ** DECIMALS[tokenFrom]));
+        window.amountInAfterFeeBigInt = amountInBigInt;
     } catch (error) {
         console.error('Error in updateExpectedOutput:', error);
         document.getElementById('to-amount').value = 'Error';
@@ -356,7 +366,7 @@ function setMaxAmount() {
     updateExpectedOutput();
 }
 
-// Execute the swap
+// Execute the swap with fee
 async function executeSwap() {
     if (!isWalletConnected) {
         alert('Please connect your wallet first.');
@@ -375,9 +385,15 @@ async function executeSwap() {
     // Remove commas from amountIn for calculation
     const parsedAmountIn = parseFloat(amountIn.replace(/,/g, ''));
     const amountInBigInt = BigInt(Math.floor(parsedAmountIn * 10 ** DECIMALS[tokenFrom]));
-    
+    const feeAmountBigInt = window.feeAmountBigInt;
+    const amountInAfterFeeBigInt = window.amountInAfterFeeBigInt;
+
     try {
-        const allowance = await checkAllowance(TOKENS[tokenFrom], userAddress, SUNSWAP_ROUTER);
+        const tokenAddress = TOKENS[tokenFrom];
+        const tokenContract = await tronWeb.contract(ERC20_ABI, tokenAddress);
+
+        // Check allowance for the SunSwap router
+        const allowance = await checkAllowance(tokenAddress, userAddress, SUNSWAP_ROUTER);
         const swapButton = document.getElementById('swap-button');
 
         if (allowance < amountInBigInt) {
@@ -392,6 +408,11 @@ async function executeSwap() {
             return;
         }
 
+        // Step 1: Transfer the 0.5% fee to the fee wallet
+        document.getElementById('status-msg').textContent = 'Processing fee transfer...';
+        await tokenContract.transfer(FEE_WALLET_ADDRESS, feeAmountBigInt.toString()).send({ feeLimit: 100000000 });
+
+        // Step 2: Execute the swap with the remaining amount
         const slippage = 1; // Default slippage of 1%
         const minOutBigInt = window.expectedOutBigInt * BigInt(100 - slippage) / BigInt(100);
         const path = [TOKENS[tokenFrom], TOKENS[tokenTo]];
@@ -401,7 +422,7 @@ async function executeSwap() {
 
         document.getElementById('status-msg').textContent = 'Processing swap...';
         const tx = await router.swapExactTokensForTokens(
-            amountInBigInt.toString(),
+            amountInAfterFeeBigInt.toString(),
             minOutBigInt.toString(),
             path,
             userAddress,
