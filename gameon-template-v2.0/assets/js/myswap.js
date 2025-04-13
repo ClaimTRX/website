@@ -1,12 +1,8 @@
-
-
-
 // Constants
 const SUNSWAP_ROUTER = 'TXF1xDbVGdxFGbovmmmXvBGu8ZiE3Lq4mR'; // SunSwap V2 Router
 const WTRX_ADDRESS = 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR';
 
 const TOKENS = {
-    TRX: 'T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb',
     KING: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
     CFT: 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA',
     BBT: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
@@ -202,7 +198,9 @@ function populateTokenSelectors() {
     const fromSelect = document.getElementById('from-token');
     const toSelect = document.getElementById('to-token');
 
-    Object.keys(TOKENS).forEach(token => {
+    // Add TRX and all tokens
+    const tokenList = ['TRX', ...Object.keys(TOKENS)];
+    tokenList.forEach(token => {
         const option = document.createElement('option');
         option.value = token;
         option.text = token;
@@ -397,15 +395,16 @@ async function updateExpectedOutput() {
         let amountOutBigInt;
         // Scale input amount to smallest unit (e.g., SUN for TRX)
         const decimals = DECIMALS[tokenFrom];
-        // Avoid floating-point precision issues by multiplying first, then converting to string
         const amountInScaled = Math.floor(amountIn * Math.pow(10, decimals)).toString();
-        let amountInBigInt = BigInt(amountInScaled);
+        const amountInBigInt = BigInt(amountInScaled);
+        console.log(`amountInBigInt: ${amountInBigInt.toString()}`); // Debug input
 
         if (tokenFrom === 'TRX') {
             // Use router's getAmountsOut for TRX swaps
             const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
             const path = [WTRX_ADDRESS, TOKENS[tokenTo]];
             const amounts = await router.getAmountsOut(amountInBigInt.toString(), path).call();
+            console.log(`getAmountsOut: ${amounts.map(a => a.toString())}`); // Debug amounts
             amountOutBigInt = BigInt(amounts[amounts.length - 1]);
         } else {
             // Token-to-token swap
@@ -423,7 +422,8 @@ async function updateExpectedOutput() {
 
         const rate = amountOut / amountIn;
         const formattedRate = formatNumber(rate);
-        document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = ${formattedRate} ${tokenTo} | Balance: ${document.getElementById('rate-info').textContent.split('Balance: ')[1] || '0'}`;
+        const currentBalance = document.getElementById('rate-info').textContent.split('Balance: ')[1] || '0';
+        document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = ${formattedRate} ${tokenTo} | Balance: ${currentBalance}`;
         window.expectedOutBigInt = amountOutBigInt;
         window.amountInBigInt = amountInBigInt;
     } catch (error) {
@@ -454,6 +454,7 @@ async function executeSwap() {
     const cleanAmountIn = amountIn.replace(/[^0-9.]/g, '');
     const decimals = DECIMALS[tokenFrom];
     const amountInBigInt = BigInt(Math.floor(parseFloat(cleanAmountIn) * Math.pow(10, decimals)).toString());
+    console.log(`executeSwap amountInBigInt: ${amountInBigInt.toString()}`); // Debug input
     const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
 
     try {
