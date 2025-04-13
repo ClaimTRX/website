@@ -81,6 +81,11 @@ const ERC20_ABI = [
 let tronWeb;
 let userAddress;
 
+// Function to format numbers with 2 decimals and thousand separators
+function formatNumber(num) {
+    return Number(num).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+}
+
 // Connect to TronLink wallet
 async function connectWallet() {
     if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
@@ -104,19 +109,84 @@ async function connectWallet() {
     }
 }
 
-// Populate token selectors
+// Populate token selectors and filter based on pairings
 function populateTokenSelectors() {
     const fromSelect = document.getElementById('from-token');
     const toSelect = document.getElementById('to-token');
+
+    // Populate "From" dropdown with all tokens
     Object.keys(TOKENS).forEach(token => {
         const option = document.createElement('option');
         option.value = token;
         option.text = token;
         fromSelect.appendChild(option.cloneNode(true));
+    });
+
+    // Initially populate "To" dropdown based on default "From" selection (CFT)
+    updateToDropdown('CFT');
+
+    fromSelect.value = 'CFT'; // Default to CFT
+    toSelect.value = 'KING'; // Default to KING (since CFT-KING is a valid pair)
+}
+
+// Update "To" dropdown based on selected "From" token
+function updateToDropdown(fromToken) {
+    const toSelect = document.getElementById('to-token');
+    toSelect.innerHTML = ''; // Clear existing options
+
+    // Find all tokens paired with fromToken in POOLS
+    const pairedTokens = new Set();
+    Object.keys(POOLS).forEach(poolKey => {
+        const [tokenA, tokenB] = poolKey.split('-');
+        if (tokenA === fromToken) {
+            pairedTokens.add(tokenB);
+        } else if (tokenB === fromToken) {
+            pairedTokens.add(tokenA);
+        }
+    });
+
+    // Populate "To" dropdown with paired tokens
+    pairedTokens.forEach(token => {
+        const option = document.createElement('option');
+        option.value = token;
+        option.text = token;
         toSelect.appendChild(option);
     });
-    fromSelect.value = 'CFT'; // Default to CFT
-    toSelect.value = 'WTRX'; // Default to WTRX
+
+    // Set default "To" token (first paired token, if available)
+    if (pairedTokens.size > 0) {
+        toSelect.value = Array.from(pairedTokens)[0];
+    }
+}
+
+// Update "From" dropdown based on selected "To" token
+function updateFromDropdown(toToken) {
+    const fromSelect = document.getElementById('from-token');
+    fromSelect.innerHTML = ''; // Clear existing options
+
+    // Find all tokens paired with toToken in POOLS
+    const pairedTokens = new Set();
+    Object.keys(POOLS).forEach(poolKey => {
+        const [tokenA, tokenB] = poolKey.split('-');
+        if (tokenA === toToken) {
+            pairedTokens.add(tokenB);
+        } else if (tokenB === toToken) {
+            pairedTokens.add(tokenA);
+        }
+    });
+
+    // Populate "From" dropdown with paired tokens
+    pairedTokens.forEach(token => {
+        const option = document.createElement('option');
+        option.value = token;
+        option.text = token;
+        fromSelect.appendChild(option);
+    });
+
+    // Set default "From" token (first paired token, if available)
+    if (pairedTokens.size > 0) {
+        fromSelect.value = Array.from(pairedTokens)[0];
+    }
 }
 
 // Fetch reserves for a pool
@@ -160,10 +230,14 @@ async function checkAllowance(tokenAddress, owner, spender) {
 async function approveToken() {
     const tokenFrom = document.getElementById('from-token').value;
     const amountIn = document.getElementById('from-amount').value;
-    if (!amountIn) return;
+    if (!amountIn) {
+        document.getElementById('status-msg').textContent = 'Please enter an amount.';
+        return;
+    }
 
     const tokenAddress = TOKENS[tokenFrom];
-    const amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
+    const parsedAmount = parseFloat(amountIn.replace(/,/g, '')); // Remove commas for parsing
+    const amountInBigInt = BigInt(Math.floor(parsedAmount * 10 ** DECIMALS[tokenFrom]));
     const contract = await tronWeb.contract(ERC20_ABI, tokenAddress);
 
     try {
@@ -189,8 +263,9 @@ async function updateBalances() {
         const balanceFrom = await fromContract.balanceOf(userAddress).call();
         const balanceTo = await toContract.balanceOf(userAddress).call();
 
+        const formattedBalance = formatNumber(Number(balanceFrom) / 10 ** DECIMALS[tokenFrom]);
         document.getElementById('from-amount').setAttribute('max', Number(balanceFrom) / 10 ** DECIMALS[tokenFrom]);
-        document.getElementById('rate-info').textContent = `Balance: ${(Number(balanceFrom) / 10 ** DECIMALS[tokenFrom]).toFixed(2)} ${tokenFrom}`;
+        document.getElementById('rate-info').textContent = `Balance: ${formattedBalance} ${tokenFrom}`;
     } catch (error) {
         console.error('Error in updateBalances:', error);
         document.getElementById('status-msg').textContent = 'Failed to fetch balances. Please try again.';
@@ -202,13 +277,16 @@ async function updateBalances() {
 async function updateExpectedOutput() {
     const tokenFrom = document.getElementById('from-token').value;
     const tokenTo = document.getElementById('to-token').value;
-    const amountIn = document.getElementById('from-amount').value;
+    let amountIn = document.getElementById('from-amount').value;
 
     if (!tokenFrom || !tokenTo || !amountIn) {
         document.getElementById('to-amount').value = '';
         document.getElementById('rate-info').textContent = 'Rate: --';
         return;
     }
+
+    // Remove commas from amountIn for calculation
+    amountIn = parseFloat(amountIn.replace(/,/g, ''));
 
     const possibleKey1 = `${tokenFrom}-${tokenTo}`;
     const possibleKey2 = `${tokenTo}-${tokenFrom}`;
@@ -230,9 +308,12 @@ async function updateExpectedOutput() {
         const amountOutBigInt = getAmountOut(amountInBigInt, reserveIn, reserveOut);
         const amountOut = Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo];
 
-        document.getElementById('to-amount').value = amountOut.toFixed(6);
-        const rate = (amountOut / amountIn).toFixed(6);
-        document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = ${rate} ${tokenTo}`;
+        const formattedAmountOut = formatNumber(amountOut);
+        document.getElementById('to-amount').value = formattedAmountOut;
+
+        const rate = amountOut / amountIn;
+        const formattedRate = formatNumber(rate);
+        document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = ${formattedRate} ${tokenTo}`;
         window.expectedOutBigInt = amountOutBigInt;
     } catch (error) {
         console.error('Error in updateExpectedOutput:', error);
@@ -245,7 +326,7 @@ async function updateExpectedOutput() {
 function setMaxAmount() {
     const tokenFrom = document.getElementById('from-token').value;
     const maxAmount = document.getElementById('from-amount').getAttribute('max');
-    document.getElementById('from-amount').value = maxAmount;
+    document.getElementById('from-amount').value = formatNumber(maxAmount);
     updateExpectedOutput();
 }
 
@@ -254,14 +335,15 @@ async function executeSwap() {
     const tokenFrom = document.getElementById('from-token').value;
     const tokenTo = document.getElementById('to-token').value;
     const amountIn = document.getElementById('from-amount').value;
-    const slippage = document.getElementById('slippage').value || 1;
 
     if (!amountIn) {
         document.getElementById('status-msg').textContent = 'Please enter an amount.';
         return;
     }
 
-    const amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
+    // Remove commas from amountIn for calculation
+    const parsedAmountIn = parseFloat(amountIn.replace(/,/g, ''));
+    const amountInBigInt = BigInt(Math.floor(parsedAmountIn * 10 ** DECIMALS[tokenFrom]));
     
     try {
         const allowance = await checkAllowance(TOKENS[tokenFrom], userAddress, SUNSWAP_ROUTER);
@@ -279,6 +361,7 @@ async function executeSwap() {
             return;
         }
 
+        const slippage = 1; // Default slippage of 1%
         const minOutBigInt = window.expectedOutBigInt * BigInt(100 - slippage) / BigInt(100);
         const path = [TOKENS[tokenFrom], TOKENS[tokenTo]];
         const deadline = Math.floor(Date.now() / 1000) + 600;
@@ -305,13 +388,19 @@ async function executeSwap() {
 
 // Event listeners
 document.getElementById('from-token').addEventListener('change', async () => {
+    const fromToken = document.getElementById('from-token').value;
+    updateToDropdown(fromToken);
     await updateBalances();
     await updateExpectedOutput();
 });
+
 document.getElementById('to-token').addEventListener('change', async () => {
+    const toToken = document.getElementById('to-token').value;
+    updateFromDropdown(toToken);
     await updateBalances();
     await updateExpectedOutput();
 });
+
 document.getElementById('from-amount').addEventListener('input', updateExpectedOutput);
 document.getElementById('max-button').addEventListener('click', setMaxAmount);
 document.getElementById('swap-button').addEventListener('click', executeSwap);
