@@ -121,12 +121,18 @@ function populateTokenSelectors() {
 
 // Fetch reserves for a pool
 async function fetchReserves(poolAddress) {
-    const contract = await tronWeb.contract(RESERVES_ABI, poolAddress);
-    const reserves = await contract.getReserves().call();
-    return {
-        reserve0: BigInt(reserves._reserve0),
-        reserve1: BigInt(reserves._reserve1)
-    };
+    try {
+        const contract = await tronWeb.contract(RESERVES_ABI, poolAddress);
+        const reserves = await contract.getReserves().call();
+        return {
+            reserve0: BigInt(reserves._reserve0),
+            reserve1: BigInt(reserves._reserve1)
+        };
+    } catch (error) {
+        console.error('Error in fetchReserves:', error);
+        document.getElementById('status-msg').textContent = 'Failed to fetch pool reserves.';
+        throw error;
+    }
 }
 
 // Calculate output amount
@@ -139,9 +145,15 @@ function getAmountOut(amountIn, reserveIn, reserveOut) {
 
 // Check token allowance
 async function checkAllowance(tokenAddress, owner, spender) {
-    const contract = await tronWeb.contract(ERC20_ABI, tokenAddress);
-    const allowance = await contract.allowance(owner, spender).call();
-    return BigInt(allowance);
+    try {
+        const contract = await tronWeb.contract(ERC20_ABI, tokenAddress);
+        const allowance = await contract.allowance(owner, spender).call();
+        return BigInt(allowance);
+    } catch (error) {
+        console.error('Error in checkAllowance:', error);
+        document.getElementById('status-msg').textContent = 'Failed to check allowance.';
+        throw error;
+    }
 }
 
 // Approve token spending
@@ -155,12 +167,13 @@ async function approveToken() {
     const contract = await tronWeb.contract(ERC20_ABI, tokenAddress);
 
     try {
+        document.getElementById('status-msg').textContent = 'Approving token...';
         await contract.approve(SUNSWAP_ROUTER, amountInBigInt.toString()).send({ feeLimit: 100000000 });
         document.getElementById('status-msg').textContent = 'Approval successful!';
         updateExpectedOutput();
     } catch (error) {
-        document.getElementById('status-msg').textContent = 'Approval failed. Please try again.';
-        console.error(error);
+        console.error('Error in approveToken:', error);
+        document.getElementById('status-msg').textContent = 'Approval failed: ' + (error.message || 'Unknown error');
     }
 }
 
@@ -169,14 +182,19 @@ async function updateBalances() {
     const tokenFrom = document.getElementById('from-token').value;
     const tokenTo = document.getElementById('to-token').value;
 
-    const fromContract = await tronWeb.contract(ERC20_ABI, TOKENS[tokenFrom]);
-    const toContract = await tronWeb.contract(ERC20_ABI, TOKENS[tokenTo]);
+    try {
+        const fromContract = await tronWeb.contract(ERC20_ABI, TOKENS[tokenFrom]);
+        const toContract = await tronWeb.contract(ERC20_ABI, TOKENS[tokenTo]);
 
-    const balanceFrom = await fromContract.balanceOf(userAddress).call();
-    const balanceTo = await toContract.balanceOf(userAddress).call();
+        const balanceFrom = await fromContract.balanceOf(userAddress).call();
+        const balanceTo = await toContract.balanceOf(userAddress).call();
 
-    document.getElementById('from-amount').setAttribute('max', Number(balanceFrom) / 10 ** DECIMALS[tokenFrom]);
-    document.getElementById('rate-info').textContent = `Balance: ${(Number(balanceFrom) / 10 ** DECIMALS[tokenFrom]).toFixed(2)} ${tokenFrom}`;
+        document.getElementById('from-amount').setAttribute('max', Number(balanceFrom) / 10 ** DECIMALS[tokenFrom]);
+        document.getElementById('rate-info').textContent = `Balance: ${(Number(balanceFrom) / 10 ** DECIMALS[tokenFrom]).toFixed(2)} ${tokenFrom}`;
+    } catch (error) {
+        console.error('Error in updateBalances:', error);
+        document.getElementById('status-msg').textContent = 'Failed to fetch balances. Please try again.';
+    }
 }
 
 // Update expected output and rate
@@ -201,19 +219,25 @@ async function updateExpectedOutput() {
         return;
     }
 
-    const reserves = await fetchReserves(pool.addr);
-    const isToken0From = TOKENS[tokenFrom] === TOKENS[pool.token0];
-    const reserveIn = isToken0From ? reserves.reserve0 : reserves.reserve1;
-    const reserveOut = isToken0From ? reserves.reserve1 : reserves.reserve0;
+    try {
+        const reserves = await fetchReserves(pool.addr);
+        const isToken0From = TOKENS[tokenFrom] === TOKENS[pool.token0];
+        const reserveIn = isToken0From ? reserves.reserve0 : reserves.reserve1;
+        const reserveOut = isToken0From ? reserves.reserve1 : reserves.reserve0;
 
-    const amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
-    const amountOutBigInt = getAmountOut(amountInBigInt, reserveIn, reserveOut);
-    const amountOut = Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo];
+        const amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
+        const amountOutBigInt = getAmountOut(amountInBigInt, reserveIn, reserveOut);
+        const amountOut = Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo];
 
-    document.getElementById('to-amount').value = amountOut.toFixed(6);
-    const rate = (amountOut / amountIn).toFixed(6);
-    document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = ${rate} ${tokenTo}`;
-    window.expectedOutBigInt = amountOutBigInt;
+        document.getElementById('to-amount').value = amountOut.toFixed(6);
+        const rate = (amountOut / amountIn).toFixed(6);
+        document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = ${rate} ${tokenTo}`;
+        window.expectedOutBigInt = amountOutBigInt;
+    } catch (error) {
+        console.error('Error in updateExpectedOutput:', error);
+        document.getElementById('to-amount').value = 'Error';
+        document.getElementById('rate-info').textContent = 'Rate: --';
+    }
 }
 
 // Set max amount
@@ -237,34 +261,44 @@ async function executeSwap() {
     }
 
     const amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
-    const allowance = await checkAllowance(TOKENS[tokenFrom], userAddress, SUNSWAP_ROUTER);
-
-    if (allowance < amountInBigInt) {
-        await approveToken();
-        return;
-    }
-
-    const minOutBigInt = window.expectedOutBigInt * BigInt(100 - slippage) / BigInt(100);
-    const path = [TOKENS[tokenFrom], TOKENS[tokenTo]];
-    const deadline = Math.floor(Date.now() / 1000) + 600;
-
-    const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
-
+    
     try {
+        const allowance = await checkAllowance(TOKENS[tokenFrom], userAddress, SUNSWAP_ROUTER);
+        const swapButton = document.getElementById('swap-button');
+
+        if (allowance < amountInBigInt) {
+            swapButton.textContent = 'Approve';
+            swapButton.onclick = async () => {
+                await approveToken();
+                swapButton.textContent = 'Swap Now';
+                swapButton.onclick = executeSwap;
+                executeSwap();
+            };
+            document.getElementById('status-msg').textContent = 'Please approve the token first.';
+            return;
+        }
+
+        const minOutBigInt = window.expectedOutBigInt * BigInt(100 - slippage) / BigInt(100);
+        const path = [TOKENS[tokenFrom], TOKENS[tokenTo]];
+        const deadline = Math.floor(Date.now() / 1000) + 600;
+
+        const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
+
         document.getElementById('status-msg').textContent = 'Processing swap...';
-        await router.swapExactTokensForTokens(
+        const tx = await router.swapExactTokensForTokens(
             amountInBigInt.toString(),
             minOutBigInt.toString(),
             path,
             userAddress,
             deadline
         ).send({ feeLimit: 100000000 });
-        document.getElementById('status-msg').textContent = 'Swap successful!';
+
+        document.getElementById('status-msg').textContent = `Swap successful! TX: ${tx}`;
         updateBalances();
         updateExpectedOutput();
     } catch (error) {
-        document.getElementById('status-msg').textContent = 'Swap failed. Please try again.';
-        console.error(error);
+        console.error('Error in executeSwap:', error);
+        document.getElementById('status-msg').textContent = 'Swap failed: ' + (error.message || 'Unknown error');
     }
 }
 
