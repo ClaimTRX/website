@@ -1,4 +1,4 @@
-// Constants from the arbitrage bot code
+// Constants
 const SUNSWAP_ROUTER = 'TXF1xDbVGdxFGbovmmmXvBGu8ZiE3Lq4mR';
 
 const TOKENS = {
@@ -86,13 +86,15 @@ async function connectWallet() {
     if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58;
-        showSwapInterface();
+        populateTokenSelectors();
+        updateBalances();
     } else if (window.tronWeb) {
         try {
             await window.tronWeb.request({ method: 'tron_requestAccounts' });
             tronWeb = window.tronWeb;
             userAddress = tronWeb.defaultAddress.base58;
-            showSwapInterface();
+            populateTokenSelectors();
+            updateBalances();
         } catch (error) {
             alert('Failed to connect to TronLink. Please ensure you are logged in.');
             console.error(error);
@@ -102,26 +104,19 @@ async function connectWallet() {
     }
 }
 
-// Show swap interface and initialize token dropdowns
-function showSwapInterface() {
-    document.getElementById('wallet-connect').style.display = 'none';
-    document.getElementById('swap-interface').style.display = 'block';
-
-    const tokenSelectFrom = document.getElementById('token-from');
-    const tokenSelectTo = document.getElementById('token-to');
+// Populate token selectors
+function populateTokenSelectors() {
+    const fromSelect = document.getElementById('from-token');
+    const toSelect = document.getElementById('to-token');
     Object.keys(TOKENS).forEach(token => {
         const option = document.createElement('option');
         option.value = token;
         option.text = token;
-        tokenSelectFrom.appendChild(option.cloneNode(true));
-        tokenSelectTo.appendChild(option);
+        fromSelect.appendChild(option.cloneNode(true));
+        toSelect.appendChild(option);
     });
-
-    // Set default selections (e.g., WTRX to USDT)
-    tokenSelectFrom.value = 'WTRX';
-    tokenSelectTo.value = 'USDT';
-    updateBalances();
-    updateExpectedOutput();
+    fromSelect.value = 'CFT'; // Default to CFT
+    toSelect.value = 'WTRX'; // Default to WTRX
 }
 
 // Fetch reserves for a pool
@@ -151,8 +146,8 @@ async function checkAllowance(tokenAddress, owner, spender) {
 
 // Approve token spending
 async function approveToken() {
-    const tokenFrom = document.getElementById('token-from').value;
-    const amountIn = document.getElementById('amount-in').value;
+    const tokenFrom = document.getElementById('from-token').value;
+    const amountIn = document.getElementById('from-amount').value;
     if (!amountIn) return;
 
     const tokenAddress = TOKENS[tokenFrom];
@@ -161,18 +156,18 @@ async function approveToken() {
 
     try {
         await contract.approve(SUNSWAP_ROUTER, amountInBigInt.toString()).send({ feeLimit: 100000000 });
-        alert('Approval successful!');
-        updateExpectedOutput(); // Refresh UI after approval
+        document.getElementById('status-msg').textContent = 'Approval successful!';
+        updateExpectedOutput();
     } catch (error) {
-        alert('Approval failed. Please try again.');
+        document.getElementById('status-msg').textContent = 'Approval failed. Please try again.';
         console.error(error);
     }
 }
 
 // Update balances
 async function updateBalances() {
-    const tokenFrom = document.getElementById('token-from').value;
-    const tokenTo = document.getElementById('token-to').value;
+    const tokenFrom = document.getElementById('from-token').value;
+    const tokenTo = document.getElementById('to-token').value;
 
     const fromContract = await tronWeb.contract(ERC20_ABI, TOKENS[tokenFrom]);
     const toContract = await tronWeb.contract(ERC20_ABI, TOKENS[tokenTo]);
@@ -180,20 +175,19 @@ async function updateBalances() {
     const balanceFrom = await fromContract.balanceOf(userAddress).call();
     const balanceTo = await toContract.balanceOf(userAddress).call();
 
-    document.getElementById('balance-from').textContent = `Balance: ${(Number(balanceFrom) / 10 ** DECIMALS[tokenFrom]).toFixed(2)} ${tokenFrom}`;
-    document.getElementById('balance-to').textContent = `Balance: ${(Number(balanceTo) / 10 ** DECIMALS[tokenTo]).toFixed(2)} ${tokenTo}`;
+    document.getElementById('from-amount').setAttribute('max', Number(balanceFrom) / 10 ** DECIMALS[tokenFrom]);
+    document.getElementById('rate-info').textContent = `Balance: ${(Number(balanceFrom) / 10 ** DECIMALS[tokenFrom]).toFixed(2)} ${tokenFrom}`;
 }
 
-// Update expected output and button visibility
+// Update expected output and rate
 async function updateExpectedOutput() {
-    const tokenFrom = document.getElementById('token-from').value;
-    const tokenTo = document.getElementById('token-to').value;
-    const amountIn = document.getElementById('amount-in').value;
+    const tokenFrom = document.getElementById('from-token').value;
+    const tokenTo = document.getElementById('to-token').value;
+    const amountIn = document.getElementById('from-amount').value;
 
     if (!tokenFrom || !tokenTo || !amountIn) {
-        document.getElementById('expected-out').textContent = '';
-        document.getElementById('approve-btn').style.display = 'none';
-        document.getElementById('swap-btn').style.display = 'none';
+        document.getElementById('to-amount').value = '';
+        document.getElementById('rate-info').textContent = 'Rate: --';
         return;
     }
 
@@ -202,9 +196,8 @@ async function updateExpectedOutput() {
     const pool = POOLS[possibleKey1] || POOLS[possibleKey2];
 
     if (!pool) {
-        document.getElementById('expected-out').textContent = 'No direct pool available';
-        document.getElementById('approve-btn').style.display = 'none';
-        document.getElementById('swap-btn').style.display = 'none';
+        document.getElementById('to-amount').value = 'No direct pool';
+        document.getElementById('rate-info').textContent = 'Rate: --';
         return;
     }
 
@@ -217,35 +210,48 @@ async function updateExpectedOutput() {
     const amountOutBigInt = getAmountOut(amountInBigInt, reserveIn, reserveOut);
     const amountOut = Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo];
 
-    document.getElementById('expected-out').textContent = `Expected: ${amountOut.toFixed(6)} ${tokenTo}`;
-    window.expectedOutBigInt = amountOutBigInt; // Store for swap
+    document.getElementById('to-amount').value = amountOut.toFixed(6);
+    const rate = (amountOut / amountIn).toFixed(6);
+    document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = ${rate} ${tokenTo}`;
+    window.expectedOutBigInt = amountOutBigInt;
+}
 
-    // Check allowance
-    const allowance = await checkAllowance(TOKENS[tokenFrom], userAddress, SUNSWAP_ROUTER);
-    if (allowance < amountInBigInt) {
-        document.getElementById('approve-btn').style.display = 'block';
-        document.getElementById('swap-btn').style.display = 'none';
-    } else {
-        document.getElementById('approve-btn').style.display = 'none';
-        document.getElementById('swap-btn').style.display = 'block';
-    }
+// Set max amount
+function setMaxAmount() {
+    const tokenFrom = document.getElementById('from-token').value;
+    const maxAmount = document.getElementById('from-amount').getAttribute('max');
+    document.getElementById('from-amount').value = maxAmount;
+    updateExpectedOutput();
 }
 
 // Execute the swap
 async function executeSwap() {
-    const tokenFrom = document.getElementById('token-from').value;
-    const tokenTo = document.getElementById('token-to').value;
-    const amountIn = document.getElementById('amount-in').value;
+    const tokenFrom = document.getElementById('from-token').value;
+    const tokenTo = document.getElementById('to-token').value;
+    const amountIn = document.getElementById('from-amount').value;
+    const slippage = document.getElementById('slippage').value || 1;
+
+    if (!amountIn) {
+        document.getElementById('status-msg').textContent = 'Please enter an amount.';
+        return;
+    }
 
     const amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
-    const slippage = 0.005; // 0.5%
-    const minOutBigInt = (window.expectedOutBigInt * BigInt(995)) / BigInt(1000); // 0.5% slippage
+    const allowance = await checkAllowance(TOKENS[tokenFrom], userAddress, SUNSWAP_ROUTER);
+
+    if (allowance < amountInBigInt) {
+        await approveToken();
+        return;
+    }
+
+    const minOutBigInt = window.expectedOutBigInt * BigInt(100 - slippage) / BigInt(100);
     const path = [TOKENS[tokenFrom], TOKENS[tokenTo]];
-    const deadline = Math.floor(Date.now() / 1000) + 600; // 10 minutes
+    const deadline = Math.floor(Date.now() / 1000) + 600;
 
     const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
 
     try {
+        document.getElementById('status-msg').textContent = 'Processing swap...';
         await router.swapExactTokensForTokens(
             amountInBigInt.toString(),
             minOutBigInt.toString(),
@@ -253,25 +259,27 @@ async function executeSwap() {
             userAddress,
             deadline
         ).send({ feeLimit: 100000000 });
-        alert('Swap successful!');
+        document.getElementById('status-msg').textContent = 'Swap successful!';
         updateBalances();
         updateExpectedOutput();
     } catch (error) {
-        alert('Swap failed. Please try again.');
+        document.getElementById('status-msg').textContent = 'Swap failed. Please try again.';
         console.error(error);
     }
 }
 
 // Event listeners
-document.getElementById('token-from').addEventListener('change', () => {
+document.getElementById('from-token').addEventListener('change', () => {
     updateBalances();
     updateExpectedOutput();
 });
-document.getElementById('token-to').addEventListener('change', () => {
+document.getElementById('to-token').addEventListener('change', () => {
     updateBalances();
     updateExpectedOutput();
 });
-document.getElementById('amount-in').addEventListener('input', updateExpectedOutput);
+document.getElementById('from-amount').addEventListener('input', updateExpectedOutput);
+document.getElementById('max-button').addEventListener('click', setMaxAmount);
+document.getElementById('swap-button').addEventListener('click', executeSwap);
 
 // Initial check for TronLink
 if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
