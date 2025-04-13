@@ -64,7 +64,7 @@ const POOLS = {
 };
 
 const ROUTER_ABI = [
-    {"outputs": [{"name": "amounts", "type": "uint256[]"}], "inputs": [{"name": "amountIn", "type": "uint256"}, {"name": "amountOutMin", "type": "uint256"}, {"name": "path", "type": "address[]"}, {"name": "to", "type": "address"}, {"name": "deadline", "type": "uint256"}], "name": "swapExactTokensForTokens", "stateMutability": "Nonpayable", "type": "Function"}
+    {"outputs": [{"name": "amounts", "type": "uint256[]"}], "inputs": [{"name": "amountIn", "type": "uint256"}, {"name": "amountOutMin", "type": "uint256"}, {"name": "path", "type": "address[]"}, {"name": "to", "type": "address"}, {"name": "deadline", "type": "uint256"}], "name": "swapExactTokensForTokens", "stateMutability": "nonpayable", "type": "function"}
 ];
 
 const RESERVES_ABI = [
@@ -72,9 +72,9 @@ const RESERVES_ABI = [
 ];
 
 const ERC20_ABI = [
-    {"constant": true, "inputs": [{"name": "_owner", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "balance", "type": "uint256"}], "type": "function"},
-    {"constant": true, "inputs": [{"name": "_owner", "type": "address"}, {"name": "_spender", "type": "address"}], "name": "allowance", "outputs": [{"name": "remaining", "type": "uint256"}], "type": "function"},
-    {"constant": false, "inputs": [{"name": "_spender", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "approve", "outputs": [{"name": "success", "type": "bool"}], "type": "function"}
+    {"constant": true, "inputs": [{"name": "_owner", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "balance", "type": "uint256"}], "payable": false, "stateMutability": "view", "type": "function"},
+    {"constant": true, "inputs": [{"name": "_owner", "type": "address"}, {"name": "_spender", "type": "address"}], "name": "allowance", "outputs": [{"name": "remaining", "type": "uint256"}], "payable": false, "stateMutability": "view", "type": "function"},
+    {"constant": false, "inputs": [{"name": "_spender", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "approve", "outputs": [{"name": "success", "type": "bool"}], "payable": false, "stateMutability": "nonpayable", "type": "function"}
 ];
 
 // Global variables
@@ -87,14 +87,14 @@ async function connectWallet() {
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58;
         populateTokenSelectors();
-        updateBalances();
+        await updateBalances();
     } else if (window.tronWeb) {
         try {
             await window.tronWeb.request({ method: 'tron_requestAccounts' });
             tronWeb = window.tronWeb;
             userAddress = tronWeb.defaultAddress.base58;
             populateTokenSelectors();
-            updateBalances();
+            await updateBalances();
         } catch (error) {
             alert('Failed to connect to TronLink. Please ensure you are logged in.');
             console.error(error);
@@ -170,7 +170,7 @@ async function approveToken() {
         document.getElementById('status-msg').textContent = 'Approving token...';
         await contract.approve(SUNSWAP_ROUTER, amountInBigInt.toString()).send({ feeLimit: 100000000 });
         document.getElementById('status-msg').textContent = 'Approval successful!';
-        updateExpectedOutput();
+        await updateExpectedOutput();
     } catch (error) {
         console.error('Error in approveToken:', error);
         document.getElementById('status-msg').textContent = 'Approval failed: ' + (error.message || 'Unknown error');
@@ -194,6 +194,7 @@ async function updateBalances() {
     } catch (error) {
         console.error('Error in updateBalances:', error);
         document.getElementById('status-msg').textContent = 'Failed to fetch balances. Please try again.';
+        throw error;
     }
 }
 
@@ -272,7 +273,7 @@ async function executeSwap() {
                 await approveToken();
                 swapButton.textContent = 'Swap Now';
                 swapButton.onclick = executeSwap;
-                executeSwap();
+                await executeSwap();
             };
             document.getElementById('status-msg').textContent = 'Please approve the token first.';
             return;
@@ -294,8 +295,8 @@ async function executeSwap() {
         ).send({ feeLimit: 100000000 });
 
         document.getElementById('status-msg').textContent = `Swap successful! TX: ${tx}`;
-        updateBalances();
-        updateExpectedOutput();
+        await updateBalances();
+        await updateExpectedOutput();
     } catch (error) {
         console.error('Error in executeSwap:', error);
         document.getElementById('status-msg').textContent = 'Swap failed: ' + (error.message || 'Unknown error');
@@ -303,13 +304,13 @@ async function executeSwap() {
 }
 
 // Event listeners
-document.getElementById('from-token').addEventListener('change', () => {
-    updateBalances();
-    updateExpectedOutput();
+document.getElementById('from-token').addEventListener('change', async () => {
+    await updateBalances();
+    await updateExpectedOutput();
 });
-document.getElementById('to-token').addEventListener('change', () => {
-    updateBalances();
-    updateExpectedOutput();
+document.getElementById('to-token').addEventListener('change', async () => {
+    await updateBalances();
+    await updateExpectedOutput();
 });
 document.getElementById('from-amount').addEventListener('input', updateExpectedOutput);
 document.getElementById('max-button').addEventListener('click', setMaxAmount);
@@ -319,4 +320,3 @@ document.getElementById('swap-button').addEventListener('click', executeSwap);
 if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
     connectWallet();
 }
-
