@@ -80,6 +80,7 @@ const ERC20_ABI = [
 // Global variables
 let tronWeb;
 let userAddress;
+let isWalletConnected = false;
 
 // Function to format numbers with 2 decimals and thousand separators
 function formatNumber(num) {
@@ -88,24 +89,31 @@ function formatNumber(num) {
 
 // Connect to TronLink wallet
 async function connectWallet() {
-    if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
-        tronWeb = window.tronWeb;
-        userAddress = tronWeb.defaultAddress.base58;
-        populateTokenSelectors();
-        await updateBalances();
-    } else if (window.tronWeb) {
-        try {
+    const connectButton = document.getElementById('connect-button');
+    try {
+        if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+            tronWeb = window.tronWeb;
+            userAddress = tronWeb.defaultAddress.base58;
+            isWalletConnected = true;
+            connectButton.textContent = 'Wallet Connected';
+            connectButton.disabled = true;
+            populateTokenSelectors();
+            await updateBalances();
+        } else if (window.tronWeb) {
             await window.tronWeb.request({ method: 'tron_requestAccounts' });
             tronWeb = window.tronWeb;
             userAddress = tronWeb.defaultAddress.base58;
+            isWalletConnected = true;
+            connectButton.textContent = 'Wallet Connected';
+            connectButton.disabled = true;
             populateTokenSelectors();
             await updateBalances();
-        } catch (error) {
-            alert('Failed to connect to TronLink. Please ensure you are logged in.');
-            console.error(error);
+        } else {
+            alert('TronLink is not installed. Please install the TronLink extension.');
         }
-    } else {
-        alert('TronLink is not installed. Please install the TronLink extension.');
+    } catch (error) {
+        alert('Failed to connect to TronLink. Please ensure you are logged in.');
+        console.error(error);
     }
 }
 
@@ -228,6 +236,11 @@ async function checkAllowance(tokenAddress, owner, spender) {
 
 // Approve token spending
 async function approveToken() {
+    if (!isWalletConnected) {
+        alert('Please connect your wallet first.');
+        return;
+    }
+
     const tokenFrom = document.getElementById('from-token').value;
     const amountIn = document.getElementById('from-amount').value;
     if (!amountIn) {
@@ -253,6 +266,8 @@ async function approveToken() {
 
 // Update balances
 async function updateBalances() {
+    if (!isWalletConnected) return;
+
     const tokenFrom = document.getElementById('from-token').value;
     const tokenTo = document.getElementById('to-token').value;
 
@@ -275,6 +290,12 @@ async function updateBalances() {
 
 // Update expected output and rate
 async function updateExpectedOutput() {
+    if (!isWalletConnected) {
+        document.getElementById('to-amount').value = '';
+        document.getElementById('rate-info').textContent = 'Rate: --';
+        return;
+    }
+
     const tokenFrom = document.getElementById('from-token').value;
     const tokenTo = document.getElementById('to-token').value;
     let amountIn = document.getElementById('from-amount').value;
@@ -324,6 +345,11 @@ async function updateExpectedOutput() {
 
 // Set max amount
 function setMaxAmount() {
+    if (!isWalletConnected) {
+        alert('Please connect your wallet first.');
+        return;
+    }
+
     const tokenFrom = document.getElementById('from-token').value;
     const maxAmount = document.getElementById('from-amount').getAttribute('max');
     document.getElementById('from-amount').value = formatNumber(maxAmount);
@@ -332,6 +358,11 @@ function setMaxAmount() {
 
 // Execute the swap
 async function executeSwap() {
+    if (!isWalletConnected) {
+        alert('Please connect your wallet first.');
+        return;
+    }
+
     const tokenFrom = document.getElementById('from-token').value;
     const tokenTo = document.getElementById('to-token').value;
     const amountIn = document.getElementById('from-amount').value;
@@ -387,6 +418,8 @@ async function executeSwap() {
 }
 
 // Event listeners
+document.getElementById('connect-button').addEventListener('click', connectWallet);
+
 document.getElementById('from-token').addEventListener('change', async () => {
     const fromToken = document.getElementById('from-token').value;
     updateToDropdown(fromToken);
@@ -404,8 +437,3 @@ document.getElementById('to-token').addEventListener('change', async () => {
 document.getElementById('from-amount').addEventListener('input', updateExpectedOutput);
 document.getElementById('max-button').addEventListener('click', setMaxAmount);
 document.getElementById('swap-button').addEventListener('click', executeSwap);
-
-// Initial check for TronLink
-if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
-    connectWallet();
-}
