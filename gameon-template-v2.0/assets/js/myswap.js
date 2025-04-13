@@ -117,6 +117,86 @@ async function connectWallet() {
     }
 }
 
+// Populate token selectors and filter based on pairings
+function populateTokenSelectors() {
+    const fromSelect = document.getElementById('from-token');
+    const toSelect = document.getElementById('to-token');
+
+    // Populate "From" dropdown with all tokens
+    Object.keys(TOKENS).forEach(token => {
+        const option = document.createElement('option');
+        option.value = token;
+        option.text = token;
+        fromSelect.appendChild(option.cloneNode(true));
+    });
+
+    // Initially populate "To" dropdown based on default "From" selection (CFT)
+    updateToDropdown('CFT');
+
+    fromSelect.value = 'CFT'; // Default to CFT
+    toSelect.value = 'KING'; // Default to KING (since CFT-KING is a valid pair)
+}
+
+// Update "To" dropdown based on selected "From" token
+function updateToDropdown(fromToken) {
+    const toSelect = document.getElementById('to-token');
+    toSelect.innerHTML = ''; // Clear existing options
+
+    // Find all tokens paired with fromToken in POOLS
+    const pairedTokens = new Set();
+    Object.keys(POOLS).forEach(poolKey => {
+        const [tokenA, tokenB] = poolKey.split('-');
+        if (tokenA === fromToken) {
+            pairedTokens.add(tokenB);
+        } else if (tokenB === fromToken) {
+            pairedTokens.add(tokenA);
+        }
+    });
+
+    // Populate "To" dropdown with paired tokens
+    pairedTokens.forEach(token => {
+        const option = document.createElement('option');
+        option.value = token;
+        option.text = token;
+        toSelect.appendChild(option);
+    });
+
+    // Set default "To" token (first paired token, if available)
+    if (pairedTokens.size > 0) {
+        toSelect.value = Array.from(pairedTokens)[0];
+    }
+}
+
+// Update "From" dropdown based on selected "To" token
+function updateFromDropdown(toToken) {
+    const fromSelect = document.getElementById('from-token');
+    fromSelect.innerHTML = ''; // Clear existing options
+
+    // Find all tokens paired with toToken in POOLS
+    const pairedTokens = new Set();
+    Object.keys(POOLS).forEach(poolKey => {
+        const [tokenA, tokenB] = poolKey.split('-');
+        if (tokenA === toToken) {
+            pairedTokens.add(tokenB);
+        } else if (tokenB === toToken) {
+            pairedTokens.add(tokenA);
+        }
+    });
+
+    // Populate "From" dropdown with paired tokens
+    pairedTokens.forEach(token => {
+        const option = document.createElement('option');
+        option.value = token;
+        option.text = token;
+        fromSelect.appendChild(option);
+    });
+
+    // Set default "From" token (first paired token, if available)
+    if (pairedTokens.size > 0) {
+        fromSelect.value = Array.from(pairedTokens)[0];
+    }
+}
+
 // Build a graph of token pairs for arbitrage routing
 function buildTokenGraph() {
     const graph = {};
@@ -165,6 +245,30 @@ function findAllRoutes(startToken, endToken, maxHops = 3) {
     return routes;
 }
 
+// Fetch reserves for a pool
+async function fetchReserves(poolAddress) {
+    try {
+        const contract = await tronWeb.contract(RESERVES_ABI, poolAddress);
+        const reserves = await contract.getReserves().call();
+        return {
+            reserve0: BigInt(reserves._reserve0),
+            reserve1: BigInt(reserves._reserve1)
+        };
+    } catch (error) {
+        console.error('Error in fetchReserves:', error);
+        document.getElementById('status-msg').textContent = 'Failed to fetch pool reserves.';
+        throw error;
+    }
+}
+
+// Calculate output amount for a single hop
+function getAmountOut(amountIn, reserveIn, reserveOut) {
+    const amountInWithFee = amountIn * BigInt(997);
+    const numerator = amountInWithFee * reserveOut;
+    const denominator = (reserveIn * BigInt(1000)) + amountInWithFee;
+    return numerator / denominator;
+}
+
 // Calculate the output amount for a given route
 async function calculateRouteOutput(amountInBigInt, route) {
     let currentAmount = amountInBigInt;
@@ -204,30 +308,6 @@ async function findBestRoute(amountInBigInt, startToken, endToken, maxHops = 3) 
     }
 
     return { route: bestRoute, amountOut: bestAmountOut };
-}
-
-// Fetch reserves for a pool
-async function fetchReserves(poolAddress) {
-    try {
-        const contract = await tronWeb.contract(RESERVES_ABI, poolAddress);
-        const reserves = await contract.getReserves().call();
-        return {
-            reserve0: BigInt(reserves._reserve0),
-            reserve1: BigInt(reserves._reserve1)
-        };
-    } catch (error) {
-        console.error('Error in fetchReserves:', error);
-        document.getElementById('status-msg').textContent = 'Failed to fetch pool reserves.';
-        throw error;
-    }
-}
-
-// Calculate output amount for a single hop
-function getAmountOut(amountIn, reserveIn, reserveOut) {
-    const amountInWithFee = amountIn * BigInt(997);
-    const numerator = amountInWithFee * reserveOut;
-    const denominator = (reserveIn * BigInt(1000)) + amountInWithFee;
-    return numerator / denominator;
 }
 
 // Check token allowance
@@ -277,8 +357,10 @@ async function updateBalances() {
         const balanceFrom = await fromContract.balanceOf(userAddress).call();
         const balanceTo = await toContract.balanceOf(userAddress).call();
 
-        const formattedBalance = formatNumber(Number(balanceFrom) / 10 ** DECIMALS[tokenFrom]);
-        document.getElementById('from-amount').setAttribute('max', Number(balanceFrom) / 10 ** DECIMALS[tokenFrom]);
+        // Use BigInt to handle large numbers safely
+        const balanceFromNum = Number(balanceFrom) / 10 ** DECIMALS[tokenFrom];
+        const formattedBalance = formatNumber(balanceFromNum);
+        document.getElementById('from-amount').setAttribute('max', balanceFromNum.toString());
         document.getElementById('rate-info').textContent = `Balance: ${formattedBalance} ${tokenFrom}`;
     } catch (error) {
         console.error('Error in updateBalances:', error);
@@ -349,8 +431,18 @@ function setMaxAmount() {
 
     const tokenFrom = document.getElementById('from-token').value;
     const maxAmount = document.getElementById('from-amount').getAttribute('max');
-    document.getElementById('from-amount').value = formatNumber(maxAmount);
-    updateExpectedOutput();
+    try {
+        // Parse maxAmount as a number and format it
+        const maxAmountNum = parseFloat(maxAmount);
+        if (isNaN(maxAmountNum) || maxAmountNum <= 0) {
+            throw new Error('Invalid balance value');
+        }
+        document.getElementById('from-amount').value = formatNumber(maxAmountNum);
+        updateExpectedOutput();
+    } catch (error) {
+        console.error('Error in setMaxAmount:', error);
+        document.getElementById('status-msg').textContent = 'Failed to set max amount: ' + (error.message || 'Unknown error');
+    }
 }
 
 // Execute the swap using the best route
