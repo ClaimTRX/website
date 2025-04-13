@@ -213,7 +213,7 @@ function populateTokenSelectors() {
     toSelect.value = 'KING';
 }
 
-// Update "To" dropdown
+// Update "To" dropdown based on "From" token
 function updateToDropdown(fromToken) {
     const toSelect = document.getElementById('to-token');
     toSelect.innerHTML = '';
@@ -237,33 +237,6 @@ function updateToDropdown(fromToken) {
 
     if (pairedTokens.size > 0) {
         toSelect.value = Array.from(pairedTokens)[0];
-    }
-}
-
-// Update "From" dropdown
-function updateFromDropdown(toToken) {
-    const fromSelect = document.getElementById('from-token');
-    fromSelect.innerHTML = '';
-
-    const pairedTokens = new Set();
-    Object.keys(POOLS).forEach(poolKey => {
-        const [tokenA, tokenB] = poolKey.split('-');
-        if (tokenA === toToken) {
-            pairedTokens.add(tokenB);
-        } else if (tokenB === toToken) {
-            pairedTokens.add(tokenA);
-        }
-    });
-
-    pairedTokens.forEach(token => {
-        const option = document.createElement('option');
-        option.value = token;
-        option.text = token;
-        fromSelect.appendChild(option);
-    });
-
-    if (pairedTokens.size > 0) {
-        fromSelect.value = Array.from(pairedTokens)[0];
     }
 }
 
@@ -396,15 +369,15 @@ async function updateExpectedOutput() {
         // Scale input amount to smallest unit (e.g., SUN for TRX)
         const decimals = DECIMALS[tokenFrom];
         const amountInScaled = Math.floor(amountIn * Math.pow(10, decimals)).toString();
-        const amountInBigInt = BigInt(amountInScaled);
-        console.log(`amountInBigInt: ${amountInBigInt.toString()}`); // Debug input
+        const inputAmountBigInt = BigInt(amountInScaled);
+        console.log(`Input amountBigInt: ${inputAmountBigInt.toString()}`); // Debug input
 
         if (tokenFrom === 'TRX') {
             // Use router's getAmountsOut for TRX swaps
             const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
             const path = [WTRX_ADDRESS, TOKENS[tokenTo]];
-            const amounts = await router.getAmountsOut(amountInBigInt.toString(), path).call();
-            console.log(`getAmountsOut: ${amounts.map(a => a.toString())}`); // Debug amounts
+            const amounts = await router.getAmountsOut(inputAmountBigInt.toString(), path).call();
+            console.log(`getAmountsOut: [${amounts.map(a => a.toString()).join(', ')}]`); // Debug amounts
             amountOutBigInt = BigInt(amounts[amounts.length - 1]);
         } else {
             // Token-to-token swap
@@ -413,7 +386,7 @@ async function updateExpectedOutput() {
             const reserveIn = isToken0From ? reserves.reserve0 : reserves.reserve1;
             const reserveOut = isToken0From ? reserves.reserve1 : reserves.reserve0;
 
-            amountOutBigInt = getAmountOut(amountInBigInt, reserveIn, reserveOut);
+            amountOutBigInt = getAmountOut(inputAmountBigInt, reserveIn, reserveOut);
         }
 
         const amountOut = Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo];
@@ -425,7 +398,7 @@ async function updateExpectedOutput() {
         const currentBalance = document.getElementById('rate-info').textContent.split('Balance: ')[1] || '0';
         document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = ${formattedRate} ${tokenTo} | Balance: ${currentBalance}`;
         window.expectedOutBigInt = amountOutBigInt;
-        window.amountInBigInt = amountInBigInt;
+        window.amountInBigInt = inputAmountBigInt;
     } catch (error) {
         console.error('updateExpectedOutput error:', error);
         document.getElementById('to-amount').value = 'Error';
@@ -453,8 +426,8 @@ async function executeSwap() {
     // Clean input for swap
     const cleanAmountIn = amountIn.replace(/[^0-9.]/g, '');
     const decimals = DECIMALS[tokenFrom];
-    const amountInBigInt = BigInt(Math.floor(parseFloat(cleanAmountIn) * Math.pow(10, decimals)).toString());
-    console.log(`executeSwap amountInBigInt: ${amountInBigInt.toString()}`); // Debug input
+    const inputAmountBigInt = BigInt(Math.floor(parseFloat(cleanAmountIn) * Math.pow(10, decimals)).toString());
+    console.log(`executeSwap inputAmountBigInt: ${inputAmountBigInt.toString()}`); // Debug input
     const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
 
     try {
@@ -472,7 +445,7 @@ async function executeSwap() {
                 userAddress,
                 deadline
             ).send({
-                callValue: amountInBigInt.toString(),
+                callValue: inputAmountBigInt.toString(),
                 feeLimit: 100000000
             });
             document.getElementById('status-msg').textContent = `Swap successful! TX: ${tx}`;
@@ -480,14 +453,14 @@ async function executeSwap() {
             // Token-to-token swap
             const tokenAddress = TOKENS[tokenFrom];
             const allowance = await checkAllowance(tokenAddress, userAddress, SUNSWAP_ROUTER);
-            if (allowance < amountInBigInt) {
-                await approveToken(tokenAddress, amountInBigInt);
+            if (allowance < inputAmountBigInt) {
+                await approveToken(tokenAddress, inputAmountBigInt);
             }
 
             const path = [TOKENS[tokenFrom], TOKENS[tokenTo]];
             document.getElementById('status-msg').textContent = 'Processing swap...';
             const tx = await router.swapExactTokensForTokens(
-                amountInBigInt.toString(),
+                inputAmountBigInt.toString(),
                 minOutBigInt.toString(),
                 path,
                 userAddress,
@@ -513,8 +486,7 @@ document.getElementById('from-token').addEventListener('change', async () => {
     await updateExpectedOutput();
 });
 document.getElementById('to-token').addEventListener('change', async () => {
-    const toToken = document.getElementById('to-token').value;
-    updateFromDropdown(toToken);
+    // Only update balances and expected output, do not change "From" token
     await updateBalances();
     await updateExpectedOutput();
 });
