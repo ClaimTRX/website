@@ -343,14 +343,22 @@ async function updateBalances() {
         if (tokenFrom === 'TRX') {
             balanceFrom = BigInt(await tronWeb.trx.getBalance(userAddress));
         } else {
-            const fromContract = await tronWeb.contract(ERC20_ABI, TOKENS[tokenFrom]);
+            const fromAddress = TOKENS[tokenFrom];
+            if (!fromAddress || fromAddress.length !== 34 || !fromAddress.startsWith('T')) {
+                throw new Error(`Invalid address for token ${tokenFrom}: ${fromAddress}`);
+            }
+            const fromContract = await tronWeb.contract(ERC20_ABI, fromAddress);
             balanceFrom = BigInt(await fromContract.balanceOf(userAddress).call());
         }
 
         if (tokenTo === 'TRX') {
             balanceTo = BigInt(await tronWeb.trx.getBalance(userAddress));
         } else {
-            const toContract = await tronWeb.contract(ERC20_ABI, TOKENS[tokenTo]);
+            const toAddress = TOKENS[tokenTo];
+            if (!toAddress || toAddress.length !== 34 || !toAddress.startsWith('T')) {
+                throw new Error(`Invalid address for token ${tokenTo}: ${toAddress}`);
+            }
+            const toContract = await tronWeb.contract(ERC20_ABI, toAddress);
             balanceTo = BigInt(await toContract.balanceOf(userAddress).call());
         }
 
@@ -360,10 +368,10 @@ async function updateBalances() {
         document.getElementById('from-balance').textContent = `Balance: ${formattedBalanceFrom} ${tokenFrom}`;
         document.getElementById('to-balance').textContent = `Balance: ${formattedBalanceTo} ${tokenTo}`;
     } catch (error) {
-        console.error('Error in updateBalances:', error);
-        document.getElementById('from-balance').textContent = 'Balance: 0';
-        document.getElementById('to-balance').textContent = 'Balance: 0';
-        document.getElementById('status-msg').textContent = 'Failed to fetch balances.';
+        console.error(`Error in updateBalances for tokens ${tokenFrom} and ${tokenTo}:`, error);
+        document.getElementById('from-balance').textContent = `Balance: 0 ${tokenFrom}`;
+        document.getElementById('to-balance').textContent = `Balance: 0 ${tokenTo}`;
+        document.getElementById('status-msg').textContent = `Failed to fetch balances for ${tokenFrom} or ${tokenTo}.`;
     }
 }
 
