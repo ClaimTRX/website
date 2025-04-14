@@ -514,6 +514,37 @@ async function executeSwap() {
     }
 }
 
+// Mirror the swap (swap "From" and "To" tokens)
+async function mirrorSwap() {
+    const fromSelect = document.getElementById('from-token');
+    const toSelect = document.getElementById('to-token');
+
+    // Get current values
+    const fromToken = fromSelect.value;
+    const toToken = toSelect.value;
+
+    // Check if the mirrored pair is valid
+    const effectiveFrom = toToken === 'TRX' ? 'WTRX' : toToken;
+    const effectiveTo = fromToken === 'TRX' ? 'WTRX' : fromToken;
+    const possibleKey1 = `${effectiveFrom}-${effectiveTo}`;
+    const possibleKey2 = `${effectiveTo}-${effectiveFrom}`;
+    const poolExists = POOLS[possibleKey1] || POOLS[possibleKey2];
+
+    if (!poolExists) {
+        document.getElementById('status-msg').textContent = 'No pool exists for the mirrored pair.';
+        return;
+    }
+
+    // Swap the token selections
+    fromSelect.value = toToken;
+    updateToDropdown(toToken);
+    toSelect.value = fromToken;
+
+    // Update balances and expected output
+    await updateBalances();
+    await updateExpectedOutput();
+}
+
 // Event listeners
 document.getElementById('connect-button').addEventListener('click', connectWallet);
 
@@ -531,6 +562,7 @@ document.getElementById('to-token').addEventListener('change', async () => {
 
 document.getElementById('from-amount').addEventListener('input', updateExpectedOutput);
 document.getElementById('swap-button').addEventListener('click', executeSwap);
+document.getElementById('mirror-button').addEventListener('click', mirrorSwap);
 
 // Auto-connect wallet on page refresh
 if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
