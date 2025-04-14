@@ -17,26 +17,19 @@
     <!-- ***** All CSS Files ***** -->
     <link rel="stylesheet" href="assets/css/style.css">
 
-    <!-- Inline CSS -->
+    <!-- Inline CSS for Black Text in Input Fields -->
     <style>
         .staking-area .single-accordion-item #from-amount,
         .staking-area .single-accordion-item #to-amount {
             color: black !important;
         }
-        .staking-area .single-accordion-item .form-select {
-            color: black !important;
-            background-color: white !important;
+        .staking-area .single-accordion-item #from-amount::placeholder,
+        .staking-area .single-accordion-item #to-amount::placeholder {
+            color: #888 !important;
         }
-        .staking-area .single-accordion-item .form-select:focus,
-        .staking-area .single-accordion-item .form-select:active {
+        .staking-area .single-accordion-item #from-amount:focus,
+        .staking-area .single-accordion-item #to-amount:focus {
             color: black !important;
-            background-color: white !important;
-            border-color: #ced4da !important;
-            box-shadow: none !important;
-        }
-        .staking-area .single-accordion-item .form-select option {
-            color: black !important;
-            background-color: white !important;
         }
     </style>
 </head>
@@ -199,11 +192,13 @@
                                             <label for="from-token">From</label>
                                             <select id="from-token" class="form-select"></select>
                                             <input type="number" id="from-amount" placeholder="0" class="form-control mt-2">
+                                            <p id="from-balance" class="mt-2">Balance: 0</p>
                                         </div>
                                         <div class="col-12 col-md-6">
                                             <label for="to-token">To</label>
                                             <select id="to-token" class="form-select"></select>
                                             <input type="text" id="to-amount" readonly class="form-control mt-2">
+                                            <p id="to-balance" class="mt-2">Balance: 0</p>
                                         </div>
                                     </div>
                                     <div class="row mt-3">
@@ -213,7 +208,7 @@
                                     </div>
                                     <div class="row mt-3">
                                         <div class="col-12">
-                                            <p id="rate-info">Balance: 0</p>
+                                            <p id="rate-info">Rate: --</p>
                                             <p id="status-msg" class="text-warning"></p>
                                         </div>
                                     </div>
@@ -262,12 +257,15 @@
                             </a>
                             <!-- Social Icons -->
                             <div class="social-icons d-flex justify-content-center my-4">
+                                <!-- X (Formerly Twitter) -->
                                 <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank">
                                     <i class="fab fa-x-twitter"></i>
                                 </a>
+                                <!-- Reddit -->
                                 <a class="reddit" href="https://www.reddit.com/" target="_blank">
                                     <i class="fab fa-reddit"></i>
                                 </a>
+                                <!-- Telegram -->
                                 <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank">
                                     <i class="fab fa-telegram-plane"></i>
                                 </a>
@@ -345,7 +343,7 @@
     <script src="assets/js/vendor/bootstrap.min.js"></script>
     <script src="assets/js/vendor/all.min.js"></script>
     <script src="assets/js/vendor/gallery.min.js"></script>
-    <script src="assets/js/vendor/sliderquia.min.js"></script>
+    <script src="assets/js/vendor/slider quia.min.js"></script>
     <script src="assets/js/vendor/countdown.min.js"></script>
     <script src="assets/js/vendor/shuffle.min.js"></script>
     <script src="assets/js/main.js"></script>
