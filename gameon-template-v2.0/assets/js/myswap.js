@@ -3,7 +3,7 @@ const SUNSWAP_ROUTER = 'TXF1xDbVGdxFGbovmmmXvBGu8ZiE3Lq4mR';
 const WTRX_CONTRACT = 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR';
 
 const TOKENS = {
-    TRX: 'TRX', // Native TRX
+    TRX: 'T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb', // Native TRX
     WTRX: 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR',
     KING: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
     CFT: 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA',
