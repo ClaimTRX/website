@@ -17,8 +17,9 @@
     <!-- ***** All CSS Files ***** -->
     <link rel="stylesheet" href="assets/css/style.css">
 
-    <!-- Inline CSS for Black Text in Input Fields -->
+    <!-- Inline CSS for Black Text in Input Fields and Dropdowns -->
     <style>
+        /* Ensure input fields have black text */
         .staking-area .single-accordion-item #from-amount,
         .staking-area .single-accordion-item #to-amount {
             color: black !important;
@@ -30,6 +31,37 @@
         .staking-area .single-accordion-item #from-amount:focus,
         .staking-area .single-accordion-item #to-amount:focus {
             color: black !important;
+        }
+
+        /* Ensure dropdowns have black text at all times */
+        .staking-area .single-accordion-item .form-select,
+        .staking-area .single-accordion-item .form-select option,
+        .staking-area .single-accordion-item .form-select:focus,
+        .staking-area .single-accordion-item .form-select:active,
+        .staking-area .single-accordion-item .form-select:hover {
+            color: black !important;
+            background-color: white !important;
+            -webkit-appearance: menulist !important; /* Ensure dropdown arrow visibility */
+            -moz-appearance: menulist !important;
+            appearance: menulist !important;
+        }
+
+        /* Style for the mirror button */
+        .mirror-button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .mirror-button button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #ffffff;
+            cursor: pointer;
+        }
+        .mirror-button button:hover {
+            color: #007bff;
         }
     </style>
 </head>
@@ -199,6 +231,14 @@
                                             <select id="to-token" class="form-select"></select>
                                             <input type="text" id="to-amount" readonly class="form-control mt-2">
                                             <p id="to-balance" class="mt-2">Balance: 0</p>
+                                        </div>
+                                    </div>
+                                    <!-- Mirror Button -->
+                                    <div class="row mirror-button">
+                                        <div class="col-12">
+                                            <button id="mirror-button" title="Mirror Swap">
+                                                <i class="fas fa-exchange-alt"></i>
+                                            </button>
                                         </div>
                                     </div>
                                     <div class="row mt-3">
