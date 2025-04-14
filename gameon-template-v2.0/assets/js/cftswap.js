@@ -499,6 +499,7 @@ async function updateBalances() {
 async function updateExpectedOutput() {
     if (!isWalletConnected) {
         document.getElementById('to-amount').value = '';
+        document.getElementById('from-amount').value = '';
         document.getElementById('rate-info').textContent = 'Rate: --';
         return;
     }
@@ -508,38 +509,35 @@ async function updateExpectedOutput() {
     let amountIn = document.getElementById('from-amount').value;
     let amountOut = document.getElementById('to-amount').value;
 
-    // Remove commas for calculation
-    amountIn = amountIn ? parseFloat(amountIn.replace(/,/g, '')) : null;
-    amountOut = amountOut ? parseFloat(amountOut.replace(/,/g, '')) : null;
+    // Parse inputs and validate
+    amountIn = amountIn ? parseFloat(amountIn.replace(/,/g, '')) : 0;
+    amountOut = amountOut ? parseFloat(amountOut.replace(/,/g, '')) : 0;
 
-    if (!tokenFrom || !tokenTo || (!amountIn && !amountOut)) {
+    if (!tokenFrom || !tokenTo || (amountIn <= 0 && amountOut <= 0)) {
         document.getElementById('to-amount').value = '';
         document.getElementById('from-amount').value = '';
         document.getElementById('rate-info').textContent = 'Rate: --';
         return;
     }
 
-    // Special case for STBLX swaps
+    // Special case for STBLX swaps (1:1 ratio)
     if (tokenTo === 'STBLX' && (tokenFrom === 'USDT' || tokenFrom === 'USDD')) {
-        if (lastEdited === 'from' && amountIn) {
-            const amountOut = amountIn; // 1:1 ratio
-            const formattedAmountOut = formatNumber(amountOut);
-            document.getElementById('to-amount').value = formattedAmountOut;
-            document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = 1 STBLX`;
-            window.expectedOutBigInt = BigInt(Math.floor(amountOut * 10 ** DECIMALS[tokenTo]));
+        if (lastEdited === 'from' && amountIn > 0) {
+            amountOut = amountIn;
+            document.getElementById('to-amount').value = formatNumber(amountOut);
             window.amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
-        } else if (lastEdited === 'to' && amountOut) {
-            const amountIn = amountOut; // 1:1 ratio
-            const formattedAmountIn = formatNumber(amountIn);
-            document.getElementById('from-amount').value = formattedAmountIn;
-            document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = 1 STBLX`;
             window.expectedOutBigInt = BigInt(Math.floor(amountOut * 10 ** DECIMALS[tokenTo]));
+        } else if (lastEdited === 'to' && amountOut > 0) {
+            amountIn = amountOut;
+            document.getElementById('from-amount').value = formatNumber(amountIn);
             window.amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
+            window.expectedOutBigInt = BigInt(Math.floor(amountOut * 10 ** DECIMALS[tokenTo]));
         }
+        document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = 1 STBLX`;
         return;
     }
 
-    // Existing pool-based logic
+    // Pool-based logic for other swaps
     const effectiveFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
     const effectiveTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
 
@@ -549,6 +547,7 @@ async function updateExpectedOutput() {
 
     if (!pool) {
         document.getElementById('to-amount').value = 'No direct pool';
+        document.getElementById('from-amount').value = '';
         document.getElementById('rate-info').textContent = 'Rate: --';
         return;
     }
@@ -562,40 +561,33 @@ async function updateExpectedOutput() {
         const reserveIn = isToken0From ? reserves.reserve0 : reserves.reserve1;
         const reserveOut = isToken0From ? reserves.reserve1 : reserves.reserve0;
 
-        if (lastEdited === 'from' && amountIn) {
+        if (lastEdited === 'from' && amountIn > 0) {
             const amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
             const amountOutBigInt = getAmountOut(amountInBigInt, reserveIn, reserveOut);
-            const amountOut = Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo];
+            amountOut = Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo];
 
-            const formattedAmountOut = formatNumber(amountOut);
-            document.getElementById('to-amount').value = formattedAmountOut;
-
-            const rate = amountOut / amountIn;
-            const formattedRate = formatNumber(rate, tokenTo);
-            const displayFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
-            const displayTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
-            document.getElementById('rate-info').textContent = `Rate: 1 ${displayFrom} = ${formattedRate} ${displayTo}`;
-            window.expectedOutBigInt = amountOutBigInt;
+            document.getElementById('to-amount').value = formatNumber(amountOut);
             window.amountInBigInt = amountInBigInt;
-        } else if (lastEdited === 'to' && amountOut) {
+            window.expectedOutBigInt = amountOutBigInt;
+        } else if (lastEdited === 'to' && amountOut > 0) {
             const amountOutBigInt = BigInt(Math.floor(amountOut * 10 ** DECIMALS[tokenTo]));
             const amountInBigInt = getAmountIn(amountOutBigInt, reserveIn, reserveOut);
-            const amountIn = Number(amountInBigInt) / 10 ** DECIMALS[tokenFrom];
+            amountIn = Number(amountInBigInt) / 10 ** DECIMALS[tokenFrom];
 
-            const formattedAmountIn = formatNumber(amountIn);
-            document.getElementById('from-amount').value = formattedAmountIn;
-
-            const rate = amountOut / amountIn;
-            const formattedRate = formatNumber(rate, tokenTo);
-            const displayFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
-            const displayTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
-            document.getElementById('rate-info').textContent = `Rate: 1 ${displayFrom} = ${formattedRate} ${displayTo}`;
-            window.expectedOutBigInt = amountOutBigInt;
+            document.getElementById('from-amount').value = formatNumber(amountIn);
             window.amountInBigInt = amountInBigInt;
+            window.expectedOutBigInt = amountOutBigInt;
         }
+
+        const rate = amountOut / amountIn;
+        const formattedRate = formatNumber(rate, tokenTo);
+        const displayFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
+        const displayTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
+        document.getElementById('rate-info').textContent = `Rate: 1 ${displayFrom} = ${formattedRate} ${displayTo}`;
     } catch (error) {
         console.error('Error in updateExpectedOutput:', error);
         document.getElementById('to-amount').value = 'Error';
+        document.getElementById('from-amount').value = '';
         document.getElementById('rate-info').textContent = 'Rate: --';
     }
 }
@@ -611,8 +603,8 @@ async function executeSwap() {
     const tokenTo = document.getElementById('to-token').value;
     const amountIn = document.getElementById('from-amount').value;
 
-    if (!amountIn) {
-        document.getElementById('status-msg').textContent = 'Please enter an amount.';
+    if (!amountIn || parseFloat(amountIn.replace(/,/g, '')) <= 0) {
+        document.getElementById('status-msg').textContent = 'Please enter a valid amount.';
         return;
     }
 
