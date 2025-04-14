@@ -206,15 +206,35 @@ async function buyTokensWithUSDT(amount) {
             return;
         }
 
-        const currentAllowance = await usdtContract.methods.allowance(userAddress, swapContractAddress).call();
-        if (new BigNumber(currentAllowance).lt(usdtSmallestUnits)) {
-            console.log("✅ Approving USDT...");
-            const approvalTx = await usdtContract.methods.approve(swapContractAddress, usdtSmallestUnits).send();
-            console.log("✅ Approval successful, TX:", approvalTx);
-        } else {
-            console.log("✅ Sufficient allowance already exists.");
+        // Fetch and validate allowance
+        let currentAllowance;
+        try {
+            currentAllowance = await usdtContract.methods.allowance(userAddress, swapContractAddress).call();
+            console.log("📊 Current Allowance:", currentAllowance.toString(), "Required:", usdtSmallestUnits.toString());
+        } catch (error) {
+            console.error("❌ Error fetching allowance:", error);
+            alert("❌ Failed to check allowance. Please try again.");
+            return;
         }
 
+        // Ensure allowance is a valid number and compare strictly
+        const allowanceBN = new BigNumber(currentAllowance || 0);
+        const requiredBN = new BigNumber(usdtSmallestUnits);
+        if (!allowanceBN.isFinite() || allowanceBN.lt(requiredBN)) {
+            console.log("✅ Approving USDT for amount:", usdtSmallestUnits);
+            try {
+                const approvalTx = await usdtContract.methods.approve(swapContractAddress, usdtSmallestUnits).send();
+                console.log("✅ Approval successful, TX:", approvalTx);
+            } catch (error) {
+                console.error("❌ Approval failed:", error);
+                alert("❌ Approval transaction failed. Check console for details.");
+                return;
+            }
+        } else {
+            console.log("✅ Sufficient allowance:", allowanceBN.toString());
+        }
+
+        // Proceed with swap
         console.log("✅ Buying with USDT...");
         const swapTx = await swapContract.methods.buyWithUSDT(usdtSmallestUnits).send();
         console.log("✅ Swap successful, TX:", swapTx);
@@ -244,15 +264,35 @@ async function buyTokensWithUSDD(amount) {
             return;
         }
 
-        const currentAllowance = await usddContract.methods.allowance(userAddress, swapContractAddress).call();
-        if (new BigNumber(currentAllowance).lt(usddSmallestUnits)) {
-            console.log("✅ Approving USDD...");
-            const approvalTx = await usddContract.methods.approve(swapContractAddress, usddSmallestUnits).send();
-            console.log("✅ Approval successful, TX:", approvalTx);
-        } else {
-            console.log("✅ Sufficient allowance already exists.");
+        // Fetch and validate allowance
+        let currentAllowance;
+        try {
+            currentAllowance = await usddContract.methods.allowance(userAddress, swapContractAddress).call();
+            console.log("📊 Current Allowance:", currentAllowance.toString(), "Required:", usddSmallestUnits.toString());
+        } catch (error) {
+            console.error("❌ Error fetching allowance:", error);
+            alert("❌ Failed to check allowance. Please try again.");
+            return;
         }
 
+        // Ensure allowance is a valid number and compare strictly
+        const allowanceBN = new BigNumber(currentAllowance || 0);
+        const requiredBN = new BigNumber(usddSmallestUnits);
+        if (!allowanceBN.isFinite() || allowanceBN.lt(requiredBN)) {
+            console.log("✅ Approving USDD for amount:", usddSmallestUnits);
+            try {
+                const approvalTx = await usddContract.methods.approve(swapContractAddress, usddSmallestUnits).send();
+                console.log("✅ Approval successful, TX:", approvalTx);
+            } catch (error) {
+                console.error("❌ Approval failed:", error);
+                alert("❌ Approval transaction failed. Check console for details.");
+                return;
+            }
+        } else {
+            console.log("✅ Sufficient allowance:", allowanceBN.toString());
+        }
+
+        // Proceed with swap
         console.log("✅ Buying with USDD...");
         const swapTx = await swapContract.methods.buyWithUSDD(usddSmallestUnits).send();
         console.log("✅ Swap successful, TX:", swapTx);
