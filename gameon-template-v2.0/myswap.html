@@ -33,7 +33,7 @@
             color: black !important;
         }
 
-        /* Ensure dropdowns have black text at all times */
+        /* Ensure dropdowns have black text and a single arrow */
         .staking-area .single-accordion-item .form-select,
         .staking-area .single-accordion-item .form-select option,
         .staking-area .single-accordion-item .form-select:focus,
@@ -41,9 +41,15 @@
         .staking-area .single-accordion-item .form-select:hover {
             color: black !important;
             background-color: white !important;
-            -webkit-appearance: menulist !important; /* Ensure dropdown arrow visibility */
+            background-image: none !important; /* Remove any custom arrow */
+            -webkit-appearance: menulist !important; /* Default browser arrow */
             -moz-appearance: menulist !important;
             appearance: menulist !important;
+        }
+        /* Remove pseudo-elements that might add a second arrow */
+        .staking-area .single-accordion-item .form-select::after,
+        .staking-area .single-accordion-item .form-select::before {
+            display: none !important;
         }
 
         /* Style for the mirror button */
