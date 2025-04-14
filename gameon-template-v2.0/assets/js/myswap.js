@@ -79,22 +79,96 @@ const POOLS = {
 };
 
 const ROUTER_ABI = [
-    {"outputs": [{"name": "amounts", "type": "uint256[]"}], "inputs": [{"name": "amountIn", "type": "uint256"}, {"name": "amountOutMin", "type": "uint256"}, {"name": "path", "type": "address[]"}, {"name": "to", "type": "address"}, {"name": "deadline", "type": "uint256"}], "name": "swapExactTokensForTokens", "stateMutability": "nonpayable", "type": "function"}
+    {
+        "outputs": [{"name": "amounts", "type": "uint256[]"}],
+        "inputs": [
+            {"name": "amountOutMin", "type": "uint256"},
+            {"name": "path", "type": "address[]"},
+            {"name": "to", "type": "address"},
+            {"name": "deadline", "type": "uint256"}
+        ],
+        "name": "swapExactETHForTokens",
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "outputs": [{"name": "amounts", "type": "uint256[]"}],
+        "inputs": [
+            {"name": "amountIn", "type": "uint256"},
+            {"name": "amountOutMin", "type": "uint256"},
+            {"name": "path", "type": "address[]"},
+            {"name": "to", "type": "address"},
+            {"name": "deadline", "type": "uint256"}
+        ],
+        "name": "swapExactTokensForTokens",
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "outputs": [{"name": "amounts", "type": "uint256[]"}],
+        "inputs": [
+            {"name": "amountIn", "type": "uint256"},
+            {"name": "amountOutMin", "type": "uint256"},
+            {"name": "path", "type": "address[]"},
+            {"name": "to", "type": "address"},
+            {"name": "deadline", "type": "uint256"}
+        ],
+        "name": "swapExactTokensForETH",
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
 ];
 
 const RESERVES_ABI = [
-    {"constant": true, "inputs": [], "name": "getReserves", "outputs": [{"name": "_reserve0", "type": "uint112"}, {"name": "_reserve1", "type": "uint112"}, {"name": "_blockTimestampLast", "type": "uint32"}], "payable": false, "stateMutability": "view", "type": "function"}
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "getReserves",
+        "outputs": [
+            {"name": "_reserve0", "type": "uint112"},
+            {"name": "_reserve1", "type": "uint112"},
+            {"name": "_blockTimestampLast", "type": "uint32"}
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    }
 ];
 
 const ERC20_ABI = [
-    {"constant": true, "inputs": [{"name": "_owner", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "balance", "type": "uint256"}], "payable": false, "stateMutability": "view", "type": "function"},
-    {"constant": true, "inputs": [{"name": "_owner", "type": "address"}, {"name": "_spender", "type": "address"}], "name": "allowance", "outputs": [{"name": "remaining", "type": "uint256"}], "payable": false, "stateMutability": "view", "type": "function"},
-    {"constant": false, "inputs": [{"name": "_spender", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "approve", "outputs": [{"name": "success", "type": "bool"}], "payable": false, "stateMutability": "nonpayable", "type": "function"}
-];
-
-const WTRX_ABI = [
-    {"constant": false, "inputs": [], "name": "deposit", "outputs": [], "payable": true, "stateMutability": "payable", "type": "function"},
-    {"constant": false, "inputs": [{"name": "wad", "type": "uint256"}], "name": "withdraw", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function"}
+    {
+        "constant": true,
+        "inputs": [{"name": "_owner", "type": "address"}],
+        "name": "balanceOf",
+        "outputs": [{"name": "balance", "type": "uint256"}],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [
+            {"name": "_owner", "type": "address"},
+            {"name": "_spender", "type": "address"}
+        ],
+        "name": "allowance",
+        "outputs": [{"name": "remaining", "type": "uint256"}],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {"name": "_spender", "type": "address"},
+            {"name": "_value", "type": "uint256"}
+        ],
+        "name": "approve",
+        "outputs": [{"name": "success", "type": "bool"}],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
 ];
 
 // Global variables
@@ -250,39 +324,6 @@ async function approveToken(tokenAddress, amountInBigInt) {
     }
 }
 
-// Wrap TRX to WTRX
-async function wrapTRX(amountInBigInt) {
-    try {
-        const wtrxContract = await tronWeb.contract(WTRX_ABI, WTRX_CONTRACT);
-        document.getElementById('status-msg').textContent = 'Wrapping TRX to WTRX...';
-        await wtrxContract.deposit().send({
-            callValue: amountInBigInt.toString(),
-            feeLimit: 100000000
-        });
-        document.getElementById('status-msg').textContent = 'TRX wrapped successfully!';
-    } catch (error) {
-        console.error('Error in wrapTRX:', error);
-        document.getElementById('status-msg').textContent = 'Failed to wrap TRX: ' + (error.message || 'Unknown error');
-        throw error;
-    }
-}
-
-// Unwrap WTRX to TRX
-async function unwrapWTRX(amountOutBigInt) {
-    try {
-        const wtrxContract = await tronWeb.contract(WTRX_ABI, WTRX_CONTRACT);
-        document.getElementById('status-msg').textContent = 'Unwrapping WTRX to TRX...';
-        await wtrxContract.withdraw(amountOutBigInt.toString()).send({
-            feeLimit: 100000000
-        });
-        document.getElementById('status-msg').textContent = 'WTRX unwrapped successfully!';
-    } catch (error) {
-        console.error('Error in unwrapWTRX:', error);
-        document.getElementById('status-msg').textContent = 'Failed to unwrap WTRX: ' + (error.message || 'Unknown error');
-        throw error;
-    }
-}
-
 // Update balances
 async function updateBalances() {
     if (!isWalletConnected) {
@@ -406,52 +447,65 @@ async function executeSwap() {
     }
 
     const amountInBigInt = window.amountInBigInt;
-    const effectiveFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
-    const effectiveTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
-    const tokenAddress = TOKENS[tokenFrom];
+    const tokenAddressFrom = TOKENS[tokenFrom];
+    const tokenAddressTo = TOKENS[tokenTo];
 
     try {
-        // Step 1: Wrap TRX to WTRX if necessary
-        if (tokenFrom === 'TRX') {
-            await wrapTRX(amountInBigInt);
-        }
-
-        // Step 2: Check and approve token if necessary
-        if (tokenFrom !== 'TRX') {
-            const allowance = await checkAllowance(tokenAddress, userAddress, SUNSWAP_ROUTER);
-            if (allowance < amountInBigInt) {
-                await approveToken(tokenAddress, amountInBigInt);
-            }
-        } else {
-            const allowance = await checkAllowance(WTRX_CONTRACT, userAddress, SUNSWAP_ROUTER);
-            if (allowance < amountInBigInt) {
-                await approveToken(WTRX_CONTRACT, amountInBigInt);
-            }
-        }
-
-        // Step 3: Execute the swap
-        const slippage = 1; // Default slippage of 1%
+        const slippage = 1; // 1% slippage
         const minOutBigInt = window.expectedOutBigInt * BigInt(100 - slippage) / BigInt(100);
-        const path = [TOKENS[tokenFrom], TOKENS[tokenTo]];
         const deadline = Math.floor(Date.now() / 1000) + 600;
-
         const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
 
-        document.getElementById('status-msg').textContent = 'Processing swap...';
-        const tx = await router.swapExactTokensForTokens(
-            amountInBigInt.toString(),
-            minOutBigInt.toString(),
-            path,
-            userAddress,
-            deadline
-        ).send({ feeLimit: 100000000 });
-
-        // Step 4: Unwrap WTRX to TRX if necessary
-        if (tokenTo === 'TRX') {
-            await unwrapWTRX(window.expectedOutBigInt);
+        if (tokenFrom === 'TRX') {
+            // Swap TRX to token (e.g., TRX to KING)
+            const path = [WTRX_CONTRACT, tokenAddressTo];
+            document.getElementById('status-msg').textContent = 'Processing swap...';
+            const tx = await router.swapExactETHForTokens(
+                minOutBigInt.toString(),
+                path,
+                userAddress,
+                deadline
+            ).send({
+                callValue: amountInBigInt.toString(),
+                feeLimit: 100000000
+            });
+            document.getElementById('status-msg').textContent = `Swap successful! TX: ${tx}`;
+        } else if (tokenTo === 'TRX') {
+            // Swap token to TRX (e.g., KING to TRX)
+            const path = [tokenAddressFrom, WTRX_CONTRACT];
+            // Approve token
+            const allowance = await checkAllowance(tokenAddressFrom, userAddress, SUNSWAP_ROUTER);
+            if (allowance < amountInBigInt) {
+                await approveToken(tokenAddressFrom, amountInBigInt);
+            }
+            document.getElementById('status-msg').textContent = 'Processing swap...';
+            const tx = await router.swapExactTokensForETH(
+                amountInBigInt.toString(),
+                minOutBigInt.toString(),
+                path,
+                userAddress,
+                deadline
+            ).send({ feeLimit: 100000000 });
+            document.getElementById('status-msg').textContent = `Swap successful! TX: ${tx}`;
+        } else {
+            // Token to token swap (e.g., CFT to KING)
+            const path = [tokenAddressFrom, tokenAddressTo];
+            // Approve token
+            const allowance = await checkAllowance(tokenAddressFrom, userAddress, SUNSWAP_ROUTER);
+            if (allowance < amountInBigInt) {
+                await approveToken(tokenAddressFrom, amountInBigInt);
+            }
+            document.getElementById('status-msg').textContent = 'Processing swap...';
+            const tx = await router.swapExactTokensForTokens(
+                amountInBigInt.toString(),
+                minOutBigInt.toString(),
+                path,
+                userAddress,
+                deadline
+            ).send({ feeLimit: 100000000 });
+            document.getElementById('status-msg').textContent = `Swap successful! TX: ${tx}`;
         }
 
-        document.getElementById('status-msg').textContent = `Swap successful! TX: ${tx}`;
         await updateBalances();
         await updateExpectedOutput();
     } catch (error) {
