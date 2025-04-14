@@ -281,7 +281,7 @@ async function connectWallet() {
             tronWeb = window.tronWeb;
             userAddress = tronWeb.defaultAddress.base58;
             isWalletConnected = true;
-            connectButton.textContent = 'Wallet Connected';
+            connectButton.innerHTML = '<i class="icon-wallet me-md-2"></i> Wallet Connected';
             connectButton.disabled = true;
             populateTokenSelectors();
             await updateBalances();
@@ -290,7 +290,7 @@ async function connectWallet() {
             tronWeb = window.tronWeb;
             userAddress = tronWeb.defaultAddress.base58;
             isWalletConnected = true;
-            connectButton.textContent = 'Wallet Connected';
+            connectButton.innerHTML = '<i class="icon-wallet me-md-2"></i> Wallet Connected';
             connectButton.disabled = true;
             populateTokenSelectors();
             await updateBalances();
@@ -737,5 +737,12 @@ document.getElementById('mirror-button').addEventListener('click', mirrorSwap);
 
 // Auto-connect wallet on page refresh
 if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
-    connectWallet();
+    const connectButton = document.getElementById('connect-button');
+    tronWeb = window.tronWeb;
+    userAddress = tronWeb.defaultAddress.base58;
+    isWalletConnected = true;
+    connectButton.innerHTML = '<i class="icon-wallet me-md-2"></i> Wallet Connected';
+    connectButton.disabled = true;
+    populateTokenSelectors();
+    updateBalances();
 }
