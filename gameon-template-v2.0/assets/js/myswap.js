@@ -3,8 +3,7 @@ const SUNSWAP_ROUTER = 'TXF1xDbVGdxFGbovmmmXvBGu8ZiE3Lq4mR';
 const WTRX_CONTRACT = 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR';
 
 const TOKENS = {
-    TRX: 'T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb', // Native TRX
-    WTRX: 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR',
+    TRX: 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR', // Maps to WTRX address for pool interactions
     KING: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
     CFT: 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA',
     BBT: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
@@ -24,7 +23,6 @@ const TOKENS = {
 
 const DECIMALS = {
     TRX: 6,
-    WTRX: 6,
     KING: 6,
     CFT: 6,
     BBT: 8,
@@ -165,14 +163,17 @@ function updateToDropdown(fromToken) {
     const currentToValue = toSelect.value;
     toSelect.innerHTML = ''; // Clear existing options
 
-    // Find all tokens paired with fromToken in POOLS
+    // Map TRX to WTRX for pool lookup
+    const effectiveFrom = fromToken === 'TRX' ? 'WTRX' : fromToken;
+
+    // Find all tokens paired with effectiveFrom in POOLS
     const pairedTokens = new Set();
     Object.keys(POOLS).forEach(poolKey => {
         const [tokenA, tokenB] = poolKey.split('-');
-        if (tokenA === fromToken) {
-            pairedTokens.add(tokenB);
-        } else if (tokenB === fromToken) {
-            pairedTokens.add(tokenA);
+        if (tokenA === effectiveFrom) {
+            pairedTokens.add(tokenB === 'WTRX' ? 'TRX' : tokenB);
+        } else if (tokenB === effectiveFrom) {
+            pairedTokens.add(tokenA === 'WTRX' ? 'TRX' : tokenA);
         }
     });
 
@@ -346,7 +347,7 @@ async function updateExpectedOutput() {
     // Remove commas from amountIn for calculation
     amountIn = parseFloat(amountIn.replace(/,/g, ''));
 
-    // Adjust tokens for pool lookup (TRX swaps use WTRX pools)
+    // Map TRX to WTRX for pool lookup and display
     const effectiveFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
     const effectiveTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
 
@@ -362,7 +363,7 @@ async function updateExpectedOutput() {
 
     try {
         const reserves = await fetchReserves(pool.addr);
-        const isToken0From = TOKENS[effectiveFrom] === TOKENS[pool.token0];
+        const isToken0From = TOKENS[tokenFrom === 'TRX' ? 'TRX' : tokenFrom] === TOKENS[pool.token0];
         const reserveIn = isToken0From ? reserves.reserve0 : reserves.reserve1;
         const reserveOut = isToken0From ? reserves.reserve1 : reserves.reserve0;
 
@@ -375,7 +376,10 @@ async function updateExpectedOutput() {
 
         const rate = amountOut / amountIn;
         const formattedRate = formatNumber(rate);
-        document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = ${formattedRate} ${tokenTo}`;
+        // Display WTRX in rate info instead of TRX
+        const displayFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
+        const displayTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
+        document.getElementById('rate-info').textContent = `Rate: 1 ${displayFrom} = ${formattedRate} ${displayTo}`;
         window.expectedOutBigInt = amountOutBigInt;
         window.amountInBigInt = amountInBigInt;
     } catch (error) {
@@ -404,7 +408,7 @@ async function executeSwap() {
     const amountInBigInt = window.amountInBigInt;
     const effectiveFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
     const effectiveTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
-    const tokenAddress = TOKENS[effectiveFrom];
+    const tokenAddress = TOKENS[tokenFrom];
 
     try {
         // Step 1: Wrap TRX to WTRX if necessary
@@ -428,7 +432,7 @@ async function executeSwap() {
         // Step 3: Execute the swap
         const slippage = 1; // Default slippage of 1%
         const minOutBigInt = window.expectedOutBigInt * BigInt(100 - slippage) / BigInt(100);
-        const path = [TOKENS[effectiveFrom], TOKENS[effectiveTo]];
+        const path = [TOKENS[tokenFrom], TOKENS[tokenTo]];
         const deadline = Math.floor(Date.now() / 1000) + 600;
 
         const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
