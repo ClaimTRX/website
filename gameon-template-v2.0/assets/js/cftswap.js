@@ -5,23 +5,24 @@ const STBLX_SWAP_CONTRACT = 'TUGprGUNtszQgc3pGwMcC9R3z3sDT31G9W'; // StableX swa
 
 const TOKENS = {
     TRX: 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR', // Maps to WTRX address for pool interactions
-    KING: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
     CFT: 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA',
+    STBLX: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS', // StableX token
     BBT: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
-    USDT: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+    KING: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
     JM: 'TVHH59uHVpHzLDMFFpUgCx2dNAQqCzPhcR',
-    PROS: 'TFf1aBoNFqxN32V2NQdvNrXVyYCy9qY8p1',
-    SUN: 'TSSMHYeV2uE9qYH95DqyoCuNCzEL1NvU3S',
-    WIN: 'TLa2f6VPqDgRE67v1736s7bJ8Ray5wYjU7',
-    USDDOLD: 'TPYmHEhy5n8TCEfYGqW2rPxsghSfzghPDn', // USDD old for pools
     USDD: 'TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz', // USDD for StableX
+    USDT: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+    USDDOLD: 'TPYmHEhy5n8TCEfYGqW2rPxsghSfzghPDn', // USDD old for pools
+    SUN: 'TSSMHYeV2uE9qYH95DqyoCuNCzEL1NvU3S',
     TWX: 'TTFreuJ4pYDaCeEMEtiR1GQDwPPrS4jKFk',
+    PROS: 'TFf1aBoNFqxN32V2NQdvNrXVyYCy9qY8p1',
+    WIN: 'TLa2f6VPqDgRE67v1736s7bJ8Ray5wYjU7',
     ARB: 'TMGrV13RDQQWE37E2Fp6oqRHVWD66AbN2L',
     JST: 'TCFLL5dx5ZJdKnWuesXxi1VPwjLVmWZZy9',
     TEM: 'TFuEe2QMB8JyuYnuQmDB75GPvDzvXXe7LR',
     TUSD: 'TUpMhErZL2fhh4sVNULAbNKLokS4GjC1F4',
-    BTC: 'TN3W4H6rK2ce4vX9YnFQHwKENnHjoxb3m9',
-    STBLX: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS' // StableX token
+    BTC: 'TN3W4H6rK2ce4vX9YnFQHwKENnHjoxb3m9'
+    
 };
 
 const DECIMALS = {
