@@ -156,13 +156,19 @@
 								</li>
 							</ul>
 						</li>
+
 						<li class="nav-item">
-							<a href="energy.html" class="nav-link">VIP</a>
-						</li>
+									<a href="energy.html" class="nav-link">VIP</a>
+								</li>
 						<li class="nav-item">
-							<a href="energy2.html" class="nav-link">Rent Energy</a>
-						</li>
+									<a href="energy2.html" class="nav-link">Rent Energy</a>
+								</li>
+						
+						
 					</ul>
+
+					<!-- Navbar Icons -->
+					
 
 					<!-- Navbar Toggler -->
 					<ul class="navbar-nav toggle">
@@ -175,12 +181,16 @@
 
 					<!-- Navbar Action Button -->
 					<ul class="navbar-nav action">
-						<li class="nav-item ms-2">
-							<button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
-								<i class="icon-wallet me-md-2"></i> Wallet Connect
-							</button>
-						</li>
+						<ul class="navbar-nav action">
+    <li class="nav-item ms-2">
+        <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
+            <i class="icon-wallet me-md-2"></i> Wallet Connect
+        </button>
+    </li>
+</ul>
+
 					</ul>
+
 				</div>
 			</nav>
 		</header>
@@ -241,7 +251,7 @@
                                         <div class="col-12 col-md-6">
                                             <label for="to-token">To</label>
                                             <select id="to-token" class="form-select"></select>
-                                            <input type="number" id="to-amount" placeholder="0" class="form-control mt-2">
+                                            <input type="text" id="to-amount" readonly class="form-control mt-2">
                                             <p id="to-balance" class="mt-2">Balance: 0</p>
                                         </div>
                                     </div>
