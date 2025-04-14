@@ -40,7 +40,7 @@ const DECIMALS = {
     TEM: 6,
     TUSD: 18,
     BTC: 8,
-    STBLX: 6 // Assuming 18 decimals for STBLX (adjust if different)
+    STBLX: 6 // Corrected to 6 decimals for STBLX
 };
 
 const POOLS = {
@@ -163,7 +163,7 @@ const ERC20_ABI = [
     {
         "constant": false,
         "inputs": [
-            {"name": "_spender", "type": "address"},
+            {"name": "_ grens", "type": "address"},
             {"name": "_value", "type": "uint256"}
         ],
         "name": "approve",
@@ -306,12 +306,14 @@ function populateTokenSelectors() {
     const fromSelect = document.getElementById('from-token');
     const toSelect = document.getElementById('to-token');
 
-    // Populate "From" dropdown with all tokens
+    // Populate "From" dropdown with all tokens except STBLX
     Object.keys(TOKENS).forEach(token => {
-        const option = document.createElement('option');
-        option.value = token;
-        option.text = token;
-        fromSelect.appendChild(option.cloneNode(true));
+        if (token !== 'STBLX') {
+            const option = document.createElement('option');
+            option.value = token;
+            option.text = token;
+            fromSelect.appendChild(option.cloneNode(true));
+        }
     });
 
     // Initially populate "To" dropdown based on default "From" selection (CFT)
@@ -434,27 +436,32 @@ async function updateBalances() {
         let balanceFrom = BigInt(0);
         let balanceTo = BigInt(0);
 
-        // Handle TRX balance
+        // Handle TRX balance for "From"
         if (tokenFrom === 'TRX') {
             balanceFrom = BigInt(await tronWeb.trx.getBalance(userAddress));
         } else {
             const fromAddress = TOKENS[tokenFrom];
-            if (!fromAddress || fromAddress.length !== 34 || !fromAddress.startsWith('T')) {
-                throw new Error(`Invalid address for token ${tokenFrom}: ${fromAddress}`);
+            try {
+                const fromContract = await tronWeb.contract(ERC20_ABI, fromAddress);
+                balanceFrom = BigInt(await fromContract.balanceOf(userAddress).call());
+            } catch (error) {
+                console.error(`Error fetching balance for ${tokenFrom} at ${fromAddress}:`, error);
+                throw new Error(`Failed to fetch balance for ${tokenFrom}`);
             }
-            const fromContract = await tronWeb.contract(ERC20_ABI, fromAddress);
-            balanceFrom = BigInt(await fromContract.balanceOf(userAddress).call());
         }
 
+        // Handle TRX balance for "To"
         if (tokenTo === 'TRX') {
             balanceTo = BigInt(await tronWeb.trx.getBalance(userAddress));
         } else {
             const toAddress = TOKENS[tokenTo];
-            if (!toAddress || toAddress.length !== 34 || !toAddress.startsWith('T')) {
-                throw new Error(`Invalid address for token ${tokenTo}: ${toAddress}`);
+            try {
+                const toContract = await tronWeb.contract(ERC20_ABI, toAddress);
+                balanceTo = BigInt(await toContract.balanceOf(userAddress).call());
+            } catch (error) {
+                console.error(`Error fetching balance for ${tokenTo} at ${toAddress}:`, error);
+                throw new Error(`Failed to fetch balance for ${tokenTo}`);
             }
-            const toContract = await tronWeb.contract(ERC20_ABI, toAddress);
-            balanceTo = BigInt(await toContract.balanceOf(userAddress).call());
         }
 
         const formattedBalanceFrom = formatNumber(Number(balanceFrom) / 10 ** DECIMALS[tokenFrom]);
@@ -466,7 +473,7 @@ async function updateBalances() {
         console.error(`Error in updateBalances for tokens ${tokenFrom} and ${tokenTo}:`, error);
         document.getElementById('from-balance').textContent = `Balance: 0 ${tokenFrom}`;
         document.getElementById('to-balance').textContent = `Balance: 0 ${tokenTo}`;
-        document.getElementById('status-msg').textContent = `Failed to fetch balances for ${tokenFrom} or ${tokenTo}.`;
+        document.getElementById('status-msg').textContent = `Failed to fetch balances: ${error.message}`;
     }
 }
 
