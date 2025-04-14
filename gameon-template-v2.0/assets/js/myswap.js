@@ -40,7 +40,7 @@ const DECIMALS = {
     TEM: 6,
     TUSD: 18,
     BTC: 8,
-    STBLX: 18 // Assuming 18 decimals for STBLX (adjust if different)
+    STBLX: 6 // Assuming 18 decimals for STBLX (adjust if different)
 };
 
 const POOLS = {
