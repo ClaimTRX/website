@@ -412,7 +412,11 @@ async function updateExpectedOutput() {
 
     try {
         const reserves = await fetchReserves(pool.addr);
-        const isToken0From = TOKENS[tokenFrom === 'TRX' ? 'TRX' : tokenFrom] === TOKENS[pool.token0];
+        // Determine if the "From" token matches token0 by comparing addresses
+        const fromAddress = tokenFrom === 'TRX' ? TOKENS['TRX'] : TOKENS[tokenFrom];
+        const token0Address = pool.token0 === 'WTRX' ? TOKENS['TRX'] : TOKENS[pool.token0];
+        const isToken0From = fromAddress === token0Address;
+
         const reserveIn = isToken0From ? reserves.reserve0 : reserves.reserve1;
         const reserveOut = isToken0From ? reserves.reserve1 : reserves.reserve0;
 
@@ -576,4 +580,3 @@ document.getElementById('mirror-button').addEventListener('click', mirrorSwap);
 if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
     connectWallet();
 }
-
