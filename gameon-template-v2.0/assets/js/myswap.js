@@ -4,21 +4,21 @@ const WTRX_CONTRACT = 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR';
 
 const TOKENS = {
     TRX: 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR', // Maps to WTRX address for pool interactions
-    KING: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
-    CFT: 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA',
-    BBT: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
+     KING: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
+    CFT:  'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA',
+    BBT:  'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
     USDT: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
-    JM: 'TVHH59uHVpHzLDMFFpUgCx2dNAQqCzPhcR',
-    PROS: 'TFf1aBoNFqxN14T8sc6ePYJRFecPJCut',
-    SUN: 'TSSMHYeV2uE9qYH95DqyoCuNCzEL1NvU3S',
-    WIN: 'TLa2f6VPqDgRE67v1736s7bJ8Ray5wYjU7',
+    JM:   'TVHH59uHVpHzLDMFFpUgCx2dNAQqCzPhcR',
+    PROS: 'TFf1aBoNFqxN32V2NQdvNrXVyYCy9qY8p1',
+    SUN:  'TSSMHYeV2uE9qYH95DqyoCuNCzEL1NvU3S',
+    WIN:  'TLa2f6VPqDgRE67v1736s7bJ8Ray5wYjU7',
     USDD: 'TPYmHEhy5n8TCEfYGqW2rPxsghSfzghPDn',
-    TWX: 'TTFreuJ4pYDaCeEMEtiR1GQDwPPrS4jKFk',
-    ARB: 'TMGrV13RDQQWE37E2Fp6oqRHVWD66AbN2L',
-    JST: 'TCFLL5dx5ZJdKnWuesXxi1VPwjLVmWZZy9',
-    TEM: 'TFuEe2QMB8JyuYnuQmDB75GPvDzvXXe7LR',
+    TWX:  'TTFreuJ4pYDaCeEMEtiR1GQDwPPrS4jKFk',
+    ARB:  'TMGrV13RDQQWE37E2Fp6oqRHVWD66AbN2L',
+    JST:  'TCFLL5dx5ZJdKnWuesXxi1VPwjLVmWZZy9',
+    TEM:  'TFuEe2QMB8J1rfwNhAwjRSwoFivMcU5N75',
     TUSD: 'TUpMhErZL2fhh4sVNULAbNKLokS4GjC1F4',
-    BTC: 'TN3W4H6rK2ce4vX9YnFQHwKENnHjoxb3m9'
+    BTC:  'TN3W4H6rK2ce4vX9YnFQHwKENnHjoxb3m9'
 };
 
 const DECIMALS = {
