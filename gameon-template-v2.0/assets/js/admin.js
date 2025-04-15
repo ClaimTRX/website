@@ -203,7 +203,7 @@ const stakingConfigs = [
         tokenContractAbi: tokenContractAbi,
         rewardUnit: 'CFT',
         isSameToken: false // Staking and reward tokens are different
-    }
+    },
     {
         name: 'KING',
         tokenContractAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
@@ -212,7 +212,7 @@ const stakingConfigs = [
         tokenContractAbi: tokenContractAbi,
         rewardUnit: 'CFT',
         isSameToken: false // Staking and reward tokens are different
-    }
+    },
 {
         name: 'FYM',
         tokenContractAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
@@ -221,7 +221,7 @@ const stakingConfigs = [
         tokenContractAbi: tokenContractAbi,
         rewardUnit: 'CFT',
         isSameToken: false // Staking and reward tokens are different
-    }
+    },
 {
         name: 'StableX/Stablex',
         tokenContractAddress: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
@@ -230,7 +230,7 @@ const stakingConfigs = [
         tokenContractAbi: tokenContractAbi,
         rewardUnit: 'StableX',
         isSameToken: true // Staking and reward tokens are different
-    }
+    },
 {
         name: 'StableX/CFT',
         tokenContractAddress: 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA',
