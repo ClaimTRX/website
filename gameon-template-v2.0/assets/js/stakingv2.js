@@ -12,9 +12,9 @@ const tokenDetails = {
         displayName: 'CFT'  // Override name for display
     },
   cftturu: {
-        tokenAddress: 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA',
-        stakingAddress: 'TMsZX72oWscpd3QmmT6NRq6JWiY5QzFju2',
-        decimals: 6,
+        tokenAddress: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
+        stakingAddress: 'TXgt8nXRDTbYxbhDbkZyqs9cgjoBikQa72',
+        decimals: 8,
         displayName: 'CFT'  // Override name for display
     },
     turu: {
@@ -25,22 +25,17 @@ const tokenDetails = {
     },
     king: {
         tokenAddress: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
-        stakingAddress: 'TFVU3oMF8HTnLPds4emfk7JNhVfF2mUHYT',
+        stakingAddress: 'TEppqmC7mb2wF4ExBYbQF6LraqD6qXW5Aj',
         decimals: 6,
         displayName: 'CFT'  // Override name for display
     },
   fym: {
         tokenAddress: 'TCTvRkt5kVndeGKWJmMUxEc2rovdrGNoK3',
-        stakingAddress: 'TQBcpWPi53FzuTtqVvT1uLd18N1P7X3UL2',
+        stakingAddress: 'TP4HhAWv2WbSMCH2CRhdSsiwBP6JzViouq',
         decimals: 6,
       displayName: 'CFT'  // Override name for display
     },
-  hos: {
-        tokenAddress: 'TDQKZTG7oj6UsYjSdxNS5QAuMGMat2XLEB',
-        stakingAddress: 'TXrR6vcxhVmw53CDXqqEqjD2NWepQk6RYP',
-        decimals: 6,
-      displayName: 'CFT'  // Override name for display
-    }
+  
 };
 
 const stakingContractAbi = [
