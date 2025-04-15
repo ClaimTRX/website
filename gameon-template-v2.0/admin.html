@@ -18,16 +18,17 @@
     <link rel="stylesheet" href="assets/css/style.css">
 
     <!-- Custom CSS for white text -->
-   <style>
-    .admin-area, 
-    .admin-area * {
-        color: white !important;
-    }
-    .admin-area input::placeholder {
-        color: white !important;
-        opacity: 0.7; /* Optional: slightly dim placeholder for contrast */
-    }
-</style>
+    <style>
+        .admin-area,
+        .admin-area * {
+            color: white !important;
+        }
+
+        .admin-area input::placeholder {
+            color: white !important;
+            opacity: 0.7;
+        }
+    </style>
 </head>
 
 <body>
@@ -143,7 +144,7 @@
                             <div class="intro text-center mb-5">
                                 <span class="intro-text">CFT Ecosystem</span>
                                 <h1 class="mt-4">Admin Panel</h1>
-                                <p>Manage CFT staking rewards</p>
+                                <p>Manage staking rewards</p>
                             </div>
                         </div>
                     </div>
@@ -163,43 +164,8 @@
                         </div>
                         <!-- Admin Panel -->
                         <div id="admin-panel" style="display: none;">
-                            <!-- Deposit Rewards -->
-                            <div class="card mb-4">
-                                <div class="card-body">
-                                    <h4 class="card-title">Deposit Rewards CFT/CFT Staking</h4>
-                                    <div class="row">
-                                        <div class="col-12 col-md-6 single-item">
-                                            <span class="d-block mb-2">Available CFT: <span id="available-tokens-admin"></span></span>
-                                            <div class="input-area d-flex flex-column">
-                                                <div class="input-text">
-                                                    <input type="text" placeholder="0" id="deposit-amount">
-                                                </div>
-                                                <button class="btn input-btn mt-2" id="deposit-button">Deposit Rewards</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Rewards Information -->
-                            <div class="card">
-                                <div class="card-body">
-                                    <h4 class="card-title">Rewards Information</h4>
-                                    <div class="row">
-                                        <div class="col-12 col-md-4 single-item">
-                                            <span id="rewards-left"></span>
-                                            <span>Rewards Left (CFT)</span>
-                                        </div>
-                                        <div class="col-12 col-md-4 single-item">
-                                            <span id="daily-rewards"></span>
-                                            <span>Daily Rewards (CFT)</span>
-                                        </div>
-                                        <div class="col-12 col-md-4 single-item">
-                                            <span id="days-left"></span>
-                                            <span>Days of Rewards Left</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <!-- Contracts will be dynamically inserted here -->
+                            <div id="contracts-container"></div>
                         </div>
                     </div>
                 </div>
