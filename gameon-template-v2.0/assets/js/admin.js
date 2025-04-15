@@ -371,7 +371,7 @@ async function renderContracts() {
                     <div class="card-body">
                         <div class="row">
                             ${
-                                userAddress === adminWallet
+                                userAddress === adminWallets
                                     ? `
                                         <div class="col-12 col-md-4 single-staking-item input-box">
                                             <span class="item-title mb-2">Deposit Rewards</span>
