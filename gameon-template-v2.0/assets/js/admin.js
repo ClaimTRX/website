@@ -231,6 +231,15 @@ const stakingConfigs = [
         tokenContractAbi: tokenContractAbi,
         rewardUnit: 'CFT',
         isSameToken: false
+    },
+    {
+        name: 'StableX/CFTnew',
+        tokenContractAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
+        stakingContractAddress: 'TABSRFLk6FF1FKPtTLy4zJpJqaiZQzwgQt',
+        stakingContractAbi: cftStakingContractAbi,
+        tokenContractAbi: tokenContractAbi,
+        rewardUnit: 'CFT',
+        isSameToken: false
     }
 ];
 
@@ -330,7 +339,7 @@ async function renderContracts() {
                             <div class="row">
                                 <div class="col-12 col-md-8">
                                     <div class="media flex-column flex-md-row">
-                                        <img class="avatar-max-lg" src="assets/img/content/placeholder.png" alt="${contract.config.name} logo">
+                                        
                                         <div class="content media-body mt-4 mt-md-0 ms-md-4">
                                             <h4 class="m-0">${contract.config.name} Rewards</h4>
                                             <p>Manage rewards for ${contract.config.name}.</p>
