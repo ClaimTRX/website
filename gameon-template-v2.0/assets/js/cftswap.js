@@ -487,6 +487,7 @@ async function updateExpectedOutput() {
     if (!isWalletConnected) {
         document.getElementById('to-amount').value = '';
         document.getElementById('rate-info').textContent = 'Rate: --';
+        document.getElementById('impact-info').textContent = 'Price Impact: --';
         return;
     }
 
@@ -497,16 +498,16 @@ async function updateExpectedOutput() {
     if (!tokenFrom || !tokenTo || !amountIn) {
         document.getElementById('to-amount').value = '';
         document.getElementById('rate-info').textContent = 'Rate: --';
+        document.getElementById('impact-info').textContent = 'Price Impact: --';
         return;
     }
 
-    // Remove commas from amountIn for calculation
     amountIn = parseFloat(amountIn.replace(/,/g, ''));
 
-    // Validate amountIn
     if (isNaN(amountIn) || amountIn <= 0) {
         document.getElementById('to-amount').value = '';
         document.getElementById('rate-info').textContent = 'Rate: --';
+        document.getElementById('impact-info').textContent = 'Price Impact: --';
         return;
     }
 
@@ -516,12 +517,12 @@ async function updateExpectedOutput() {
         const formattedAmountOut = formatNumber(amountOut, DECIMALS[tokenTo]);
         document.getElementById('to-amount').value = formattedAmountOut;
         document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = 1 STBLX`;
+        document.getElementById('impact-info').textContent = 'Price Impact: 0%';
         window.expectedOutBigInt = BigInt(Math.floor(amountOut * 10 ** DECIMALS[tokenTo]));
         window.amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
         return;
     }
 
-    // Existing pool-based logic for other swaps
     const effectiveFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
     const effectiveTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
 
@@ -532,15 +533,16 @@ async function updateExpectedOutput() {
     if (!pool) {
         document.getElementById('to-amount').value = 'No direct pool';
         document.getElementById('rate-info').textContent = 'Rate: --';
+        document.getElementById('impact-info').textContent = 'Price Impact: --';
         return;
     }
 
     try {
         const reserves = await fetchReserves(pool.addr);
-        // Check for empty pool
         if (reserves.reserve0 === 0n || reserves.reserve1 === 0n) {
             document.getElementById('to-amount').value = 'Pool empty';
             document.getElementById('rate-info').textContent = 'Rate: --';
+            document.getElementById('impact-info').textContent = 'Price Impact: --';
             return;
         }
 
@@ -559,18 +561,36 @@ async function updateExpectedOutput() {
         document.getElementById('to-amount').value = formattedAmountOut;
 
         const rate = amountOut / amountIn;
-        // Use higher precision for tokens with more decimals (e.g., BBT, JM)
         const rateDecimals = Math.max(DECIMALS[tokenTo], DECIMALS[tokenFrom], 4);
         const formattedRate = formatNumber(rate, rateDecimals);
         const displayFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
         const displayTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
         document.getElementById('rate-info').textContent = `Rate: 1 ${displayFrom} = ${formattedRate} ${displayTo}`;
+
+        // Calculate price impact using BigNumber
+        const BN = BigNumber;
+        const reserveInBN = BN(reserveIn.toString());
+        const reserveOutBN = BN(reserveOut.toString());
+        const amountInBN = BN(amountInBigInt.toString());
+        const amountOutBN = BN(amountOutBigInt.toString());
+
+        let priceImpactText;
+        if (amountInBN.isZero() || reserveInBN.isZero() || reserveOutBN.isZero()) {
+            priceImpactText = 'Price Impact: 0%';
+        } else {
+            const fraction = amountOutBN.multipliedBy(reserveInBN).dividedBy(amountInBN.multipliedBy(reserveOutBN));
+            const priceImpact = (1 - fraction.toNumber()) * 100;
+            priceImpactText = `Price Impact: ${priceImpact.toFixed(2)}%`;
+        }
+        document.getElementById('impact-info').textContent = priceImpactText;
+
         window.expectedOutBigInt = amountOutBigInt;
         window.amountInBigInt = amountInBigInt;
     } catch (error) {
         console.error('Error in updateExpectedOutput:', error);
         document.getElementById('to-amount').value = 'Error';
         document.getElementById('rate-info').textContent = 'Rate: --';
+        document.getElementById('impact-info').textContent = 'Price Impact: --';
     }
 }
 
