@@ -247,6 +247,73 @@
                     </div>
                 </div>
 
+		    <!-- Stake StableX for CFT Rewards -->
+                <div class="single-accordion-item">
+                    <div class="card-header bg-inherit border-0 p-0">
+                        <h2 class="m-0">
+                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStableXCFTnew">
+                                <div class="row">
+                                    <div class="col-12 col-md-8">
+                                        <div class="media flex-column flex-md-row">
+                                            <img class="avatar-max-lg" src="assets/img/content/stablex.png" alt="">
+                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                <h4 class="m-0">Stake StableX</h4>
+                                                <p>Stake StableX for CFT rewards New</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                    <div class="col single-item">
+                                        <span id="staked-amount-cftnew"></span>
+                                        <span>Staked</span>
+                                    </div>
+                                    <div class="col single-item">
+                                        <span id="estimated-apr-cftnew"></span>
+                                        <span>APY</span>
+                                    </div>
+                                    <div class="col single-item">
+                                        <span id="total-claimed-rewards-cftnew"></span>
+                                        <span>Total CFT Claimed</span>
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseStableXCFTnew" class="collapse" data-bs-parent="#gameon-accordion">
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Deposit -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Deposit</span>
+                                    <span id="available-tokens-cftnew"></span> available
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="stake-amount-cftnew"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="stake-button-cftnew">Stake</a>
+                                    </div>
+                                </div>
+                                <!-- Withdraw -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Withdraw</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-cftnew"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="unstake-button-cftnew">Withdraw</a>
+                                    </div>
+                                </div>
+                                <!-- Rewards -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Pending Rewards</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <h4 class="price m-0" id="claimable-rewards-cftnew">0 CFT</h4>
+                                        <span class="reward my-2">Don't forget the energy cost</span>
+                                        <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-cftnew"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Stake StableX for CFT Rewards -->
                 <div class="single-accordion-item">
                     <div class="card-header bg-inherit border-0 p-0">
