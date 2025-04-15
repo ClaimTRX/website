@@ -292,7 +292,8 @@ async function initializeTronWeb() {
         }
     }
 
-    if (userAddress === adminWallets) {
+    // Updated admin check to use array
+    if (adminWallets.includes(userAddress)) {
         document.getElementById('admin-panel').style.display = 'block';
         document.getElementById('access-denied').style.display = 'none';
         // Render contracts before updating UI
@@ -342,7 +343,6 @@ async function renderContracts() {
                             <div class="row">
                                 <div class="col-12 col-md-8">
                                     <div class="media flex-column flex-md-row">
-                                        
                                         <div class="content media-body mt-4 mt-md-0 ms-md-4">
                                             <h4 class="m-0">${contract.config.name} Rewards</h4>
                                             <p>Manage rewards for ${contract.config.name}.</p>
@@ -371,7 +371,7 @@ async function renderContracts() {
                     <div class="card-body">
                         <div class="row">
                             ${
-                                userAddress === adminWallets
+                                adminWallets.includes(userAddress)
                                     ? `
                                         <div class="col-12 col-md-4 single-staking-item input-box">
                                             <span class="item-title mb-2">Deposit Rewards</span>
