@@ -186,15 +186,7 @@ const stakingConfigs = [
         rewardUnit: 'CFT',
         isSameToken: true
     },
-    {
-        name: 'Turu/Turu Staking',
-        tokenContractAddress: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
-        stakingContractAddress: 'TLQPUiSeCHZ92UcphkesN46XtPN55MkNcm',
-        stakingContractAbi: cftStakingContractAbi,
-        tokenContractAbi: tokenContractAbi,
-        rewardUnit: 'TURU',
-        isSameToken: true
-    },
+    
     {
         name: 'TuruCFT',
         tokenContractAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
@@ -275,17 +267,14 @@ async function initializeTronWeb() {
     userAddress = tronWeb.defaultAddress.base58;
     document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
 
-    // Initialize contracts and load data sequentially
+    // Initialize contracts sequentially
     contracts = [];
     for (const config of stakingConfigs) {
         try {
             const stakingContract = await tronWeb.contract(config.stakingContractAbi, config.stakingContractAddress);
             const tokenContract = await tronWeb.contract(config.tokenContractAbi, config.tokenContractAddress);
             contracts.push({ config, stakingContract, tokenContract });
-            if (userAddress === adminWallet) {
-                await updateContractUI(contracts.length - 1);
-            }
-            await delay(500); // 500ms delay before next contract
+            await delay(500); // 500ms delay before next contract initialization
         } catch (error) {
             console.error(`Error initializing contract ${config.name}:`, error);
         }
@@ -294,7 +283,10 @@ async function initializeTronWeb() {
     if (userAddress === adminWallet) {
         document.getElementById('admin-panel').style.display = 'block';
         document.getElementById('access-denied').style.display = 'none';
+        // Render contracts before updating UI
         await renderContracts();
+        // Update UI for all contracts after rendering
+        await updateAdminUI();
         setInterval(() => updateAdminUI(), 60000);
     } else {
         document.getElementById('admin-panel').style.display = 'none';
@@ -302,50 +294,92 @@ async function initializeTronWeb() {
     }
 }
 
-// Render contract cards
+// Render contract cards as accordion
 async function renderContracts() {
     const container = document.getElementById('contracts-container');
+    if (!container) {
+        console.error('Contracts container not found in DOM');
+        return;
+    }
     container.innerHTML = ''; // Clear existing content
 
-    contracts.forEach((contract, index) => {
-        const cardHtml = `
-            <div class="card mb-4" data-contract-index="${index}">
-                <div class="card-body">
-                    <h4 class="card-title">Deposit Rewards ${contract.config.name}</h4>
-                    <div class="row">
-                        <div class="col-12 col-md-6 single-item">
-                            <span class="d-block mb-2">Available ${contract.config.rewardUnit}: <span id="available-tokens-admin-${index}"></span></span>
-                            <div class="input-area d-flex flex-column">
-                                <div class="input-text">
-                                    <input type="text" placeholder="0" id="deposit-amount-${index}">
-                                </div>
-                                <button class="btn input-btn mt-2 deposit-button" data-contract-index="${index}">Deposit Rewards</button>
-                            </div>
-                        </div>
+    // Create accordion wrapper
+    container.innerHTML = `
+        <section class="staking-area">
+            <div id="contracts-accordion" class="container accordion">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-10">
                     </div>
                 </div>
             </div>
-            <div class="card mb-4" data-contract-index="${index}">
-                <div class="card-body">
-                    <h4 class="card-title">Rewards Information</h4>
-                    <div class="row">
-                        <div class="col-12 col-md-4 single-item">
-                            <span id="rewards-left-${index}"></span>
-                            <span>Rewards Left (${contract.config.rewardUnit})</span>
-                        </div>
-                        <div class="col-12 col-md-4 single-item">
-                            <span id="daily-rewards-${index}"></span>
-                            <span>Daily Rewards (${contract.config.rewardUnit})</span>
-                        </div>
-                        <div class="col-12 col-md-4 single-item">
-                            <span id="days-left-${index}"></span>
-                            <span>Days of Rewards Left</span>
+        </section>
+    `;
+
+    const accordionBody = container.querySelector('.col-12.col-md-10');
+    if (!accordionBody) {
+        console.error('Accordion body not found after initialization');
+        return;
+    }
+
+    contracts.forEach((contract, index) => {
+        const cardHtml = `
+            <div class="single-accordion-item">
+                <div class="card-header bg-inherit border-0 p-0">
+                    <h2 class="m-0">
+                        <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${index}">
+                            <div class="row">
+                                <div class="col-12 col-md-8">
+                                    <div class="media flex-column flex-md-row">
+                                        <img class="avatar-max-lg" src="assets/img/content/placeholder.png" alt="${contract.config.name} logo">
+                                        <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                            <h4 class="m-0">${contract.config.name} Rewards</h4>
+                                            <p>Manage rewards for ${contract.config.name}.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                <div class="col single-item">
+                                    <span id="rewards-left-${index}"></span>
+                                    <span>Rewards Left</span>
+                                </div>
+                                <div class="col single-item">
+                                    <span id="daily-rewards-${index}"></span>
+                                    <span>Daily Rewards</span>
+                                </div>
+                                <div class="col single-item">
+                                    <span id="days-left-${index}"></span>
+                                    <span>Days Left</span>
+                                </div>
+                            </div>
+                        </button>
+                    </h2>
+                </div>
+                <div id="collapse-${index}" class="collapse" data-bs-parent="#contracts-accordion">
+                    <div class="card-body">
+                        <div class="row">
+                            ${
+                                userAddress === adminWallet
+                                    ? `
+                                        <div class="col-12 col-md-4 single-staking-item input-box">
+                                            <span class="item-title mb-2">Deposit Rewards</span>
+                                            <span id="available-tokens-admin-${index}"></span> ${contract.config.rewardUnit} available
+                                            <div class="input-area d-flex flex-column">
+                                                <div class="input-text">
+                                                    <input type="text" placeholder="0" id="deposit-amount-${index}">
+                                                </div>
+                                                <button class="btn input-btn mt-2 deposit-button" data-contract-index="${index}">Deposit Rewards</button>
+                                            </div>
+                                        </div>
+                                    `
+                                    : ''
+                            }
                         </div>
                     </div>
                 </div>
             </div>
         `;
-        container.insertAdjacentHTML('beforeend', cardHtml);
+        accordionBody.insertAdjacentHTML('beforeend', cardHtml);
     });
 
     // Add event listeners for deposit buttons
@@ -398,10 +432,15 @@ async function updateContractUI(contractIndex) {
         await delay(500);
 
         // Fetch available tokens
-        await executeWithRetry(async () => {
-            const balanceRaw = await contract.tokenContract.methods.balanceOf(userAddress).call();
-            document.getElementById(`available-tokens-admin-${contractIndex}`).innerText = formatNumber(Number(balanceRaw) / 10 ** decimals);
-        }, `available-tokens-${contractIndex}`);
+        const availableTokensElement = document.getElementById(`available-tokens-admin-${contractIndex}`);
+        if (availableTokensElement) {
+            await executeWithRetry(async () => {
+                const balanceRaw = await contract.tokenContract.methods.balanceOf(userAddress).call();
+                availableTokensElement.innerText = formatNumber(Number(balanceRaw) / 10 ** decimals);
+            }, `available-tokens-${contractIndex}`);
+        } else if (userAddress === adminWallet) {
+            console.warn(`Element available-tokens-admin-${contractIndex} not found`);
+        }
         await delay(500);
 
         // Fetch contract balance
@@ -434,7 +473,13 @@ async function updateContractUI(contractIndex) {
             rewardsLeft = contractBalance - totalUnclaimed;
         }
         rewardsLeft = Math.max(rewardsLeft, 0);
-        document.getElementById(`rewards-left-${contractIndex}`).innerText = formatNumber(rewardsLeft);
+
+        const rewardsLeftElement = document.getElementById(`rewards-left-${contractIndex}`);
+        if (rewardsLeftElement) {
+            rewardsLeftElement.innerText = formatNumber(rewardsLeft);
+        } else {
+            console.warn(`Element rewards-left-${contractIndex} not found`);
+        }
 
         // Fetch daily rewards
         const dailyRewardsRaw = await executeWithRetry(
@@ -442,12 +487,23 @@ async function updateContractUI(contractIndex) {
             `daily-rewards-${contractIndex}`
         );
         const dailyRewards = Number(dailyRewardsRaw) / 10 ** decimals;
-        document.getElementById(`daily-rewards-${contractIndex}`).innerText = formatNumber(dailyRewards);
         await delay(500);
+
+        const dailyRewardsElement = document.getElementById(`daily-rewards-${contractIndex}`);
+        if (dailyRewardsElement) {
+            dailyRewardsElement.innerText = formatNumber(dailyRewards);
+        } else {
+            console.warn(`Element daily-rewards-${contractIndex} not found`);
+        }
 
         // Calculate days left
         const daysLeft = dailyRewards > 0 ? (rewardsLeft / dailyRewards).toFixed(2) : '0.00';
-        document.getElementById(`days-left-${contractIndex}`).innerText = daysLeft;
+        const daysLeftElement = document.getElementById(`days-left-${contractIndex}`);
+        if (daysLeftElement) {
+            daysLeftElement.innerText = daysLeft;
+        } else {
+            console.warn(`Element days-left-${contractIndex} not found`);
+        }
     } catch (error) {
         console.error(`Error updating UI for contract ${contract.config.name}:`, error);
     }
