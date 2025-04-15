@@ -271,19 +271,21 @@ async function connectWallet() {
 }
 
 // Initialize TronWeb and contracts
+// Initialize TronWeb and contracts
 async function initializeTronWeb() {
     tronWeb = window.tronWeb;
     userAddress = tronWeb.defaultAddress.base58;
     document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
 
-    // Initialize contracts
-    contracts = await Promise.all(stakingConfigs.map(async config => {
+    // Initialize contracts sequentially with a 1-second delay
+    contracts = [];
+    for (const config of stakingConfigs) {
         const stakingContract = await tronWeb.contract(config.stakingContractAbi, config.stakingContractAddress);
         const tokenContract = await tronWeb.contract(config.tokenContractAbi, config.tokenContractAddress);
-        return { config, stakingContract, tokenContract };
-    }));
+        contracts.push({ config, stakingContract, tokenContract });
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
+    }
 
-    // Check if the connected wallet is the admin wallet
     if (userAddress === adminWallet) {
         document.getElementById('admin-panel').style.display = 'block';
         document.getElementById('access-denied').style.display = 'none';
@@ -293,6 +295,16 @@ async function initializeTronWeb() {
     } else {
         document.getElementById('admin-panel').style.display = 'none';
         document.getElementById('access-denied').style.display = 'block';
+    }
+}
+
+// Update Admin UI for all contracts sequentially
+async function updateAdminUI() {
+    for (let index = 0; index < contracts.length; index++) {
+        await updateContractUI(index);
+        if (index < contracts.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
+        }
     }
 }
 
