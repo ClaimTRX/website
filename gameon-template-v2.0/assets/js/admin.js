@@ -184,7 +184,7 @@ const stakingConfigs = [
         stakingContractAbi: cftStakingContractAbi,
         tokenContractAbi: tokenContractAbi,
         rewardUnit: 'CFT',
-        isSameToken: true // Staking and reward tokens are the same
+        isSameToken: true
     },
     {
         name: 'Turu/Turu Staking',
@@ -193,7 +193,7 @@ const stakingConfigs = [
         stakingContractAbi: cftStakingContractAbi,
         tokenContractAbi: tokenContractAbi,
         rewardUnit: 'TURU',
-        isSameToken: true // Staking and reward tokens are the same
+        isSameToken: true
     },
     {
         name: 'TuruCFT',
@@ -202,7 +202,7 @@ const stakingConfigs = [
         stakingContractAbi: cftStakingContractAbi,
         tokenContractAbi: tokenContractAbi,
         rewardUnit: 'CFT',
-        isSameToken: false // Staking and reward tokens are different
+        isSameToken: false
     },
     {
         name: 'KING',
@@ -211,36 +211,35 @@ const stakingConfigs = [
         stakingContractAbi: cftStakingContractAbi,
         tokenContractAbi: tokenContractAbi,
         rewardUnit: 'CFT',
-        isSameToken: false // Staking and reward tokens are different
+        isSameToken: false
     },
-{
+    {
         name: 'FYM',
         tokenContractAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
         stakingContractAddress: 'TP4HhAWv2WbSMCH2CRhdSsiwBP6JzViouq',
         stakingContractAbi: cftStakingContractAbi,
         tokenContractAbi: tokenContractAbi,
         rewardUnit: 'CFT',
-        isSameToken: false // Staking and reward tokens are different
+        isSameToken: false
     },
-{
+    {
         name: 'StableX/Stablex',
         tokenContractAddress: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
         stakingContractAddress: 'TRVn2h65VrbGb7zkASz3escJiHJWMSy7pV',
         stakingContractAbi: cftStakingContractAbi,
         tokenContractAbi: tokenContractAbi,
         rewardUnit: 'StableX',
-        isSameToken: true // Staking and reward tokens are different
+        isSameToken: true
     },
-{
+    {
         name: 'StableX/CFT',
         tokenContractAddress: 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA',
         stakingContractAddress: 'TUvHH8QtyXvMubLJRgKBdwfG7Y2TRLGSE6',
         stakingContractAbi: cftStakingContractAbi,
         tokenContractAbi: tokenContractAbi,
         rewardUnit: 'CFT',
-        isSameToken: false // Staking and reward tokens are different
+        isSameToken: false
     }
-    // Add more configurations as needed
 ];
 
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
@@ -271,19 +270,25 @@ async function connectWallet() {
 }
 
 // Initialize TronWeb and contracts
-// Initialize TronWeb and contracts
 async function initializeTronWeb() {
     tronWeb = window.tronWeb;
     userAddress = tronWeb.defaultAddress.base58;
     document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
 
-    // Initialize contracts sequentially with a 1-second delay
+    // Initialize contracts and load data sequentially
     contracts = [];
     for (const config of stakingConfigs) {
-        const stakingContract = await tronWeb.contract(config.stakingContractAbi, config.stakingContractAddress);
-        const tokenContract = await tronWeb.contract(config.tokenContractAbi, config.tokenContractAddress);
-        contracts.push({ config, stakingContract, tokenContract });
-        await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
+        try {
+            const stakingContract = await tronWeb.contract(config.stakingContractAbi, config.stakingContractAddress);
+            const tokenContract = await tronWeb.contract(config.tokenContractAbi, config.tokenContractAddress);
+            contracts.push({ config, stakingContract, tokenContract });
+            if (userAddress === adminWallet) {
+                await updateContractUI(contracts.length - 1);
+            }
+            await delay(500); // 500ms delay before next contract
+        } catch (error) {
+            console.error(`Error initializing contract ${config.name}:`, error);
+        }
     }
 
     if (userAddress === adminWallet) {
@@ -291,20 +296,9 @@ async function initializeTronWeb() {
         document.getElementById('access-denied').style.display = 'none';
         await renderContracts();
         setInterval(() => updateAdminUI(), 60000);
-        await updateAdminUI();
     } else {
         document.getElementById('admin-panel').style.display = 'none';
         document.getElementById('access-denied').style.display = 'block';
-    }
-}
-
-// Update Admin UI for all contracts sequentially
-async function updateAdminUI() {
-    for (let index = 0; index < contracts.length; index++) {
-        await updateContractUI(index);
-        if (index < contracts.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
-        }
     }
 }
 
@@ -365,65 +359,98 @@ async function renderContracts() {
 
 // Update Admin UI for all contracts
 async function updateAdminUI() {
-    await Promise.all(contracts.map((contract, index) => updateContractUI(index)));
+    for (let index = 0; index < contracts.length; index++) {
+        await updateContractUI(index);
+        if (index < contracts.length - 1) {
+            await delay(500); // 500ms delay before next contract
+        }
+    }
 }
 
 // Update UI for a single contract
 async function updateContractUI(contractIndex) {
     const contract = contracts[contractIndex];
-    await updateAvailableTokens(contractIndex);
-    await delay(400);
-    await updateRewardsInfo(contractIndex);
-}
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 seconds for retries on 403 errors
 
-// Utility delay function
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-// UI update functions
-async function updateAvailableTokens(contractIndex) {
-    const contract = contracts[contractIndex];
-    const balanceRaw = await contract.tokenContract.methods.balanceOf(userAddress).call();
-    const decimals = await contract.tokenContract.methods.decimals().call();
-    document.getElementById(`available-tokens-admin-${contractIndex}`).innerText = formatNumber(Number(balanceRaw) / 10 ** decimals);
-}
-
-async function updateRewardsInfo(contractIndex) {
-    const contract = contracts[contractIndex];
-    const decimals = await contract.tokenContract.methods.decimals().call();
-
-    // Get total reward tokens in the contract (contract's balance of reward token)
-    const contractBalanceRaw = await contract.tokenContract.methods.balanceOf(contract.config.stakingContractAddress).call();
-    const contractBalance = Number(contractBalanceRaw) / 10 ** decimals;
-
-    // Get total unclaimed rewards
-    const totalUnclaimedRaw = await contract.stakingContract.methods.viewTotalUnclaimedRewards().call();
-    const totalUnclaimed = Number(totalUnclaimedRaw) / 10 ** decimals;
-
-    let rewardsLeft;
-    if (contract.config.isSameToken) {
-        // For contracts where staking and reward tokens are the same (e.g., CFT/CFT, Turu/Turu)
-        const totalStakedRaw = await contract.stakingContract.methods.viewTotalStaked().call();
-        const totalStaked = Number(totalStakedRaw) / 10 ** decimals;
-        rewardsLeft = contractBalance - totalStaked - totalUnclaimed;
-    } else {
-        // For contracts where staking and reward tokens are different
-        rewardsLeft = contractBalance - totalUnclaimed;
+    // Helper function to execute a contract call with retries
+    async function executeWithRetry(fn, operationName, retries = maxRetries) {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                return await fn();
+            } catch (error) {
+                if (error.message.includes('403') && attempt < retries) {
+                    console.warn(`403 error on ${operationName}, attempt ${attempt}/${retries}. Retrying after ${retryDelay}ms...`);
+                    await delay(retryDelay);
+                    continue;
+                }
+                throw error; // Rethrow if max retries reached or non-403 error
+            }
+        }
     }
 
-    // Ensure rewardsLeft is not negative
-    rewardsLeft = Math.max(rewardsLeft, 0);
-    document.getElementById(`rewards-left-${index}`).innerText = formatNumber(rewardsLeft);
+    try {
+        // Fetch decimals first (reused for all calculations)
+        const decimals = await executeWithRetry(
+            () => contract.tokenContract.methods.decimals().call(),
+            `decimals-${contractIndex}`
+        );
+        await delay(500);
 
-    // Get current daily rewards
-    const dailyRewardsRaw = await contract.stakingContract.methods.viewDailyReward().call();
-    const dailyRewards = Number(dailyRewardsRaw) / 10 ** decimals;
-    document.getElementById(`daily-rewards-${index}`).innerText = formatNumber(dailyRewards);
+        // Fetch available tokens
+        await executeWithRetry(async () => {
+            const balanceRaw = await contract.tokenContract.methods.balanceOf(userAddress).call();
+            document.getElementById(`available-tokens-admin-${contractIndex}`).innerText = formatNumber(Number(balanceRaw) / 10 ** decimals);
+        }, `available-tokens-${contractIndex}`);
+        await delay(500);
 
-    // Calculate days of rewards left
-    const daysLeft = dailyRewards > 0 ? (rewardsLeft / dailyRewards).toFixed(2) : '0.00';
-    document.getElementById(`days-left-${index}`).innerText = daysLeft;
+        // Fetch contract balance
+        const contractBalanceRaw = await executeWithRetry(
+            () => contract.tokenContract.methods.balanceOf(contract.config.stakingContractAddress).call(),
+            `contract-balance-${contractIndex}`
+        );
+        const contractBalance = Number(contractBalanceRaw) / 10 ** decimals;
+        await delay(500);
+
+        // Fetch total unclaimed rewards
+        const totalUnclaimedRaw = await executeWithRetry(
+            () => contract.stakingContract.methods.viewTotalUnclaimedRewards().call(),
+            `total-unclaimed-${contractIndex}`
+        );
+        const totalUnclaimed = Number(totalUnclaimedRaw) / 10 ** decimals;
+        await delay(500);
+
+        // Calculate rewards left
+        let rewardsLeft;
+        if (contract.config.isSameToken) {
+            const totalStakedRaw = await executeWithRetry(
+                () => contract.stakingContract.methods.viewTotalStaked().call(),
+                `total-staked-${contractIndex}`
+            );
+            const totalStaked = Number(totalStakedRaw) / 10 ** decimals;
+            rewardsLeft = contractBalance - totalStaked - totalUnclaimed;
+            await delay(500);
+        } else {
+            rewardsLeft = contractBalance - totalUnclaimed;
+        }
+        rewardsLeft = Math.max(rewardsLeft, 0);
+        document.getElementById(`rewards-left-${contractIndex}`).innerText = formatNumber(rewardsLeft);
+
+        // Fetch daily rewards
+        const dailyRewardsRaw = await executeWithRetry(
+            () => contract.stakingContract.methods.viewDailyReward().call(),
+            `daily-rewards-${contractIndex}`
+        );
+        const dailyRewards = Number(dailyRewardsRaw) / 10 ** decimals;
+        document.getElementById(`daily-rewards-${contractIndex}`).innerText = formatNumber(dailyRewards);
+        await delay(500);
+
+        // Calculate days left
+        const daysLeft = dailyRewards > 0 ? (rewardsLeft / dailyRewards).toFixed(2) : '0.00';
+        document.getElementById(`days-left-${contractIndex}`).innerText = daysLeft;
+    } catch (error) {
+        console.error(`Error updating UI for contract ${contract.config.name}:`, error);
+    }
 }
 
 // Deposit rewards for a specific contract
@@ -448,6 +475,10 @@ async function depositRewards(contractIndex) {
 // Utility functions
 function formatNumber(num) {
     return parseFloat(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // Initialize on page load
