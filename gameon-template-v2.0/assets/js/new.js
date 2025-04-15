@@ -17,7 +17,7 @@ const tokenDetails = {
         decimals: 6,
         price: 0.27,
         displayName: 'CFT' // ← Added missing comma here
-    }
+    },
     cftnew: {
         tokenAddress: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
         stakingAddress: 'TABSRFLk6FF1FKPtTLy4zJpJqaiZQzwgQt',
