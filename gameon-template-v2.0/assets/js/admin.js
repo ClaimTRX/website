@@ -244,7 +244,10 @@ const stakingConfigs = [
 ];
 
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
-const adminWallet = 'THNiVH2i5gqgTXR3PMYFaMKdygiXrzJPrk', 'TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA';
+const adminWallets = [
+    'THNiVH2i5gqgTXR3PMYFaMKdygiXrzJPrk',
+    'TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA'
+];
 let tronWeb, userAddress;
 let contracts = [];
 
@@ -289,7 +292,7 @@ async function initializeTronWeb() {
         }
     }
 
-    if (userAddress === adminWallet) {
+    if (userAddress === adminWallets) {
         document.getElementById('admin-panel').style.display = 'block';
         document.getElementById('access-denied').style.display = 'none';
         // Render contracts before updating UI
