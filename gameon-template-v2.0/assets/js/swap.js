@@ -5,7 +5,7 @@ const STBLX_SWAP_CONTRACT = 'TUGprGUNtszQgc3pGwMcC9R3z3sDT31G9W'; // StableX swa
 
 const TOKENS = {
     TRX: 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR', // Maps to WTRX address for pool interactions
-    CFT: 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA',
+    CFT: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
     STBLX: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS', // StableX token
     BBT: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
     KING: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
@@ -47,8 +47,8 @@ const DECIMALS = {
 
 const POOLS = {
     'WTRX-KING': { addr: 'TQ2HCSvpir3ELSJg3J2wKG6TskePh74rz8', token0: 'KING', token1: 'WTRX' },
-    'CFT-KING': { addr: 'TRRevVDqvM31DdUQb73qViCEcDyCffYJTA', token0: 'CFT', token1: 'KING' },
-    'CFT-BBT': { addr: 'TLWPwGteW4gZ1AU5CWCPYmfLdEm8yqduNb', token0: 'CFT', token1: 'BBT' },
+    'CFT-KING':  { addr: 'TXm1bnUSVSZWE5PpYzzyiZAoQVpFDbNq38', token0: 'CFT', token1: 'KING' },
+    'CFT-BBT':   { addr: 'TANnrhzkhjGtgAmD1GQ91rgrmRwKu7sedj', token0: 'BBT', token1: 'CFT' },
     'WTRX-BBT': { addr: 'TTJ9VB8kUptB1bztysnQZtcqaR5cYCbzAW', token0: 'BBT', token1: 'WTRX' },
     'WTRX-USDT': { addr: 'TFGDbUyP8xez44C76fin3bn3Ss6jugoUwJ', token0: 'WTRX', token1: 'USDT' },
     'PROS-WTRX': { addr: 'TVcaFufasLEzZ8hyyRwtz5aK8ae5E76rGi', token0: 'PROS', token1: 'WTRX' },
@@ -64,7 +64,7 @@ const POOLS = {
     'WIN-PROS': { addr: 'TAeSpozQr3JyuYnuQmDB75GPvDzvXXe7LR', token0: 'PROS', token1: 'WIN' },
     'WIN-WTRX': { addr: 'TDq9PCXQM5RfpN14T8sc6ePYJRFecPJCut', token0: 'WIN', token1: 'WTRX' },
     'TWX-WTRX': { addr: 'TGfr9GrRLadatJj1d69D6B7JH6RFEvmvsh', token0: 'WTRX', token1: 'TWX' },
-    'TWX-CFT': { addr: 'TE5X2A4rhXyoSheojRGiqow5qjapSQdrPY', token0: 'CFT', token1: 'TWX' },
+    'TWX-CFT':   { addr: 'TMXAuCPyfMgbvaA6LM4rhSqVs9QinuuCLM', token0: 'CFT', token1: 'TWX' },
     'ARB-WTRX': { addr: 'TXHmQG2XQNvn6uFyJJBSxhKFVZFESbJYAb', token0: 'ARB', token1: 'WTRX' },
     'ARB-TWX': { addr: 'TSMLAjkrUYmyYeBFoWiSsMp2YMdm9MYGqb', token0: 'ARB', token1: 'TWX' },
     'ARB-KING': { addr: 'TN6CLkCjBmURXg4Q39VjrTZooxcCMj7f5N', token0: 'KING', token1: 'ARB' },
@@ -72,10 +72,10 @@ const POOLS = {
     'JST-WTRX': { addr: 'TUDo1PuMG6j4aDSg6rsCNiz5gR5cnQaNTT', token0: 'JST', token1: 'WTRX' },
     'JST-USDT': { addr: 'TW68dBGdy9gtk16BfzmvaCZ9pEti3KFkk2', token0: 'JST', token1: 'USDT' },
     'JST-PROS': { addr: 'TEFiG7LFnAMedthyUXTMDZz777Cmj3Mnpe', token0: 'JST', token1: 'PROS' },
-    'ARB-CFT': { addr: 'TXw4Yj38EXzmk6MDxMSDyKnauS89Bpcv1P', token0: 'CFT', token1: 'ARB' },
+    'ARB-CFT':   { addr: 'TX1mkS1kKNJMcPb4cnGgoxweogSVFeDjq2', token0: 'CFT', token1: 'ARB' },
     'ARB-TEM': { addr: 'TSwf1LFcwCax2ArKvQfv3uXXCNdPgb8b4N', token0: 'TEM', token1: 'ARB' },
     'WTRX-TEM': { addr: 'TEJAugHke9ahqaDPBoz4ZRQPz5qpu8cDua', token0: 'TEM', token1: 'WTRX' },
-    'CFT-TEM': { addr: 'TKNxcR2i2G191XEJpC3PpFTm9TvMvbww3R', token0: 'CFT', token1: 'TEM' },
+    'CFT-TEM':   { addr: 'TKbaPV5pAK5xuUdkxeut8EK6EuWqpLJdog', token0: 'TEM', token1: 'CFT' },
     'WTRX-TUSD': { addr: 'TMr7LizLihDymctG2w2ezLxjZDrv9S53p6', token0: 'WTRX', token1: 'TUSD' },
     'USDT-TUSD': { addr: 'TR4fHizLc7xCy6v1UVdTqLxYzTW1QHCds6', token0: 'USDT', token1: 'TUSD' },
     'TUSD-PROS': { addr: 'TBdUFz5UkMTxkd78fyudovYkpMT47hriqb', token0: 'PROS', token1: 'TUSD' },
