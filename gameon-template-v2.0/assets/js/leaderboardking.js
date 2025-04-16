@@ -797,7 +797,7 @@ const stakingContractAbi = [
 // Store wallet names (custom names for known addresses)
 const walletNames = {
     "TQLrSGjNtYwtUdttbm4HsXxD6vmbePWni4": "TheKingdom",
-    "TL71zkkpC59dKmj8CeVf3woiXJuTNGBUfw": "Sander",
+    
     
 };
 
