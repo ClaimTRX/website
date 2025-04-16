@@ -522,8 +522,8 @@ const tokenContractAbi = [
 ];
 
 
-const tokenContractAddress = 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA';
-const marketplaceContractAddress = 'TDPhA67FVXXRUrynefW4aUg9rNypoAU3Tu';
+const tokenContractAddress = 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK';
+const marketplaceContractAddress = 'TQt7KfGA331s64EqaHUzyKMo187MfNqRGj';
 
 
 
