@@ -531,7 +531,8 @@ async function updateUI() {
         document.getElementById('available-cft-v2').innerText = `${formatNumber(cftV2Balance, 0)}`;
         document.getElementById('collected-cft-v1').innerText = `${formatNumber(cftV1Balance, 0)}`;
         document.getElementById('swap-progress').innerText = `${swappedPercentage.toFixed(2)}%`;
-        document.getElementById('user-cft-v1-balance').innerText = `${formatNumber(userCFTV1Balance, 0)}`;
+        // Modified to show 6 decimal places for user CFT V1 balance
+        document.getElementById('user-cft-v1-balance').innerText = `${formatNumber(userCFTV1Balance, 6)}`;
     } catch (error) {
         console.error("Error updating UI:", error);
     }
