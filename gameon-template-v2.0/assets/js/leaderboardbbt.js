@@ -9,7 +9,7 @@ const tokenDetails = {
   cft: {
         tokenAddress: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
         stakingAddress: 'TXgt8nXRDTbYxbhDbkZyqs9cgjoBikQa72',
-        decimals: 6,
+        decimals: 8,
     }
 };
 
