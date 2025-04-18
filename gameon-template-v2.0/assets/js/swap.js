@@ -267,12 +267,12 @@ const STBLX_SWAP_ABI = [
 let tronWeb;
 let userAddress;
 let isWalletConnected = false;
+let lastInputField = 'from'; // Track which field was last edited ('from' or 'to')
 
 // Function to format numbers with dynamic decimals
 function formatNumber(num, decimals = 2) {
     const numValue = Number(num);
     if (isNaN(numValue)) return '0.00';
-    // Dynamically increase decimals for very small numbers
     const effectiveDecimals = numValue !== 0 && Math.abs(numValue) < 0.01 ? Math.max(decimals, 6) : decimals;
     return numValue.toFixed(effectiveDecimals).replace(/\d(?=(\d{3})+\.)/g, '$&,');
 }
@@ -386,12 +386,19 @@ async function fetchReserves(poolAddress) {
     }
 }
 
-// Calculate output amount
+// Calculate output amount (amountOut given amountIn)
 function getAmountOut(amountIn, reserveIn, reserveOut) {
     const amountInWithFee = amountIn * BigInt(997);
     const numerator = amountInWithFee * reserveOut;
     const denominator = (reserveIn * BigInt(1000)) + amountInWithFee;
     return numerator / denominator;
+}
+
+// Calculate input amount (amountIn given amountOut)
+function getAmountIn(amountOut, reserveIn, reserveOut) {
+    const numerator = reserveIn * amountOut * BigInt(1000);
+    const denominator = (reserveOut - amountOut) * BigInt(997);
+    return (numerator / denominator) + BigInt(1); // Add 1 to account for rounding
 }
 
 // Check token allowance
@@ -482,9 +489,46 @@ async function updateBalances() {
     document.getElementById('to-balance').textContent = `Balance: ${formattedBalanceTo} ${tokenTo}`;
 }
 
-// Update expected output and rate
+// Set max amount for "From" field
+async function setMaxAmount() {
+    if (!isWalletConnected) {
+        alert('Please connect your wallet first.');
+        return;
+    }
+
+    const tokenFrom = document.getElementById('from-token').value;
+    let balanceRaw;
+
+    if (tokenFrom === 'TRX') {
+        try {
+            balanceRaw = await tronWeb.trx.getBalance(userAddress);
+        } catch (error) {
+            console.error(`Error fetching TRX balance:`, error);
+            document.getElementById('status-msg').textContent = 'Failed to fetch balance.';
+            return;
+        }
+    } else {
+        const fromAddress = TOKENS[tokenFrom];
+        try {
+            const fromContract = await tronWeb.contract(ERC20_ABI, fromAddress);
+            balanceRaw = await fromContract.balanceOf(userAddress).call();
+        } catch (error) {
+            console.error(`Error fetching balance for ${tokenFrom}:`, error);
+            document.getElementById('status-msg').textContent = 'Failed to fetch balance.';
+            return;
+        }
+    }
+
+    const balance = Number(balanceRaw) / 10 ** DECIMALS[tokenFrom];
+    document.getElementById('from-amount').value = formatNumber(balance, DECIMALS[tokenFrom]);
+    lastInputField = 'from';
+    await updateExpectedOutput();
+}
+
+// Update expected output based on input field
 async function updateExpectedOutput() {
     if (!isWalletConnected) {
+        document.getElementById('from-amount').value = '';
         document.getElementById('to-amount').value = '';
         document.getElementById('rate-info').textContent = 'Rate: --';
         document.getElementById('impact-info').textContent = 'Price Impact: --';
@@ -494,17 +538,14 @@ async function updateExpectedOutput() {
     const tokenFrom = document.getElementById('from-token').value;
     const tokenTo = document.getElementById('to-token').value;
     let amountIn = document.getElementById('from-amount').value;
+    let amountOut = document.getElementById('to-amount').value;
 
-    if (!tokenFrom || !tokenTo || !amountIn) {
-        document.getElementById('to-amount').value = '';
-        document.getElementById('rate-info').textContent = 'Rate: --';
-        document.getElementById('impact-info').textContent = 'Price Impact: --';
-        return;
-    }
+    // Remove commas for parsing
+    amountIn = amountIn ? parseFloat(amountIn.replace(/,/g, '')) : 0;
+    amountOut = amountOut ? parseFloat(amountOut.replace(/,/g, '')) : 0;
 
-    amountIn = parseFloat(amountIn.replace(/,/g, ''));
-
-    if (isNaN(amountIn) || amountIn <= 0) {
+    if ((!amountIn && !amountOut) || (amountIn <= 0 && amountOut <= 0)) {
+        document.getElementById('from-amount').value = '';
         document.getElementById('to-amount').value = '';
         document.getElementById('rate-info').textContent = 'Rate: --';
         document.getElementById('impact-info').textContent = 'Price Impact: --';
@@ -513,13 +554,19 @@ async function updateExpectedOutput() {
 
     // Special case for STBLX swaps
     if (tokenTo === 'STBLX' && (tokenFrom === 'USDT' || tokenFrom === 'USDD')) {
-        const amountOut = amountIn; // 1:1 ratio
-        const formattedAmountOut = formatNumber(amountOut, DECIMALS[tokenTo]);
-        document.getElementById('to-amount').value = formattedAmountOut;
+        if (lastInputField === 'from') {
+            const formattedAmountOut = formatNumber(amountIn, DECIMALS[tokenTo]);
+            document.getElementById('to-amount').value = formattedAmountOut;
+            window.amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
+            window.expectedOutBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenTo]));
+        } else {
+            const formattedAmountIn = formatNumber(amountOut, DECIMALS[tokenFrom]);
+            document.getElementById('from-amount').value = formattedAmountIn;
+            window.amountInBigInt = BigInt(Math.floor(amountOut * 10 ** DECIMALS[tokenFrom]));
+            window.expectedOutBigInt = BigInt(Math.floor(amountOut * 10 ** DECIMALS[tokenTo]));
+        }
         document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = 1 STBLX`;
         document.getElementById('impact-info').textContent = 'Price Impact: 0%';
-        window.expectedOutBigInt = BigInt(Math.floor(amountOut * 10 ** DECIMALS[tokenTo]));
-        window.amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
         return;
     }
 
@@ -531,7 +578,7 @@ async function updateExpectedOutput() {
     const pool = POOLS[possibleKey1] || POOLS[possibleKey2];
 
     if (!pool) {
-        document.getElementById('to-amount').value = 'No direct pool';
+        document.getElementById(lastInputField === 'from' ? 'to-amount' : 'from-amount').value = 'No direct pool';
         document.getElementById('rate-info').textContent = 'Rate: --';
         document.getElementById('impact-info').textContent = 'Price Impact: --';
         return;
@@ -540,7 +587,7 @@ async function updateExpectedOutput() {
     try {
         const reserves = await fetchReserves(pool.addr);
         if (reserves.reserve0 === 0n || reserves.reserve1 === 0n) {
-            document.getElementById('to-amount').value = 'Pool empty';
+            document.getElementById(lastInputField === 'from' ? 'to-amount' : 'from-amount').value = 'Pool empty';
             document.getElementById('rate-info').textContent = 'Rate: --';
             document.getElementById('impact-info').textContent = 'Price Impact: --';
             return;
@@ -553,21 +600,34 @@ async function updateExpectedOutput() {
         const reserveIn = isToken0From ? reserves.reserve0 : reserves.reserve1;
         const reserveOut = isToken0From ? reserves.reserve1 : reserves.reserve0;
 
-        const amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
-        const amountOutBigInt = getAmountOut(amountInBigInt, reserveIn, reserveOut);
-        const amountOut = Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo];
+        let amountInBigInt, amountOutBigInt, formattedAmount;
 
-        const formattedAmountOut = formatNumber(amountOut, DECIMALS[tokenTo]);
-        document.getElementById('to-amount').value = formattedAmountOut;
+        if (lastInputField === 'from') {
+            amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
+            amountOutBigInt = getAmountOut(amountInBigInt, reserveIn, reserveOut);
+            const amountOutCalc = Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo];
+            formattedAmount = formatNumber(amountOutCalc, DECIMALS[tokenTo]);
+            document.getElementById('to-amount').value = formattedAmount;
+            window.amountInBigInt = amountInBigInt;
+            window.expectedOutBigInt = amountOutBigInt;
+        } else {
+            amountOutBigInt = BigInt(Math.floor(amountOut * 10 ** DECIMALS[tokenTo]));
+            amountInBigInt = getAmountIn(amountOutBigInt, reserveIn, reserveOut);
+            const amountInCalc = Number(amountInBigInt) / 10 ** DECIMALS[tokenFrom];
+            formattedAmount = formatNumber(amountInCalc, DECIMALS[tokenFrom]);
+            document.getElementById('from-amount').value = formattedAmount;
+            window.amountInBigInt = amountInBigInt;
+            window.expectedOutBigInt = amountOutBigInt;
+        }
 
-        const rate = amountOut / amountIn;
+        const rate = (Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo]) / (Number(amountInBigInt) / 10 ** DECIMALS[tokenFrom]);
         const rateDecimals = Math.max(DECIMALS[tokenTo], DECIMALS[tokenFrom], 4);
         const formattedRate = formatNumber(rate, rateDecimals);
         const displayFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
         const displayTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
         document.getElementById('rate-info').textContent = `Rate: 1 ${displayFrom} = ${formattedRate} ${displayTo}`;
 
-        // Calculate price impact using BigNumber
+        // Calculate price impact
         const BN = BigNumber;
         const reserveInBN = BN(reserveIn.toString());
         const reserveOutBN = BN(reserveOut.toString());
@@ -584,11 +644,9 @@ async function updateExpectedOutput() {
         }
         document.getElementById('impact-info').textContent = priceImpactText;
 
-        window.expectedOutBigInt = amountOutBigInt;
-        window.amountInBigInt = amountInBigInt;
     } catch (error) {
         console.error('Error in updateExpectedOutput:', error);
-        document.getElementById('to-amount').value = 'Error';
+        document.getElementById(lastInputField === 'from' ? 'to-amount' : 'from-amount').value = 'Error';
         document.getElementById('rate-info').textContent = 'Rate: --';
         document.getElementById('impact-info').textContent = 'Price Impact: --';
     }
@@ -605,7 +663,7 @@ async function executeSwap() {
     const tokenTo = document.getElementById('to-token').value;
     const amountIn = document.getElementById('from-amount').value;
 
-    if (!amountIn || isNaN(amountIn) || parseFloat(amountIn) <= 0) {
+    if (!amountIn || isNaN(amountIn.replace(/,/g, '')) || parseFloat(amountIn.replace(/,/g, '')) <= 0) {
         document.getElementById('status-msg').textContent = 'Please enter a valid amount.';
         return;
     }
@@ -779,8 +837,20 @@ document.getElementById('from-amount').addEventListener('input', function () {
     if (isNaN(value) || value < 0) {
         this.value = '';
     }
+    lastInputField = 'from';
     updateExpectedOutput();
 });
+
+document.getElementById('to-amount').addEventListener('input', function () {
+    let value = this.value.replace(/,/g, '');
+    if (isNaN(value) || value < 0) {
+        this.value = '';
+    }
+    lastInputField = 'to';
+    updateExpectedOutput();
+});
+
+document.getElementById('max-button').addEventListener('click', setMaxAmount);
 
 document.getElementById('swap-button').addEventListener('click', executeSwap);
 document.getElementById('mirror-button').addEventListener('click', mirrorSwap);
