@@ -274,7 +274,19 @@ function formatNumber(num, decimals = 2) {
     const numValue = Number(num);
     if (isNaN(numValue)) return '0.00';
     const effectiveDecimals = numValue !== 0 && Math.abs(numValue) < 0.01 ? Math.max(decimals, 6) : decimals;
-    return numValue.toFixed(effectiveDecimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const fixedNum = numValue.toFixed(effectiveDecimals);
+    const [integerPart, decimalPart] = fixedNum.split('.');
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return decimalPart ? `${formattedInteger}.${decimalPart}` : formattedInteger;
+}
+
+// Parse input string to a number, handling commas as thousand separators
+function parseInput(value) {
+    if (!value) return 0;
+    // Remove commas and ensure only one decimal point
+    const cleanedValue = value.replace(/,/g, '');
+    const parsed = parseFloat(cleanedValue);
+    return isNaN(parsed) ? 0 : parsed;
 }
 
 // Connect to TronLink wallet
@@ -540,11 +552,11 @@ async function updateExpectedOutput() {
     let amountIn = document.getElementById('from-amount').value;
     let amountOut = document.getElementById('to-amount').value;
 
-    // Parse inputs, removing thousand separators and ensuring . as decimal
-    amountIn = amountIn ? parseFloat(amountIn.replace(/,/g, '')) : 0;
-    amountOut = amountOut ? parseFloat(amountOut.replace(/,/g, '')) : 0;
+    // Parse inputs
+    amountIn = parseInput(amountIn);
+    amountOut = parseInput(amountOut);
 
-    if (isNaN(amountIn) || isNaN(amountOut) || (amountIn <= 0 && amountOut <= 0)) {
+    if ((amountIn <= 0 && amountOut <= 0) || isNaN(amountIn) || isNaN(amountOut)) {
         document.getElementById('from-amount').value = '';
         document.getElementById('to-amount').value = '';
         document.getElementById('rate-info').textContent = 'Rate: --';
@@ -663,12 +675,12 @@ async function executeSwap() {
     const tokenTo = document.getElementById('to-token').value;
     const amountIn = document.getElementById('from-amount').value;
 
-    if (!amountIn || isNaN(amountIn.replace(/,/g, '')) || parseFloat(amountIn.replace(/,/g, '')) <= 0) {
+    const amountInFloat = parseInput(amountIn);
+    if (!amountIn || isNaN(amountInFloat) || amountInFloat <= 0) {
         document.getElementById('status-msg').textContent = 'Please enter a valid amount.';
         return;
     }
 
-    const amountInFloat = parseFloat(amountIn.replace(/,/g, ''));
     const amountInBigInt = window.amountInBigInt;
     const tokenAddressFrom = TOKENS[tokenFrom];
     const tokenAddressTo = TOKENS[tokenTo];
@@ -833,8 +845,8 @@ document.getElementById('to-token').addEventListener('change', async () => {
 });
 
 document.getElementById('from-amount').addEventListener('input', function () {
+    // Allow only numbers and a single decimal point
     let value = this.value.replace(/[^0-9.]/g, '');
-    // Ensure only one decimal point
     const parts = value.split('.');
     if (parts.length > 2) {
         value = parts[0] + '.' + parts.slice(1).join('');
@@ -845,17 +857,19 @@ document.getElementById('from-amount').addEventListener('input', function () {
 });
 
 document.getElementById('from-amount').addEventListener('blur', function () {
-    let value = this.value.replace(/,/g, '');
-    if (value && !isNaN(value) && parseFloat(value) > 0) {
-        this.value = formatNumber(parseFloat(value), DECIMALS[document.getElementById('from-token').value]);
+    const value = parseInput(this.value);
+    if (value > 0) {
+        this.value = formatNumber(value, DECIMALS[document.getElementById('from-token').value]);
+    } else {
+        this.value = '';
     }
     lastInputField = 'from';
     updateExpectedOutput();
 });
 
 document.getElementById('to-amount').addEventListener('input', function () {
+    // Allow only numbers and a single decimal point
     let value = this.value.replace(/[^0-9.]/g, '');
-    // Ensure only one decimal point
     const parts = value.split('.');
     if (parts.length > 2) {
         value = parts[0] + '.' + parts.slice(1).join('');
@@ -866,9 +880,11 @@ document.getElementById('to-amount').addEventListener('input', function () {
 });
 
 document.getElementById('to-amount').addEventListener('blur', function () {
-    let value = this.value.replace(/,/g, '');
-    if (value && !isNaN(value) && parseFloat(value) > 0) {
-        this.value = formatNumber(parseFloat(value), DECIMALS[document.getElementById('to-token').value]);
+    const value = parseInput(this.value);
+    if (value > 0) {
+        this.value = formatNumber(value, DECIMALS[document.getElementById('to-token').value]);
+    } else {
+        this.value = '';
     }
     lastInputField = 'to';
     updateExpectedOutput();
