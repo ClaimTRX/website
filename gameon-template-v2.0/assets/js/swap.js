@@ -269,12 +269,12 @@ let userAddress;
 let isWalletConnected = false;
 let lastInputField = 'from'; // Track which field was last edited ('from' or 'to')
 
-// Function to format numbers with dynamic decimals
+// Function to format numbers with . as decimal and , as thousand separator
 function formatNumber(num, decimals = 2) {
     const numValue = Number(num);
     if (isNaN(numValue)) return '0.00';
     const effectiveDecimals = numValue !== 0 && Math.abs(numValue) < 0.01 ? Math.max(decimals, 6) : decimals;
-    return numValue.toFixed(effectiveDecimals).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    return numValue.toFixed(effectiveDecimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 // Connect to TronLink wallet
@@ -540,11 +540,11 @@ async function updateExpectedOutput() {
     let amountIn = document.getElementById('from-amount').value;
     let amountOut = document.getElementById('to-amount').value;
 
-    // Remove commas for parsing
+    // Parse inputs, removing thousand separators and ensuring . as decimal
     amountIn = amountIn ? parseFloat(amountIn.replace(/,/g, '')) : 0;
     amountOut = amountOut ? parseFloat(amountOut.replace(/,/g, '')) : 0;
 
-    if ((!amountIn && !amountOut) || (amountIn <= 0 && amountOut <= 0)) {
+    if (isNaN(amountIn) || isNaN(amountOut) || (amountIn <= 0 && amountOut <= 0)) {
         document.getElementById('from-amount').value = '';
         document.getElementById('to-amount').value = '';
         document.getElementById('rate-info').textContent = 'Rate: --';
@@ -640,7 +640,7 @@ async function updateExpectedOutput() {
         } else {
             const fraction = amountOutBN.multipliedBy(reserveInBN).dividedBy(amountInBN.multipliedBy(reserveOutBN));
             const priceImpact = (1 - fraction.toNumber()) * 100;
-            priceImpactText = `Price Impact: ${priceImpact.toFixed(2)}%`;
+            priceImpactText = `Price Impact: ${formatNumber(priceImpact, 2)}%`;
         }
         document.getElementById('impact-info').textContent = priceImpactText;
 
@@ -833,18 +833,42 @@ document.getElementById('to-token').addEventListener('change', async () => {
 });
 
 document.getElementById('from-amount').addEventListener('input', function () {
+    let value = this.value.replace(/[^0-9.]/g, '');
+    // Ensure only one decimal point
+    const parts = value.split('.');
+    if (parts.length > 2) {
+        value = parts[0] + '.' + parts.slice(1).join('');
+    }
+    this.value = value;
+    lastInputField = 'from';
+    updateExpectedOutput();
+});
+
+document.getElementById('from-amount').addEventListener('blur', function () {
     let value = this.value.replace(/,/g, '');
-    if (isNaN(value) || value < 0) {
-        this.value = '';
+    if (value && !isNaN(value) && parseFloat(value) > 0) {
+        this.value = formatNumber(parseFloat(value), DECIMALS[document.getElementById('from-token').value]);
     }
     lastInputField = 'from';
     updateExpectedOutput();
 });
 
 document.getElementById('to-amount').addEventListener('input', function () {
+    let value = this.value.replace(/[^0-9.]/g, '');
+    // Ensure only one decimal point
+    const parts = value.split('.');
+    if (parts.length > 2) {
+        value = parts[0] + '.' + parts.slice(1).join('');
+    }
+    this.value = value;
+    lastInputField = 'to';
+    updateExpectedOutput();
+});
+
+document.getElementById('to-amount').addEventListener('blur', function () {
     let value = this.value.replace(/,/g, '');
-    if (isNaN(value) || value < 0) {
-        this.value = '';
+    if (value && !isNaN(value) && parseFloat(value) > 0) {
+        this.value = formatNumber(parseFloat(value), DECIMALS[document.getElementById('to-token').value]);
     }
     lastInputField = 'to';
     updateExpectedOutput();
