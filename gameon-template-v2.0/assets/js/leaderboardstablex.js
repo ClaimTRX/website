@@ -904,6 +904,11 @@ async function fetchAndDisplayStakers(token) {
         // Sort by staked amount (descending)
         stakerList.sort((a, b) => b.amount - a.amount);
 
+        // Fetch and display total staked amount
+        const totalStakedRaw = await stakingContracts[token].methods.viewTotalStaked().call();
+        const totalStaked = Number(totalStakedRaw) / Math.pow(10, decimals);
+        document.getElementById(`total-staked-${token}`).textContent = totalStaked.toLocaleString('en-US', { maximumFractionDigits: 0 });
+
         displayStakers(token);
     } catch (error) {
         console.error(`Error fetching stakers for ${token}:`, error);
