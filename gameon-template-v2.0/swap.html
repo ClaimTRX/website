@@ -17,7 +17,7 @@
     <!-- ***** All CSS Files ***** -->
     <link rel="stylesheet" href="assets/css/style.css">
 
-    <!-- Inline CSS for Black Text in Input Fields and Dropdowns -->
+    <!-- Inline CSS for Black Text in Input Fields, Dropdowns, and Max Button -->
     <style>
         /* Ensure input fields have black text */
         .staking-area .single-accordion-item #from-amount,
@@ -73,17 +73,28 @@
         /* Style for the max button */
         .max-button {
             margin-top: 10px;
+            text-align: left;
         }
         .max-button button {
             background: #007bff;
             color: white;
             border: none;
-            padding: 5px 10px;
+            padding: 8px 16px;
             border-radius: 5px;
             cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
         }
         .max-button button:hover {
             background: #0056b3;
+        }
+        /* Responsive adjustments */
+        @media (max-width: 767px) {
+            .max-button button {
+                width: 100%;
+                padding: 10px;
+                font-size: 1rem;
+            }
         }
     </style>
 </head>
@@ -265,9 +276,9 @@
                                         <div class="col-12 col-md-6">
                                             <label for="from-token">From</label>
                                             <select id="from-token" class="form-select"></select>
-                                            <div class="input-group mt-2">
-                                                <input type="number" id="from-amount" placeholder="0" class="form-control"><br>
-                                                <button id="max-button" class="btn btn-primary max-button">Max</button>
+                                            <input type="number" id="from-amount" placeholder="0" class="form-control mt-2">
+                                            <div class="max-button">
+                                                <button id="max-button">Max</button>
                                             </div>
                                             <p id="from-balance" class="mt-2">Balance: 0</p>
                                         </div>
