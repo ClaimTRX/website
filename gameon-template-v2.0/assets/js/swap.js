@@ -266,7 +266,7 @@ const STBLX_SWAP_ABI = [
 let tronWeb;
 let userAddress;
 let isWalletConnected = false;
-let isUpdating = false; // Flag to prevent recursive updates
+let isUpdating = false;
 
 // Function to format numbers with dynamic decimals
 function formatNumber(num, decimals = 2) {
@@ -274,6 +274,19 @@ function formatNumber(num, decimals = 2) {
     if (isNaN(numValue)) return '0.00';
     const effectiveDecimals = numValue !== 0 && Math.abs(numValue) < 0.01 ? Math.max(decimals, 6) : decimals;
     return numValue.toFixed(effectiveDecimals).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+}
+
+// Debounce function to limit input event frequency
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
 
 // Connect to TronLink wallet
@@ -380,6 +393,7 @@ async function fetchReserves(poolAddress) {
 
 // Calculate output amount
 function getAmountOut(amountIn, reserveIn, reserveOut) {
+    if (reserveIn === 0n || reserveOut === 0n) return 0n;
     const amountInWithFee = amountIn * BigInt(997);
     const numerator = amountInWithFee * reserveOut;
     const denominator = (reserveIn * BigInt(1000)) + amountInWithFee;
@@ -388,7 +402,7 @@ function getAmountOut(amountIn, reserveIn, reserveOut) {
 
 // Calculate input amount
 function getAmountIn(amountOut, reserveIn, reserveOut) {
-    if (amountOut >= reserveOut) return BigInt(0);
+    if (reserveIn === 0n || reserveOut === 0n || amountOut >= reserveOut) return 0n;
     const numerator = reserveIn * amountOut * BigInt(1000);
     const denominator = (reserveOut - amountOut) * BigInt(997);
     return (numerator / denominator) + BigInt(1);
@@ -445,7 +459,7 @@ async function updateBalances() {
         try {
             balanceFrom = BigInt(await tronWeb.trx.getBalance(userAddress));
         } catch (error) {
-            console.error(` Yay Error fetching TRX balance:`, error);
+            console.error(`Error fetching TRX balance:`, error);
         }
     } else {
         const fromAddress = TOKENS[tokenFrom];
@@ -499,8 +513,7 @@ async function updateFromAmount() {
         }
 
         amountIn = parseFloat(amountIn.replace(/,/g, ''));
-
-        if (isNaN(amountIn) || amountIn <= 0) {
+        if (isNaN(amountIn) || amountIn <= 0 || amountIn > Number.MAX_SAFE_INTEGER) {
             document.getElementById('to-amount').value = '';
             document.getElementById('rate-info').textContent = 'Rate: --';
             document.getElementById('impact-info').textContent = 'Price Impact: --';
@@ -555,6 +568,14 @@ async function updateFromAmount() {
         const amountOutBigInt = getAmountOut(amountInBigInt, reserveIn, reserveOut);
         const amountOut = Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo];
 
+        if (amountOutBigInt === 0n || isNaN(amountOut)) {
+            document.getElementById('to-amount').value = 'Insufficient liquidity';
+            document.getElementById('rate-info').textContent = 'Rate: --';
+            document.getElementById('impact-info').textContent = 'Price Impact: --';
+            isUpdating = false;
+            return;
+        }
+
         const formattedAmountOut = formatNumber(amountOut, DECIMALS[tokenTo]);
         document.getElementById('to-amount').value = formattedAmountOut;
 
@@ -576,7 +597,7 @@ async function updateFromAmount() {
             priceImpactText = 'Price Impact: 0%';
         } else {
             const fraction = amountOutBN.multipliedBy(reserveInBN).dividedBy(amountInBN.multipliedBy(reserveOutBN));
-            const priceImpact = (1 - fraction.toNumber()) * 100;
+            const priceImpact = Math.min((1 - fraction.toNumber()) * 100, 100);
             priceImpactText = `Price Impact: ${priceImpact.toFixed(2)}%`;
         }
         document.getElementById('impact-info').textContent = priceImpactText;
@@ -612,8 +633,7 @@ async function updateToAmount() {
         }
 
         amountOut = parseFloat(amountOut.replace(/,/g, ''));
-
-        if (isNaN(amountOut) || amountOut <= 0) {
+        if (isNaN(amountOut) || amountOut <= 0 || amountOut > Number.MAX_SAFE_INTEGER) {
             document.getElementById('from-amount').value = '';
             document.getElementById('rate-info').textContent = 'Rate: --';
             document.getElementById('impact-info').textContent = 'Price Impact: --';
@@ -668,6 +688,14 @@ async function updateToAmount() {
         const amountInBigInt = getAmountIn(amountOutBigInt, reserveIn, reserveOut);
         const amountIn = Number(amountInBigInt) / 10 ** DECIMALS[tokenFrom];
 
+        if (amountInBigInt === 0n || isNaN(amountIn)) {
+            document.getElementById('from-amount').value = 'Insufficient liquidity';
+            document.getElementById('rate-info').textContent = 'Rate: --';
+            document.getElementById('impact-info').textContent = 'Price Impact: --';
+            isUpdating = false;
+            return;
+        }
+
         const formattedAmountIn = formatNumber(amountIn, DECIMALS[tokenFrom]);
         document.getElementById('from-amount').value = formattedAmountIn;
 
@@ -689,7 +717,7 @@ async function updateToAmount() {
             priceImpactText = 'Price Impact: 0%';
         } else {
             const fraction = amountOutBN.multipliedBy(reserveInBN).dividedBy(amountInBN.multipliedBy(reserveOutBN));
-            const priceImpact = (1 - fraction.toNumber()) * 100;
+            const priceImpact = Math.min((1 - fraction.toNumber()) * 100, 100);
             priceImpactText = `Price Impact: ${priceImpact.toFixed(2)}%`;
         }
         document.getElementById('impact-info').textContent = priceImpactText;
@@ -882,21 +910,29 @@ document.getElementById('to-token').addEventListener('change', async () => {
     await updateBalances();
 });
 
-document.getElementById('from-amount').addEventListener('input', function () {
+document.getElementById('from-amount').addEventListener('input', debounce(function () {
     let value = this.value.replace(/,/g, '');
-    if (isNaN(value) || value < 0) {
+    if (isNaN(value) || value < 0 || value === '') {
         this.value = '';
+        document.getElementById('to-amount').value = '';
+        document.getElementById('rate-info').textContent = 'Rate: --';
+        document.getElementById('impact-info').textContent = 'Price Impact: --';
+        return;
     }
     updateFromAmount();
-});
+}, 300));
 
-document.getElementById('to-amount').addEventListener('input', function () {
+document.getElementById('to-amount').addEventListener('input', debounce(function () {
     let value = this.value.replace(/,/g, '');
-    if (isNaN(value) || value < 0) {
+    if (isNaN(value) || value < 0 || value === '') {
         this.value = '';
+        document.getElementById('from-amount').value = '';
+        document.getElementById('rate-info').textContent = 'Rate: --';
+        document.getElementById('impact-info').textContent = 'Price Impact: --';
+        return;
     }
     updateToAmount();
-});
+}, 300));
 
 document.getElementById('swap-button').addEventListener('click', executeSwap);
 document.getElementById('mirror-button').addEventListener('click', mirrorSwap);
