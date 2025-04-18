@@ -1,24 +1,25 @@
+// Constants
 const SUNSWAP_ROUTER = 'TXF1xDbVGdxFGbovmmmXvBGu8ZiE3Lq4mR';
 const WTRX_CONTRACT = 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR';
-const STBLX_SWAP_CONTRACT = 'TUGprGUNtszQgc3pGwMcC9R3z3sDT31G9W';
+const STBLX_SWAP_CONTRACT = 'TUGprGUNtszQgc3pGwMcC9R3z3sDT31G9W'; // StableX swap contract
 
 const TOKENS = {
-    TRX: 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR',
+    TRX: 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR', // Maps to WTRX address for pool interactions
     CFT: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-    STBLX: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
+    STBLX: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS', // StableX token
     BBT: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
     KING: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
     JM: 'TVHH59uHVpHzLDMFFpUgCx2dNAQqCzPhcR',
-    USDD: 'TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz',
+    USDD: 'TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz', // USDD for StableX
     USDT: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
-    USDDOLD: 'TPYmHEhy5n8TCEfYGqW2rPxsghSfzghPDn',
+    USDDOLD: 'TPYmHEhy5n8TCEfYGqW2rPxsghSfzghPDn', // USDD old for pools
     SUN: 'TSSMHYeV2uE9qYH95DqyoCuNCzEL1NvU3S',
     TWX: 'TTFreuJ4pYDaCeEMEtiR1GQDwPPrS4jKFk',
     PROS: 'TFf1aBoNFqxN32V2NQdvNrXVyYCy9qY8p1',
     WIN: 'TLa2f6VPqDgRE67v1736s7bJ8Ray5wYjU7',
     ARB: 'TMGrV13RDQQWE37E2Fp6oqRHVWD66AbN2L',
     JST: 'TCFLL5dx5ZJdKnWuesXxi1VPwjLVmWZZy9',
-    TEM: 'TFuEe2QMB8J1rfwNhAwjRSwoFivMcU5N75',
+    TEM: 'TFuEe2QMB8J1rfwNhAwjRSwoFivMcU5N75', // Corrected TEM address
     TUSD: 'TUpMhErZL2fhh4sVNULAbNKLokS4GjC1F4',
     BTC: 'TN3W4H6rK2ce4vX9YnFQHwKENnHjoxb3m9'
 };
@@ -41,7 +42,7 @@ const DECIMALS = {
     TEM: 6,
     TUSD: 18,
     BTC: 8,
-    STBLX: 6
+    STBLX: 6 // 6 decimals for STBLX
 };
 
 const POOLS = {
@@ -266,27 +267,14 @@ const STBLX_SWAP_ABI = [
 let tronWeb;
 let userAddress;
 let isWalletConnected = false;
-let isUpdating = false;
 
 // Function to format numbers with dynamic decimals
 function formatNumber(num, decimals = 2) {
     const numValue = Number(num);
     if (isNaN(numValue)) return '0.00';
+    // Dynamically increase decimals for very small numbers
     const effectiveDecimals = numValue !== 0 && Math.abs(numValue) < 0.01 ? Math.max(decimals, 6) : decimals;
     return numValue.toFixed(effectiveDecimals).replace(/\d(?=(\d{3})+\.)/g, '$&,');
-}
-
-// Debounce function to limit input event frequency
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
 }
 
 // Connect to TronLink wallet
@@ -324,6 +312,7 @@ function populateTokenSelectors() {
     const fromSelect = document.getElementById('from-token');
     const toSelect = document.getElementById('to-token');
 
+    // Populate "From" dropdown with all tokens except STBLX
     Object.keys(TOKENS).forEach(token => {
         if (token !== 'STBLX') {
             const option = document.createElement('option');
@@ -333,20 +322,23 @@ function populateTokenSelectors() {
         }
     });
 
+    // Initially populate "To" dropdown based on default "From" selection (CFT)
     updateToDropdown('CFT');
 
-    fromSelect.value = 'CFT';
-    toSelect.value = 'KING';
+    fromSelect.value = 'CFT'; // Default to CFT
+    toSelect.value = 'KING'; // Default to KING
 }
 
 // Update "To" dropdown based on selected "From" token
 function updateToDropdown(fromToken) {
     const toSelect = document.getElementById('to-token');
     const currentToValue = toSelect.value;
-    toSelect.innerHTML = '';
+    toSelect.innerHTML = ''; // Clear existing options
 
+    // Map TRX to WTRX for pool lookup
     const effectiveFrom = fromToken === 'TRX' ? 'WTRX' : fromToken;
 
+    // Find all tokens paired with effectiveFrom in POOLS
     const pairedTokens = new Set();
     Object.keys(POOLS).forEach(poolKey => {
         const [tokenA, tokenB] = poolKey.split('-');
@@ -357,10 +349,12 @@ function updateToDropdown(fromToken) {
         }
     });
 
+    // Special case for USDT and USDD: allow STBLX as a "To" token
     if (fromToken === 'USDT' || fromToken === 'USDD') {
         pairedTokens.add('STBLX');
     }
 
+    // Populate "To" dropdown with paired tokens
     pairedTokens.forEach(token => {
         const option = document.createElement('option');
         option.value = token;
@@ -368,6 +362,7 @@ function updateToDropdown(fromToken) {
         toSelect.appendChild(option);
     });
 
+    // Restore previous "To" selection if still valid, otherwise set to first paired token
     if (pairedTokens.has(currentToValue)) {
         toSelect.value = currentToValue;
     } else if (pairedTokens.size > 0) {
@@ -393,19 +388,10 @@ async function fetchReserves(poolAddress) {
 
 // Calculate output amount
 function getAmountOut(amountIn, reserveIn, reserveOut) {
-    if (reserveIn === 0n || reserveOut === 0n) return 0n;
     const amountInWithFee = amountIn * BigInt(997);
     const numerator = amountInWithFee * reserveOut;
     const denominator = (reserveIn * BigInt(1000)) + amountInWithFee;
     return numerator / denominator;
-}
-
-// Calculate input amount
-function getAmountIn(amountOut, reserveIn, reserveOut) {
-    if (reserveIn === 0n || reserveOut === 0n || amountOut >= reserveOut) return 0n;
-    const numerator = reserveIn * amountOut * BigInt(1000);
-    const denominator = (reserveOut - amountOut) * BigInt(997);
-    return (numerator / denominator) + BigInt(1);
 }
 
 // Check token allowance
@@ -455,6 +441,7 @@ async function updateBalances() {
     let balanceFrom = BigInt(0);
     let balanceTo = BigInt(0);
 
+    // Handle TRX balance for "From"
     if (tokenFrom === 'TRX') {
         try {
             balanceFrom = BigInt(await tronWeb.trx.getBalance(userAddress));
@@ -471,6 +458,7 @@ async function updateBalances() {
         }
     }
 
+    // Handle TRX balance for "To"
     if (tokenTo === 'TRX') {
         try {
             balanceTo = BigInt(await tronWeb.trx.getBalance(userAddress));
@@ -494,66 +482,67 @@ async function updateBalances() {
     document.getElementById('to-balance').textContent = `Balance: ${formattedBalanceTo} ${tokenTo}`;
 }
 
-// Update "To" amount based on "From" amount
-async function updateFromAmount() {
-    if (isUpdating || !isWalletConnected) return;
+// Update expected output and rate
+async function updateExpectedOutput() {
+    if (!isWalletConnected) {
+        document.getElementById('to-amount').value = '';
+        document.getElementById('rate-info').textContent = 'Rate: --';
+        document.getElementById('impact-info').textContent = 'Price Impact: --';
+        return;
+    }
 
-    isUpdating = true;
+    const tokenFrom = document.getElementById('from-token').value;
+    const tokenTo = document.getElementById('to-token').value;
+    let amountIn = document.getElementById('from-amount').value;
+
+    if (!tokenFrom || !tokenTo || !amountIn) {
+        document.getElementById('to-amount').value = '';
+        document.getElementById('rate-info').textContent = 'Rate: --';
+        document.getElementById('impact-info').textContent = 'Price Impact: --';
+        return;
+    }
+
+    amountIn = parseFloat(amountIn.replace(/,/g, ''));
+
+    if (isNaN(amountIn) || amountIn <= 0) {
+        document.getElementById('to-amount').value = '';
+        document.getElementById('rate-info').textContent = 'Rate: --';
+        document.getElementById('impact-info').textContent = 'Price Impact: --';
+        return;
+    }
+
+    // Special case for STBLX swaps
+    if (tokenTo === 'STBLX' && (tokenFrom === 'USDT' || tokenFrom === 'USDD')) {
+        const amountOut = amountIn; // 1:1 ratio
+        const formattedAmountOut = formatNumber(amountOut, DECIMALS[tokenTo]);
+        document.getElementById('to-amount').value = formattedAmountOut;
+        document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = 1 STBLX`;
+        document.getElementById('impact-info').textContent = 'Price Impact: 0%';
+        window.expectedOutBigInt = BigInt(Math.floor(amountOut * 10 ** DECIMALS[tokenTo]));
+        window.amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
+        return;
+    }
+
+    const effectiveFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
+    const effectiveTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
+
+    const possibleKey1 = `${effectiveFrom}-${effectiveTo}`;
+    const possibleKey2 = `${effectiveTo}-${effectiveFrom}`;
+    const pool = POOLS[possibleKey1] || POOLS[possibleKey2];
+
+    if (!pool) {
+        document.getElementById('to-amount').value = 'No direct pool';
+        document.getElementById('rate-info').textContent = 'Rate: --';
+        document.getElementById('impact-info').textContent = 'Price Impact: --';
+        return;
+    }
+
     try {
-        const tokenFrom = document.getElementById('from-token').value;
-        const tokenTo = document.getElementById('to-token').value;
-        let amountIn = document.getElementById('from-amount').value;
-
-        if (!tokenFrom || !tokenTo || !amountIn) {
-            document.getElementById('to-amount').value = '';
-            document.getElementById('rate-info').textContent = 'Rate: --';
-            document.getElementById('impact-info').textContent = 'Price Impact: --';
-            isUpdating = false;
-            return;
-        }
-
-        amountIn = parseFloat(amountIn.replace(/,/g, ''));
-        if (isNaN(amountIn) || amountIn <= 0 || amountIn > Number.MAX_SAFE_INTEGER) {
-            document.getElementById('to-amount').value = '';
-            document.getElementById('rate-info').textContent = 'Rate: --';
-            document.getElementById('impact-info').textContent = 'Price Impact: --';
-            isUpdating = false;
-            return;
-        }
-
-        if (tokenTo === 'STBLX' && (tokenFrom === 'USDT' || tokenFrom === 'USDD')) {
-            const amountOut = amountIn;
-            const formattedAmountOut = formatNumber(amountOut, DECIMALS[tokenTo]);
-            document.getElementById('to-amount').value = formattedAmountOut;
-            document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = 1 STBLX`;
-            document.getElementById('impact-info').textContent = 'Price Impact: 0%';
-            window.expectedOutBigInt = BigInt(Math.floor(amountOut * 10 ** DECIMALS[tokenTo]));
-            window.amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
-            isUpdating = false;
-            return;
-        }
-
-        const effectiveFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
-        const effectiveTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
-
-        const possibleKey1 = `${effectiveFrom}-${effectiveTo}`;
-        const possibleKey2 = `${effectiveTo}-${effectiveFrom}`;
-        const pool = POOLS[possibleKey1] || POOLS[possibleKey2];
-
-        if (!pool) {
-            document.getElementById('to-amount').value = 'No direct pool';
-            document.getElementById('rate-info').textContent = 'Rate: --';
-            document.getElementById('impact-info').textContent = 'Price Impact: --';
-            isUpdating = false;
-            return;
-        }
-
         const reserves = await fetchReserves(pool.addr);
         if (reserves.reserve0 === 0n || reserves.reserve1 === 0n) {
             document.getElementById('to-amount').value = 'Pool empty';
             document.getElementById('rate-info').textContent = 'Rate: --';
             document.getElementById('impact-info').textContent = 'Price Impact: --';
-            isUpdating = false;
             return;
         }
 
@@ -568,14 +557,6 @@ async function updateFromAmount() {
         const amountOutBigInt = getAmountOut(amountInBigInt, reserveIn, reserveOut);
         const amountOut = Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo];
 
-        if (amountOutBigInt === 0n || isNaN(amountOut)) {
-            document.getElementById('to-amount').value = 'Insufficient liquidity';
-            document.getElementById('rate-info').textContent = 'Rate: --';
-            document.getElementById('impact-info').textContent = 'Price Impact: --';
-            isUpdating = false;
-            return;
-        }
-
         const formattedAmountOut = formatNumber(amountOut, DECIMALS[tokenTo]);
         document.getElementById('to-amount').value = formattedAmountOut;
 
@@ -586,6 +567,7 @@ async function updateFromAmount() {
         const displayTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
         document.getElementById('rate-info').textContent = `Rate: 1 ${displayFrom} = ${formattedRate} ${displayTo}`;
 
+        // Calculate price impact using BigNumber
         const BN = BigNumber;
         const reserveInBN = BN(reserveIn.toString());
         const reserveOutBN = BN(reserveOut.toString());
@@ -597,7 +579,7 @@ async function updateFromAmount() {
             priceImpactText = 'Price Impact: 0%';
         } else {
             const fraction = amountOutBN.multipliedBy(reserveInBN).dividedBy(amountInBN.multipliedBy(reserveOutBN));
-            const priceImpact = Math.min((1 - fraction.toNumber()) * 100, 100);
+            const priceImpact = (1 - fraction.toNumber()) * 100;
             priceImpactText = `Price Impact: ${priceImpact.toFixed(2)}%`;
         }
         document.getElementById('impact-info').textContent = priceImpactText;
@@ -605,132 +587,10 @@ async function updateFromAmount() {
         window.expectedOutBigInt = amountOutBigInt;
         window.amountInBigInt = amountInBigInt;
     } catch (error) {
-        console.error('Error in updateFromAmount:', error);
+        console.error('Error in updateExpectedOutput:', error);
         document.getElementById('to-amount').value = 'Error';
         document.getElementById('rate-info').textContent = 'Rate: --';
         document.getElementById('impact-info').textContent = 'Price Impact: --';
-    } finally {
-        isUpdating = false;
-    }
-}
-
-// Update "From" amount based on "To" amount
-async function updateToAmount() {
-    if (isUpdating || !isWalletConnected) return;
-
-    isUpdating = true;
-    try {
-        const tokenFrom = document.getElementById('from-token').value;
-        const tokenTo = document.getElementById('to-token').value;
-        let amountOut = document.getElementById('to-amount').value;
-
-        if (!tokenFrom || !tokenTo || !amountOut) {
-            document.getElementById('from-amount').value = '';
-            document.getElementById('rate-info').textContent = 'Rate: --';
-            document.getElementById('impact-info').textContent = 'Price Impact: --';
-            isUpdating = false;
-            return;
-        }
-
-        amountOut = parseFloat(amountOut.replace(/,/g, ''));
-        if (isNaN(amountOut) || amountOut <= 0 || amountOut > Number.MAX_SAFE_INTEGER) {
-            document.getElementById('from-amount').value = '';
-            document.getElementById('rate-info').textContent = 'Rate: --';
-            document.getElementById('impact-info').textContent = 'Price Impact: --';
-            isUpdating = false;
-            return;
-        }
-
-        if (tokenTo === 'STBLX' && (tokenFrom === 'USDT' || tokenFrom === 'USDD')) {
-            const amountIn = amountOut;
-            const formattedAmountIn = formatNumber(amountIn, DECIMALS[tokenFrom]);
-            document.getElementById('from-amount').value = formattedAmountIn;
-            document.getElementById('rate-info').textContent = `Rate: 1 ${tokenFrom} = 1 STBLX`;
-            document.getElementById('impact-info').textContent = 'Price Impact: 0%';
-            window.expectedOutBigInt = BigInt(Math.floor(amountOut * 10 ** DECIMALS[tokenTo]));
-            window.amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
-            isUpdating = false;
-            return;
-        }
-
-        const effectiveFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
-        const effectiveTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
-
-        const possibleKey1 = `${effectiveFrom}-${effectiveTo}`;
-        const possibleKey2 = `${effectiveTo}-${effectiveFrom}`;
-        const pool = POOLS[possibleKey1] || POOLS[possibleKey2];
-
-        if (!pool) {
-            document.getElementById('from-amount').value = 'No direct pool';
-            document.getElementById('rate-info').textContent = 'Rate: --';
-            document.getElementById('impact-info').textContent = 'Price Impact: --';
-            isUpdating = false;
-            return;
-        }
-
-        const reserves = await fetchReserves(pool.addr);
-        if (reserves.reserve0 === 0n || reserves.reserve1 === 0n) {
-            document.getElementById('from-amount').value = 'Pool empty';
-            document.getElementById('rate-info').textContent = 'Rate: --';
-            document.getElementById('impact-info').textContent = 'Price Impact: --';
-            isUpdating = false;
-            return;
-        }
-
-        const fromAddress = tokenFrom === 'TRX' ? TOKENS['TRX'] : TOKENS[tokenFrom];
-        const token0Address = pool.token0 === 'WTRX' ? TOKENS['TRX'] : TOKENS[pool.token0];
-        const isToken0From = fromAddress === token0Address;
-
-        const reserveIn = isToken0From ? reserves.reserve0 : reserves.reserve1;
-        const reserveOut = isToken0From ? reserves.reserve1 : reserves.reserve0;
-
-        const amountOutBigInt = BigInt(Math.floor(amountOut * 10 ** DECIMALS[tokenTo]));
-        const amountInBigInt = getAmountIn(amountOutBigInt, reserveIn, reserveOut);
-        const amountIn = Number(amountInBigInt) / 10 ** DECIMALS[tokenFrom];
-
-        if (amountInBigInt === 0n || isNaN(amountIn)) {
-            document.getElementById('from-amount').value = 'Insufficient liquidity';
-            document.getElementById('rate-info').textContent = 'Rate: --';
-            document.getElementById('impact-info').textContent = 'Price Impact: --';
-            isUpdating = false;
-            return;
-        }
-
-        const formattedAmountIn = formatNumber(amountIn, DECIMALS[tokenFrom]);
-        document.getElementById('from-amount').value = formattedAmountIn;
-
-        const rate = amountOut / amountIn;
-        const rateDecimals = Math.max(DECIMALS[tokenTo], DECIMALS[tokenFrom], 4);
-        const formattedRate = formatNumber(rate, rateDecimals);
-        const displayFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
-        const displayTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
-        document.getElementById('rate-info').textContent = `Rate: 1 ${displayFrom} = ${formattedRate} ${displayTo}`;
-
-        const BN = BigNumber;
-        const reserveInBN = BN(reserveIn.toString());
-        const reserveOutBN = BN(reserveOut.toString());
-        const amountInBN = BN(amountInBigInt.toString());
-        const amountOutBN = BN(amountOutBigInt.toString());
-
-        let priceImpactText;
-        if (amountInBN.isZero() || reserveInBN.isZero() || reserveOutBN.isZero()) {
-            priceImpactText = 'Price Impact: 0%';
-        } else {
-            const fraction = amountOutBN.multipliedBy(reserveInBN).dividedBy(amountInBN.multipliedBy(reserveOutBN));
-            const priceImpact = Math.min((1 - fraction.toNumber()) * 100, 100);
-            priceImpactText = `Price Impact: ${priceImpact.toFixed(2)}%`;
-        }
-        document.getElementById('impact-info').textContent = priceImpactText;
-
-        window.expectedOutBigInt = amountOutBigInt;
-        window.amountInBigInt = amountInBigInt;
-    } catch (error) {
-        console.error('Error in updateToAmount:', error);
-        document.getElementById('from-amount').value = 'Error';
-        document.getElementById('rate-info').textContent = 'Rate: --';
-        document.getElementById('impact-info').textContent = 'Price Impact: --';
-    } finally {
-        isUpdating = false;
     }
 }
 
@@ -756,6 +616,7 @@ async function executeSwap() {
     const tokenAddressTo = TOKENS[tokenTo];
 
     try {
+        // Check balance
         let balanceRaw;
         if (tokenFrom === 'TRX') {
             balanceRaw = await tronWeb.trx.getBalance(userAddress);
@@ -770,32 +631,36 @@ async function executeSwap() {
             return;
         }
 
+        // Special case for STBLX swaps
         if (tokenTo === 'STBLX' && (tokenFrom === 'USDT' || tokenFrom === 'USDD')) {
             const swapContract = await tronWeb.contract(STBLX_SWAP_ABI, STBLX_SWAP_CONTRACT);
 
+            // Check TRX balance for fees
             const trxBalance = await tronWeb.trx.getBalance(userAddress) / 1e6;
             if (trxBalance < 1) {
                 document.getElementById('status-msg').textContent = 'Insufficient TRX for transaction fees.';
                 return;
             }
 
+            // Check and approve allowance
             const allowance = await checkAllowance(tokenAddressFrom, userAddress, STBLX_SWAP_CONTRACT);
             if (allowance < amountInBigInt) {
                 await approveToken(tokenAddressFrom, amountInBigInt, STBLX_SWAP_CONTRACT);
             }
 
+            // Execute STBLX swap
             document.getElementById('status-msg').textContent = `Processing STBLX swap with ${tokenFrom}...`;
             const method = tokenFrom === 'USDT' ? 'buyWithUSDT' : 'buyWithUSDD';
             const tx = await swapContract[method](amountInBigInt.toString()).send({ feeLimit: 100000000 });
             document.getElementById('status-msg').textContent = `STBLX swap successful! TX: ${tx}`;
 
             await updateBalances();
-            document.getElementById('from-amount').value = '';
-            document.getElementById('to-amount').value = '';
+            await updateExpectedOutput();
             return;
         }
 
-        const slippage = 1;
+        // Existing SunSwap logic
+        const slippage = 1; // 1% slippage
         const minOutBigInt = window.expectedOutBigInt * BigInt(100 - slippage) / BigInt(100);
         const deadline = Math.floor(Date.now() / 1000) + 600;
         const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
@@ -846,8 +711,7 @@ async function executeSwap() {
         }
 
         await updateBalances();
-        document.getElementById('from-amount').value = '';
-        document.getElementById('to-amount').value = '';
+        await updateExpectedOutput();
     } catch (error) {
         console.error('Error in executeSwap:', error);
         document.getElementById('status-msg').textContent = 'Swap failed: ' + (error.message || 'Unknown error');
@@ -859,9 +723,11 @@ async function mirrorSwap() {
     const fromSelect = document.getElementById('from-token');
     const toSelect = document.getElementById('to-token');
 
+    // Get current values
     const fromToken = fromSelect.value;
     const toToken = toSelect.value;
 
+    // Check if the mirrored pair is valid
     let isValidPair = false;
     if (toToken === 'STBLX' && (fromToken === 'USDT' || fromToken === 'USDD')) {
         document.getElementById('status-msg').textContent = 'Cannot swap STBLX to USDT/USDD.';
@@ -883,14 +749,14 @@ async function mirrorSwap() {
         return;
     }
 
+    // Swap the token selections
     fromSelect.value = toToken;
     updateToDropdown(toToken);
     toSelect.value = fromToken;
 
-    document.getElementById('from-amount').value = '';
-    document.getElementById('to-amount').value = '';
-
+    // Update balances and expected output
     await updateBalances();
+    await updateExpectedOutput();
 }
 
 // Event listeners
@@ -899,40 +765,22 @@ document.getElementById('connect-button').addEventListener('click', connectWalle
 document.getElementById('from-token').addEventListener('change', async () => {
     const fromToken = document.getElementById('from-token').value;
     updateToDropdown(fromToken);
-    document.getElementById('from-amount').value = '';
-    document.getElementById('to-amount').value = '';
     await updateBalances();
+    await updateExpectedOutput();
 });
 
 document.getElementById('to-token').addEventListener('change', async () => {
-    document.getElementById('from-amount').value = '';
-    document.getElementById('to-amount').value = '';
     await updateBalances();
+    await updateExpectedOutput();
 });
 
-document.getElementById('from-amount').addEventListener('input', debounce(function () {
+document.getElementById('from-amount').addEventListener('input', function () {
     let value = this.value.replace(/,/g, '');
-    if (isNaN(value) || value < 0 || value === '') {
+    if (isNaN(value) || value < 0) {
         this.value = '';
-        document.getElementById('to-amount').value = '';
-        document.getElementById('rate-info').textContent = 'Rate: --';
-        document.getElementById('impact-info').textContent = 'Price Impact: --';
-        return;
     }
-    updateFromAmount();
-}, 300));
-
-document.getElementById('to-amount').addEventListener('input', debounce(function () {
-    let value = this.value.replace(/,/g, '');
-    if (isNaN(value) || value < 0 || value === '') {
-        this.value = '';
-        document.getElementById('from-amount').value = '';
-        document.getElementById('rate-info').textContent = 'Rate: --';
-        document.getElementById('impact-info').textContent = 'Price Impact: --';
-        return;
-    }
-    updateToAmount();
-}, 300));
+    updateExpectedOutput();
+});
 
 document.getElementById('swap-button').addEventListener('click', executeSwap);
 document.getElementById('mirror-button').addEventListener('click', mirrorSwap);
