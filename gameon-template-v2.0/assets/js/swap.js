@@ -269,23 +269,22 @@ let userAddress;
 let isWalletConnected = false;
 let lastInputField = 'from'; // Track which field was last edited ('from' or 'to')
 
-// Function to format numbers with . as decimal and , as thousand separator
-function formatNumber(num, decimals = 2) {
+// Function to format numbers with . as decimal, no thousand separator, fixed to 2 decimals
+function formatNumber(num) {
     const numValue = Number(num);
     if (isNaN(numValue)) return '0.00';
-    const effectiveDecimals = numValue !== 0 && Math.abs(numValue) < 0.01 ? Math.max(decimals, 6) : decimals;
-    const fixedNum = numValue.toFixed(effectiveDecimals);
-    const [integerPart, decimalPart] = fixedNum.split('.');
-    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return decimalPart ? `${formattedInteger}.${decimalPart}` : formattedInteger;
+    return numValue.toFixed(2);
 }
 
-// Parse input string to a number, handling commas as thousand separators
+// Parse input string to a number, handling only digits and decimal point
 function parseInput(value) {
     if (!value) return 0;
-    // Remove commas and ensure only one decimal point
-    const cleanedValue = value.replace(/,/g, '');
-    const parsed = parseFloat(cleanedValue);
+    // Remove any non-numeric characters except decimal point
+    const cleanedValue = value.replace(/[^0-9.]/g, '');
+    // Ensure only one decimal point
+    const parts = cleanedValue.split('.');
+    const validValue = parts.length > 1 ? parts[0] + '.' + parts.slice(1).join('') : cleanedValue;
+    const parsed = parseFloat(validValue);
     return isNaN(parsed) ? 0 : parsed;
 }
 
@@ -494,8 +493,8 @@ async function updateBalances() {
         }
     }
 
-    const formattedBalanceFrom = formatNumber(Number(balanceFrom) / 10 ** DECIMALS[tokenFrom], DECIMALS[tokenFrom]);
-    const formattedBalanceTo = formatNumber(Number(balanceTo) / 10 ** DECIMALS[tokenTo], DECIMALS[tokenTo]);
+    const formattedBalanceFrom = formatNumber(Number(balanceFrom) / 10 ** DECIMALS[tokenFrom]);
+    const formattedBalanceTo = formatNumber(Number(balanceTo) / 10 ** DECIMALS[tokenTo]);
 
     document.getElementById('from-balance').textContent = `Balance: ${formattedBalanceFrom} ${tokenFrom}`;
     document.getElementById('to-balance').textContent = `Balance: ${formattedBalanceTo} ${tokenTo}`;
@@ -532,7 +531,7 @@ async function setMaxAmount() {
     }
 
     const balance = Number(balanceRaw) / 10 ** DECIMALS[tokenFrom];
-    document.getElementById('from-amount').value = formatNumber(balance, DECIMALS[tokenFrom]);
+    document.getElementById('from-amount').value = formatNumber(balance);
     lastInputField = 'from';
     await updateExpectedOutput();
 }
@@ -567,12 +566,12 @@ async function updateExpectedOutput() {
     // Special case for STBLX swaps
     if (tokenTo === 'STBLX' && (tokenFrom === 'USDT' || tokenFrom === 'USDD')) {
         if (lastInputField === 'from') {
-            const formattedAmountOut = formatNumber(amountIn, DECIMALS[tokenTo]);
+            const formattedAmountOut = formatNumber(amountIn);
             document.getElementById('to-amount').value = formattedAmountOut;
             window.amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
             window.expectedOutBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenTo]));
         } else {
-            const formattedAmountIn = formatNumber(amountOut, DECIMALS[tokenFrom]);
+            const formattedAmountIn = formatNumber(amountOut);
             document.getElementById('from-amount').value = formattedAmountIn;
             window.amountInBigInt = BigInt(Math.floor(amountOut * 10 ** DECIMALS[tokenFrom]));
             window.expectedOutBigInt = BigInt(Math.floor(amountOut * 10 ** DECIMALS[tokenTo]));
@@ -618,7 +617,7 @@ async function updateExpectedOutput() {
             amountInBigInt = BigInt(Math.floor(amountIn * 10 ** DECIMALS[tokenFrom]));
             amountOutBigInt = getAmountOut(amountInBigInt, reserveIn, reserveOut);
             const amountOutCalc = Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo];
-            formattedAmount = formatNumber(amountOutCalc, DECIMALS[tokenTo]);
+            formattedAmount = formatNumber(amountOutCalc);
             document.getElementById('to-amount').value = formattedAmount;
             window.amountInBigInt = amountInBigInt;
             window.expectedOutBigInt = amountOutBigInt;
@@ -626,15 +625,14 @@ async function updateExpectedOutput() {
             amountOutBigInt = BigInt(Math.floor(amountOut * 10 ** DECIMALS[tokenTo]));
             amountInBigInt = getAmountIn(amountOutBigInt, reserveIn, reserveOut);
             const amountInCalc = Number(amountInBigInt) / 10 ** DECIMALS[tokenFrom];
-            formattedAmount = formatNumber(amountInCalc, DECIMALS[tokenFrom]);
+            formattedAmount = formatNumber(amountInCalc);
             document.getElementById('from-amount').value = formattedAmount;
             window.amountInBigInt = amountInBigInt;
             window.expectedOutBigInt = amountOutBigInt;
         }
 
         const rate = (Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo]) / (Number(amountInBigInt) / 10 ** DECIMALS[tokenFrom]);
-        const rateDecimals = Math.max(DECIMALS[tokenTo], DECIMALS[tokenFrom], 4);
-        const formattedRate = formatNumber(rate, rateDecimals);
+        const formattedRate = formatNumber(rate);
         const displayFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
         const displayTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
         document.getElementById('rate-info').textContent = `Rate: 1 ${displayFrom} = ${formattedRate} ${displayTo}`;
@@ -652,7 +650,7 @@ async function updateExpectedOutput() {
         } else {
             const fraction = amountOutBN.multipliedBy(reserveInBN).dividedBy(amountInBN.multipliedBy(reserveOutBN));
             const priceImpact = (1 - fraction.toNumber()) * 100;
-            priceImpactText = `Price Impact: ${formatNumber(priceImpact, 2)}%`;
+            priceImpactText = `Price Impact: ${formatNumber(priceImpact)}%`;
         }
         document.getElementById('impact-info').textContent = priceImpactText;
 
@@ -799,7 +797,7 @@ async function mirrorSwap() {
 
     // Check if the mirrored pair is valid
     let isValidPair = false;
-    if (toToken === 'STBLX' && (fromToken === 'USDT' || fromToken === 'USDD')) {
+    if (toToken === 'STBLX' && (tokenFrom === 'USDT' || tokenFrom === 'USDD')) {
         document.getElementById('status-msg').textContent = 'Cannot swap STBLX to USDT/USDD.';
         return;
     }
@@ -851,6 +849,11 @@ document.getElementById('from-amount').addEventListener('input', function () {
     if (parts.length > 2) {
         value = parts[0] + '.' + parts.slice(1).join('');
     }
+    // Limit decimal places to 2
+    if (parts[1] && parts[1].length > 2) {
+        parts[1] = parts[1].slice(0, 2);
+        value = parts[0] + '.' + parts[1];
+    }
     this.value = value;
     lastInputField = 'from';
     updateExpectedOutput();
@@ -859,7 +862,7 @@ document.getElementById('from-amount').addEventListener('input', function () {
 document.getElementById('from-amount').addEventListener('blur', function () {
     const value = parseInput(this.value);
     if (value > 0) {
-        this.value = formatNumber(value, DECIMALS[document.getElementById('from-token').value]);
+        this.value = formatNumber(value);
     } else {
         this.value = '';
     }
@@ -874,6 +877,11 @@ document.getElementById('to-amount').addEventListener('input', function () {
     if (parts.length > 2) {
         value = parts[0] + '.' + parts.slice(1).join('');
     }
+    // Limit decimal places to 2
+    if (parts[1] && parts[1].length > 2) {
+        parts[1] = parts[1].slice(0, 2);
+        value = parts[0] + '.' + parts[1];
+    }
     this.value = value;
     lastInputField = 'to';
     updateExpectedOutput();
@@ -882,7 +890,7 @@ document.getElementById('to-amount').addEventListener('input', function () {
 document.getElementById('to-amount').addEventListener('blur', function () {
     const value = parseInput(this.value);
     if (value > 0) {
-        this.value = formatNumber(value, DECIMALS[document.getElementById('to-token').value]);
+        this.value = formatNumber(value);
     } else {
         this.value = '';
     }
