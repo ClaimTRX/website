@@ -62,14 +62,14 @@ const POOLS = {
     'WTRX-USDDOLD': { addr: 'TEjpEVwm3Xr5VHfa2CWYLqcyKZEGE9CGUz', token0: 'WTRX', token1: 'USDDOLD' },
     'WIN-USDT': { addr: 'TC1GhhC5iGFLuuUthriuUu183P8YWPmQsK', token0: 'WIN', token1: 'USDT' },
     'WIN-PROS': { addr: 'TAeSpozQr3JyuYnuQmDB75GPvDzvXXe7LR', token0: 'PROS', token1: 'WIN' },
-    'WIN-WTRX': { addr: 'TDq9PCXQM5RfpN14T8sc6ePYJRFecPJCut', token0: 'WIN', token1: 'WTRX' },
+    'WIN-WTRX': { addr: 'TDq9PCXQM5RfpN14T8sc6ePYJBSxhKFVZFESbJYAb', token0: 'WIN', token1: 'WTRX' },
     'TWX-WTRX': { addr: 'TGfr9GrRLadatJj1d69D6B7JH6RFEvmvsh', token0: 'WTRX', token1: 'TWX' },
     'TWX-CFT':   { addr: 'TMXAuCPyfMgbvaA6LM4rhSqVs9QinuuCLM', token0: 'CFT', token1: 'TWX' },
     'ARB-WTRX': { addr: 'TXHmQG2XQNvn6uFyJJBSxhKFVZFESbJYAb', token0: 'ARB', token1: 'WTRX' },
     'ARB-TWX': { addr: 'TSMLAjkrUYmyYeBFoWiSsMp2YMdm9MYGqb', token0: 'ARB', token1: 'TWX' },
     'ARB-KING': { addr: 'TN6CLkCjBmURXg4Q39VjrTZooxcCMj7f5N', token0: 'KING', token1: 'ARB' },
     'ARB-JM': { addr: 'TNDcGUzMa4bYqCof2bYs4NZgktTx6Ymdtp', token0: 'ARB', token1: 'JM' },
-    'JST-WTRX': { addr: 'TUDo1PuMG6j4aDSg6rsCNiz5gR5cnQaNTT', token0: 'JST', token1: 'WTRX' },
+    'JST-WTRX': { addr: 'TUDo1PuMG6j Jefferson4aDSg6rsCNiz5gR5cnQaNTT', token0: 'JST', token1: 'WTRX' },
     'JST-USDT': { addr: 'TW68dBGdy9gtk16BfzmvaCZ9pEti3KFkk2', token0: 'JST', token1: 'USDT' },
     'JST-PROS': { addr: 'TEFiG7LFnAMedthyUXTMDZz777Cmj3Mnpe', token0: 'JST', token1: 'PROS' },
     'ARB-CFT':   { addr: 'TX1mkS1kKNJMcPb4cnGgoxweogSVFeDjq2', token0: 'CFT', token1: 'ARB' },
@@ -487,7 +487,7 @@ async function updateBalances() {
         const toAddress = TOKENS[tokenTo];
         try {
             const toContract = await tronWeb.contract(ERC20_ABI, toAddress);
-            balanceTo = BigInt(await toContract.balanceOf(userAddress).call());
+            balanceTo = BigInt(await fromContract.balanceOf(userAddress).call());
         } catch (error) {
             console.error(`Error fetching balance for ${tokenTo} at ${toAddress}:`, error);
         }
@@ -530,8 +530,14 @@ async function setMaxAmount() {
         }
     }
 
-    const balance = Number(balanceRaw) / 10 ** DECIMALS[tokenFrom];
-    document.getElementById('from-amount').value = formatNumber(balance);
+    const decimals = DECIMALS[tokenFrom];
+    const balance = Number(balanceRaw) / 10 ** decimals;
+    // Round down to 2 decimal places for UI display
+    const uiBalance = Math.floor(balance * 100) / 100;
+    // Store exact balance for transaction
+    window.maxAmountBigInt = BigInt(balanceRaw);
+
+    document.getElementById('from-amount').value = formatNumber(uiBalance);
     lastInputField = 'from';
     await updateExpectedOutput();
 }
@@ -679,7 +685,15 @@ async function executeSwap() {
         return;
     }
 
-    const amountInBigInt = window.amountInBigInt;
+    // Use exact balance if max button was used
+    let amountInBigInt;
+    const uiBalance = Number(amountInFloat) * 10 ** DECIMALS[tokenFrom];
+    if (window.maxAmountBigInt && Math.floor(uiBalance) === Math.floor(Number(window.maxAmountBigInt))) {
+        amountInBigInt = window.maxAmountBigInt;
+    } else {
+        amountInBigInt = BigInt(Math.floor(amountInFloat * 10 ** DECIMALS[tokenFrom]));
+    }
+
     const tokenAddressFrom = TOKENS[tokenFrom];
     const tokenAddressTo = TOKENS[tokenTo];
 
@@ -694,7 +708,7 @@ async function executeSwap() {
         }
         const balance = Number(balanceRaw) / 10 ** DECIMALS[tokenFrom];
 
-        if (balance < amountInFloat) {
+        if (balance < amountInFloat && !window.maxAmountBigInt) {
             document.getElementById('status-msg').textContent = `Insufficient ${tokenFrom} balance.`;
             return;
         }
@@ -797,7 +811,7 @@ async function mirrorSwap() {
 
     // Check if the mirrored pair is valid
     let isValidPair = false;
-    if (toToken === 'STBLX' && (tokenFrom === 'USDT' || tokenFrom === 'USDD')) {
+    if (toToken === 'STBLX' && (fromToken === 'USDT' || fromToken === 'USDD')) {
         document.getElementById('status-msg').textContent = 'Cannot swap STBLX to USDT/USDD.';
         return;
     }
@@ -822,9 +836,14 @@ async function mirrorSwap() {
     updateToDropdown(toToken);
     toSelect.value = fromToken;
 
-    // Update balances and expected output
+    // Clear input fields and reset rate/info
+    document.getElementById('from-amount').value = '';
+    document.getElementById('to-amount').value = '';
+    document.getElementById('rate-info').textContent = 'Rate: --';
+    document.getElementById('impact-info').textContent = 'Price Impact: --';
+
+    // Update balances
     await updateBalances();
-    await updateExpectedOutput();
 }
 
 // Event listeners
@@ -833,13 +852,21 @@ document.getElementById('connect-button').addEventListener('click', connectWalle
 document.getElementById('from-token').addEventListener('change', async () => {
     const fromToken = document.getElementById('from-token').value;
     updateToDropdown(fromToken);
+    // Clear input fields and reset rate/info
+    document.getElementById('from-amount').value = '';
+    document.getElementById('to-amount').value = '';
+    document.getElementById('rate-info').textContent = 'Rate: --';
+    document.getElementById('impact-info').textContent = 'Price Impact: --';
     await updateBalances();
-    await updateExpectedOutput();
 });
 
 document.getElementById('to-token').addEventListener('change', async () => {
+    // Clear input fields and reset rate/info
+    document.getElementById('from-amount').value = '';
+    document.getElementById('to-amount').value = '';
+    document.getElementById('rate-info').textContent = 'Rate: --';
+    document.getElementById('impact-info').textContent = 'Price Impact: --';
     await updateBalances();
-    await updateExpectedOutput();
 });
 
 document.getElementById('from-amount').addEventListener('input', function () {
