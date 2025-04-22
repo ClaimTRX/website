@@ -591,10 +591,12 @@ async function updateExpectedOutput() {
             window.expectedOutBigInt = amountOutBigInt;
         }
 
+        // Calculate the rate with full precision
         const rate = (Number(amountOutBigInt) / 10 ** DECIMALS[tokenTo]) / (Number(amountInBigInt) / 10 ** DECIMALS[tokenFrom]);
-        const formattedRate = formatNumber(rate);
         const displayFrom = tokenFrom === 'TRX' ? 'WTRX' : tokenFrom;
         const displayTo = tokenTo === 'TRX' ? 'WTRX' : tokenTo;
+        // Format the rate to show all decimals for the "To" token
+        const formattedRate = rate.toFixed(DECIMALS[tokenTo]);
         document.getElementById('rate-info').textContent = `Rate: 1 ${displayFrom} = ${formattedRate} ${displayTo}`;
 
         // Calculate price impact
