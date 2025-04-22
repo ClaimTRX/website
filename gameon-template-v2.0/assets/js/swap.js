@@ -28,6 +28,7 @@ const DECIMALS = {
 };
 
 const POOLS = {
+    'WTRX-CFT': { addr: 'TDBm3WAEaykeMUhmrNe1eLNWhG8CwfmGCg', token0: 'CFT', token1: 'WTRX' },
     'WTRX-KING': { addr: 'TQ2HCSvpir3ELSJg3J2wKG6TskePh74rz8', token0: 'KING', token1: 'WTRX' },
     'CFT-KING':  { addr: 'TXm1bnUSVSZWE5PpYzzyiZAoQVpFDbNq38', token0: 'CFT', token1: 'KING' },
     'CFT-BBT':   { addr: 'TANnrhzkhjGtgAmD1GQ91rgrmRwKu7sedj', token0: 'BBT', token1: 'CFT' },
