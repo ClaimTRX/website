@@ -743,7 +743,7 @@ async function executeSwap() {
                 userAddress,
                 deadline
             ).send({ feeLimit: 100000000 });
-            document.getElementById('status-msg').textContent = `Swap successful! TX: ${tx}`;
+            document.getElementById('status-msg').textContent = ` TX: ${tx}`;
         }
 
         await updateBalances();
