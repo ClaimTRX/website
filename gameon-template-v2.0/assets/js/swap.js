@@ -690,7 +690,7 @@ async function executeSwap() {
             document.getElementById('status-msg').textContent = `Processing STBLX swap with ${tokenFrom}...`;
             const method = tokenFrom === 'USDT' ? 'buyWithUSDT' : 'buyWithUSDD';
             const tx = await swapContract[method](amountInBigInt.toString()).send({ feeLimit: 100000000 });
-            document.getElementById('status-msg').textContent = `STBLX swap successful! TX: ${tx}`;
+            document.getElementById('status-msg').textContent = ` TX: ${tx}`;
 
             await updateBalances();
             await updateExpectedOutput();
@@ -715,7 +715,7 @@ async function executeSwap() {
                 callValue: amountInBigInt.toString(),
                 feeLimit: 100000000
             });
-            document.getElementById('status-msg').textContent = `Swap successful! TX: ${tx}`;
+            document.getElementById('status-msg').textContent = ` TX: ${tx}`;
         } else if (tokenTo === 'TRX') {
             const path = [tokenAddressFrom, WTRX_CONTRACT];
             const allowance = await checkAllowance(tokenAddressFrom, userAddress, SUNSWAP_ROUTER);
@@ -730,7 +730,7 @@ async function executeSwap() {
                 userAddress,
                 deadline
             ).send({ feeLimit: 100000000 });
-            document.getElementById('status-msg').textContent = `Swap successful! TX: ${tx}`;
+            document.getElementById('status-msg').textContent = ` TX: ${tx}`;
         } else {
             const path = [tokenAddressFrom, tokenAddressTo];
             const allowance = await checkAllowance(tokenAddressFrom, userAddress, SUNSWAP_ROUTER);
