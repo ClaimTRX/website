@@ -288,7 +288,7 @@ function populateTokenSelectors() {
     });
 
     // Initially populate "To" dropdown based on default "From" selection (CFT)
-    updateToDropdown('CFT');
+    updateToDropdown('TRX');
 
     fromSelect.value = 'TRX'; // Default to CFT
     toSelect.value = 'CFT'; // Default to KING
