@@ -1,15 +1,15 @@
 let tronWeb, userAddress;
 
-// Hardcoded price mapping (energy amount to TRX)
+// Hardcoded price mapping (energy amount to TRX for 5 and 15 minutes)
 const priceMap = {
-    "32000": 1.5,
-    "50000": 2.5,
-     "65000": 3,
-    "100000": 4.5,
-    "135000": 5.5,
-    "150000": 8,
-    "200000": 11,
-    "250000": 14
+    "32000": { 5: 1.5, 15: 1.65 },
+    "50000": { 5: 2.5, 15: 2.75 },
+    "65000": { 5: 3, 15: 3.3 },
+    "100000": { 5: 4.5, 15: 4.95 },
+    "135000": { 5: 5.5, 15: 6.05 },
+    "150000": { 5: 8, 15: 8.8 },
+    "200000": { 5: 11, 15: 12.1 },
+    "250000": { 5: 14, 15: 15.4 }
 };
 
 // Your Tron address for receiving payments
@@ -45,6 +45,10 @@ async function autoConnectWallet() {
         if (userAddress && userAddress !== "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb") {
             console.log("Auto-connected wallet:", userAddress);
             updateWalletUI(true);
+            const receiverInput = document.getElementById("receiver-address");
+            if (receiverInput) {
+                receiverInput.value = userAddress;
+            }
             fetchAvailableEnergy();
         } else {
             console.log("TronLink detected, but wallet not connected.");
@@ -64,6 +68,10 @@ async function connectWallet() {
         userAddress = tronWeb.defaultAddress.base58;
         updateWalletUI(true);
         console.log("Wallet connected:", userAddress);
+        const receiverInput = document.getElementById("receiver-address");
+        if (receiverInput) {
+            receiverInput.value = userAddress;
+        }
         fetchAvailableEnergy();
     } catch (e) {
         console.error("Wallet connection failed:", e);
@@ -138,10 +146,11 @@ async function fetchAvailableEnergy() {
     }
 }
 
-// Update price display when energy amount changes
+// Update price display when energy amount or duration changes
 function updatePriceDisplay() {
     const energyAmount = document.getElementById("energy-amount").value;
-    const trxPrice = priceMap[energyAmount];
+    const delegationDuration = document.getElementById("delegation-duration").value;
+    const trxPrice = priceMap[energyAmount][delegationDuration];
     document.getElementById("trx-price").textContent = trxPrice;
 }
 
@@ -159,8 +168,9 @@ async function buyEnergy() {
     }
 
     const energyAmount = document.getElementById("energy-amount").value;
+    const delegationDuration = document.getElementById("delegation-duration").value;
     const receiverAddress = document.getElementById("receiver-address").value;
-    const trxPrice = priceMap[energyAmount];
+    const trxPrice = priceMap[energyAmount][delegationDuration];
 
     if (!tronWeb.isAddress(receiverAddress)) {
         alert("Please enter a valid Tron wallet address.");
@@ -183,7 +193,7 @@ async function buyEnergy() {
         const response = await fetch(`${SERVER_URL}/api/request-energy`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ energyAmount, receiverAddress, trxPrice, userAddress, paymentTxId: result.txid })
+            body: JSON.stringify({ energyAmount, receiverAddress, trxPrice, userAddress, paymentTxId: result.txid, delegationDuration })
         });
 
         const data = await response.json();
@@ -290,6 +300,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const energyAmountSelect = document.getElementById("energy-amount");
     if (energyAmountSelect) energyAmountSelect.addEventListener("change", updatePriceDisplay);
+
+    const delegationDurationSelect = document.getElementById("delegation-duration");
+    if (delegationDurationSelect) delegationDurationSelect.addEventListener("change", updatePriceDisplay);
 
     const buyEnergyButton = document.getElementById("buy-energy-button");
     if (buyEnergyButton) {
