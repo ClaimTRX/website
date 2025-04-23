@@ -1,643 +1,316 @@
-const express = require("express");
-const TronWeb = require("tronweb");
-const axios = require("axios");
-const cors = require("cors");
-const sqlite3 = require("sqlite3").verbose();
-const cron = require("node-cron");
-require("dotenv").config();
+let tronWeb, userAddress;
 
-const app = express();
-app.use(express.json());
-app.use(cors({ origin: "https://www.cftecosystem.com" }));
+// Hardcoded price mapping (energy amount to TRX for 5 and 15 minutes)
+const priceMap = {
+    "32000": { 5: 1.5, 15: 1.65 },
+    "50000": { 5: 2.5, 15: 2.75 },
+    "65000": { 5: 3, 15: 3.3 },
+    "100000": { 5: 4.5, 15: 4.95 },
+    "135000": { 5: 5.5, 15: 6.05 },
+    "150000": { 5: 8, 15: 8.8 },
+    "200000": { 5: 11, 15: 12.1 },
+    "250000": { 5: 14, 15: 15.4 }
+};
 
-const tronWeb = new TronWeb({
-    fullHost: "https://api.trongrid.io",
-    headers: { "TRON-PRO-API-KEY": process.env.TRONGRID_API_KEY },
-    privateKey: process.env.PRIVATE_KEY
-});
-
-const OWNER_ADDRESS = process.env.OWNER_ADDRESS;
-const PERMISSION_ID = parseInt(process.env.PERMISSION_ID);
+// Your Tron address for receiving payments
 const PAYMENT_ADDRESS = "TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn";
 
-const requests = new Map();
+// Server address for API calls
+const SERVER_URL = "https://api.cftecosystem.com";
 
-// Initialize SQLite database
-const db = new sqlite3.Database("./energy_delegations.db", (err) => {
-    if (err) {
-        console.error("Error opening database:", err.message);
-    } else {
-        console.log("Connected to SQLite database.");
-    }
-});
+// Minimum energy threshold to enable the buy button
+const MIN_ENERGY_THRESHOLD = 500000;
 
-// Create or update the delegations table
-db.serialize(() => {
-    db.run(`
-        CREATE TABLE IF NOT EXISTS delegations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            request_id TEXT NOT NULL,
-            payer_wallet TEXT NOT NULL,
-            receiver_wallet TEXT NOT NULL,
-            delegator_wallet TEXT NOT NULL,
-            delegation_time TEXT NOT NULL,
-            reclamation_time TEXT,
-            delegation_txid TEXT NOT NULL,
-            energy_amount INTEGER,
-            trx_price REAL,
-            sun_required INTEGER,
-            delegation_duration INTEGER
-        )
-    `, (err) => {
-        if (err) {
-            console.error("Error creating table:", err.message);
-        } else {
-            console.log("Delegations table created or already exists.");
-        }
-    });
-
-    // Add columns if missing
-    db.run(`ALTER TABLE delegations ADD COLUMN energy_amount INTEGER`, (err) => {
-        if (err && !err.message.includes("duplicate column name")) {
-            console.error("Error adding energy_amount column:", err.message);
-        } else {
-            console.log("energy_amount column added or already exists.");
-        }
-    });
-
-    db.run(`ALTER TABLE delegations ADD COLUMN trx_price REAL`, (err) => {
-        if (err && !err.message.includes("duplicate column name")) {
-            console.error("Error adding trx_price column:", err.message);
-        } else {
-            console.log("trx_price column added or already exists.");
-        }
-    });
-
-    db.run(`ALTER TABLE delegations ADD COLUMN sun_required INTEGER`, (err) => {
-        if (err && !err.message.includes("duplicate column name")) {
-            console.error("Error adding sun_required column:", err.message);
-        } else {
-            console.log("sun_required column added or already exists.");
-        }
-    });
-
-    db.run(`ALTER TABLE delegations ADD COLUMN delegation_duration INTEGER`, (err) => {
-        if (err && !err.message.includes("duplicate column name")) {
-            console.error("Error adding delegation_duration column:", err.message);
-        } else {
-            console.log("delegation_duration column added or already exists.");
-        }
-    });
-});
-
-// Function to send a Telegram message
-async function sendTelegramMessage(type, details) {
-    const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN1;
-    const telegramChatId = process.env.TELEGRAM_CHAT_ID;
-    const telegramGroupChatId = process.env.TELEGRAM_GROUP_CHAT_ID;
-
-    if (!telegramBotToken) {
-        console.error("Telegram bot token not configured in .env");
-        return;
-    }
-
-    let message = "";
-    let targetChatId = telegramChatId;
-
-    if (type === "success") {
-        const { requestId, payerWallet, receiverWallet, delegatorWallet, delegationTime, txId, energyAmount, trxPrice, delegationDuration } = details;
-        message = `
-*New Energy Delegation*
-- *Request ID*: ${requestId}
-- *Payer Wallet*: ${payerWallet}
-- *Receiver Wallet*: ${receiverWallet}
-- *Delegator Wallet*: ${delegatorWallet}
-- *Energy Amount*: ${energyAmount.toLocaleString()} units
-- *TRX Paid*: ${trxPrice} TRX
-- *Duration*: ${delegationDuration} minutes
-- *Delegation Time*: ${delegationTime}
-- *Transaction ID*: [${txId}](https://tronscan.org/#/transaction/${txId})
-        `;
-    } else if (type === "error") {
-        const { requestId, payerWallet, errorMessage } = details;
-        message = `
-*Error in Energy Delegation*
-- *Request ID*: ${requestId}
-- *Payer Wallet*: ${payerWallet || "Unknown"}
-- *Error Message*: ${errorMessage}
-        `;
-    } else if (type === "daily-report") {
-        const { totalEnergySold, totalIncome } = details;
-        message = `
-*Daily Sales and Income Report (Last 24 Hours)*
-- *Total Energy Sold*: ${totalEnergySold.toLocaleString()} units
-- *Total Income*: ${totalIncome.toFixed(2)} TRX
-- *Report Time*: ${new Date().toISOString()}
-        `;
-        targetChatId = telegramGroupChatId; // Send daily report to group chat
-    } else if (type === "group-notification") {
-        const { energyAmount, trxPrice } = details;
-        message = `
-*New Energy Buy*
-- *Energy Amount*: ${energyAmount.toLocaleString()} units
-- *Price*: ${trxPrice} TRX
-        `;
-        targetChatId = telegramGroupChatId;
-    } else {
-        console.error("Invalid message type for Telegram notification:", type);
-        return;
-    }
-
-    if (!targetChatId) {
-        console.error(`Telegram chat ID not configured for type ${type} in .env`);
-        return;
-    }
-
-    const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
-    try {
-        await axios.post(url, {
-            chat_id: targetChatId,
-            text: message,
-            parse_mode: "Markdown"
-        });
-        console.log(`Telegram ${type} message sent successfully to chat ${targetChatId}`);
-    } catch (error) {
-        console.error(`Error sending Telegram ${type} message to chat ${targetChatId}:`, error.message);
-    }
-}
-
-// ============ Helper Functions ============
-
-function getDateNDaysAgo(days) {
-    const date = new Date();
-    date.setDate(date.getDate() - days);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-}
-
-async function getTotalEnergyLimit() {
-    try {
-        console.log("Fetching total energy limit...");
-        const parameters = await tronWeb.trx.getChainParameters();
-        const param = parameters.find(p => p.key === "getTotalEnergyLimit");
-        if (!param) throw new Error("Total energy limit not found");
-        console.log(`Total energy limit: ${param.value}`);
-        return param.value;
-    } catch (e) {
-        console.error("Error fetching total energy limit:", e.message);
-        throw e;
-    }
-}
-
-async function getTotalStakedTrxForEnergy() {
-    const datesToTry = [getDateNDaysAgo(0), getDateNDaysAgo(1)];
-    for (const date of datesToTry) {
-        try {
-            console.log(`Fetching staked TRX for date ${date}...`);
-            const res = await axios.get(`https://apilist.tronscanapi.com/api/freezeresource?start_day=${date}&end_day=${date}`);
-            const data = res.data;
-            if (data && data.data && Array.isArray(data.data) && data.data.length > 0) {
-                const latest = data.data[0];
-                if (latest.total_energy_weight) {
-                    console.log(`Total staked TRX: ${latest.total_energy_weight}`);
-                    return latest.total_energy_weight;
-                }
+// Check if TronLink is installed
+async function checkTronLinkInstalled() {
+    return new Promise((resolve) => {
+        const interval = setInterval(() => {
+            if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+                clearInterval(interval);
+                resolve(true);
             }
-        } catch (e) {
-            console.warn(`No data for ${date}:`, e.message);
+        }, 1000);
+        setTimeout(() => {
+            clearInterval(interval);
+            resolve(false);
+        }, 10000);
+    });
+}
+
+// Auto-connect wallet if authorized
+async function autoConnectWallet() {
+    if (window.tronWeb && window.tronLink) {
+        tronWeb = window.tronWeb;
+        userAddress = tronWeb.defaultAddress.base58;
+        if (userAddress && userAddress !== "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb") {
+            console.log("Auto-connected wallet:", userAddress);
+            updateWalletUI(true);
+            const receiverInput = document.getElementById("receiver-address");
+            if (receiverInput) {
+                receiverInput.value = userAddress;
+            }
+            fetchAvailableEnergy();
+        } else {
+            console.log("TronLink detected, but wallet not connected.");
         }
     }
-    throw new Error("No staking data available.");
 }
 
-async function calculateSunForEnergy(desiredEnergy) {
+// Manually connect wallet
+async function connectWallet() {
+    if (!window.tronWeb || !window.tronLink) {
+        alert("TronLink not found. Please install TronLink and log in.");
+        return;
+    }
     try {
-        console.log(`Calculating SUN for ${desiredEnergy} energy units...`);
-        const totalEnergyLimit = await getTotalEnergyLimit();
-        const totalStakedTrx = await getTotalStakedTrxForEnergy();
-        const trxRequired = (desiredEnergy / totalEnergyLimit) * totalStakedTrx;
-        const sunRequired = Math.ceil(trxRequired * 1e6);
-        console.log(`Calculated ${sunRequired} SUN for ${desiredEnergy} energy units`);
-        return { sunRequired };
+        await window.tronLink.request({ method: "tron_requestAccounts" });
+        tronWeb = window.tronWeb;
+        userAddress = tronWeb.defaultAddress.base58;
+        updateWalletUI(true);
+        console.log("Wallet connected:", userAddress);
+        const receiverInput = document.getElementById("receiver-address");
+        if (receiverInput) {
+            receiverInput.value = userAddress;
+        }
+        fetchAvailableEnergy();
     } catch (e) {
-        console.error("Error calculating SUN:", e.message);
-        throw e;
+        console.error("Wallet connection failed:", e);
     }
 }
 
-async function delegateEnergy(receiver, amount) {
-    try {
-        console.log(`Delegating ${amount} SUN to ${receiver}...`);
-        const tx = await tronWeb.transactionBuilder.delegateResource(
-            amount, receiver, "ENERGY", OWNER_ADDRESS, false,
-            { permissionId: PERMISSION_ID }
-        );
-        console.log("Transaction built, signing...");
-        const signed = await tronWeb.trx.multiSign(tx, process.env.PRIVATE_KEY);
-        console.log("Transaction signed, broadcasting...");
-        const result = await tronWeb.trx.broadcast(signed);
-        console.log("Energy delegated successfully:", result);
-        return result;
-    } catch (e) {
-        console.error("Error delegating energy:", e.message);
-        throw e;
+// Update wallet UI
+function updateWalletUI(isConnected) {
+    const connectButton = document.getElementById("connect-button");
+    if (connectButton) {
+        connectButton.innerHTML = isConnected
+            ? `<i class="icon-wallet"></i> Wallet Connected`
+            : `<i class="icon-wallet"></i> Connect Wallet`;
     }
 }
 
-async function undelegateEnergy(receiver, amount) {
-    try {
-        console.log(`Undelegating ${amount} SUN from ${receiver}...`);
-        const tx = await tronWeb.transactionBuilder.undelegateResource(
-            amount, receiver, "ENERGY", OWNER_ADDRESS,
-            { permissionId: PERMISSION_ID }
-        );
-        const signed = await tronWeb.trx.multiSign(tx, process.env.PRIVATE_KEY);
-        const result = await tronWeb.trx.broadcast(signed);
-        console.log("Energy undelegated successfully:", result);
-        return result;
-    } catch (e) {
-        console.error("Error undelegating energy:", e.message);
-        throw e;
+// Fetch available energy from the server with retry logic and button control
+async function fetchAvailableEnergy() {
+    const maxRetries = 3;
+    let retries = 0;
+    const buyEnergyButton = document.getElementById("buy-energy-button");
+
+    if (!buyEnergyButton) {
+        console.error("Buy Energy button not found in DOM. Check ID 'buy-energy-button'.");
+        return;
+    }
+
+    while (retries < maxRetries) {
+        try {
+            const response = await fetch(`${SERVER_URL}/api/available-energy`);
+            const data = await response.json();
+            if (data.success) {
+                const availableEnergy = Number(data.availableEnergy);
+                const displayEnergy = availableEnergy - MIN_ENERGY_THRESHOLD; // Subtract 500,000 for display
+                console.log(`Available energy fetched: ${availableEnergy}, Displayed energy: ${displayEnergy}`);
+                document.getElementById("available-energy").textContent = displayEnergy.toLocaleString();
+
+                // Enable/disable the buy button based on actual energy threshold
+                if (availableEnergy < MIN_ENERGY_THRESHOLD) {
+                    buyEnergyButton.disabled = true;
+                    buyEnergyButton.title = "Not enough energy available (minimum 500,000 required)";
+                    buyEnergyButton.style.opacity = "0.5";
+                    buyEnergyButton.style.cursor = "not-allowed";
+                    buyEnergyButton.style.pointerEvents = "none";
+                    console.log("Buy button disabled: Energy below 500,000");
+                } else {
+                    buyEnergyButton.disabled = false;
+                    buyEnergyButton.title = "Buy energy now";
+                    buyEnergyButton.style.opacity = "1";
+                    buyEnergyButton.style.cursor = "pointer";
+                    buyEnergyButton.style.pointerEvents = "auto";
+                    console.log("Buy button enabled: Energy sufficient");
+                }
+                return;
+            } else {
+                throw new Error("Failed to fetch available energy");
+            }
+        } catch (error) {
+            console.error(`Error fetching available energy (attempt ${retries + 1}):`, error);
+            retries++;
+            if (retries === maxRetries) {
+                document.getElementById("available-energy").textContent = "Error fetching available energy";
+                buyEnergyButton.disabled = true;
+                buyEnergyButton.title = "Energy availability check failed";
+                buyEnergyButton.style.opacity = "0.5";
+                buyEnergyButton.style.cursor = "not-allowed";
+                buyEnergyButton.style.pointerEvents = "none";
+                console.log("Buy button disabled: Max retries reached");
+            }
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
     }
 }
 
-async function getAvailableEnergy() {
+// Update price display when energy amount or duration changes
+function updatePriceDisplay() {
+    const energyAmount = document.getElementById("energy-amount").value;
+    const delegationDuration = document.getElementById("delegation-duration").value;
+    const trxPrice = priceMap[energyAmount][delegationDuration];
+    document.getElementById("trx-price").textContent = trxPrice;
+}
+
+// Initiate payment process
+async function buyEnergy() {
+    const buyEnergyButton = document.getElementById("buy-energy-button");
+    if (buyEnergyButton.disabled) {
+        console.log("Buy Energy button is disabled; transaction prevented.");
+        return;
+    }
+
+    if (!userAddress) {
+        alert("Please connect your wallet first.");
+        return;
+    }
+
+    const energyAmount = document.getElementById("energy-amount").value;
+    const delegationDuration = document.getElementById("delegation-duration").value;
+    const receiverAddress = document.getElementById("receiver-address").value;
+    const trxPrice = priceMap[energyAmount][delegationDuration];
+
+    if (!tronWeb.isAddress(receiverAddress)) {
+        alert("Please enter a valid Tron wallet address.");
+        return;
+    }
+
     try {
-        console.log(`Fetching available energy for ${OWNER_ADDRESS}...`);
-        const r = await tronWeb.trx.getAccountResources(OWNER_ADDRESS);
-        const availableEnergy = r.EnergyLimit - (r.EnergyUsed || 0);
-        console.log(`Available energy: ${availableEnergy}`);
-        return availableEnergy;
-    } catch (e) {
-        console.error("Energy fetch failed:", e);
-        return 0;
+        document.getElementById("delegation-status").style.display = "block";
+        document.getElementById("delegation-message").textContent = `Sending payment of ${trxPrice} TRX to ${PAYMENT_ADDRESS}...`;
+        const result = await tronWeb.trx.sendTransaction(PAYMENT_ADDRESS, trxPrice * 1e6);
+        console.log("Transaction sent:", result);
+        console.log("Payment transaction ID:", result.txid);
+
+        if (!result.result) {
+            document.getElementById("delegation-message").textContent = `Transaction was rejected or failed.`;
+            return;
+        }
+
+        document.getElementById("delegation-message").textContent = `Notifying server of your request...`;
+        const response = await fetch(`${SERVER_URL}/api/request-energy`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ energyAmount, receiverAddress, trxPrice, userAddress, paymentTxId: result.txid, delegationDuration })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            document.getElementById("delegation-message").textContent = `Error: ${data.message}`;
+            return;
+        }
+
+        document.getElementById("delegation-message").textContent = `Waiting for server to process payment...`;
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        document.getElementById("delegation-message").textContent = `Waiting for energy delegation...`;
+        pollDelegationStatus(data.requestId);
+    } catch (error) {
+        console.error("Error requesting energy:", error);
+        document.getElementById("delegation-message").textContent = `Error: ${error.message}`;
     }
 }
 
-// ============ Payment Monitor (Per User) ============
-
-async function monitorSinglePayment(requestId) {
-    const request = requests.get(requestId);
-    if (!request) return;
-
-    const hexUserAddr = tronWeb.address.toHex(request.userAddress);
-    let attempts = 0;
-    const maxAttempts = 60; // 60 x 2s = 120s
-
-    console.log(`Monitoring payment for request ${requestId}:`, {
-        userAddress: request.userAddress,
-        hexUserAddr,
-        expectedAmount: request.trxPrice * 1e6,
-        paymentTxId: request.paymentTxId,
-        createdAt: request.createdAt.toISOString(),
-        delegationDuration: request.delegationDuration
-    });
+// Poll for delegation status
+async function pollDelegationStatus(requestId) {
+    console.log(`Starting to poll delegation status for request ${requestId}...`);
+    const maxPollAttempts = 30;
+    let pollAttempts = 0;
 
     const interval = setInterval(async () => {
-        attempts++;
+        pollAttempts++;
 
         try {
-            console.log(`Checking transactions for request ${requestId}, attempt ${attempts}...`);
-            let response;
-            let retryCount = 0;
-            const maxRetries = 3;
-            while (retryCount < maxRetries) {
-                try {
-                    response = await axios.get(`https://api.trongrid.io/v1/accounts/${PAYMENT_ADDRESS}/transactions`, {
-                        params: { only_to: true, limit: 50 },
-                        headers: { "TRON-PRO-API-KEY": process.env.TRONGRID_API_KEY }
-                    });
-                    break;
-                } catch (error) {
-                    retryCount++;
-                    console.error(`Error fetching transactions (attempt ${retryCount}/${maxRetries}):`, error.message);
-                    if (retryCount === maxRetries) throw new Error(`Failed to fetch transactions after ${maxRetries} attempts: ${error.message}`);
-                    await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-                }
+            console.log(`Polling delegation status for request ${requestId}, attempt ${pollAttempts}...`);
+            const response = await fetch(`${SERVER_URL}/api/delegation-status?requestId=${requestId}`, {
+                method: "GET",
+                headers: { "Content-Type": "application/json" }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status} (${response.statusText})`);
             }
 
-            const txs = response.data.data;
-            console.log(`Transactions received for request ${requestId}:`, txs.map(tx => ({
-                txID: tx.txID,
-                owner_address: tx.raw_data?.contract?.[0]?.parameter?.value?.owner_address,
-                amount: tx.raw_data?.contract?.[0]?.parameter?.value?.amount,
-                timestamp: tx.raw_data?.timestamp,
-                contractRet: tx.ret?.[0]?.contractRet
-            })));
+            const data = await response.json();
+            console.log(`Received delegation status for request ${requestId}:`, data);
 
-            const payment = txs.find(tx =>
-                tx.raw_data?.contract?.[0]?.type === "TransferContract" &&
-                tx.raw_data.contract[0].parameter.value.owner_address === hexUserAddr &&
-                Math.abs(parseInt(tx.raw_data.contract[0].parameter.value.amount) - parseInt(request.trxPrice * 1e6)) <= 100000 &&
-                tx.ret?.[0]?.contractRet === "SUCCESS" &&
-                tx.txID === request.paymentTxId
-            );
-
-            if (payment) {
-                console.log(`✅ Payment received from ${request.userAddress} (${request.trxPrice} TRX) for request ${requestId}`);
-
-                const { sunRequired } = await calculateSunForEnergy(request.energyAmount);
-                const result = await delegateEnergy(request.receiverAddress, sunRequired);
-
-                const delegationTime = new Date().toISOString();
-                const txId = result.txid;
-                if (!txId) {
-                    console.error(`No txid found in delegation result for request ${requestId}:`, result);
-                    throw new Error("Delegation transaction ID not found");
-                }
-                await new Promise((resolve, reject) => {
-                    db.run(`
-                        INSERT INTO delegations (
-                            request_id, payer_wallet, receiver_wallet, delegator_wallet, 
-                            delegation_time, delegation_txid, energy_amount, trx_price, sun_required, delegation_duration
-                        )
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    `, [
-                        requestId,
-                        request.userAddress,
-                        request.receiverAddress,
-                        OWNER_ADDRESS,
-                        delegationTime,
-                        txId,
-                        request.energyAmount,
-                        request.trxPrice,
-                        sunRequired,
-                        request.delegationDuration
-                    ], (err) => {
-                        if (err) {
-                            console.error(`Error storing delegation for request ${requestId}:`, err.message);
-                            sendTelegramMessage("error", {
-                                requestId,
-                                payerWallet: request.userAddress,
-                                errorMessage: `Error storing delegation in database: ${err.message}`
-                            });
-                            reject(err);
-                        } else {
-                            console.log(`Stored delegation for request ${requestId} in database.`);
-                            resolve();
-                        }
-                    });
-                });
-
-                sendTelegramMessage("success", {
-                    requestId,
-                    payerWallet: request.userAddress,
-                    receiverWallet: request.receiverAddress,
-                    delegatorWallet: OWNER_ADDRESS,
-                    delegationTime,
-                    txId,
-                    energyAmount: request.energyAmount,
-                    trxPrice: request.trxPrice,
-                    delegationDuration: request.delegationDuration
-                });
-
-                sendTelegramMessage("group-notification", {
-                    energyAmount: request.energyAmount,
-                    trxPrice: request.trxPrice
-                });
-
-                requests.set(requestId, {
-                    ...request,
-                    status: "delegated",
-                    txId: txId
-                });
-
-                setTimeout(async () => {
-                    try {
-                        const row = await new Promise((resolve, reject) => {
-                            db.get(`SELECT sun_required FROM delegations WHERE request_id = ?`, [requestId], (err, row) => {
-                                if (err) reject(err);
-                                else resolve(row);
-                            });
-                        });
-                        if (!row || !row.sun_required) {
-                            throw new Error(`No sun_required value found for request ${requestId}`);
-                        }
-                        const sunRequiredStored = row.sun_required;
-
-                        await undelegateEnergy(request.receiverAddress, sunRequiredStored);
-                        const reclamationTime = new Date().toISOString();
-                        await new Promise((resolve, reject) => {
-                            db.run(`
-                                UPDATE delegations
-                                SET reclamation_time = ?
-                                WHERE request_id = ?
-                            `, [reclamationTime, requestId], (err) => {
-                                if (err) {
-                                    console.error(`Error updating reclamation time for request ${requestId}:`, err.message);
-                                    sendTelegramMessage("error", {
-                                        requestId,
-                                        payerWallet: request.userAddress,
-                                        errorMessage: `Error updating reclamation time in database: ${err.message}`
-                                    });
-                                    reject(err);
-                                } else {
-                                    console.log(`Updated reclamation time for request ${requestId} in database.`);
-                                    resolve();
-                                }
-                            });
-                        });
-                        requests.delete(requestId);
-                    } catch (err) {
-                        console.error(`Error during undelegation for request ${requestId}:`, err.message);
-                        sendTelegramMessage("error", {
-                            requestId,
-                            payerWallet: request.userAddress,
-                            errorMessage: `Error during undelegation: ${err.message}`
-                        });
-                    }
-                }, request.delegationDuration * 60 * 1000); // Undelegate after specified duration
-
+            if (data.status === "delegated") {
                 clearInterval(interval);
-                return;
-            }
-        } catch (err) {
-            console.error(`❌ Error in request ${requestId}:`, err.message);
-            requests.set(requestId, {
-                ...request,
-                status: "failed",
-                message: err.message
-            });
-            sendTelegramMessage("error", {
-                requestId,
-                payerWallet: request.userAddress,
-                errorMessage: err.message
-            });
-            clearInterval(interval);
-        }
+                const statusElement = document.getElementById("delegation-status");
+                const messageElement = document.getElementById("delegation-message");
+                const hashElement = document.getElementById("delegation-hash");
 
-        if (attempts >= maxAttempts) {
-            console.warn(`⏱️ Timeout: No payment found for request ${requestId}`);
-            requests.set(requestId, {
-                ...request,
-                status: "expired",
-                message: "No payment detected after 120s"
-            });
-            sendTelegramMessage("error", {
-                requestId,
-                payerWallet: request.userAddress,
-                errorMessage: "No payment detected after 120 seconds"
-            });
-            clearInterval(interval);
+                if (statusElement && messageElement && hashElement) {
+                    statusElement.style.display = "block";
+                    messageElement.textContent = `Energy delegated successfully!`;
+                    hashElement.textContent = data.txId;
+                    hashElement.href = `https://tronscan.org/#/transaction/${data.txId}`;
+                    hashElement.style.display = "block";
+                } else {
+                    console.error("UI elements not found:", { statusElement, messageElement, hashElement });
+                }
+            } else if (data.status === "failed" || data.status === "expired") {
+                clearInterval(interval);
+                const statusElement = document.getElementById("delegation-status");
+                const messageElement = document.getElementById("delegation-message");
+                if (statusElement && messageElement) {
+                    statusElement.style.display = "block";
+                    messageElement.textContent = `Delegation failed: ${data.message}`;
+                } else {
+                    console.error("UI elements not found:", { statusElement, messageElement });
+                }
+            } else if (pollAttempts >= maxPollAttempts) {
+                clearInterval(interval);
+                const statusElement = document.getElementById("delegation-status");
+                const messageElement = document.getElementById("delegation-message");
+                if (statusElement && messageElement) {
+                    statusElement.style.display = "block";
+                    messageElement.textContent = `Delegation timed out after 60 seconds.`;
+                } else {
+                    console.error("UI elements not found:", { statusElement, messageElement });
+                }
+            }
+        } catch (error) {
+            console.error(`Error polling delegation status for request ${requestId}:`, error);
+            if (pollAttempts >= maxPollAttempts) {
+                clearInterval(interval);
+                const statusElement = document.getElementById("delegation-status");
+                const messageElement = document.getElementById("delegation-message");
+                if (statusElement && messageElement) {
+                    statusElement.style.display = "block";
+                    messageElement.textContent = `Error polling delegation status: ${error.message}`;
+                } else {
+                    console.error("UI elements not found:", { statusElement, messageElement });
+                }
+            }
         }
     }, 2000);
 }
 
-// Schedule a daily report at 05:00 UTC
-cron.schedule("0 5 * * *", async () => {
-    console.log("Generating daily sales and income report at 05:00 UTC...");
-    
-    const now = new Date();
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const twentyFourHoursAgoISOString = twentyFourHoursAgo.toISOString();
+// Event listeners
+document.addEventListener("DOMContentLoaded", async () => {
+    console.log("DOM fully loaded and parsed.");
+    await autoConnectWallet();
 
-    try {
-        const rows = await new Promise((resolve, reject) => {
-            db.all(`
-                SELECT energy_amount, trx_price
-                FROM delegations
-                WHERE delegation_time >= ?
-                AND delegation_time <= ?
-            `, [twentyFourHoursAgoISOString, now.toISOString()], (err, rows) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(rows);
-                }
-            });
-        });
+    const connectButton = document.getElementById("connect-button");
+    if (connectButton) connectButton.addEventListener("click", connectWallet);
 
-        let totalEnergySold = 0;
-        let totalIncome = 0;
+    const energyAmountSelect = document.getElementById("energy-amount");
+    if (energyAmountSelect) energyAmountSelect.addEventListener("change", updatePriceDisplay);
 
-        rows.forEach(row => {
-            totalEnergySold += row.energy_amount || 0;
-            totalIncome += row.trx_price || 0;
-        });
+    const delegationDurationSelect = document.getElementById("delegation-duration");
+    if (delegationDurationSelect) delegationDurationSelect.addEventListener("change", updatePriceDisplay);
 
-        sendTelegramMessage("daily-report", {
-            totalEnergySold,
-            totalIncome
-        });
-    } catch (error) {
-        console.error("Error generating daily sales report:", error.message);
-        sendTelegramMessage("error", {
-            requestId: "N/A",
-            payerWallet: "N/A",
-            errorMessage: `Error generating daily sales report: ${error.message}`
-        });
-    }
-}, {
-    scheduled: true,
-    timezone: "UTC"
-});
-
-// ============ API Routes ============
-
-app.get("/api/available-energy", async (req, res) => {
-    try {
-        const availableEnergy = await getAvailableEnergy();
-        res.json({ success: true, availableEnergy });
-    } catch (e) {
-        res.status(500).json({ success: false, message: e.message });
-    }
-});
-
-app.post("/api/request-energy", async (req, res) => {
-    const { energyAmount, receiverAddress, trxPrice, userAddress, paymentTxId, delegationDuration } = req.body;
-    const requestId = Date.now().toString();
-
-    if (!energyAmount || !receiverAddress || !trxPrice || !userAddress || !paymentTxId || !delegationDuration) {
-        return res.status(400).json({ success: false, message: "Missing fields" });
+    const buyEnergyButton = document.getElementById("buy-energy-button");
+    if (buyEnergyButton) {
+        buyEnergyButton.addEventListener("click", buyEnergy);
+    } else {
+        console.error("Buy Energy button not found during initialization. Check ID 'buy-energy-button'.");
     }
 
-    if (![5, 15].includes(parseInt(delegationDuration))) {
-        return res.status(400).json({ success: false, message: "Invalid delegation duration. Must be 5 or 15 minutes." });
-    }
-
-    for (const [id, request] of requests.entries()) {
-        if (request.userAddress === userAddress && request.status === "pending") {
-            console.log(`Canceling previous pending request ${id} for user ${userAddress}`);
-            requests.delete(id);
-        }
-    }
-
-    requests.set(requestId, {
-        userAddress,
-        energyAmount: parseInt(energyAmount),
-        trxPrice,
-        receiverAddress,
-        paymentTxId,
-        delegationDuration: parseInt(delegationDuration),
-        status: "pending",
-        createdAt: new Date()
-    });
-
-    monitorSinglePayment(requestId);
-    res.json({ success: true, requestId });
-});
-
-app.get("/api/delegation-status", (req, res) => {
-    console.log(`Received GET request for /api/delegation-status with query:`, req.query);
-    const { requestId } = req.query;
-    const request = requests.get(requestId);
-    if (!request) {
-        console.log(`Request ${requestId} not found`);
-        return res.json({ status: "not-found", message: "Request not found" });
-    }
-    console.log(`Returning status for request ${requestId}:`, { status: request.status, txId: request.txId, message: request.message });
-    res.json({ status: request.status, txId: request.txId || "", message: request.message || "" });
-});
-
-app.post("/api/delegation-status", (req, res) => {
-    console.log(`Received POST request for /api/delegation-status, which is not allowed`);
-    res.status(405).json({ success: false, message: "Method Not Allowed" });
-});
-
-app.options("/api/delegation-status", (req, res) => {
-    res.set({
-        "Access-Control-Allow-Origin": "https://www.cftecosystem.com",
-        "Access-Control-Allow-Methods": "GET",
-        "Access-Control-Allow-Headers": "Content-Type"
-    }).sendStatus(204);
-});
-
-app.get("/", (req, res) => {
-    res.status(200).json({ message: "Welcome to the CFT Ecosystem API. Use /api/available-energy, /api/request-energy, or /api/delegation-status." });
-});
-
-app.get("/api/delegation-history", (req, res) => {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoISOString = thirtyDaysAgo.toISOString();
-
-    db.all(`
-        SELECT * FROM delegations
-        WHERE delegation_time >= ?
-        ORDER BY delegation_time DESC
-    `, [thirtyDaysAgoISOString], (err, rows) => {
-        if (err) {
-            console.error("Error fetching delegation history:", err.message);
-            res.status(500).json({ success: false, message: "Error fetching delegation history" });
-        } else {
-            res.json({ success: true, data: rows });
-        }
-    });
-});
-
-// ============ Start Server ============
-
-app.listen(3000, "0.0.0.0", () => console.log("🚀 Server running on port 3000"));
-
-process.on("SIGINT", () => {
-    db.close((err) => {
-        if (err) {
-            console.error("Error closing database:", err.message);
-        } else {
-            console.log("Database connection closed.");
-        }
-        process.exit(0);
-    });
+    // Initial fetch of available energy to set button state
+    fetchAvailableEnergy();
 });
