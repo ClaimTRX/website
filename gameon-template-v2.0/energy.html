@@ -2,119 +2,123 @@
 <html class="no-js" lang="en">
 
 <head>
-	<meta charset="UTF-8">
-	<meta name="description" content="">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="description" content="">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
-	<!-- The above 4 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <!-- Title -->
+    <title>CFT Ecosystem. The first treasury VC on Tron</title>
 
-	<!-- Title  -->
-	<title>CFT Ecosystem. The first treasury VC on Tron</title>
+    <!-- Favicon -->
+    <link rel="icon" href="assets/img/favicon.png">
 
-	<!-- Favicon  -->
-	<link rel="icon" href="assets/img/favicon.png">
+    <!-- Style css -->
+    <link rel="stylesheet" href="assets/css/style.css">
 
-	<!-- ***** All CSS Files ***** -->
+    <!-- Custom Styles to Fix Dropdown Text Color -->
+    <style>
+        /* Ensure text color is black for select elements and options */
+        select#energy-amount,
+        select#delegation-duration {
+            color: #000 !important; /* Black text */
+        }
 
-	<!-- Style css -->
-	<link rel="stylesheet" href="assets/css/style.css">
+        /* Ensure text color is black when select is focused */
+        select#energy-amount:focus,
+        select#delegation-duration:focus {
+            color: #000 !important; /* Black text on focus */
+        }
 
+        /* Ensure options have black text */
+        select#energy-amount option,
+        select#delegation-duration option {
+            color: #000 !important; /* Black text for options */
+        }
+
+        /* Ensure selected option has black text */
+        select#energy-amount option:checked,
+        select#delegation-duration option:checked {
+            color: #000 !important; /* Black text for selected option */
+        }
+    </style>
 </head>
 
 <body>
-	<!--====== Preloader Area Start ======-->
-	<div id="gameon-preloader" class="gameon-preloader">
-		<!-- Preloader Animation -->
-		<div class="preloader-animation">
-			<!-- Spinner -->
-			<div class="spinner"></div>
-			<p class="fw-5 text-center text-uppercase">Loading</p>
-		</div>
-		<!-- Loader Animation -->
-		<div class="loader-animation">
-			<div class="row h-100">
-				<!-- Single Loader -->
-				<div class="col-3 single-loader p-0">
-					<div class="loader-bg"></div>
-				</div>
-				<!-- Single Loader -->
-				<div class="col-3 single-loader p-0">
-					<div class="loader-bg"></div>
-				</div>
-				<!-- Single Loader -->
-				<div class="col-3 single-loader p-0">
-					<div class="loader-bg"></div>
-				</div>
-				<!-- Single Loader -->
-				<div class="col-3 single-loader p-0">
-					<div class="loader-bg"></div>
-				</div>
-			</div>
-		</div>
-	</div>
-	<!--====== Preloader Area End ======-->
+    <!--====== Preloader Area Start ======-->
+    <div id="gameon-preloader" class="gameon-preloader">
+        <div class="preloader-animation">
+            <div class="spinner"></div>
+            <p class="fw-5 text-center text-uppercase">Loading</p>
+        </div>
+        <div class="loader-animation">
+            <div class="row h-100">
+                <div class="col-3 single-loader p-0">
+                    <div class="loader-bg"></div>
+                </div>
+                <div class="col-3 single-loader p-0">
+                    <div class="loader-bg"></div>
+                </div>
+                <div class="col-3 single-loader p-0">
+                    <div class="loader-bg"></div>
+                </div>
+                <div class="col-3 single-loader p-0">
+                    <div class="loader-bg"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--====== Preloader Area End ======-->
 
-	<div class="main">
-		<!-- ***** Header Start ***** -->
-		<header id="header">
-			<!-- Navbar -->
-			<nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
-				<div class="container header">
-
-					<!-- Logo -->
-					<a class="navbar-brand" href="index.html">
-						<img src="assets/img/logo/logo.png" alt="" />
-					</a>
-
-					<div class="ms-auto"></div>
-
-					<!-- Navbar Nav -->
-					<ul class="navbar-nav items mx-auto">
-						<li class="nav-item">
-							<a href="index.html" class="nav-link">Home</a>
-						</li>
-						<li class="nav-item dropdown">
-							<a href="#" class="nav-link">CFT V1<i class="icon-arrow-down"></i></a>
-							<ul class="dropdown-menu">
-								<li class="nav-item">
-									<a href="migrate.html" class="nav-link">Migrate to V2</a>
-								</li>
-								
-								<li class="nav-item">
-									<a href="cftstaking.html" class="nav-link">Stake CFT (Old)</a>
-								</li>
-								<li class="nav-item">
-									<a href="trc20staking.html" class="nav-link">Stake TRC20 (Old)</a>
-								</li>
-							</ul>
-						</li>
-						<li class="nav-item dropdown">
-							<a href="#" class="nav-link">CFT V2<i class="icon-arrow-down"></i></a>
-							<ul class="dropdown-menu">
-								<li class="nav-item">
-									<a href="migrate.html" class="nav-link">Migrate to V2</a>
-								</li>
-								
-								<li class="nav-item">
-									<a href="staking.html" class="nav-link">Staking</a>
-								</li>
-
-								<li class="nav-item">
-									<a href="sellcft.html" class="nav-link">Trading</a>
-								</li>
-								
-							</ul>
-						</li>
-						<li class="nav-item dropdown">
-							<a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
-							<ul class="dropdown-menu">
-								<li class="nav-item">
-									<a href="buystablex.html" class="nav-link">Buy StableX</a>
-								</li>
-								<li class="nav-item">
-									<a #include <stdio.h>
+    <div class="main">
+        <!-- ***** Header Start ***** -->
+        <header id="header">
+            <nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
+                <div class="container header">
+                    <a class="navbar-brand" href="index.html">
+                        <img src="assets/img/logo/logo.png" alt="" />
+                    </a>
+                    <div class="ms-auto"></div>
+                    <ul class="navbar-nav items mx-auto">
+                        <li class="nav-item">
+                            <a href="index.html" class="nav-link">Home</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link">CFT V1<i class="icon-arrow-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li class="nav-item">
+                                    <a href="migrate.html" class="nav-link">Migrate to V2</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="cftstaking.html" class="nav-link">Stake CFT (Old)</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="trc20staking.html" class="nav-link">Stake TRC20 (Old)</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link">CFT V2<i class="icon-arrow-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li class="nav-item">
+                                    <a href="migrate.html" class="nav-link">Migrate to V2</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="staking.html" class="nav-link">Staking</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="sellcft.html" class="nav-link">Trading</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li class="nav-item">
+                                    <a href="buystablex.html" class="nav-link">Buy StableX</a>
+                                </li>
+                                <li class="nav-item">
                                     <a href="sellstablex.html" class="nav-link">Sell StableX</a>
                                 </li>
                                 <li class="nav-item">
@@ -130,7 +134,6 @@
                                 </li>
                             </ul>
                         </li>
-
                         <li class="nav-item dropdown">
                             <a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
                             <ul class="dropdown-menu">
@@ -140,20 +143,12 @@
                                 <li class="nav-item">
                                     <a href="energy.html" class="nav-link">Rent Energy</a>
                                 </li>
-                            
                             </ul>
                         </li>
                         <li class="nav-item">
-                                    <a href="swap.html" class="nav-link">Swap</a>
-                                </li>
-                        
-                        
+                            <a href="swap.html" class="nav-link">Swap</a>
+                        </li>
                     </ul>
-
-                    <!-- Navbar Icons -->
-                    
-
-                    <!-- Navbar Toggler -->
                     <ul class="navbar-nav toggle">
                         <li class="nav-item">
                             <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
@@ -161,19 +156,13 @@
                             </a>
                         </li>
                     </ul>
-
-                    <!-- Navbar Action Button -->
                     <ul class="navbar-nav action">
-                        <ul class="navbar-nav action">
-    <li class="nav-item ms-2">
-        <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
-            <i class="icon-wallet me-md-2"></i> Wallet Connect
-        </button>
-    </li>
-</ul>
-
+                        <li class="nav-item ms-2">
+                            <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
+                                <i class="icon-wallet me-md-2"></i> Wallet Connect
+                            </button>
+                        </li>
                     </ul>
-
                 </div>
             </nav>
         </header>
@@ -184,88 +173,85 @@
             <div class="container">
                 <div class="row align-items-center justify-content-center">
                     <div class="col-12 col-md-6 col-lg-9 text-center">
-                        <!-- Hero Content -->
                         <div class="hero-content">
                             <div class="intro text-center mb-5">
                                 <span class="intro-text">CFT Ecosystem</span>
                                 <h1 class="mt-4">Rent Energy</h1>
-                                <p>Grow your project through staking rewards</p>
+                                <p>Grow your wealth through staking rewards</p>
                             </div>
-                            <!-- Buttons -->
-                            
                         </div>
                     </div>
                 </div>
             </div>
         </section>
         <!-- ***** Hero Area End ***** -->
-     <section class="staking-area">
-    <div id="energy-accordion" class="container accordion">
-        <div class="row justify-content-center">
-            <div class="col-12 col-md-10">
-                <div class="single-accordion-item">
-                    <div class="card-header bg-inherit border-0 p-0">
-                        <h2 class="m-0">
-                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEnergy">
-                                <div class="row">
-                                    <div class="col-12 col-md-8">
-                                        <div class="media flex-column flex-md-row">
-                                            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
-                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                <h4 class="m-0">Rent Energy</h4>
-                                                <p>Available Energy for Rent: <span id="available-energy">Loading...</span> Energy</p>
-                                                <p>Energy rented for 5 or 15 minutes</p>
+
+        <section class="staking-area">
+            <div id="energy-accordion" class="container accordion">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-10">
+                        <div class="single-accordion-item">
+                            <div class="card-header bg-inherit border-0 p-0">
+                                <h2 class="m-0">
+                                    <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEnergy">
+                                        <div class="row">
+                                            <div class="col-12 col-md-8">
+                                                <div class="media flex-column flex-md-row">
+                                                    <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                                                    <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                        <h4 class="m-0">Rent Energy</h4>
+                                                        <p>Available Energy for Rent: <span id="available-energy">Loading...</span> Energy</p>
+                                                        <p>Energy rented for 5, 15, or 60 minutes</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="collapseEnergy" class="collapse" data-bs-parent="#energy-accordion">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-12 col-md-6 single-staking-item input-box">
+                                            <span class="item-title mb-2">Select Energy Amount</span>
+                                            <select id="energy-amount" class="form-select form-select-sm mb-3">
+                                                <option value="32000">32,000 Energy</option>
+                                                <option value="50000">50,000 Energy</option>
+                                                <option value="65000">65,000 Energy</option>
+                                                <option value="100000">100,000 Energy</option>
+                                                <option value="135000">135,000 Energy</option>
+                                                <option value="150000">150,000 Energy</option>
+                                                <option value="200000">200,000 Energy</option>
+                                                <option value="250000">250,000 Energy</option>
+                                            </select>
+                                            <span class="item-title mb-2">Select Duration</span>
+                                            <select id="delegation-duration" class="form-select form-select-sm mb-3">
+                                                <option value="5">5 Minutes</option>
+                                                <option value="15">15 Minutes</option>
+                                                <option value="60">60 Minutes</option>
+                                            </select>
+                                            <p>Price: <span id="trx-price">Select options</span></p>
+                                            <input type="text" id="receiver-address" class="form-control form-control-sm mb-2" placeholder="Receiving address (defaults to connected wallet)">
+                                            <a href="#" class="btn input-btn btn-sm mt-2" id="buy-energy-button">Buy Energy</a>
+
+                                            <div id="payment-instructions" class="mt-3" style="display: none;">
+                                                <p id="payment-message"></p>
+                                            </div>
+                                            <div id="delegation-status" class="status-message" style="display: none;">
+                                                <p id="delegation-message"></p>
+                                                <p>Transaction Hash: <a id="delegation-hash" href="#" target="_blank" style="display: none;"></a></p>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            </button>
-                        </h2>
-                    </div>
-                    <div id="collapseEnergy" class="collapse" data-bs-parent="#energy-accordion">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-12 col-md-6 single-staking-item input-box">
-                                    <span class="item-title mb-2">Select Energy Amount</span>
-                                    <select id="energy-amount" class="form-select form-select-sm mb-3">
-                                        <option value="32000">32,000 Energy - 1.5 TRX (5 min) / 1.65 TRX (15 min)</option>
-                                        <option value="50000">50,000 Energy - 2.5 TRX (5 min) / 2.75 TRX (15 min)</option>
-                                        <option value="65000">65,000 Energy - 3 TRX (5 min) / 3.3 TRX (15 min)</option>
-                                        <option value="100000">100,000 Energy - 4.5 TRX (5 min) / 4.95 TRX (15 min)</option>
-                                        <option value="135000">135,000 Energy - 5.5 TRX (5 min) / 6.05 TRX (15 min)</option>
-                                        <option value="150000">150,000 Energy - 8 TRX (5 min) / 8.8 TRX (15 min)</option>
-                                        <option value="200000">200,000 Energy - 11 TRX (5 min) / 12.1 TRX (15 min)</option>
-                                        <option value="250000">250,000 Energy - 14 TRX (5 min) / 15.4 TRX (15 min)</option>
-                                    </select>
-                                    <span class="item-title mb-2">Select Duration</span>
-                                    <select id="delegation-duration" class="form-select form-select-sm mb-3">
-                                        <option value="5">5 Minutes</option>
-                                        <option value="15">15 Minutes</option>
-                                    </select>
-                                    <p>Price: <span id="trx-price"></span> TRX</p>
-                                    <input type="text" id="receiver-address" class="form-control form-control-sm mb-2" placeholder="Receiving address (defaults to connected wallet)">
-                                    <a href="#" class="btn input-btn btn-sm mt-2" id="buy-energy-button">Buy Energy</a>
-
-                                    <div id="payment-instructions" class="mt-3" style="display: none;">
-                                        <p id="payment-message"></p>
-                                    </div>
-                                    <div id="delegation-status" class="status-message" style="display: none;">
-                                        <p id="delegation-message"></p>
-                                        <p>Transaction Hash: <a id="delegation-hash" href="#" target="_blank" style="display: none;"></a></p>
-                                    </div>
-   
-    
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</section>
+        </section>
 
-       <!-- ***** CTA Area Start ***** -->
+        <!-- ***** CTA Area Start ***** -->
         <section class="cta-area p-0">
             <div class="container">
                 <div class="row">
@@ -293,36 +279,23 @@
             <div class="container">
                 <div class="row justify-content-center">
                     <div class="col-12 col-md-8 text-center">
-                        <!-- Footer Items -->
                         <div class="footer-items">
-                            <!-- Logo -->
                             <a class="navbar-brand" href="index.html">
                                 <img src="assets/img/logo/logo.png" alt="">
                             </a>
-                            <!-- Social Icons -->
                             <div class="social-icons d-flex justify-content-center my-4">
-    <!-- X (Formerly Twitter) -->
-    <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank">
-        <i class="fab fa-x-twitter"></i>
-    </a>
-
-    <!-- Reddit -->
-    <a class="reddit" href="https://www.reddit.com/" target="_blank">
-        <i class="fab fa-reddit"></i>
-    </a>
-
-    <!-- Telegram -->
-    <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank">
-        <i class="fab fa-telegram-plane"></i>
-    </a>
-</div>
-
-
-                            
-                            <!-- Copyright Area -->
+                                <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank">
+                                    <i class="fab fa-x-twitter"></i>
+                                </a>
+                                <a class="reddit" href="https://www.reddit.com/" target="_blank">
+                                    <i class="fab fa-reddit"></i>
+                                </a>
+                                <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank">
+                                    <i class="fab fa-telegram-plane"></i>
+                                </a>
+                            </div>
                             <div class="copyright-area py-4">©2025 CFT Ecosystem, All Rights Reserved </div>
                         </div>
-                        <!-- Scroll To Top -->
                         <div id="scroll-to-top" class="scroll-to-top">
                             <a href="#header" class="smooth-anchor">
                                 <i class="fa-solid fa-arrow-up"></i>
@@ -388,32 +361,19 @@
     </div>
 
     <!-- ***** All jQuery Plugins ***** -->
-
-    <!-- jQuery(necessary for all JavaScript plugins) -->
     <script src="assets/js/vendor/jquery.min.js"></script>
-
-    
-        
-
-    <!-- Bootstrap js -->
     <script src="assets/js/vendor/popper.min.js"></script>
     <script src="assets/js/vendor/bootstrap.min.js"></script>
-
-    <!-- Plugins js -->
     <script src="assets/js/vendor/all.min.js"></script>
     <script src="assets/js/vendor/gallery.min.js"></script>
     <script src="assets/js/vendor/slider.min.js"></script>
     <script src="assets/js/vendor/countdown.min.js"></script>
     <script src="assets/js/vendor/shuffle.min.js"></script>
-
-    <!-- Main js -->
     <script src="assets/js/main.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
-    <!-- Staking Script -->
     <script src="assets/js/energy.js"></script>
-
-
-<body/>
+</body>
+</html>
 
    
    
