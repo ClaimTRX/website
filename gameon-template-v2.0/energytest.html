@@ -8,14 +8,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
-    <!-- Title  -->
+    <!-- Title -->
     <title>CFT Ecosystem. The first treasury VC on Tron</title>
 
-    <!-- Favicon  -->
+    <!-- Favicon -->
     <link rel="icon" href="assets/img/favicon.png">
 
     <!-- Style css -->
     <link rel="stylesheet" href="assets/css/style.css">
+
+    <!-- Custom Styles to Fix Dropdown Text Color -->
+    <style>
+        /* Ensure text color is black for select elements and options */
+        select#energy-amount,
+        select#delegation-duration {
+            color: #000 !important; /* Black text */
+        }
+
+        /* Ensure text color is black when select is focused */
+        select#energy-amount:focus,
+        select#delegation-duration:focus {
+            color: #000 !important; /* Black text on focus */
+        }
+
+        /* Ensure options have black text */
+        select#energy-amount option,
+        select#delegation-duration option {
+            color: #000 !important; /* Black text for options */
+        }
+
+        /* Ensure selected option has black text */
+        select#energy-amount option:checked,
+        select#delegation-duration option:checked {
+            color: #000 !important; /* Black text for selected option */
+        }
+    </style>
 </head>
 
 <body>
