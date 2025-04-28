@@ -1,15 +1,15 @@
 let tronWeb, userAddress;
 
-// Hardcoded price mapping (energy amount to TRX for 5 and 15 minutes)
+// Hardcoded price mapping (energy amount to TRX for 5, 15, and 60 minutes)
 const priceMap = {
-    "32000": { 5: 1.5, 15: 1.65 },
-    "50000": { 5: 2.5, 15: 2.75 },
-    "65000": { 5: 3, 15: 3.3 },
-    "100000": { 5: 4.5, 15: 4.95 },
-    "135000": { 5: 5.5, 15: 6.05 },
-    "150000": { 5: 8, 15: 8.8 },
-    "200000": { 5: 11, 15: 12.1 },
-    "250000": { 5: 14, 15: 15.4 }
+    "32000": { 5: 1.5, 15: 1.65, 60: 6.6 },
+    "50000": { 5: 2.5, 15: 2.75, 60: 11 },
+    "65000": { 5: 3, 15: 3.3, 60: 13.2 },
+    "100000": { 5: 4.5, 15: 4.95, 60: 19.8 },
+    "135000": { 5: 5.5, 15: 6.05, 60: 24.2 },
+    "150000": { 5: 8, 15: 8.8, 60: 35.2 },
+    "200000": { 5: 11, 15: 12.1, 60: 48.4 },
+    "250000": { 5: 14, 15: 15.4, 60: 61.6 }
 };
 
 // Your Tron address for receiving payments
@@ -146,12 +146,20 @@ async function fetchAvailableEnergy() {
     }
 }
 
-// Update price display when energy amount or duration changes
+// Update price display to show only the price for the selected energy amount and duration
 function updatePriceDisplay() {
     const energyAmount = document.getElementById("energy-amount").value;
     const delegationDuration = document.getElementById("delegation-duration").value;
-    const trxPrice = priceMap[energyAmount][delegationDuration];
-    document.getElementById("trx-price").textContent = trxPrice;
+    const priceDisplay = document.getElementById("trx-price");
+
+    if (energyAmount && delegationDuration && priceMap[energyAmount] && priceMap[energyAmount][delegationDuration]) {
+        const trxPrice = priceMap[energyAmount][delegationDuration];
+        priceDisplay.textContent = `${trxPrice} TRX`;
+        console.log(`Price updated: ${trxPrice} TRX for ${energyAmount} energy, ${delegationDuration} minutes`);
+    } else {
+        priceDisplay.textContent = "Select options";
+        console.log("Invalid energy amount or duration selected");
+    }
 }
 
 // Initiate payment process
@@ -302,7 +310,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (energyAmountSelect) energyAmountSelect.addEventListener("change", updatePriceDisplay);
 
     const delegationDurationSelect = document.getElementById("delegation-duration");
-    if (delegationDurationSelect) delegationDurationSelect.addEventListener("change", updatePriceDisplay);
+    if (delegationDurationSelect) {
+        delegationDurationSelect.addEventListener("change", updatePriceDisplay);
+    }
 
     const buyEnergyButton = document.getElementById("buy-energy-button");
     if (buyEnergyButton) {
@@ -311,6 +321,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.error("Buy Energy button not found during initialization. Check ID 'buy-energy-button'.");
     }
 
-    // Initial fetch of available energy to set button state
+    // Initial fetch of available energy and price display
     fetchAvailableEnergy();
+    updatePriceDisplay();
 });
