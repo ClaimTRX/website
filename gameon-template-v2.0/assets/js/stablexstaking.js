@@ -18,13 +18,7 @@ const tokenDetails = {
         price: 0.27,
         displayName: 'CFT' // ← Added missing comma here
     },
-    cftnew: {
-        tokenAddress: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
-        stakingAddress: 'TABSRFLk6FF1FKPtTLy4zJpJqaiZQzwgQt',
-        decimals: 6,
-        price: 0.27,
-        displayName: 'CFT' // ← Added missing comma here
-    }
+    
 };
 
 const stakingContractAbi = [
@@ -868,6 +862,8 @@ async function updateTokenUI(token) {
     await delay(400);
     await updateAPR(token);
     await delay(400);
+    await updateProjectedRewards(token);
+  await delay(400);
     await updateClaimableRewards(token);
     await delay(400);
     await updateTotalClaimedRewards(token);
@@ -927,6 +923,21 @@ async function updateAPR(token) {
     } catch (error) {
         console.error(`Error updating APR for ${token}:`, error);
     }
+}
+
+// Update projected rewards
+async function updateProjectedRewards(token) {
+  try {
+    const projectedRewardsRaw = await stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call();
+    // Use rewardDecimals if defined (for cftturu), otherwise use staking token decimals
+    const rewardDecimals = tokenDetails[token].rewardDecimals || tokenDetails[token].decimals;
+    const projectedRewards = Number(projectedRewardsRaw) / Math.pow(10, rewardDecimals);
+
+    // Display the projected rewards
+    document.getElementById(`projected-rewards-${token}`).innerText = Math.floor(projectedRewards).toLocaleString('en-US');
+  } catch (error) {
+    console.error(`Error updating projected rewards for ${token}:`, error);
+  }
 }
 
 
