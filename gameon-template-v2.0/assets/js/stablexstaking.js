@@ -11,13 +11,13 @@ const tokenDetails = {
         decimals: null,
         displayName: 'StableX' // ← Added missing comma here
     },
-    cft: {
+     cftnew: {
         tokenAddress: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
-        stakingAddress: 'TUvHH8QtyXvMubLJRgKBdwfG7Y2TRLGSE6',
+        stakingAddress: 'TABSRFLk6FF1FKPtTLy4zJpJqaiZQzwgQt',
         decimals: 6,
         price: 0.27,
         displayName: 'CFT' // ← Added missing comma here
-    },
+    }
     
 };
 
