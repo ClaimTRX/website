@@ -754,7 +754,7 @@ const minOutBigInt = window.expectedOutBigInt * BigInt(100 - dynamicSlippage) / 
         if (tokenFrom === 'TRX') {
             const path = [WTRX_CONTRACT, tokenAddressTo];
             document.getElementById('status-msg').textContent = 'Processing swap...';
-            const tx = await const tx = await router.swapExactETHForTokensSupportingFeeOnTransferTokens(
+            const tx = await router.swapExactETHForTokensSupportingFeeOnTransferTokens(
 
                 minOutBigInt.toString(),
                 path,
@@ -772,7 +772,7 @@ const minOutBigInt = window.expectedOutBigInt * BigInt(100 - dynamicSlippage) / 
                 await approveToken(tokenAddressFrom, amountInBigInt, SUNSWAP_ROUTER);
             }
             document.getElementById('status-msg').textContent = 'Processing swap...';
-            const tx = await const tx = await router.swapExactTokensForETHSupportingFeeOnTransferTokens(
+             const tx = await router.swapExactTokensForETHSupportingFeeOnTransferTokens(
 
                 amountInBigInt.toString(),
                 minOutBigInt.toString(),
@@ -788,7 +788,7 @@ const minOutBigInt = window.expectedOutBigInt * BigInt(100 - dynamicSlippage) / 
                 await approveToken(tokenAddressFrom, amountInBigInt, SUNSWAP_ROUTER);
             }
             document.getElementById('status-msg').textContent = 'Processing swap...';
-            const tx = await const tx = await router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+             const tx = await router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
 
                 amountInBigInt.toString(),
                 minOutBigInt.toString(),
