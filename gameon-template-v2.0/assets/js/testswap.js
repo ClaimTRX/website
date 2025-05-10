@@ -737,8 +737,17 @@ async function executeSwap() {
         }
 
         // Existing SunSwap logic
-        const slippage = 1; // 1% slippage
-        const minOutBigInt = window.expectedOutBigInt * BigInt(100 - slippage) / BigInt(100);
+        let dynamicSlippage = 1;
+const taxedTokens = ['CFT', 'KING', 'BBT'];
+
+if (taxedTokens.includes(tokenTo)) {
+    dynamicSlippage = 6; // 5% tax + buffer
+} else if (taxedTokens.includes(tokenFrom)) {
+    dynamicSlippage = 6;
+}
+
+const minOutBigInt = window.expectedOutBigInt * BigInt(100 - dynamicSlippage) / BigInt(100);
+
         const deadline = Math.floor(Date.now() / 1000) + 600;
         const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
 
