@@ -1,15 +1,15 @@
 const allowedAddresses = [
-    "TR2XJawheHUAcbxgzABVh1toDA59Eb4RbM",  // Replace with your actual Tron addresses
-            "TQLrSGjNtYwtUdttbm4HsXxD6vmbePWni4",
-            "TL71zkkpC59dKmj8CeVf3woiXJuTNGBUfw",
-            "TKsFvPSTxZhym26K3uscKbbt8K29UbpVZd",
-            "TJDMQzjJSh5eC8WezVtnDXDuWXAwjV23eF",
-            "TFUQ7aqaxoDVskZ9ucWCCaLBeLKSSLa5hS",
-            "TCGsvNmNtezmeHZgnH2fd8gGa2KV5rUkHV",
-            "TC56nRBaobbqPWMCgS3FhMf7EjqyYZ7StR",
-            "TB6xoAXGdPY4D3j3cnojjkkcoWwrNGHox7",
-            "TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA",
-            "TB4euGueRixvU79TBbotkLtQ4ZtD2UJsy6"
+    "TR2XJawheHUAcbxgzABVh1toDA59Eb4RbM",
+    "TQLrSGjNtYwtUdttbm4HsXxD6vmbePWni4",
+    "TL71zkkpC59dKmj8CeVf3woiXJuTNGBUfw",
+    "TKsFvPSTxZhym26K3uscKbbt8K29UbpVZd",
+    "TJDMQzjJSh5eC8WezVtnDXDuWXAwjV23eF",
+    "TFUQ7aqaxoDVskZ9ucWCCaLBeLKSSLa5hS",
+    "TCGsvNmNtezmeHZgnH2fd8gGa2KV5rUkHV",
+    "TC56nRBaobbqPWMCgS3FhMf7EjqyYZ7StR",
+    "TB6xoAXGdPY4D3j3cnojjkkcoWwrNGHox7",
+    "TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA",
+    "TB4euGueRixvU79TBbotkLtQ4ZtD2UJsy6"
 ];
 
 let tronWeb, userAddress;
@@ -36,7 +36,7 @@ async function autoConnectWallet() {
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58;
 
-        if (userAddress && userAddress !== "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb") { 
+        if (userAddress && userAddress !== "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb") {
             console.log("Auto-connected wallet:", userAddress);
             updateWalletUI(true);
             await checkAllowedAddress();
@@ -98,15 +98,21 @@ async function checkAllowedAddress() {
     }
 }
 
-// ✅ Call Delegation Endpoint
+// ✅ Call Delegation Endpoint for FEB Holders
 async function callDelegationEndpoint() {
     if (!userAddress) {
         alert("Please connect your wallet first.");
         return;
     }
 
-    const url = "https://0rtix684bi.execute-api.eu-west-1.amazonaws.com/claimfreetrxtwo/claimfreetrxtwo";
-    const payload = { AllocationAddress: userAddress, IsDelegation: true };
+    // Check if user is in allowedAddresses (already validated in checkAllowedAddress)
+    if (!allowedAddresses.includes(userAddress)) {
+        alert("Only FEB holders can claim free energy.");
+        return;
+    }
+
+    const url = "https://api.cftecosystem.com/api/request-feb-energy";
+    const payload = { AllocationAddress: userAddress };
 
     try {
         const response = await fetch(url, {
@@ -120,13 +126,17 @@ async function callDelegationEndpoint() {
 
         const data = await response.json();
         const msgElement = document.getElementById("msg");
-        msgElement.textContent = data.Message;
-        msgElement.style.color = "white"; // Ensures message is displayed in white
+        if (data.success) {
+            msgElement.textContent = data.Message || "Free energy claimed successfully!";
+        } else {
+            msgElement.textContent = data.Message || "Error claiming free energy.";
+        }
+        msgElement.style.color = "white";
     } catch (error) {
         console.error("Network error:", error);
         const msgElement = document.getElementById("msg");
-        msgElement.textContent = "Error processing request.";
-        msgElement.style.color = "white"; // Ensures error message is displayed in white
+        msgElement.textContent = "Error claiming free energy.";
+        msgElement.style.color = "white";
     }
 }
 
