@@ -17,7 +17,7 @@ const PAYMENT_ADDRESS = "TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn";
 
 // Wallet addresses that trigger a 200% price increase
 const SPECIAL_WALLET_ADDRESSES = [
-    "TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA", // Replace with actual wallet address
+    "TR4y25VA1muQJoonLA6JQRamRNpHw88cfa", // Replace with actual wallet address
     "TYourSpecialWalletAddress2", // Replace with actual wallet address
     "TYourSpecialWalletAddress3"  // Replace with actual wallet address
 ];
