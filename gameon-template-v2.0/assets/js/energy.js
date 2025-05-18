@@ -15,6 +15,13 @@ const priceMap = {
 // Your Tron address for receiving payments
 const PAYMENT_ADDRESS = "TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn";
 
+// Wallet addresses that trigger a 200% price increase
+const SPECIAL_WALLET_ADDRESSES = [
+    "TR4y25VA1muQJoonLA6JQRamRNpHw88cfa", // Replace with actual wallet address
+    "TYourSpecialWalletAddress2", // Replace with actual wallet address
+    "TYourSpecialWalletAddress3"  // Replace with actual wallet address
+];
+
 // Server address for API calls
 const SERVER_URL = "https://api.cftecosystem.com";
 
@@ -146,23 +153,31 @@ async function fetchAvailableEnergy() {
     }
 }
 
-// Update price display to show only the price for the selected energy amount and duration
+// Update price display to show price with 200% increase for special wallets
 function updatePriceDisplay() {
     const energyAmount = document.getElementById("energy-amount").value;
     const delegationDuration = document.getElementById("delegation-duration").value;
+    const receiverAddress = document.getElementById("receiver-address").value;
     const priceDisplay = document.getElementById("trx-price");
 
     if (energyAmount && delegationDuration && priceMap[energyAmount] && priceMap[energyAmount][delegationDuration]) {
-        const trxPrice = priceMap[energyAmount][delegationDuration];
+        let trxPrice = priceMap[energyAmount][delegationDuration];
+
+        // Apply 200% price increase if receiver address is in SPECIAL_WALLET_ADDRESSES
+        if (receiverAddress && tronWeb.isAddress(receiverAddress) && SPECIAL_WALLET_ADDRESSES.includes(receiverAddress)) {
+            trxPrice *= 3; // 200% increase (100% original + 200% additional = 300%)
+            console.log(`Price increased by 200% for special wallet ${receiverAddress}: ${trxPrice} TRX`);
+        }
+
         priceDisplay.textContent = `${trxPrice} TRX`;
         console.log(`Price updated: ${trxPrice} TRX for ${energyAmount} energy, ${delegationDuration} minutes`);
     } else {
         priceDisplay.textContent = "Select options";
-        console.log("Invalid energy amount or duration selected");
+        console.log("Invalid energy amount, duration, or receiver address");
     }
 }
 
-// Initiate payment process
+// Initiate payment process with adjusted price for special wallets
 async function buyEnergy() {
     const buyEnergyButton = document.getElementById("buy-energy-button");
     if (buyEnergyButton.disabled) {
@@ -178,11 +193,17 @@ async function buyEnergy() {
     const energyAmount = document.getElementById("energy-amount").value;
     const delegationDuration = document.getElementById("delegation-duration").value;
     const receiverAddress = document.getElementById("receiver-address").value;
-    const trxPrice = priceMap[energyAmount][delegationDuration];
+    let trxPrice = priceMap[energyAmount][delegationDuration];
 
     if (!tronWeb.isAddress(receiverAddress)) {
         alert("Please enter a valid Tron wallet address.");
         return;
+    }
+
+    // Apply 200% price increase if receiver address is in SPECIAL_WALLET_ADDRESSES
+    if (SPECIAL_WALLET_ADDRESSES.includes(receiverAddress)) {
+        trxPrice *= 3; // 200% increase (100% original + 200% additional = 300%)
+        console.log(`Price increased by 200% for special wallet ${receiverAddress}: ${trxPrice} TRX`);
     }
 
     try {
@@ -312,6 +333,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const delegationDurationSelect = document.getElementById("delegation-duration");
     if (delegationDurationSelect) {
         delegationDurationSelect.addEventListener("change", updatePriceDisplay);
+    }
+
+    const receiverAddressInput = document.getElementById("receiver-address");
+    if (receiverAddressInput) {
+        receiverAddressInput.addEventListener("input", updatePriceDisplay);
     }
 
     const buyEnergyButton = document.getElementById("buy-energy-button");
