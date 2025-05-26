@@ -944,7 +944,7 @@ async function updateTokenUI(token) {
     } else {
       console.error(`Element available-tokens-${token} not found`);
     }
-    await delay(100);
+    await delay(200);
 
     // Update staked amount
     const staked = BigInt(stakedAmount) / BigInt(10 ** decimals);
@@ -954,7 +954,7 @@ async function updateTokenUI(token) {
     } else {
       console.error(`Element staked-amount-${token} not found`);
     }
-    await delay(100);
+    await delay(200);
 
     // Update projected rewards
     const projected = BigInt(projectedRewards) / BigInt(10 ** rewardDecimals);
@@ -964,7 +964,7 @@ async function updateTokenUI(token) {
     } else {
       console.error(`Element projected-rewards-${token} not found`);
     }
-    await delay(100);
+    await delay(200);
 
     // Update claimable rewards
     const claimable = BigInt(claimableRewards) / BigInt(10 ** rewardDecimals);
@@ -974,7 +974,7 @@ async function updateTokenUI(token) {
     } else {
       console.error(`Element claimable-rewards-${token} not found`);
     }
-    await delay(100);
+    await delay(200);
 
     // Update total claimed rewards
     const claimed = BigInt(totalClaimedRewards) / BigInt(10 ** rewardDecimals);
