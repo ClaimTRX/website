@@ -865,10 +865,16 @@ async function initializeTronWeb() {
   }
 }
 
-// Update UI for all tokens
+// Delay utility function
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Update UI for all tokens with 500ms delay between each
 async function updateAllUI() {
   for (let key in tokenDetails) {
     await updateTokenUI(key);
+    await delay(500); // 500ms delay between each token
   }
 }
 
