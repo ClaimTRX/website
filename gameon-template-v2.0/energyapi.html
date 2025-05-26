@@ -17,25 +17,26 @@
     <!-- Style CSS -->
     <link rel="stylesheet" href="assets/css/style.css">
 
-    <!-- Custom CSS for Code Block -->
+    <!-- Custom CSS for Code Block and UI -->
     <style>
-        .energy-section {
-            padding: 90px 0;
-        }
-
-        .energy-section h2 {
-            color: var(--white-color);
-            font-family: var(--primary-font);
-            font-size: var(--h2-size);
-            font-weight: var(--h2-weight);
-            margin-bottom: 1.5rem;
-        }
-
-        .energy-section p {
+        /* Ensure text and elements match the existing UI */
+        .staking-area .single-accordion-item .card-body {
             color: var(--secondary-p-color);
+        }
+
+        .staking-area .single-accordion-item .card-body p {
+            margin: 0.5rem 0;
             font-size: var(--p-size);
             font-weight: var(--p-weight);
-            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .staking-area .single-accordion-item .card-body h4 {
+            color: var(--white-color);
+            font-family: var(--primary-font);
+            font-size: var(--h4-size);
+            font-weight: var(--h4-weight);
+            margin-bottom: 1rem;
         }
 
         .code-block {
@@ -45,12 +46,13 @@
             padding: 16px;
             font-family: 'Courier New', Courier, monospace;
             overflow-x: auto;
-            margin-bottom: 1.5rem;
+            margin: 1rem 0;
         }
 
         .code-block pre {
             color: var(--white-color);
             margin: 0;
+            font-size: 0.9rem;
         }
 
         .copy-button {
@@ -189,33 +191,66 @@
         </header>
         <!-- ***** Header End ***** -->
 
-        <!-- Energy Section -->
-        <section class="energy-section">
-            <div class="container mx-auto px-4">
+        <!-- ***** Hero Area Start ***** -->
+        <section class="hero-section">
+            <div class="container">
+                <div class="row align-items-center justify-content-center">
+                    <div class="col-12 col-md-6 col-lg-9 text-center">
+                        <div class="hero-content">
+                            <div class="intro text-center mb-5">
+                                <span class="intro-text">CFT Ecosystem</span>
+                                <h1 class="mt-4">Rent Energy</h1>
+                                <p>Grow your wealth through staking rewards</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- ***** Hero Area End ***** -->
+
+        <!-- Staking Area with Accordion -->
+        <section class="staking-area">
+            <div id="energy-accordion" class="container accordion">
                 <div class="row justify-content-center">
                     <div class="col-12 col-md-10">
-                        <h2>Rent Energy with user.js</h2>
-                        <p>
-                            The <code>user.js</code> script lets you delegate energy on the TRON blockchain. You can pay either directly with TRX (sent automatically from your wallet) or using credits. Pricing: 65,000 energy units for 6.5 TRX, or 135,000 units for 13 TRX (5-minute duration).
-                        </p>
-                        <p>
-                            To use, copy the script below, install Node.js and the <code>tronweb</code> package (<code>npm install tronweb</code>), update the configuration variables, and run with <code>node user.js</code>.
-                        </p>
-
-                        <h2 class="mt-6">user.js Code</h2>
-                        <div class="code-block relative">
-                            <pre id="code-block"><code>const TronWeb = require('tronweb').TronWeb;
+                        <div class="single-accordion-item">
+                            <div class="card-header bg-inherit border-0 p-0">
+                                <h2 class="m-0">
+                                    <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUserJs">
+                                        <div class="row">
+                                            <div class="col-12 col-md-8">
+                                                <div class="media flex-column flex-md-row">
+                                                    <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                                                    <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                        <h4 class="m-0">Rent Energy with user.js</h4>
+                                                        <p>Delegate energy using a script: 65,000 units for 6.5 TRX or 135,000 units for 13 TRX (5 minutes).</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="collapseUserJs" class="collapse" data-bs-parent="#energy-accordion">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-12 single-staking-item">
+                                            <p>Use the <code>user.js</code> script to delegate energy on the TRON blockchain. Choose to pay directly with TRX (sent automatically from your wallet) or with credits. Install Node.js, the <code>tronweb</code> package (<code>npm install tronweb</code>), update the script with your details, and run with <code>node user.js</code>.</p>
+                                            <h4 class="mt-4">user.js Script</h4>
+                                            <div class="code-block relative">
+                                                <pre id="code-block"><code>const TronWeb = require('tronweb').TronWeb;
 
 // === CONFIGURATION ===
-const TRONGRID_API_KEY = "YOUR-TRONGRID-API-KEY";
-const PRIVATE_KEY = "YOUR-PRIVATE-KEY";
-const API_KEY = "YOU-API-KEY";
-const USE_CREDITS = false;
+const TRONGRID_API_KEY = "YOUR-TRONGRID-API-KEY"; // Replace with your TronGrid API key
+const PRIVATE_KEY = "YOUR-PRIVATE-KEY"; // Replace with your private key
+const API_KEY = "YOU-API-KEY"; // Replace with your API key
+const USE_CREDITS = false; // Set to true to use credits, false to pay directly with TRX
 const PAYMENT_WALLET = "TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn"; // DO NOT CHANGE
 
 // === ORDER SETUP ===
 const order = {
-    receiver: "RECEVING WALLET", // Receiving wallet
+    receiver: "RECEVING WALLET", // Replace with the receiving wallet address
     resource_type: "energy",
     amount: 65000,  // Options: 65000 or 135000
     duration: 5     // Duration in minutes (DO NOT CHANGE)
@@ -295,7 +330,7 @@ const headers = {
             body: JSON.stringify({
                 order,
                 use_credits: false,
-                signed_tx: signedTx // ✅ required by backend
+                signed_tx: signedTx // Required by backend
             })
         });
 
@@ -346,12 +381,40 @@ const headers = {
     }
 })();
 </code></pre>
-                            <button class="copy-button" onclick="copyCode()">Copy Code</button>
+                                                <button class="copy-button" onclick="copyCode()">Copy Code</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
+
+        <!-- ***** CTA Area Start ***** -->
+        <section class="cta-area p-0">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 card">
+                        <div class="row align-items-center justify-content-center">
+                            <div class="col-12 col-md-5 text-center">
+                                <img src="assets/img/content/cftlogo300.png" alt="">
+                            </div>
+                            <div class="col-12 col-md-6 mt-4 mt-md-0">
+                                <h2 class="m-0">Apply for project staking</h2>
+                                <p>Earn weekly rewards from staked CFT to build your project</p>
+                                <p>Soon available for projects on any chain</p>
+                                <a class="btn btn-bordered active d-inline-block"><i class="icon-rocket me-2"></i>Coming Soon</a>
+                            </div>
+                        </div>
+                        <a class="cta-link" href="apply.html"></a>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- ***** CTA Area End ***** -->
 
         <!--====== Footer Area Start ======-->
         <footer class="footer-area">
