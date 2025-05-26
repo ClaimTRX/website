@@ -335,26 +335,53 @@ async function fetchListings() {
 
 async function buyToken(listingId, amountToBuy) {
     try {
-        const tokenUnits = tronWeb.toSun(amountToBuy);
-        const totalCostInUSDDUnits = (parseFloat(amountToBuy) * 1e18).toFixed(0);
+        // Convert amounts to proper units (assuming 6 decimals for StableX and 18 for USDD)
+        const tokenUnits = tronWeb.toSun(amountToBuy); // StableX units
+        const totalCostInUSDDUnits = (parseFloat(amountToBuy) * 1e18).toString(); // USDD units
 
+        // Check USDD allowance
         const currentAllowance = await usddContract.allowance(userAddress, marketplaceContractAddress).call();
 
         if (BigInt(currentAllowance) < BigInt(totalCostInUSDDUnits)) {
-            await usddContract.approve(marketplaceContractAddress, totalCostInUSDDUnits).send();
-            console.log(`Approved ${amountToBuy} USDD for marketplace.`);
+            console.log('Insufficient USDD allowance, requesting approval...');
+            // Approve maxUint256 to avoid repeated approvals
+            const approvalTx = await usddContract.approve(marketplaceContractAddress, maxUint256).send();
+            console.log(`Approved USDD for marketplace. Transaction: ${approvalTx}`);
+            
+            // Wait for transaction confirmation
+            await waitForTransactionConfirmation(approvalTx);
         } else {
-            console.log("Sufficient allowance already exists for buying.");
+            console.log("Sufficient USDD allowance exists for buying.");
         }
 
-        await marketplaceContract.buyToken(listingId, tokenUnits).send();
+        // Execute buy transaction
+        const buyTx = await marketplaceContract.buyToken(listingId, tokenUnits).send();
+        console.log(`StableX purchased successfully. Transaction: ${buyTx}`);
 
         alert("StableX purchased successfully!");
-        fetchListings();
+        await fetchListings();
     } catch (error) {
         console.error("Error buying StableX:", error);
-        alert("Failed to buy StableX.");
+        alert("Failed to buy StableX. Please try again.");
     }
+}
+
+async function waitForTransactionConfirmation(txId) {
+    const maxAttempts = 30;
+    let attempts = 0;
+    while (attempts < maxAttempts) {
+        try {
+            const txInfo = await tronWeb.trx.getTransactionInfo(txId);
+            if (txInfo && txInfo.receipt && txInfo.receipt.result === 'SUCCESS') {
+                return true;
+            }
+        } catch (error) {
+            console.error('Error checking transaction status:', error);
+        }
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+        attempts++;
+    }
+    throw new Error('Transaction confirmation timeout');
 }
 
 async function cancelListing(listingId) {
