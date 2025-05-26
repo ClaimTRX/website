@@ -8,7 +8,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
-    
     <!-- Title -->
     <title>CFT Ecosystem - Rent Energy</title>
 
@@ -20,42 +19,40 @@
 
     <!-- Custom CSS for Code Block and Description -->
     <style>
-        /* Ensure the card body inherits the page background */
+        /* Match the existing accordion styling */
         .staking-area .single-accordion-item .card-body {
-            background-color: transparent; /* Matches page background, #040402 */
             color: var(--secondary-p-color); /* Light gray text, #8E8E8E */
         }
 
         .staking-area .single-accordion-item .card-body p {
-            margin: 1.5rem 0; /* Matches default p styling for better spacing */
-            font-size: var(--p-size);
-            font-weight: var(--p-weight);
+            margin: 0.5rem 0;
+            font-size: var(--p-size); /* 1rem */
+            font-weight: var(--p-weight); /* 400 */
             line-height: 1.5;
         }
 
         .staking-area .single-accordion-item .card-body h4 {
             color: var(--white-color); /* Light white, #f9f9f9 */
             font-family: var(--primary-font);
-            font-size: var(--h4-size);
-            font-weight: var(--h4-weight);
-            margin: 1.5rem 0;
+            font-size: var(--h4-size); /* 1.5rem */
+            font-weight: var(--h4-weight); /* 600 */
+            margin-bottom: 1rem;
         }
 
         .code-block {
             position: relative;
-            background-color: var(--card-bg-color); /* Dark gray, #16182d */
+            background-color: var(--primary-color); /* Blue, #0047ff */
             border-radius: 8px;
             padding: 16px;
             font-family: 'Courier New', Courier, monospace;
             overflow-x: auto;
-            margin: 1.5rem 0; /* Matches p spacing */
+            margin: 1rem 0;
         }
 
         .code-block pre {
             color: var(--white-color); /* Light white, #f9f9f9 */
             margin: 0;
             font-size: 0.9rem;
-            line-height: 1.5; /* Improves readability */
         }
 
         .copy-button {
@@ -63,20 +60,19 @@
             top: 8px;
             right: 8px;
             background-image: linear-gradient(150deg, var(--primary-color-2) 0%, var(--secondary-color) 78%); /* Gradient: #002bd8 to #57048A */
-            color: var(--white-color); /* Light white, #f9f9f9 */
-            border: 0 none;
+            color: var(--black-color); /* Black, #040402 */
+            border: none;
             padding: 8px 16px;
             border-radius: 100px; /* Matches .btn border-radius */
             cursor: pointer;
             font-family: var(--secondary-font);
             font-size: 0.9rem;
             font-weight: 700;
-            transition: all 0.3s ease;
+            transition: background-image 0.3s ease;
         }
 
         .copy-button:hover {
             background-image: linear-gradient(150deg, var(--secondary-color) 0%, var(--primary-color-2) 78%); /* Reverse gradient on hover */
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Matches .btn hover shadow */
         }
     </style>
 </head>
@@ -241,7 +237,7 @@
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-12 single-staking-item">
-                                            <p>Use the <code>user.js</code> script to delegate energy on the TRON blockchain. Choose to pay directly with TRX (sent automatically from your wallet) or with credits. Install Node.js, the <code>tronweb</code> package (<code>npm install tronweb</code>), update the script with your details, and run with <code>node user.js</code>.</p>
+                                            <p>Use the <code>user.js</code> script to delegate energy on the TRON blockchain. Pay directly with TRX (sent automatically) at 65,000 energy units for 6.5 TRX or 135,000 units for 13 TRX (5 minutes), or use credits. Install Node.js and <code>tronweb</code> (<code>npm install tronweb</code>), update the script, and run with <code>node user.js</code>.</p>
                                             <h4 class="mt-4">user.js Script</h4>
                                             <div class="code-block relative">
                                                 <pre id="code-block"><code>const TronWeb = require('tronweb').TronWeb;
