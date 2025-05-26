@@ -11,6 +11,12 @@ const tokenDetails = {
     decimals: 6,
     displayName: 'CFT'
   },
+  cft: {
+    tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
+    stakingAddress: 'THLETrCqWHVJNURBQNKLBYJTLBGpUnDatp',
+    decimals: 6,
+    displayName: 'STABLEX'
+  },
   cftturu: {
     tokenAddress: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
     stakingAddress: 'TXgt8nXRDTbYxbhDbkZyqs9cgjoBikQa72',
