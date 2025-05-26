@@ -14,54 +14,67 @@
     <!-- Favicon -->
     <link rel="icon" href="assets/img/favicon.png">
 
-    <!-- Style css -->
+    <!-- Style CSS -->
     <link rel="stylesheet" href="assets/css/style.css">
 
-    <!-- Tailwind CSS CDN -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-
-    <!-- Custom CSS for white text -->
+    <!-- Custom CSS for Code Block -->
     <style>
-        .energy-section,
-        .energy-section * {
-            color: white !important;
+        .energy-section {
+            padding: 90px 0;
         }
 
-        .energy-section input::placeholder {
-            color: white !important;
-            opacity: 0.7;
+        .energy-section h2 {
+            color: var(--white-color);
+            font-family: var(--primary-font);
+            font-size: var(--h2-size);
+            font-weight: var(--h2-weight);
+            margin-bottom: 1.5rem;
         }
 
-        /* Custom styling for code block */
+        .energy-section p {
+            color: var(--secondary-p-color);
+            font-size: var(--p-size);
+            font-weight: var(--p-weight);
+            margin-bottom: 1.5rem;
+        }
+
         .code-block {
-            background-color: #2d2d2d;
+            position: relative;
+            background-color: var(--card-bg-color);
             border-radius: 8px;
             padding: 16px;
             font-family: 'Courier New', Courier, monospace;
             overflow-x: auto;
-            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .code-block pre {
+            color: var(--white-color);
+            margin: 0;
         }
 
         .copy-button {
             position: absolute;
             top: 8px;
             right: 8px;
-            background-color: #4CAF50;
-            color: white;
+            background-color: var(--primary-color);
+            color: var(--white-color);
             border: none;
             padding: 8px 16px;
             border-radius: 4px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            font-family: var(--secondary-font);
+            font-size: 0.9rem;
+            transition: background-color 0.3s ease;
         }
 
         .copy-button:hover {
-            background-color: #45a049;
+            background-color: var(--primary-color-2);
         }
     </style>
 </head>
 
-<body>
+<body class="odd">
     <!--====== Preloader Area Start ======-->
     <div id="gameon-preloader" class="gameon-preloader">
         <div class="preloader-animation">
@@ -176,69 +189,33 @@
         </header>
         <!-- ***** Header End ***** -->
 
-        <!-- ***** Hero Area Start ***** -->
-        <section class="hero-section">
-            <div class="container">
-                <div class="row align-items-center justify-content-center">
-                    <div class="col-12 col-md-6 col-lg-9 text-center">
-                        <div class="hero-content">
-                            <div class="intro text-center mb-5">
-                                <span class="intro-text">CFT Ecosystem</span>
-                                <h1 class="mt-4">Rent Energy</h1>
-                                <p>Delegate energy on the TRON blockchain</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <!-- ***** Hero Area End ***** -->
-
         <!-- Energy Section -->
-        <section class="energy-section py-12">
+        <section class="energy-section">
             <div class="container mx-auto px-4">
                 <div class="row justify-content-center">
                     <div class="col-12 col-md-10">
-                        <!-- Introduction -->
-                        <h2 class="text-3xl font-bold mb-6">Introduction</h2>
-                        <p class="mb-4">
-                            The <code>user.js</code> script is a Node.js client application designed to interact with the Energy API, a system for delegating energy on the TRON blockchain. This script allows users to place energy delegation orders by choosing between two payment methods: paying directly with TRX or using pre-deposited credits. The payment process is fully automated, requiring no manual intervention from the user—the script handles building, signing, and broadcasting the transaction using the configured private key wallet. The Energy API supports delegation of 65,000 energy units for 6.5 TRX or 135,000 energy units for 13 TRX, for a fixed duration of 5 minutes. This documentation provides a guide to the <code>user.js</code> script, including its purpose, setup, usage, and interaction with the Energy API.
+                        <h2>Rent Energy with user.js</h2>
+                        <p>
+                            The <code>user.js</code> script lets you delegate energy on the TRON blockchain. You can pay either directly with TRX (sent automatically from your wallet) or using credits. Pricing: 65,000 energy units for 6.5 TRX, or 135,000 units for 13 TRX (5-minute duration).
+                        </p>
+                        <p>
+                            To use, copy the script below, install Node.js and the <code>tronweb</code> package (<code>npm install tronweb</code>), update the configuration variables, and run with <code>node user.js</code>.
                         </p>
 
-                        <h3 class="text-2xl font-semibold mt-6 mb-4">Purpose</h3>
-                        <p>The <code>user.js</code> script enables users to:</p>
-                        <ul class="list-disc list-inside mb-4">
-                            <li>Place an energy delegation order to a specified TRON wallet.</li>
-                            <li>Choose between paying directly with TRX (automatically sent from the private key wallet) or using credits.</li>
-                            <li>Delegate either 65,000 energy units for 6.5 TRX or 135,000 energy units for 13 TRX.</li>
-                            <li>Monitor the status of the delegation order.</li>
-                        </ul>
-
-                        <!-- Setup Section -->
-                        <h2 class="text-3xl font-bold mt-8 mb-6">Setup and Configuration</h2>
-
-                        <h3 class="text-2xl font-semibold mb-4">Prerequisites</h3>
-                        <p class="mb-4">To use the <code>user.js</code> script, ensure the following are installed:</p>
-                        <ul class="list-disc list-inside mb-4">
-                            <li><strong>Node.js</strong> (v16 or higher): For running the script.</li>
-                            <li><strong>A TRON Wallet</strong>: With sufficient TRX for direct payments or credits deposited in the Energy API.</li>
-                        </ul>
-
-                        <h3 class="text-2xl font-semibold mb-4">Script Code</h3>
-                        <p class="mb-4">Below is the complete <code>user.js</code> script, which you can copy and use:</p>
+                        <h2 class="mt-6">user.js Code</h2>
                         <div class="code-block relative">
-                            <pre id="code-block" class="text-sm text-white"><code>const TronWeb = require('tronweb').TronWeb;
+                            <pre id="code-block"><code>const TronWeb = require('tronweb').TronWeb;
 
 // === CONFIGURATION ===
-const TRONGRID_API_KEY = "YOUR-TRONGRID-API-KEY"; // Replace with your TronGrid API key
-const PRIVATE_KEY = "YOUR-PRIVATE-KEY"; // Replace with your private key
-const API_KEY = "YOU-API-KEY"; // Replace with your API key
-const USE_CREDITS = false; // Set to true to use credits, false to pay directly with TRX
+const TRONGRID_API_KEY = "YOUR-TRONGRID-API-KEY";
+const PRIVATE_KEY = "YOUR-PRIVATE-KEY";
+const API_KEY = "YOU-API-KEY";
+const USE_CREDITS = false;
 const PAYMENT_WALLET = "TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn"; // DO NOT CHANGE
 
 // === ORDER SETUP ===
 const order = {
-    receiver: "RECEVING WALLET", // Replace with the receiving wallet address
+    receiver: "RECEVING WALLET", // Receiving wallet
     resource_type: "energy",
     amount: 65000,  // Options: 65000 or 135000
     duration: 5     // Duration in minutes (DO NOT CHANGE)
@@ -318,7 +295,7 @@ const headers = {
             body: JSON.stringify({
                 order,
                 use_credits: false,
-                signed_tx: signedTx // Required by backend
+                signed_tx: signedTx // ✅ required by backend
             })
         });
 
@@ -371,124 +348,6 @@ const headers = {
 </code></pre>
                             <button class="copy-button" onclick="copyCode()">Copy Code</button>
                         </div>
-
-                        <h3 class="text-2xl font-semibold mt-6 mb-4">Setup Instructions</h3>
-                        <ol class="list-decimal list-inside mb-4">
-                            <li><strong>Save the Script:</strong>
-                                <ul class="list-disc list-inside pl-6">
-                                    <li>Copy the script above into a file named <code>user.js</code>.</li>
-                                </ul>
-                            </li>
-                            <li><strong>Install Dependencies:</strong>
-                                <ul class="list-disc list-inside pl-6">
-                                    <li>Ensure Node.js is installed.</li>
-                                    <li>Install the required package:
-                                        <pre class="code-block"><code>npm install tronweb</code></pre>
-                                    </li>
-                                    <li>Note: The script uses the native <code>fetch</code> API, available in Node.js v18 and higher. If using an older version, install <code>node-fetch</code> and modify the script to import it.</li>
-                                </ul>
-                            </li>
-                            <li><strong>Configure the Script:</strong>
-                                <ul class="list-disc list-inside pl-6">
-                                    <li>Replace <code>YOUR-TRONGRID-API-KEY</code> with your TronGrid API key.</li>
-                                    <li>Replace <code>YOUR-PRIVATE-KEY</code> with your TRON wallet private key. This wallet will automatically send the payment for direct TRX orders.</li>
-                                    <li>Replace <code>YOU-API-KEY</code> with your Energy API key (e.g., <code>77b9c4e8a2f1d6b3e9a0c8f7d4e2b1c9a3d5e6f7b8c9a0b1c2d3e4f5a6b7c8d9</code>).</li>
-                                    <li>Replace <code>RECEVING WALLET</code> with the TRON wallet address that will receive the delegated energy.</li>
-                                </ul>
-                            </li>
-                            <li><strong>Run the Script:</strong>
-                                <ul class="list-disc list-inside pl-6">
-                                    <li>Execute the script using Node.js:
-                                        <pre class="code-block"><code>node user.js</code></pre>
-                                    </li>
-                                </ul>
-                            </li>
-                        </ol>
-
-                        <!-- Usage Section -->
-                        <h2 class="text-3xl font-bold mt-8 mb-6">Usage</h2>
-                        <p class="mb-4">The <code>user.js</code> script allows users to delegate energy by interacting with the Energy API. Users can choose to pay either with credits or directly with TRX, and the payment is automatically handled by the script using the configured private key wallet.</p>
-
-                        <h3 class="text-2xl font-semibold mb-4">Payment Options</h3>
-                        <p class="mb-4">Users can choose between two payment methods when placing an order:</p>
-                        <ul class="list-disc list-inside mb-4">
-                            <li><strong>Direct TRX Payment:</strong>
-                                <ul class="list-disc list-inside pl-6">
-                                    <li>The script automatically sends TRX from the wallet associated with the configured private key to the Energy API's payment address (<code>TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn</code>).</li>
-                                    <li>The transaction is built, signed, and broadcasted without any user intervention.</li>
-                                    <li>Set <code>USE_CREDITS = false</code> in the script to use this method.</li>
-                                </ul>
-                            </li>
-                            <li><strong>Credit Payment:</strong>
-                                <ul class="list-disc list-inside pl-6">
-                                    <li>The user pays using credits previously deposited into the project's credit wallet (e.g., <code>TQNJCwrnep6D11tMYoMceFVjn7MKRx1G95</code> for <code>apitest</code>).</li>
-                                    <li>Credits must be deposited via the Energy API's <code>/deposit-credits</code> endpoint (see the Energy API documentation for details).</li>
-                                    <li>Set <code>USE_CREDITS = true</code> in the script to use this method.</li>
-                                </ul>
-                            </li>
-                        </ul>
-
-                        <h3 class="text-2xl font-semibold mb-4">Pricing Structure</h3>
-                        <p class="mb-4">The Energy API supports the following pricing for energy delegation (fixed duration of 5 minutes):</p>
-                        <ul class="list-disc list-inside mb-4">
-                            <li><strong>65,000 Energy Units:</strong> 6.5 TRX</li>
-                            <li><strong>135,000 Energy Units:</strong> 13 TRX</li>
-                        </ul>
-
-                        <h3 class="text-2xl font-semibold mb-4">Customizing the Script</h3>
-                        <p class="mb-4">To place an order, modify the following variables in <code>user.js</code>:</p>
-                        <ul class="list-disc list-inside mb-4">
-                            <li><code>TRONGRID_API_KEY</code>: Your TronGrid API key.</li>
-                            <li><code>PRIVATE_KEY</code>: Your TRON wallet private key (used to automatically send payments).</li>
-                            <li><code>API_KEY</code>: Your Energy API key.</li>
-                            <li><code>order.receiver</code>: The TRON wallet address to receive the delegated energy.</li>
-                            <li><code>order.amount</code>: The amount of energy to delegate (65000 or 135000).</li>
-                            <li><code>USE_CREDITS</code>: Set to <code>true</code> for credit payment, <code>false</code> for direct TRX payment.</li>
-                        </ul>
-                        <p class="mb-4"><strong>Example Customization:</strong></p>
-                        <pre class="code-block"><code>const TRONGRID_API_KEY = "your-trongrid-api-key";
-const PRIVATE_KEY = "your-private-key";
-const API_KEY = "77b9c4e8a2f1d6b3e9a0c8f7d4e2b1c9a3d5e6f7b8c9a0b1c2d3e4f5a6b7c8d9";
-const USE_CREDITS = false;
-const order = {
-    receiver: "THNiVH2i5gqgTXR3PMYFaMKdygiXrzJPrk",
-    resource_type: "energy",
-    amount: 65000,
-    duration: 5
-};
-</code></pre>
-
-                        <h3 class="text-2xl font-semibold mb-4">Execution Flow</h3>
-                        <p class="mb-4">The script performs the following steps:</p>
-                        <ol class="list-decimal list-inside mb-4">
-                            <li><strong>Validate Order Amount:</strong> Ensures the <code>order.amount</code> is either 65,000 or 135,000.</li>
-                            <li><strong>Process Payment:</strong>
-                                <ul class="list-disc list-inside pl-6">
-                                    <li>If <code>USE_CREDITS = false</code>: Automatically builds, signs, and broadcasts a TRX payment to <code>TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn</code> using the private key wallet.</li>
-                                    <li>If <code>USE_CREDITS = true</code>: Submits the order directly to <code>/create-order</code>, deducting from the credit balance.</li>
-                                </ul>
-                            </li>
-                            <li><strong>Create Order:</strong> Submits the order to the Energy API's <code>/create-order</code> endpoint.</li>
-                            <li><strong>Monitor Status:</strong> Polls the <code>/delegation-status</code> endpoint every 2 seconds until the order is completed or fails.</li>
-                        </ol>
-
-                        <!-- Additional Notes Section -->
-                        <h2 class="text-3xl font-bold mt-8 mb-6">Additional Notes</h2>
-                        <h3 class="text-2xl font-semibold mb-4">Dependencies</h3>
-                        <p class="mb-4">The script requires the following Node.js package:</p>
-                        <ul class="list-disc list-inside mb-4">
-                            <li><code>tronweb</code>: For interacting with the TRON blockchain.</li>
-                        </ul>
-
-                        <h3 class="text-2xl font-semibold mb-4">Error Handling</h3>
-                        <p class="mb-4">The script includes error handling for API requests, transaction failures, and status polling. Check the console logs for detailed error messages if an operation fails.</p>
-
-                        <h3 class="text-2xl font-semibold mb-4">Next Steps</h3>
-                        <ul class="list-disc list-inside mb-4">
-                            <li>Ensure the private key wallet has sufficient TRX for direct payments or deposit credits into the project's credit wallet.</li>
-                            <li>Test the script with both payment methods to confirm functionality.</li>
-                            <li>Refer to the Energy API documentation for additional features (e.g., depositing credits, checking order status).</li>
-                        </ul>
                     </div>
                 </div>
             </div>
