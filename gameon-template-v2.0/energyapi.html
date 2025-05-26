@@ -17,7 +17,7 @@
     <!-- Style CSS -->
     <link rel="stylesheet" href="assets/css/style.css">
 
-    <!-- Custom CSS for Code Block and Description -->
+    <!-- Custom CSS for Code Blocks and Description -->
     <style>
         /* Match the existing accordion styling */
         .staking-area .single-accordion-item .card-body {
@@ -39,6 +39,27 @@
             margin-bottom: 1rem;
         }
 
+        .staking-area .single-accordion-item .card-body h5 {
+            color: var(--white-color); /* Light white, #f9f9f9 */
+            font-family: var(--primary-font);
+            font-size: var(--h5-size); /* 1.2rem */
+            font-weight: var(--h5-weight); /* 600 */
+            margin: 1.5rem 0 0.5rem;
+        }
+
+        .staking-area .single-accordion-item .card-body ol {
+            padding-left: 20px;
+            list-style: decimal;
+        }
+
+        .staking-area .single-accordion-item .card-body ol li {
+            margin: 0.5rem 0;
+            font-size: var(--p-size);
+            font-weight: var(--p-weight);
+            line-height: 1.5;
+            color: var(--secondary-p-color);
+        }
+
         .code-block {
             position: relative;
             background-color: var(--primary-color); /* Blue, #0047ff */
@@ -46,13 +67,19 @@
             padding: 16px;
             font-family: 'Courier New', Courier, monospace;
             overflow-x: auto;
-            margin: 1rem 0;
+            margin: 0.5rem 0;
         }
 
         .code-block pre {
             color: var(--white-color); /* Light white, #f9f9f9 */
             margin: 0;
             font-size: 0.9rem;
+        }
+
+        .code-block.inline {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 0 2px;
         }
 
         .copy-button {
@@ -73,6 +100,13 @@
 
         .copy-button:hover {
             background-image: linear-gradient(150deg, var(--secondary-color) 0%, var(--primary-color-2) 78%); /* Reverse gradient on hover */
+        }
+
+        .copy-button.inline {
+            position: static;
+            display: inline-block;
+            padding: 4px 8px;
+            margin-left: 4px;
         }
     </style>
 </head>
@@ -237,10 +271,44 @@
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-12 single-staking-item">
-                                            <p>Use the <code>user.js</code> script to delegate energy on the TRON blockchain. Pay directly with TRX (sent automatically) at 65,000 energy units for 6.5 TRX or 135,000 units for 13 TRX (5 minutes), or use credits. Install Node.js and <code>tronweb</code> (<code>npm install tronweb</code>), update the script, and run with <code>node user.js</code>.</p>
+                                            <p>The <code>user.js</code> script allows you to delegate energy on the TRON blockchain, making it easier to rent energy for your transactions without manual payments. You can choose to pay directly with TRX, where the script automatically sends the payment from your wallet, or use pre-deposited credits. The pricing is 65,000 energy units for 6.5 TRX or 135,000 units for 13 TRX, for a 5-minute duration. This script is ideal for automating energy delegation for your TRON-based projects.</p>
+                                            <h4 class="mt-4">Step-by-Step Guide</h4>
+                                            <p>Follow these steps to set up and run the <code>user.js</code> script:</p>
+                                            <ol>
+                                                <li><strong>Install Node.js</strong>: Ensure you have Node.js installed on your system. Download and install it from the official website if needed (<a href="https://nodejs.org/" target="_blank">nodejs.org</a>).</li>
+                                                <li><strong>Create a Project Directory</strong>: Create a new directory for your project and navigate to it in your terminal. For example, on Linux or macOS, you can run:
+                                                    <div class="code-block inline">
+                                                        <pre id="code-block-step1"><code>mkdir energy-delegation && cd energy-delegation</code></pre>
+                                                        <button class="copy-button inline" onclick="copyCode('code-block-step1')">Copy Code</button>
+                                                    </div>
+                                                </li>
+                                                <li><strong>Install the <code>tronweb</code> Package</strong>: The script requires the <code>tronweb</code> library to interact with the TRON blockchain. Install it using npm by running:
+                                                    <div class="code-block inline">
+                                                        <pre id="code-block-step2"><code>npm install tronweb</code></pre>
+                                                        <button class="copy-button inline" onclick="copyCode('code-block-step2')">Copy Code</button>
+                                                    </div>
+                                                </li>
+                                                <li><strong>Copy the Script</strong>: Copy the <code>user.js</code> script below and save it as <code>user.js</code> in your project directory.</li>
+                                                <li><strong>Configure the Script</strong>: Open <code>user.js</code> in a text editor and update the following variables:
+                                                    <ul>
+                                                        <li><code>TRONGRID_API_KEY</code>: Your TronGrid API key (<a href="https://trongrid.io/" target="_blank">get one here</a>).</li>
+                                                        <li><code>PRIVATE_KEY</code>: Your TRON wallet private key (ensure this wallet has enough TRX for direct payments).</li>
+                                                        <li><code>API_KEY</code>: Your Energy API key (e.g., <code>77b9c4e8a2f1d6b3e9a0c8f7d4e2b1c9a3d5e6f7b8c9a0b1c2d3e4f5a6b7c8d9</code>).</li>
+                                                        <li><code>order.receiver</code>: The TRON wallet address to receive the delegated energy.</li>
+                                                        <li><code>USE_CREDITS</code>: Set to <code>true</code> to pay with credits, or <code>false</code> to pay directly with TRX.</li>
+                                                    </ul>
+                                                </li>
+                                                <li><strong>Run the Script</strong>: Execute the script using Node.js by running:
+                                                    <div class="code-block inline">
+                                                        <pre id="code-block-step3"><code>node user.js</code></pre>
+                                                        <button class="copy-button inline" onclick="copyCode('code-block-step3')">Copy Code</button>
+                                                    </div>
+                                                    <p>The script will delegate energy to the specified wallet, either deducting credits or sending TRX automatically.</p>
+                                                </li>
+                                            </ol>
                                             <h4 class="mt-4">user.js Script</h4>
                                             <div class="code-block relative">
-                                                <pre id="code-block"><code>const TronWeb = require('tronweb').TronWeb;
+                                                <pre id="code-block-main"><code>const TronWeb = require('tronweb').TronWeb;
 
 // === CONFIGURATION ===
 const TRONGRID_API_KEY = "YOUR-TRONGRID-API-KEY"; // Replace with your TronGrid API key
@@ -382,7 +450,7 @@ const headers = {
     }
 })();
 </code></pre>
-                                                <button class="copy-button" onclick="copyCode()">Copy Code</button>
+                                                <button class="copy-button" onclick="copyCode('code-block-main')">Copy Code</button>
                                             </div>
                                         </div>
                                     </div>
@@ -482,8 +550,8 @@ const headers = {
 
     <!-- Copy Code Functionality -->
     <script>
-        function copyCode() {
-            const codeBlock = document.getElementById('code-block');
+        function copyCode(blockId) {
+            const codeBlock = document.getElementById(blockId);
             const text = codeBlock.innerText;
             navigator.clipboard.writeText(text).then(() => {
                 alert('Code copied to clipboard!');
