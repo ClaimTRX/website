@@ -839,6 +839,7 @@ async function connectWallet() {
     await initializeTronWeb();
   } catch (e) {
     console.error('Failed to connect to TronLink:', e);
+    alert('Failed to connect to TronLink. Please ensure TronLink is installed and try again.');
   }
 }
 
@@ -847,6 +848,7 @@ async function initializeTronWeb() {
   try {
     tronWeb = window.tronWeb;
     userAddress = tronWeb.defaultAddress.base58;
+    console.log('User Address:', userAddress); // Debug log
     
     document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
 
@@ -854,14 +856,17 @@ async function initializeTronWeb() {
       let details = tokenDetails[key];
       tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
       stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
+      console.log(`Token contract for ${key}:`, tokenContracts[key]); // Debug log
       if (!details.decimals) {
         tokenDetails[key].decimals = await tokenContracts[key].methods.decimals().call();
+        console.log(`Decimals for ${key}:`, tokenDetails[key].decimals); // Debug log
       }
     }
     
     await updateAllUI();
   } catch (error) {
     console.error('Error initializing TronWeb or Contracts:', error);
+    alert('Error initializing contracts. Please refresh and try again.');
   }
 }
 
@@ -877,7 +882,7 @@ async function updateAllUI() {
   }
 }
 
-// Utility function to make TronGrid API calls
+// Utility function to make TronGrid API calls (kept for future use)
 async function tronGridApiCall(endpoint, params = {}) {
   try {
     const response = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
@@ -902,132 +907,87 @@ async function tronGridApiCall(endpoint, params = {}) {
 // Update UI for a specific token
 async function updateTokenUI(token) {
   try {
-    // Fetch all required data in parallel using TronGrid and contract calls
-    const [balanceData, stakedAmount, projectedRewards, claimableRewards, totalClaimedRewards] = await Promise.all([
-      // Token balance
-      tronGridApiCall('/walletsolidity/getaccount', {
-        address: userAddress,
-        visible: true
-      }).then(data => {
-        const tokenBalance = data.assetV2?.find(asset => asset.key === tokenDetails[token].tokenAddress)?.value || 0;
-        return tokenBalance;
-      }).catch(() => tokenContracts[token].methods.balanceOf(userAddress).call()),
+    // Fetch all required data in parallel
+    const [balanceRaw, stakedAmount, projectedRewards, claimableRewards, totalClaimedRewards] = await Promise.all([
+      // Token balance directly from contract
+      tokenContracts[token].methods.balanceOf(userAddress).call().then(balance => {
+        console.log(`Raw balance for ${token}:`, balance); // Debug log
+        return balance;
+      }).catch(error => {
+        console.error(`Error fetching balance for ${token}:`, error);
+        return '0';
+      }),
       
       // Staked amount
-      stakingContracts[token].methods.viewStakedAmount(userAddress).call().catch(() => 0),
+      stakingContracts[token].methods.viewStakedAmount(userAddress).call().catch(() => '0'),
       
       // Projected rewards
-      stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call().catch(() => 0),
+      stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call().catch(() => '0'),
       
       // Claimable rewards
-      stakingContracts[token].methods.viewPendingReward(userAddress).call().catch(() => 0),
+      stakingContracts[token].methods.viewPendingReward(userAddress).call().catch(() => '0'),
       
       // Total claimed rewards
-      stakingContracts[token].methods.viewTotalClaimedRewards(userAddress).call().catch(() => 0)
+      stakingContracts[token].methods.viewTotalClaimedRewards(userAddress).call().catch(() => '0')
     ]);
 
-    // Process and update UI with 100ms delay between each update
     const decimals = tokenDetails[token].decimals;
     const rewardDecimals = tokenDetails[token].rewardDecimals || decimals;
     const tokenName = tokenDetails[token].displayName || token.toUpperCase();
 
     // Update available tokens
-    const balance = Number(balanceData) / Math.pow(10, decimals);
-    document.getElementById(`available-tokens-${token}`).innerText = Math.floor(balance).toLocaleString('en-US');
+    const balance = BigInt(balanceRaw) / BigInt(10 ** decimals);
+    const balanceElement = document.getElementById(`available-tokens-${token}`);
+    if (balanceElement) {
+      balanceElement.innerText = balance.toLocaleString('en-US');
+      console.log(`Formatted balance for ${token}:`, balance.toString()); // Debug log
+    } else {
+      console.error(`Element available-tokens-${token} not found`);
+    }
     await delay(100);
 
     // Update staked amount
-    const staked = Number(stakedAmount) / Math.pow(10, decimals);
-    document.getElementById(`staked-amount-${token}`).innerText = Math.floor(staked).toLocaleString('en-US');
+    const staked = BigInt(stakedAmount) / BigInt(10 ** decimals);
+    const stakedElement = document.getElementById(`staked-amount-${token}`);
+    if (stakedElement) {
+      stakedElement.innerText = staked.toLocaleString('en-US');
+    } else {
+      console.error(`Element staked-amount-${token} not found`);
+    }
     await delay(100);
 
     // Update projected rewards
-    const projected = Number(projectedRewards) / Math.pow(10, rewardDecimals);
-    document.getElementById(`projected-rewards-${token}`).innerText = Math.floor(projected).toLocaleString('en-US');
+    const projected = BigInt(projectedRewards) / BigInt(10 ** rewardDecimals);
+    const projectedElement = document.getElementById(`projected-rewards-${token}`);
+    if (projectedElement) {
+      projectedElement.innerText = projected.toLocaleString('en-US');
+    } else {
+      console.error(`Element projected-rewards-${token} not found`);
+    }
     await delay(100);
 
     // Update claimable rewards
-    const claimable = Number(claimableRewards) / Math.pow(10, rewardDecimals);
-    document.getElementById(`claimable-rewards-${token}`).innerText = 
-      Math.floor(claimable).toLocaleString('en-US') + " " + tokenName;
+    const claimable = BigInt(claimableRewards) / BigInt(10 ** rewardDecimals);
+    const claimableElement = document.getElementById(`claimable-rewards-${token}`);
+    if (claimableElement) {
+      claimableElement.innerText = claimable.toLocaleString('en-US') + " " + tokenName;
+    } else {
+      console.error(`Element claimable-rewards-${token} not found`);
+    }
     await delay(100);
 
     // Update total claimed rewards
-    const claimed = Number(totalClaimedRewards) / Math.pow(10, rewardDecimals);
-    document.getElementById(`total-claimed-rewards-${token}`).innerText = Math.floor(claimed).toLocaleString('en-US');
+    const claimed = BigInt(totalClaimedRewards) / BigInt(10 ** rewardDecimals);
+    const claimedElement = document.getElementById(`total-claimed-rewards-${token}`);
+    if (claimedElement) {
+      claimedElement.innerText = claimed.toLocaleString('en-US');
+    } else {
+      console.error(`Element total-claimed-rewards-${token} not found`);
+    }
 
   } catch (error) {
     console.error(`Error updating UI for ${token}:`, error);
-    // Fallback to sequential updates with 100ms delays
-    await updateAvailableTokens(token);
-    await delay(200);
-    await updateStakedAmount(token);
-    await delay(200);
-    await updateProjectedRewards(token);
-    await delay(200);
-    await updateClaimableRewards(token);
-    await delay(200);
-    await updateTotalClaimedRewards(token);
-  }
-}
-
-// Update available tokens (fallback)
-async function updateAvailableTokens(token) {
-  try {
-    const balanceRaw = await tokenContracts[token].methods.balanceOf(userAddress).call();
-    const balance = Number(balanceRaw) / Math.pow(10, tokenDetails[token].decimals);
-    document.getElementById(`available-tokens-${token}`).innerText = Math.floor(balance).toLocaleString('en-US');
-  } catch (error) {
-    console.error(`Error updating available tokens for ${token}:`, error);
-  }
-}
-
-// Update staked amount (fallback)
-async function updateStakedAmount(token) {
-  try {
-    const stakedAmountRaw = await stakingContracts[token].methods.viewStakedAmount(userAddress).call();
-    const stakedAmount = Number(stakedAmountRaw) / Math.pow(10, tokenDetails[token].decimals);
-    document.getElementById(`staked-amount-${token}`).innerText = Math.floor(stakedAmount).toLocaleString('en-US');
-  } catch (error) {
-    console.error(`Error updating staked amount for ${token}:`, error);
-  }
-}
-
-// Update projected rewards (fallback)
-async function updateProjectedRewards(token) {
-  try {
-    const projectedRewardsRaw = await stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call();
-    const rewardDecimals = tokenDetails[token].rewardDecimals || tokenDetails[token].decimals;
-    const projectedRewards = Number(projectedRewardsRaw) / Math.pow(10, rewardDecimals);
-    document.getElementById(`projected-rewards-${token}`).innerText = Math.floor(projectedRewards).toLocaleString('en-US');
-  } catch (error) {
-    console.error(`Error updating projected rewards for ${token}:`, error);
-  }
-}
-
-// Update claimable rewards (fallback)
-async function updateClaimableRewards(token) {
-  try {
-    const claimableRewardsRaw = await stakingContracts[token].methods.viewPendingReward(userAddress).call();
-    const rewardDecimals = tokenDetails[token].rewardDecimals || tokenDetails[token].decimals;
-    const claimableRewards = claimableRewardsRaw / Math.pow(10, rewardDecimals);
-    const tokenName = tokenDetails[token].displayName || token.toUpperCase();
-    document.getElementById(`claimable-rewards-${token}`).innerText = 
-      Math.floor(claimableRewards).toLocaleString('en-US') + " " + tokenName;
-  } catch (error) {
-    console.error(`Error updating claimable rewards for ${token}:`, error);
-  }
-}
-
-// Update total claimed rewards (fallback)
-async function updateTotalClaimedRewards(token) {
-  try {
-    const totalClaimedRewardsRaw = await stakingContracts[token].methods.viewTotalClaimedRewards(userAddress).call();
-    const rewardDecimals = tokenDetails[token].rewardDecimals || tokenDetails[token].decimals;
-    const totalClaimedRewards = totalClaimedRewardsRaw / Math.pow(10, rewardDecimals);
-    document.getElementById(`total-claimed-rewards-${token}`).innerText = Math.floor(claimed).toLocaleString('en-US');
-  } catch (error) {
-    console.error(`Error updating total claimed rewards for ${token}:`, error);
+    alert(`Error updating UI for ${token}. Please check the console for details.`);
   }
 }
 
@@ -1056,6 +1016,7 @@ async function stakeTokens(token, amount) {
     await updateTokenUI(token);
   } catch (error) {
     console.error(`Error staking tokens for ${token}:`, error);
+    alert(`Error staking tokens for ${token}. Please check the console for details.`);
   }
 }
 
@@ -1068,6 +1029,7 @@ async function unstakeTokens(token) {
     await updateTokenUI(token);
   } catch (error) {
     console.error(`Error unstaking tokens for ${token}:`, error);
+    alert(`Error unstaking tokens for ${token}. Please check the console for details.`);
   }
 }
 
@@ -1078,19 +1040,37 @@ async function claimRewards(token) {
     await updateTokenUI(token);
   } catch (error) {
     console.error(`Error claiming rewards for ${token}:`, error);
+    alert(`Error claiming rewards for ${token}. Please check the console for details.`);
   }
 }
 
 // Attach event listeners dynamically
 for (let key in tokenDetails) {
-  document.getElementById(`stake-button-${key}`).addEventListener('click', async () => {
-    const amount = document.getElementById(`stake-amount-${key}`).value;
-    await stakeTokens(key, amount);
-  });
-  document.getElementById(`unstake-button-${key}`).addEventListener('click', async () => {
-    await unstakeTokens(key);
-  });
-  document.getElementById(`claim-rewards-button-${key}`).addEventListener('click', async () => {
-    await claimRewards(key);
-  });
+  const stakeButton = document.getElementById(`stake-button-${key}`);
+  if (stakeButton) {
+    stakeButton.addEventListener('click', async () => {
+      const amount = document.getElementById(`stake-amount-${key}`).value;
+      await stakeTokens(key, amount);
+    });
+  } else {
+    console.error(`Stake button for ${key} not found`);
+  }
+
+  const unstakeButton = document.getElementById(`unstake-button-${key}`);
+  if (unstakeButton) {
+    unstakeButton.addEventListener('click', async () => {
+      await unstakeTokens(key);
+    });
+  } else {
+    console.error(`Unstake button for ${key} not found`);
+  }
+
+  const claimButton = document.getElementById(`claim-rewards-button-${key}`);
+  if (claimButton) {
+    claimButton.addEventListener('click', async () => {
+      await claimRewards(key);
+    });
+  } else {
+    console.error(`Claim rewards button for ${key} not found`);
+  }
 }
