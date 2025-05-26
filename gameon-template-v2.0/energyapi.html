@@ -1,0 +1,574 @@
+<!doctype html>
+<html class="no-js" lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+    <!-- Title -->
+    <title>CFT Ecosystem - Rent Energy</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="assets/img/favicon.png">
+
+    <!-- Style css -->
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <!-- Tailwind CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+    <!-- Custom CSS for white text -->
+    <style>
+        .energy-section,
+        .energy-section * {
+            color: white !important;
+        }
+
+        .energy-section input::placeholder {
+            color: white !important;
+            opacity: 0.7;
+        }
+
+        /* Custom styling for code block */
+        .code-block {
+            background-color: #2d2d2d;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Courier New', Courier, monospace;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .copy-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .copy-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+
+<body>
+    <!--====== Preloader Area Start ======-->
+    <div id="gameon-preloader" class="gameon-preloader">
+        <div class="preloader-animation">
+            <div class="spinner"></div>
+            <p class="fw-5 text-center text-uppercase">Loading</p>
+        </div>
+        <div class="loader-animation">
+            <div class="row h-100">
+                <div class="col-3 single-loader p-0">
+                    <div class="loader-bg"></div>
+                </div>
+                <div class="col-3 single-loader p-0">
+                    <div class="loader-bg"></div>
+                </div>
+                <div class="col-3 single-loader p-0">
+                    <div class="loader-bg"></div>
+                </div>
+                <div class="col-3 single-loader p-0">
+                    <div class="loader-bg"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--====== Preloader Area End ======-->
+
+    <div class="main">
+        <!-- ***** Header Start ***** -->
+        <header id="header">
+            <!-- Navbar -->
+            <nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
+                <div class="container header">
+                    <!-- Logo -->
+                    <a class="navbar-brand" href="index.html">
+                        <img src="assets/img/logo/logo.png" alt="" />
+                    </a>
+
+                    <div class="ms-auto"></div>
+
+                    <!-- Navbar Nav -->
+                    <ul class="navbar-nav items mx-auto">
+                        <li class="nav-item">
+                            <a href="index.html" class="nav-link">Home</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li class="nav-item">
+                                    <a href="staking.html" class="nav-link">Staking</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="sellcft.html" class="nav-link">Trading</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li class="nav-item">
+                                    <a href="buystablex.html" class="nav-link">Buy StableX</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="sellstablex.html" class="nav-link">Sell StableX</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="stablexstaking.html" class="nav-link">Stake StableX</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link">CFT News <i class="icon-arrow-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li class="nav-item">
+                                    <a href="blog.html" class="nav-link">News</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
+                            <ul class="dropdown-menu">
+                                <li class="nav-item">
+                                    <a href="feb.html" class="nav-link">FEB</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="energy.html" class="nav-link">Rent Energy</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="swap.html" class="nav-link">Swap</a>
+                        </li>
+                    </ul>
+
+                    <!-- Navbar Toggler -->
+                    <ul class="navbar-nav toggle">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
+                                <i class="icon-menu m-0"></i>
+                            </a>
+                        </li>
+                    </ul>
+
+                    <!-- Navbar Action Button -->
+                    <ul class="navbar-nav action">
+                        <li class="nav-item ms-2">
+                            <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
+                                <i class="icon-wallet me-md-2"></i> Wallet Connect
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </header>
+        <!-- ***** Header End ***** -->
+
+        <!-- ***** Hero Area Start ***** -->
+        <section class="hero-section">
+            <div class="container">
+                <div class="row align-items-center justify-content-center">
+                    <div class="col-12 col-md-6 col-lg-9 text-center">
+                        <div class="hero-content">
+                            <div class="intro text-center mb-5">
+                                <span class="intro-text">CFT Ecosystem</span>
+                                <h1 class="mt-4">Rent Energy</h1>
+                                <p>Delegate energy on the TRON blockchain</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- ***** Hero Area End ***** -->
+
+        <!-- Energy Section -->
+        <section class="energy-section py-12">
+            <div class="container mx-auto px-4">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-10">
+                        <!-- Introduction -->
+                        <h2 class="text-3xl font-bold mb-6">Introduction</h2>
+                        <p class="mb-4">
+                            The <code>user.js</code> script is a Node.js client application designed to interact with the Energy API, a system for delegating energy on the TRON blockchain. This script allows users to place energy delegation orders by choosing between two payment methods: paying directly with TRX or using pre-deposited credits. The payment process is fully automated, requiring no manual intervention from the user—the script handles building, signing, and broadcasting the transaction using the configured private key wallet. The Energy API supports delegation of 65,000 energy units for 6.5 TRX or 135,000 energy units for 13 TRX, for a fixed duration of 5 minutes. This documentation provides a guide to the <code>user.js</code> script, including its purpose, setup, usage, and interaction with the Energy API.
+                        </p>
+
+                        <h3 class="text-2xl font-semibold mt-6 mb-4">Purpose</h3>
+                        <p>The <code>user.js</code> script enables users to:</p>
+                        <ul class="list-disc list-inside mb-4">
+                            <li>Place an energy delegation order to a specified TRON wallet.</li>
+                            <li>Choose between paying directly with TRX (automatically sent from the private key wallet) or using credits.</li>
+                            <li>Delegate either 65,000 energy units for 6.5 TRX or 135,000 energy units for 13 TRX.</li>
+                            <li>Monitor the status of the delegation order.</li>
+                        </ul>
+
+                        <!-- Setup Section -->
+                        <h2 class="text-3xl font-bold mt-8 mb-6">Setup and Configuration</h2>
+
+                        <h3 class="text-2xl font-semibold mb-4">Prerequisites</h3>
+                        <p class="mb-4">To use the <code>user.js</code> script, ensure the following are installed:</p>
+                        <ul class="list-disc list-inside mb-4">
+                            <li><strong>Node.js</strong> (v16 or higher): For running the script.</li>
+                            <li><strong>A TRON Wallet</strong>: With sufficient TRX for direct payments or credits deposited in the Energy API.</li>
+                        </ul>
+
+                        <h3 class="text-2xl font-semibold mb-4">Script Code</h3>
+                        <p class="mb-4">Below is the complete <code>user.js</code> script, which you can copy and use:</p>
+                        <div class="code-block relative">
+                            <pre id="code-block" class="text-sm text-white"><code>const TronWeb = require('tronweb').TronWeb;
+
+// === CONFIGURATION ===
+const TRONGRID_API_KEY = "YOUR-TRONGRID-API-KEY"; // Replace with your TronGrid API key
+const PRIVATE_KEY = "YOUR-PRIVATE-KEY"; // Replace with your private key
+const API_KEY = "YOU-API-KEY"; // Replace with your API key
+const USE_CREDITS = false; // Set to true to use credits, false to pay directly with TRX
+const PAYMENT_WALLET = "TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn"; // DO NOT CHANGE
+
+// === ORDER SETUP ===
+const order = {
+    receiver: "RECEVING WALLET", // Replace with the receiving wallet address
+    resource_type: "energy",
+    amount: 65000,  // Options: 65000 or 135000
+    duration: 5     // Duration in minutes (DO NOT CHANGE)
+};
+
+// === PRICE LOOKUP ===
+const PRICE_TABLE = {
+    65000: 6.5,
+    135000: 13
+};
+const trxPrice = PRICE_TABLE[order.amount];
+if (!trxPrice) {
+    console.error("❌ Invalid order amount. Must be 65000 or 135000.");
+    process.exit(1);
+}
+const priceInSun = trxPrice * 1e6;
+
+// === TRON SETUP ===
+const tronWeb = new TronWeb({
+    fullHost: 'https://api.trongrid.io',
+    headers: { 'TRON-PRO-API-KEY': TRONGRID_API_KEY }
+});
+tronWeb.setPrivateKey(PRIVATE_KEY);
+const senderAddress = tronWeb.address.fromPrivateKey(PRIVATE_KEY);
+
+// === API SETUP ===
+const url = "http://api2.cftecosystem.com/energy";
+const headers = {
+    "Content-Type": "application/json",
+    "Api-Key": API_KEY
+};
+
+// === MAIN FUNCTION ===
+(async () => {
+    console.log(`🔑 Sender: ${senderAddress}`);
+    console.log(`💸 Paying ${trxPrice} TRX for ${order.amount} energy (Duration: ${order.duration} min)`);
+    console.log(`➡️ To vendor: ${PAYMENT_WALLET}`);
+    console.log(`🎯 Energy receiver: ${order.receiver}`);
+
+    if (USE_CREDITS) {
+        const res = await fetch(url + "/create-order", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ order, use_credits: true })
+        });
+        const result = await res.json();
+        console.log(result);
+        return;
+    }
+
+    try {
+        // === Build & Sign TX ===
+        const tx = await tronWeb.transactionBuilder.sendTrx(
+            PAYMENT_WALLET,
+            priceInSun,
+            senderAddress
+        );
+        tx.feeLimit = 1_000_000;
+
+        const signedTx = await tronWeb.trx.sign(tx, PRIVATE_KEY);
+
+        // === Broadcast TX ===
+        const broadcastRes = await tronWeb.trx.sendRawTransaction(signedTx);
+        console.log("📡 Broadcast response:", broadcastRes);
+
+        if (!broadcastRes.result) {
+            console.error("❌ Failed to broadcast transaction.");
+            return;
+        }
+
+        console.log(`✅ TX broadcasted: ${signedTx.txID}`);
+
+        // === Call /create-order with full signed TX ===
+        const res = await fetch(url + "/create-order", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+                order,
+                use_credits: false,
+                signed_tx: signedTx // Required by backend
+            })
+        });
+
+        const text = await res.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (err) {
+            console.error("❌ Failed to parse response:");
+            console.log(text);
+            return;
+        }
+
+        if (!res.ok || data.success === false) {
+            console.error("❌ Order creation failed:", data);
+            return;
+        }
+
+        console.log("✅ Order created:", data);
+
+        // === Poll for Delegation Status ===
+        const orderId = data.data.order_id;
+        const statusUrl = `${url}/delegation-status?requestId=${orderId}`;
+        let attempts = 0;
+
+        const interval = setInterval(async () => {
+            attempts++;
+            try {
+                const statusRes = await fetch(statusUrl, { method: 'GET', headers });
+                const statusData = await statusRes.json();
+                console.log(`ℹ️ Status [${attempts}]:`, statusData);
+
+                if (statusData.status === "delegated") {
+                    console.log(`✅ Energy delegated: TxID ${statusData.txId}`);
+                    clearInterval(interval);
+                } else if (statusData.status === "failed" || attempts >= 60) {
+                    console.log(`❌ Delegation failed or timed out.`);
+                    clearInterval(interval);
+                }
+            } catch (err) {
+                console.error(`⚠️ Polling error: ${err.message}`);
+                if (attempts >= 60) clearInterval(interval);
+            }
+        }, 2000);
+
+    } catch (err) {
+        console.error("❌ Transaction error:", err.message);
+    }
+})();
+</code></pre>
+                            <button class="copy-button" onclick="copyCode()">Copy Code</button>
+                        </div>
+
+                        <h3 class="text-2xl font-semibold mt-6 mb-4">Setup Instructions</h3>
+                        <ol class="list-decimal list-inside mb-4">
+                            <li><strong>Save the Script:</strong>
+                                <ul class="list-disc list-inside pl-6">
+                                    <li>Copy the script above into a file named <code>user.js</code>.</li>
+                                </ul>
+                            </li>
+                            <li><strong>Install Dependencies:</strong>
+                                <ul class="list-disc list-inside pl-6">
+                                    <li>Ensure Node.js is installed.</li>
+                                    <li>Install the required package:
+                                        <pre class="code-block"><code>npm install tronweb</code></pre>
+                                    </li>
+                                    <li>Note: The script uses the native <code>fetch</code> API, available in Node.js v18 and higher. If using an older version, install <code>node-fetch</code> and modify the script to import it.</li>
+                                </ul>
+                            </li>
+                            <li><strong>Configure the Script:</strong>
+                                <ul class="list-disc list-inside pl-6">
+                                    <li>Replace <code>YOUR-TRONGRID-API-KEY</code> with your TronGrid API key.</li>
+                                    <li>Replace <code>YOUR-PRIVATE-KEY</code> with your TRON wallet private key. This wallet will automatically send the payment for direct TRX orders.</li>
+                                    <li>Replace <code>YOU-API-KEY</code> with your Energy API key (e.g., <code>77b9c4e8a2f1d6b3e9a0c8f7d4e2b1c9a3d5e6f7b8c9a0b1c2d3e4f5a6b7c8d9</code>).</li>
+                                    <li>Replace <code>RECEVING WALLET</code> with the TRON wallet address that will receive the delegated energy.</li>
+                                </ul>
+                            </li>
+                            <li><strong>Run the Script:</strong>
+                                <ul class="list-disc list-inside pl-6">
+                                    <li>Execute the script using Node.js:
+                                        <pre class="code-block"><code>node user.js</code></pre>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ol>
+
+                        <!-- Usage Section -->
+                        <h2 class="text-3xl font-bold mt-8 mb-6">Usage</h2>
+                        <p class="mb-4">The <code>user.js</code> script allows users to delegate energy by interacting with the Energy API. Users can choose to pay either with credits or directly with TRX, and the payment is automatically handled by the script using the configured private key wallet.</p>
+
+                        <h3 class="text-2xl font-semibold mb-4">Payment Options</h3>
+                        <p class="mb-4">Users can choose between two payment methods when placing an order:</p>
+                        <ul class="list-disc list-inside mb-4">
+                            <li><strong>Direct TRX Payment:</strong>
+                                <ul class="list-disc list-inside pl-6">
+                                    <li>The script automatically sends TRX from the wallet associated with the configured private key to the Energy API's payment address (<code>TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn</code>).</li>
+                                    <li>The transaction is built, signed, and broadcasted without any user intervention.</li>
+                                    <li>Set <code>USE_CREDITS = false</code> in the script to use this method.</li>
+                                </ul>
+                            </li>
+                            <li><strong>Credit Payment:</strong>
+                                <ul class="list-disc list-inside pl-6">
+                                    <li>The user pays using credits previously deposited into the project's credit wallet (e.g., <code>TQNJCwrnep6D11tMYoMceFVjn7MKRx1G95</code> for <code>apitest</code>).</li>
+                                    <li>Credits must be deposited via the Energy API's <code>/deposit-credits</code> endpoint (see the Energy API documentation for details).</li>
+                                    <li>Set <code>USE_CREDITS = true</code> in the script to use this method.</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <h3 class="text-2xl font-semibold mb-4">Pricing Structure</h3>
+                        <p class="mb-4">The Energy API supports the following pricing for energy delegation (fixed duration of 5 minutes):</p>
+                        <ul class="list-disc list-inside mb-4">
+                            <li><strong>65,000 Energy Units:</strong> 6.5 TRX</li>
+                            <li><strong>135,000 Energy Units:</strong> 13 TRX</li>
+                        </ul>
+
+                        <h3 class="text-2xl font-semibold mb-4">Customizing the Script</h3>
+                        <p class="mb-4">To place an order, modify the following variables in <code>user.js</code>:</p>
+                        <ul class="list-disc list-inside mb-4">
+                            <li><code>TRONGRID_API_KEY</code>: Your TronGrid API key.</li>
+                            <li><code>PRIVATE_KEY</code>: Your TRON wallet private key (used to automatically send payments).</li>
+                            <li><code>API_KEY</code>: Your Energy API key.</li>
+                            <li><code>order.receiver</code>: The TRON wallet address to receive the delegated energy.</li>
+                            <li><code>order.amount</code>: The amount of energy to delegate (65000 or 135000).</li>
+                            <li><code>USE_CREDITS</code>: Set to <code>true</code> for credit payment, <code>false</code> for direct TRX payment.</li>
+                        </ul>
+                        <p class="mb-4"><strong>Example Customization:</strong></p>
+                        <pre class="code-block"><code>const TRONGRID_API_KEY = "your-trongrid-api-key";
+const PRIVATE_KEY = "your-private-key";
+const API_KEY = "77b9c4e8a2f1d6b3e9a0c8f7d4e2b1c9a3d5e6f7b8c9a0b1c2d3e4f5a6b7c8d9";
+const USE_CREDITS = false;
+const order = {
+    receiver: "THNiVH2i5gqgTXR3PMYFaMKdygiXrzJPrk",
+    resource_type: "energy",
+    amount: 65000,
+    duration: 5
+};
+</code></pre>
+
+                        <h3 class="text-2xl font-semibold mb-4">Execution Flow</h3>
+                        <p class="mb-4">The script performs the following steps:</p>
+                        <ol class="list-decimal list-inside mb-4">
+                            <li><strong>Validate Order Amount:</strong> Ensures the <code>order.amount</code> is either 65,000 or 135,000.</li>
+                            <li><strong>Process Payment:</strong>
+                                <ul class="list-disc list-inside pl-6">
+                                    <li>If <code>USE_CREDITS = false</code>: Automatically builds, signs, and broadcasts a TRX payment to <code>TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn</code> using the private key wallet.</li>
+                                    <li>If <code>USE_CREDITS = true</code>: Submits the order directly to <code>/create-order</code>, deducting from the credit balance.</li>
+                                </ul>
+                            </li>
+                            <li><strong>Create Order:</strong> Submits the order to the Energy API's <code>/create-order</code> endpoint.</li>
+                            <li><strong>Monitor Status:</strong> Polls the <code>/delegation-status</code> endpoint every 2 seconds until the order is completed or fails.</li>
+                        </ol>
+
+                        <!-- Additional Notes Section -->
+                        <h2 class="text-3xl font-bold mt-8 mb-6">Additional Notes</h2>
+                        <h3 class="text-2xl font-semibold mb-4">Dependencies</h3>
+                        <p class="mb-4">The script requires the following Node.js package:</p>
+                        <ul class="list-disc list-inside mb-4">
+                            <li><code>tronweb</code>: For interacting with the TRON blockchain.</li>
+                        </ul>
+
+                        <h3 class="text-2xl font-semibold mb-4">Error Handling</h3>
+                        <p class="mb-4">The script includes error handling for API requests, transaction failures, and status polling. Check the console logs for detailed error messages if an operation fails.</p>
+
+                        <h3 class="text-2xl font-semibold mb-4">Next Steps</h3>
+                        <ul class="list-disc list-inside mb-4">
+                            <li>Ensure the private key wallet has sufficient TRX for direct payments or deposit credits into the project's credit wallet.</li>
+                            <li>Test the script with both payment methods to confirm functionality.</li>
+                            <li>Refer to the Energy API documentation for additional features (e.g., depositing credits, checking order status).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!--====== Footer Area Start ======-->
+        <footer class="footer-area">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-8 text-center">
+                        <div class="footer-items">
+                            <a class="navbar-brand" href="index.html">
+                                <img src="assets/img/logo/logo.png" alt="">
+                            </a>
+                            <div class="social-icons d-flex justify-content-center my-4">
+                                <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank">
+                                    <i class="fab fa-x-twitter"></i>
+                                </a>
+                                <a class="reddit" href="https://www.reddit.com/" target="_blank">
+                                    <i class="fab fa-reddit"></i>
+                                </a>
+                                <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank">
+                                    <i class="fab fa-telegram-plane"></i>
+                                </a>
+                            </div>
+                            <div class="copyright-area py-4">©2025 CFT Ecosystem, All Rights Reserved</div>
+                        </div>
+                        <div id="scroll-to-top" class="scroll-to-top">
+                            <a href="#header" class="smooth-anchor">
+                                <i class="fa-solid fa-arrow-up"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+        <!--====== Footer Area End ======-->
+
+        <!--====== Modal Responsive Menu Area Start ======-->
+        <div id="menu" class="modal fade p-0">
+            <div class="modal-dialog dialog-animated">
+                <div class="modal-content h-100">
+                    <div class="modal-header" data-bs-dismiss="modal">
+                        Menu <i class="far fa-times-circle icon-close"></i>
+                    </div>
+                    <div class="menu modal-body">
+                        <div class="row w-100">
+                            <div class="items p-0 col-12 text-center"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--====== Modal Responsive Menu Area End ======-->
+    </div>
+
+    <!-- ***** All jQuery Plugins ***** -->
+    <script src="assets/js/vendor/jquery.min.js"></script>
+    <script src="assets/js/vendor/popper.min.js"></script>
+    <script src="assets/js/vendor/bootstrap.min.js"></script>
+    <script src="assets/js/vendor/all.min.js"></script>
+    <script src="assets/js/vendor/gallery.min.js"></script>
+    <script src="assets/js/vendor/slider.min.js"></script>
+    <script src="assets/js/vendor/countdown.min.js"></script>
+    <script src="assets/js/vendor/shuffle.min.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+
+    <!-- Copy Code Functionality -->
+    <script>
+        function copyCode() {
+            const codeBlock = document.getElementById('code-block');
+            const text = codeBlock.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Code copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy code:', err);
+            });
+        }
+    </script>
+</body>
+
+</html>
