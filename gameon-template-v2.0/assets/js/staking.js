@@ -3,6 +3,10 @@ const stakingContracts = {};
 const tokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
+// TronGrid API configuration
+const TRONGRID_API_KEY = 'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca'; // Replace with your TronGrid API key
+const TRONGRID_API_URL = 'https://api.trongrid.io';
+
 // Define contracts for StableX and CFT
 const tokenDetails = {
   cft: {
@@ -21,7 +25,7 @@ const tokenDetails = {
     tokenAddress: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
     stakingAddress: 'TXgt8nXRDTbYxbhDbkZyqs9cgjoBikQa72',
     decimals: 8,
-    rewardDecimals: 6, // Reward token has 6 decimals
+    rewardDecimals: 6,
     displayName: 'CFT'
   },
   turu: {
@@ -834,7 +838,7 @@ async function connectWallet() {
     await tronLink.request({ method: 'tron_requestAccounts' });
     await initializeTronWeb();
   } catch (e) {
-    console.error('Failed to connect 到 TronLink:', e);
+    console.error('Failed to connect to TronLink:', e);
   }
 }
 
@@ -868,25 +872,93 @@ async function updateAllUI() {
   }
 }
 
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+// Utility function to make TronGrid API calls
+async function tronGridApiCall(endpoint, params = {}) {
+  try {
+    const response = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'TRON-PRO-API-KEY': TRONGRID_API_KEY
+      },
+      body: JSON.stringify(params)
+    });
+    const data = await response.json();
+    if (data.Error) {
+      throw new Error(data.Error);
+    }
+    return data;
+  } catch (error) {
+    console.error(`TronGrid API error at ${endpoint}:`, error);
+    throw error;
+  }
 }
 
 // Update UI for a specific token
 async function updateTokenUI(token) {
-  await updateAvailableTokens(token);
-  await delay(400);
-  await updateStakedAmount(token);
-  await delay(400);
-  await updateProjectedRewards(token);
-  await delay(400);
-  await updateClaimableRewards(token);
-  await delay(400);
-  await updateTotalClaimedRewards(token);
-  await delay(400);
+  try {
+    // Fetch all required data in parallel using TronGrid and contract calls
+    const [balanceData, stakedAmount, projectedRewards, claimableRewards, totalClaimedRewards] = await Promise.all([
+      // Token balance
+      tronGridApiCall('/walletsolidity/getaccount', {
+        address: userAddress,
+        visible: true
+      }).then(data => {
+        const tokenBalance = data.assetV2?.find(asset => asset.key === tokenDetails[token].tokenAddress)?.value || 0;
+        return tokenBalance;
+      }).catch(() => tokenContracts[token].methods.balanceOf(userAddress).call()),
+      
+      // Staked amount
+      stakingContracts[token].methods.viewStakedAmount(userAddress).call().catch(() => 0),
+      
+      // Projected rewards
+      stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call().catch(() => 0),
+      
+      // Claimable rewards
+      stakingContracts[token].methods.viewPendingReward(userAddress).call().catch(() => 0),
+      
+      // Total claimed rewards
+      stakingContracts[token].methods.viewTotalClaimedRewards(userAddress).call().catch(() => 0)
+    ]);
+
+    // Process and update UI
+    const decimals = tokenDetails[token].decimals;
+    const rewardDecimals = tokenDetails[token].rewardDecimals || decimals;
+    const tokenName = tokenDetails[token].displayName || token.toUpperCase();
+
+    // Update available tokens
+    const balance = Number(balanceData) / Math.pow(10, decimals);
+    document.getElementById(`available-tokens-${token}`).innerText = Math.floor(balance).toLocaleString('en-US');
+
+    // Update staked amount
+    const staked = Number(stakedAmount) / Math.pow(10, decimals);
+    document.getElementById(`staked-amount-${token}`).innerText = Math.floor(staked).toLocaleString('en-US');
+
+    // Update projected rewards
+    const projected = Number(projectedRewards) / Math.pow(10, rewardDecimals);
+    document.getElementById(`projected-rewards-${token}`).innerText = Math.floor(projected).toLocaleString('en-US');
+
+    // Update claimable rewards
+    const claimable = Number(claimableRewards) / Math.pow(10, rewardDecimals);
+    document.getElementById(`claimable-rewards-${token}`).innerText = 
+      Math.floor(claimable).toLocaleString('en-US') + " " + tokenName;
+
+    // Update total claimed rewards
+    const claimed = Number(totalClaimedRewards) / Math.pow(10, rewardDecimals);
+    document.getElementById(`total-claimed-rewards-${token}`).innerText = Math.floor(claimed).toLocaleString('en-US');
+
+  } catch (error) {
+    console.error(`Error updating UI for ${token}:`, error);
+    // Fallback to sequential updates if TronGrid fails
+    await updateAvailableTokens(token);
+    await updateStakedAmount(token);
+    await updateProjectedRewards(token);
+    await updateClaimableRewards(token);
+    await updateTotalClaimedRewards(token);
+  }
 }
 
-// Update available tokens
+// Update available tokens (fallback)
 async function updateAvailableTokens(token) {
   try {
     const balanceRaw = await tokenContracts[token].methods.balanceOf(userAddress).call();
@@ -897,7 +969,7 @@ async function updateAvailableTokens(token) {
   }
 }
 
-// Update staked amount
+// Update staked amount (fallback)
 async function updateStakedAmount(token) {
   try {
     const stakedAmountRaw = await stakingContracts[token].methods.viewStakedAmount(userAddress).call();
@@ -908,33 +980,25 @@ async function updateStakedAmount(token) {
   }
 }
 
-// Update projected rewards
+// Update projected rewards (fallback)
 async function updateProjectedRewards(token) {
   try {
     const projectedRewardsRaw = await stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call();
-    // Use rewardDecimals if defined (for cftturu), otherwise use staking token decimals
     const rewardDecimals = tokenDetails[token].rewardDecimals || tokenDetails[token].decimals;
     const projectedRewards = Number(projectedRewardsRaw) / Math.pow(10, rewardDecimals);
-
-    // Display the projected rewards
     document.getElementById(`projected-rewards-${token}`).innerText = Math.floor(projectedRewards).toLocaleString('en-US');
   } catch (error) {
     console.error(`Error updating projected rewards for ${token}:`, error);
   }
 }
 
-// Update claimable rewards
+// Update claimable rewards (fallback)
 async function updateClaimableRewards(token) {
   try {
     const claimableRewardsRaw = await stakingContracts[token].methods.viewPendingReward(userAddress).call();
-    // Use rewardDecimals if defined (for cftturu), otherwise use staking token decimals
     const rewardDecimals = tokenDetails[token].rewardDecimals || tokenDetails[token].decimals;
     const claimableRewards = claimableRewardsRaw / Math.pow(10, rewardDecimals);
-
-    // Get the token's display name from tokenDetails
     const tokenName = tokenDetails[token].displayName || token.toUpperCase();
-
-    // Update the HTML element with formatted text including token name
     document.getElementById(`claimable-rewards-${token}`).innerText = 
       Math.floor(claimableRewards).toLocaleString('en-US') + " " + tokenName;
   } catch (error) {
@@ -942,11 +1006,10 @@ async function updateClaimableRewards(token) {
   }
 }
 
-// Update total claimed rewards
+// Update total claimed rewards (fallback)
 async function updateTotalClaimedRewards(token) {
   try {
     const totalClaimedRewardsRaw = await stakingContracts[token].methods.viewTotalClaimedRewards(userAddress).call();
-    // Use rewardDecimals if defined (for cftturu), otherwise use staking token decimals
     const rewardDecimals = tokenDetails[token].rewardDecimals || tokenDetails[token].decimals;
     const totalClaimedRewards = totalClaimedRewardsRaw / Math.pow(10, rewardDecimals);
     document.getElementById(`total-claimed-rewards-${token}`).innerText = Math.floor(totalClaimedRewards).toLocaleString('en-US');
@@ -958,13 +1021,10 @@ async function updateTotalClaimedRewards(token) {
 // Staking function
 async function stakeTokens(token, amount) {
   try {
-    // Adjust amount based on token decimals
     const amountToStake = BigInt(amount) * BigInt(10 ** tokenDetails[token].decimals);
-
     const stakingContractAddress = tokenDetails[token].stakingAddress;
     const tokenContract = tokenContracts[token];
 
-    // Check Current Allowance
     const allowanceRaw = await tokenContract.methods.allowance(userAddress, stakingContractAddress).call();
     const allowance = BigInt(allowanceRaw);
 
@@ -991,7 +1051,6 @@ async function unstakeTokens(token) {
   try {
     const unstakeAmount = document.getElementById(`withdraw-amount-${token}`).value;
     const amountToUnstake = BigInt(unstakeAmount) * BigInt(10 ** tokenDetails[token].decimals);
-
     await stakingContracts[token].methods.withdraw(amountToUnstake.toString()).send();
     await updateTokenUI(token);
   } catch (error) {
