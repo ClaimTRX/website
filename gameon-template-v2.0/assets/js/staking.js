@@ -870,11 +870,10 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Update UI for all tokens with 500ms delay between each
+// Update UI for all tokens
 async function updateAllUI() {
   for (let key in tokenDetails) {
     await updateTokenUI(key);
-    await delay(500); // 500ms delay between each token
   }
 }
 
@@ -927,7 +926,7 @@ async function updateTokenUI(token) {
       stakingContracts[token].methods.viewTotalClaimedRewards(userAddress).call().catch(() => 0)
     ]);
 
-    // Process and update UI
+    // Process and update UI with 100ms delay between each update
     const decimals = tokenDetails[token].decimals;
     const rewardDecimals = tokenDetails[token].rewardDecimals || decimals;
     const tokenName = tokenDetails[token].displayName || token.toUpperCase();
@@ -935,19 +934,23 @@ async function updateTokenUI(token) {
     // Update available tokens
     const balance = Number(balanceData) / Math.pow(10, decimals);
     document.getElementById(`available-tokens-${token}`).innerText = Math.floor(balance).toLocaleString('en-US');
+    await delay(100);
 
     // Update staked amount
     const staked = Number(stakedAmount) / Math.pow(10, decimals);
     document.getElementById(`staked-amount-${token}`).innerText = Math.floor(staked).toLocaleString('en-US');
+    await delay(100);
 
     // Update projected rewards
     const projected = Number(projectedRewards) / Math.pow(10, rewardDecimals);
     document.getElementById(`projected-rewards-${token}`).innerText = Math.floor(projected).toLocaleString('en-US');
+    await delay(100);
 
     // Update claimable rewards
     const claimable = Number(claimableRewards) / Math.pow(10, rewardDecimals);
     document.getElementById(`claimable-rewards-${token}`).innerText = 
       Math.floor(claimable).toLocaleString('en-US') + " " + tokenName;
+    await delay(100);
 
     // Update total claimed rewards
     const claimed = Number(totalClaimedRewards) / Math.pow(10, rewardDecimals);
@@ -955,11 +958,15 @@ async function updateTokenUI(token) {
 
   } catch (error) {
     console.error(`Error updating UI for ${token}:`, error);
-    // Fallback to sequential updates if TronGrid fails
+    // Fallback to sequential updates with 100ms delays
     await updateAvailableTokens(token);
+    await delay(100);
     await updateStakedAmount(token);
+    await delay(100);
     await updateProjectedRewards(token);
+    await delay(100);
     await updateClaimableRewards(token);
+    await delay(100);
     await updateTotalClaimedRewards(token);
   }
 }
@@ -1018,7 +1025,7 @@ async function updateTotalClaimedRewards(token) {
     const totalClaimedRewardsRaw = await stakingContracts[token].methods.viewTotalClaimedRewards(userAddress).call();
     const rewardDecimals = tokenDetails[token].rewardDecimals || tokenDetails[token].decimals;
     const totalClaimedRewards = totalClaimedRewardsRaw / Math.pow(10, rewardDecimals);
-    document.getElementById(`total-claimed-rewards-${token}`).innerText = Math.floor(totalClaimedRewards).toLocaleString('en-US');
+    document.getElementById(`total-claimed-rewards-${token}`).innerText = Math.floor(claimed).toLocaleString('en-US');
   } catch (error) {
     console.error(`Error updating total claimed rewards for ${token}:`, error);
   }
