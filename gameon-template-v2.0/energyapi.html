@@ -1,544 +1,369 @@
-<!doctype html>
-<html class="no-js" lang="en">
+<!DOCTYPE html>
+<html lang="en" class="no-js">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="description" content="">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <meta charset="UTF-8" />
+  <meta name="description" content="" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
-    <!-- Title -->
-    <title>CFT Ecosystem - Rent Energy</title>
+  <title>CFT Ecosystem - Rent Energy</title>
 
-    <!-- Favicon -->
-    <link rel="icon" href="assets/img/favicon.png">
+  <link rel="icon" href="assets/img/favicon.png" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+  <link rel="stylesheet" href="assets/css/style.css" />
 
-    <!-- Style CSS -->
-    <link rel="stylesheet" href="assets/css/style.css">
+  <!-- Inline Styles -->
+  <style>
+    .staking-area .single-accordion-item .card-body {
+      color: var(--secondary-p-color);
+    }
 
-    <!-- Custom CSS for Structured Layout -->
-    <style>
-        /* Match the existing text styling */
-        .content-section {
-            padding: 90px 0;
-            background-color: var(--secondary-bg-color); /* Dark black, #040402 */
-        }
+    .staking-area .single-accordion-item .card-body p {
+      margin: 0.5rem 0;
+      font-size: var(--p-size);
+      font-weight: var(--p-weight);
+      line-height: 1.5;
+    }
 
-        .content-section h2 {
-            color: var(--white-color); /* Light white, #f9f9f9 */
-            font-family: var(--primary-font);
-            font-size: var(--h2-size); /* 3rem */
-            font-weight: var(--h2-weight); /* 700 */
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
+    .staking-area .single-accordion-item .card-body h4,
+    .staking-area .single-accordion-item .card-body h5 {
+      color: var(--white-color);
+      font-family: var(--primary-font);
+      font-weight: var(--h4-weight);
+      margin-bottom: 1rem;
+    }
 
-        .content-section h3 {
-            color: var(--white-color); /* Light white, #f9f9f9 */
-            font-family: var(--primary-font);
-            font-size: var(--h3-size); /* 2rem */
-            font-weight: var(--h3-weight); /* 600 */
-            margin: 2rem 0 1rem;
-        }
+    .staking-area .single-accordion-item .card-body h4 {
+      font-size: var(--h4-size);
+    }
 
-        .content-section p {
-            color: var(--secondary-p-color); /* Light gray, #8E8E8E */
-            font-size: var(--p-size); /* 1rem */
-            font-weight: var(--p-weight); /* 400 */
-            line-height: 1.5;
-            margin: 0.5rem 0;
-        }
+    .staking-area .single-accordion-item .card-body h5 {
+      font-size: var(--h5-size);
+      margin: 1.5rem 0 0.5rem;
+    }
 
-        .content-section ol {
-            padding-left: 20px;
-            list-style: decimal;
-        }
+    .staking-area .single-accordion-item .card-body ol {
+      padding-left: 20px;
+      list-style: decimal;
+    }
 
-        .content-section ol li {
-            margin: 1rem 0;
-            font-size: var(--p-size);
-            font-weight: var(--p-weight);
-            line-height: 1.5;
-            color: var(--secondary-p-color);
-        }
+    .staking-area .single-accordion-item .card-body ol li {
+      margin: 0.5rem 0;
+      font-size: var(--p-size);
+      font-weight: var(--p-weight);
+      line-height: 1.5;
+      color: var(--secondary-p-color);
+    }
 
-        .content-section ul {
-            padding-left: 20px;
-            list-style: disc;
-        }
+    .code-block {
+      position: relative;
+      background-color: var(--primary-color);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'Courier New', Courier, monospace;
+      overflow-x: auto;
+      margin: 0.5rem 0;
+    }
 
-        .content-section ul li {
-            margin: 0.5rem 0;
-            font-size: var(--p-size);
-            font-weight: var(--p-weight);
-            line-height: 1.5;
-            color: var(--secondary-p-color);
-        }
+    .code-block pre {
+      color: var(--white-color);
+      margin: 0;
+      font-size: 0.9rem;
+    }
 
-        .content-section a {
-            color: var(--primary-color); /* Blue, #0047ff */
-            transition: color 0.3s ease;
-        }
+    .code-block.inline {
+      display: inline-block;
+      padding: 4px 8px;
+      margin: 0 2px;
+    }
 
-        .content-section a:hover {
-            color: var(--primary-color-2); /* Darker blue, #002bd8 */
-        }
+    .copy-button {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background-image: linear-gradient(150deg, var(--primary-color-2) 0%, var(--secondary-color) 78%);
+      color: var(--black-color);
+      border: none;
+      padding: 8px 16px;
+      border-radius: 100px;
+      cursor: pointer;
+      font-family: var(--secondary-font);
+      font-size: 0.9rem;
+      font-weight: 700;
+      transition: background-image 0.3s ease;
+    }
 
-        .code-block {
-            position: relative;
-            background-color: var(--primary-color); /* Blue, #0047ff */
-            border-radius: 8px;
-            padding: 16px;
-            font-family: 'Courier New', Courier, monospace;
-            overflow-x: auto;
-            margin: 0.5rem 0;
-        }
+    .copy-button:hover {
+      background-image: linear-gradient(150deg, var(--secondary-color) 0%, var(--primary-color-2) 78%);
+    }
 
-        .code-block pre {
-            color: var(--white-color); /* Light white, #f9f9f9 */
-            margin: 0;
-            font-size: 0.9rem;
-        }
-
-        .code-block.inline {
-            display: inline-block;
-            padding: 4px 8px;
-            margin: 0 2px;
-        }
-
-        .copy-button {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background-image: linear-gradient(150deg, var(--primary-color-2) 0%, var(--secondary-color) 78%); /* Gradient: #002bd8 to #57048A */
-            color: var(--black-color); /* Black, #040402 */
-            border: none;
-            padding: 8px 16px;
-            border-radius: 100px; /* Matches .btn border-radius */
-            cursor: pointer;
-            font-family: var(--secondary-font);
-            font-size: 0.9rem;
-            font-weight: 700;
-            transition: background-image 0.3s ease;
-        }
-
-        .copy-button:hover {
-            background-image: linear-gradient(150deg, var(--secondary-color) 0%, var(--primary-color-2) 78%); /* Reverse gradient on hover */
-        }
-
-        .copy-button.inline {
-            position: static;
-            display: inline-block;
-            padding: 4px 8px;
-            margin-left: 4px;
-        }
-    </style>
+    .copy-button.inline {
+      position: static;
+      display: inline-block;
+      padding: 4px 8px;
+      margin-left: 4px;
+    }
+  </style>
 </head>
 
 <body class="odd">
-    <!--====== Preloader Area Start ======-->
-    <div id="gameon-preloader" class="gameon-preloader">
-        <div class="preloader-animation">
-            <div class="spinner"></div>
-            <p class="fw-5 text-center text-uppercase">Loading</p>
-        </div>
-        <div class="loader-animation">
-            <div class="row h-100">
-                <div class="col-3 single-loader p-0">
-                    <div class="loader-bg"></div>
-                </div>
-                <div class="col-3 single-loader p-0">
-                    <div class="loader-bg"></div>
-                </div>
-                <div class="col-3 single-loader p-0">
-                    <div class="loader-bg"></div>
-                </div>
-                <div class="col-3 single-loader p-0">
-                    <div class="loader-bg"></div>
-                </div>
-            </div>
-        </div>
+  <!-- Preloader -->
+  <div id="gameon-preloader" class="gameon-preloader">
+    <div class="preloader-animation">
+      <div class="spinner"></div>
+      <p class="fw-5 text-center text-uppercase">Loading</p>
     </div>
-    <!--====== Preloader Area End ======-->
+    <div class="loader-animation">
+      <div class="row h-100">
+        <div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
+        <div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
+        <div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
+        <div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
+      </div>
+    </div>
+  </div>
 
-    <div class="main">
-        <!-- ***** Header Start ***** -->
-        <header id="header">
-            <!-- Navbar -->
-            <nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
-                <div class="container header">
-                    <!-- Logo -->
-                    <a class="navbar-brand" href="index.html">
-                        <img src="assets/img/logo/logo.png" alt="" />
-                    </a>
+  <div class="main">
+    <!-- Header -->
+    <header id="header">
+      <nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
+        <div class="container header">
+          <a class="navbar-brand" href="index.html">
+            <img src="assets/img/logo/logo.png" alt="CFT Logo" />
+          </a>
 
-                    <div class="ms-auto"></div>
+          <div class="ms-auto"></div>
 
-                    <!-- Navbar Nav -->
-                    <ul class="navbar-nav items mx-auto">
-                        <li class="nav-item">
-                            <a href="index.html" class="nav-link">Home</a>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
-                            <ul class="dropdown-menu">
-                                <li class="nav-item">
-                                    <a href="staking.html" class="nav-link">Staking</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="sellcft.html" class="nav-link">Trading</a>
-                                </li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
-                            <ul class="dropdown-menu">
-                                <li class="nav-item">
-                                    <a href="buystablex.html" class="nav-link">Buy StableX</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="sellstablex.html" class="nav-link">Sell StableX</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="stablexstaking.html" class="nav-link">Stake StableX</a>
-                                </li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a href="#" class="nav-link">CFT News <i class="icon-arrow-down"></i></a>
-                            <ul class="dropdown-menu">
-                                <li class="nav-item">
-                                    <a href="blog.html" class="nav-link">News</a>
-                                </li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
-                            <ul class="dropdown-menu">
-                                <li class="nav-item">
-                                    <a href="feb.html" class="nav-link">FEB</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="energy.html" class="nav-link">Rent Energy</a>
-                                </li>
-                            </ul>
-                        </li>
-                        <li class="nav-item">
-                            <a href="swap.html" class="nav-link">Swap</a>
-                        </li>
-                    </ul>
+          <ul class="navbar-nav items mx-auto">
+            <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
+            <li class="nav-item dropdown">
+              <a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
+              <ul class="dropdown-menu">
+                <li><a href="staking.html" class="nav-link">Staking</a></li>
+                <li><a href="sellcft.html" class="nav-link">Trading</a></li>
+              </ul>
+            </li>
+            <li class="nav-item dropdown">
+              <a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
+              <ul class="dropdown-menu">
+                <li><a href="buystablex.html" class="nav-link">Buy StableX</a></li>
+                <li><a href="sellstablex.html" class="nav-link">Sell StableX</a></li>
+                <li><a href="stablexstaking.html" class="nav-link">Stake StableX</a></li>
+              </ul>
+            </li>
+            <li class="nav-item dropdown">
+              <a href="#" class="nav-link">CFT News <i class="icon-arrow-down"></i></a>
+              <ul class="dropdown-menu">
+                <li><a href="blog.html" class="nav-link">News</a></li>
+              </ul>
+            </li>
+            <li class="nav-item dropdown">
+              <a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
+              <ul class="dropdown-menu">
+                <li><a href="feb.html" class="nav-link">FEB</a></li>
+                <li><a href="energy.html" class="nav-link">Rent Energy</a></li>
+              </ul>
+            </li>
+            <li class="nav-item"><a href="swap.html" class="nav-link">Swap</a></li>
+          </ul>
 
-                    <!-- Navbar Toggler -->
-                    <ul class="navbar-nav toggle">
-                        <li class="nav-item">
-                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
-                                <i class="icon-menu m-0"></i>
-                            </a>
-                        </li>
-                    </ul>
+          <ul class="navbar-nav toggle">
+            <li class="nav-item">
+              <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
+                <i class="icon-menu m-0"></i>
+              </a>
+            </li>
+          </ul>
 
-                    <!-- Navbar Action Button -->
-                    <ul class="navbar-nav action">
-                        <li class="nav-item ms-2">
-                            <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
-                                <i class="icon-wallet me-md-2"></i> Wallet Connect
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
-        </header>
-        <!-- ***** Header End ***** -->
+          <ul class="navbar-nav action">
+            <li class="nav-item ms-2">
+              <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
+                <i class="icon-wallet me-md-2"></i> Wallet Connect
+              </button>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </header>
 
-        <!-- ***** Hero Area Start ***** -->
-        <section class="hero-section">
-            <div class="container">
-                <div class="row align-items-center justify-content-center">
-                    <div class="col-12 col-md-6 col-lg-9 text-center">
-                        <div class="hero-content">
-                            <div class="intro text-center mb-5">
-                                <span class="intro-text">CFT Ecosystem</span>
-                                <h1 class="mt-4">Rent Energy</h1>
-                                <p>Grow your wealth through staking rewards</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="container">
+        <div class="row align-items-center justify-content-center">
+          <div class="col-12 col-md-6 col-lg-9 text-center">
+            <div class="hero-content">
+              <div class="intro text-center mb-5">
+                <span class="intro-text">CFT Ecosystem</span>
+                <h1 class="mt-4">Rent Energy</h1>
+                <p>Grow your wealth through staking rewards</p>
+              </div>
             </div>
-        </section>
-        <!-- ***** Hero Area End ***** -->
+          </div>
+        </div>
+      </div>
+    </section>
 
-        <!-- Content Section -->
-        <section class="content-section">
-            <div class="container">
-                <div class="row justify-content-center">
-                    <div class="col-12 col-md-10">
-                        <h2>Automate Energy Delegation with user.js</h2>
-                        <p>The <code>user.js</code> script allows you to delegate energy on the TRON blockchain, simplifying the process of renting energy for your transactions. Whether you're running a TRON-based project or need energy for smart contract interactions, this script automates the delegation process. You can choose to pay directly with TRX (sent automatically from your wallet) or use pre-deposited credits. The pricing is straightforward: 65,000 energy units for 6.5 TRX or 135,000 units for 13 TRX, for a 5-minute duration. This script is perfect for developers and users looking to streamline energy management on TRON.</p>
-
-                        <h3>Step-by-Step Guide to Using user.js</h3>
-                        <p>Follow these steps to set up and run the <code>user.js</code> script:</p>
-                        <ol>
-                            <li><strong>Install Node.js</strong>: Ensure you have Node.js installed on your system. Download and install it from the official website if needed (<a href="https://nodejs.org/" target="_blank">nodejs.org</a>).</li>
-                            <li><strong>Create a Project Directory</strong>: Create a new directory for your project and navigate to it in your terminal. For example, on Linux or macOS, you can run:
-                                <div class="code-block inline">
-                                    <pre id="code-block-step1"><code>mkdir energy-delegation && cd energy-delegation</code></pre>
-                                    <button class="copy-button inline" onclick="copyCode('code-block-step1')">Copy Code</button>
-                                </div>
-                            </li>
-                            <li><strong>Install the <code>tronweb</code> Package</strong>: The script requires the <code>tronweb</code> library to interact with the TRON blockchain. Install it using npm by running:
-                                <div class="code-block inline">
-                                    <pre id="code-block-step2"><code>npm install tronweb</code></pre>
-                                    <button class="copy-button inline" onclick="copyCode('code-block-step2')">Copy Code</button>
-                                </div>
-                            </li>
-                            <li><strong>Copy the Script</strong>: Copy the <code>user.js</code> script below and save it as <code>user.js</code> in your project directory.</li>
-                            <li><strong>Configure the Script</strong>: Open <code>user.js</code> in a text editor and update the following variables:
-                                <ul>
-                                    <li><code>TRONGRID_API_KEY</code>: Your TronGrid API key (<a href="https://trongrid.io/" target="_blank">get one here</a>).</li>
-                                    <li><code>PRIVATE_KEY</code>: Your TRON wallet private key (ensure this wallet has enough TRX for direct payments).</li>
-                                    <li><code>API_KEY</code>: Your Energy API key (e.g., <code>77b9c4e8a2f1d6b3e9a0c8f7d4e2b1c9a3d5e6f7b8c9a0b1c2d3e4f5a6b7c8d9</code>).</li>
-                                    <li><code>order.receiver</code>: The TRON wallet address to receive the delegated energy.</li>
-                                    <li><code>USE_CREDITS</code>: Set to <code>true</code> to pay with credits, or <code>false</code> to pay directly with TRX.</li>
-                                </ul>
-                            </li>
-                            <li><strong>Run the Script</strong>: Execute the script using Node.js by running:
-                                <div class="code-block inline">
-                                    <pre id="code-block-step3"><code>node user.js</code></pre>
-                                    <button class="copy-button inline" onclick="copyCode('code-block-step3')">Copy Code</button>
-                                </div>
-                                <p>The script will delegate energy to the specified wallet, either deducting credits or sending TRX automatically.</p>
-                            </li>
-                        </ol>
-
-                        <h3>The user.js Script</h3>
-                        <p>Below is the complete <code>user.js</code> script. Copy it into a file named <code>user.js</code> in your project directory.</p>
-                        <div class="code-block relative">
-                            <pre id="code-block-main"><code>const TronWeb = require('tronweb').TronWeb;
-
-// === CONFIGURATION ===
-const TRONGRID_API_KEY = "YOUR-TRONGRID-API-KEY"; // Replace with your TronGrid API key
-const PRIVATE_KEY = "YOUR-PRIVATE-KEY"; // Replace with your private key
-const API_KEY = "YOU-API-KEY"; // Replace with your API key
-const USE_CREDITS = false; // Set to true to use credits, false to pay directly with TRX
-const PAYMENT_WALLET = "TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn"; // DO NOT CHANGE
-
-// === ORDER SETUP ===
-const order = {
-    receiver: "RECEVING WALLET", // Replace with the receiving wallet address
-    resource_type: "energy",
-    amount: 65000,  // Options: 65000 or 135000
-    duration: 5     // Duration in minutes (DO NOT CHANGE)
-};
-
-// === PRICE LOOKUP ===
-const PRICE_TABLE = {
-    65000: 6.5,
-    135000: 13
-};
-const trxPrice = PRICE_TABLE[order.amount];
-if (!trxPrice) {
-    console.error("❌ Invalid order amount. Must be 65000 or 135000.");
-    process.exit(1);
-}
-const priceInSun = trxPrice * 1e6;
-
-// === TRON SETUP ===
-const tronWeb = new TronWeb({
-    fullHost: 'https://api.trongrid.io',
-    headers: { 'TRON-PRO-API-KEY': TRONGRID_API_KEY }
-});
-tronWeb.setPrivateKey(PRIVATE_KEY);
-const senderAddress = tronWeb.address.fromPrivateKey(PRIVATE_KEY);
-
-// === API SETUP ===
-const url = "http://api2.cftecosystem.com/energy";
-const headers = {
-    "Content-Type": "application/json",
-    "Api-Key": API_KEY
-};
-
-// === MAIN FUNCTION ===
-(async () => {
-    console.log(`🔑 Sender: ${senderAddress}`);
-    console.log(`💸 Paying ${trxPrice} TRX for ${order.amount} energy (Duration: ${order.duration} min)`);
-    console.log(`➡️ To vendor: ${PAYMENT_WALLET}`);
-    console.log(`🎯 Energy receiver: ${order.receiver}`);
-
-    if (USE_CREDITS) {
-        const res = await fetch(url + "/create-order", {
-            method: "POST",
-            headers,
-            body: JSON.stringify({ order, use_credits: true })
-        });
-        const result = await res.json();
-        console.log(result);
-        return;
-    }
-
-    try {
-        // === Build & Sign TX ===
-        const tx = await tronWeb.transactionBuilder.sendTrx(
-            PAYMENT_WALLET,
-            priceInSun,
-            senderAddress
-        );
-        tx.feeLimit = 1_000_000;
-
-        const signedTx = await tronWeb.trx.sign(tx, PRIVATE_KEY);
-
-        // === Broadcast TX ===
-        const broadcastRes = await tronWeb.trx.sendRawTransaction(signedTx);
-        console.log("📡 Broadcast response:", broadcastRes);
-
-        if (!broadcastRes.result) {
-            console.error("❌ Failed to broadcast transaction.");
-            return;
-        }
-
-        console.log(`✅ TX broadcasted: ${signedTx.txID}`);
-
-        // === Call /create-order with full signed TX ===
-        const res = await fetch(url + "/create-order", {
-            method: "POST",
-            headers,
-            body: JSON.stringify({
-                order,
-                use_credits: false,
-                signed_tx: signedTx // Required by backend
-            })
-        });
-
-        const text = await res.text();
-        let data;
-        try {
-            data = JSON.parse(text);
-        } catch (err) {
-            console.error("❌ Failed to parse response:");
-            console.log(text);
-            return;
-        }
-
-        if (!res.ok || data.success === false) {
-            console.error("❌ Order creation failed:", data);
-            return;
-        }
-
-        console.log("✅ Order created:", data);
-
-        // === Poll for Delegation Status ===
-        const orderId = data.data.order_id;
-        const statusUrl = `${url}/delegation-status?requestId=${orderId}`;
-        let attempts = 0;
-
-        const interval = setInterval(async () => {
-            attempts++;
-            try {
-                const statusRes = await fetch(statusUrl, { method: 'GET', headers });
-                const statusData = await statusRes.json();
-                console.log(`ℹ️ Status [${attempts}]:`, statusData);
-
-                if (statusData.status === "delegated") {
-                    console.log(`✅ Energy delegated: TxID ${statusData.txId}`);
-                    clearInterval(interval);
-                } else if (statusData.status === "failed" || attempts >= 60) {
-                    console.log(`❌ Delegation failed or timed out.`);
-                    clearInterval(interval);
-                }
-            } catch (err) {
-                console.error(`⚠️ Polling error: ${err.message}`);
-                if (attempts >= 60) clearInterval(interval);
-            }
-        }, 2000);
-
-    } catch (err) {
-        console.error("❌ Transaction error:", err.message);
-    }
-})();
-</code></pre>
-                            <button class="copy-button" onclick="copyCode('code-block-main')">Copy Code</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ***** CTA Area Start ***** -->
-        <section class="cta-area p-0">
-            <div class="container">
+    <!-- Staking Guide Accordion Area -->
+<section class="staking-area">
+  <div id="energy-accordion" class="container accordion">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-10">
+        <div class="single-accordion-item">
+          <div class="card-header bg-inherit border-0 p-0">
+            <h2 class="m-0">
+              <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUserJs">
                 <div class="row">
-                    <div class="col-12 card">
-                        <div class="row align-items-center justify-content-center">
-                            <div class="col-12 col-md-5 text-center">
-                                <img src="assets/img/content/cftlogo300.png" alt="">
-                            </div>
-                            <div class="col-12 col-md-6 mt-4 mt-md-0">
-                                <h2 class="m-0">Apply for project staking</h2>
-                                <p>Earn weekly rewards from staked CFT to build your project</p>
-                                <p>Soon available for projects on any chain</p>
-                                <a class="btn btn-bordered active d-inline-block"><i class="icon-rocket me-2"></i>Coming Soon</a>
-                            </div>
-                        </div>
-                        <a class="cta-link" href="apply.html"></a>
+                  <div class="col-12 col-md-8">
+                    <div class="media flex-column flex-md-row">
+                      <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="CFT logo">
+                      <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                        <h4 class="m-0">Rent Energy with user.js</h4>
+                        <p>Delegate energy using a script: 65,000 units for 6.5 TRX or 135,000 units for 13 TRX (5 minutes).</p>
+                      </div>
                     </div>
+                  </div>
                 </div>
-            </div>
-        </section>
-        <!-- ***** CTA Area End ***** -->
+              </button>
+            </h2>
+          </div>
 
-        <!--====== Footer Area Start ======-->
-        <footer class="footer-area">
-            <div class="container">
-                <div class="row justify-content-center">
-                    <div class="col-12 col-md-8 text-center">
-                        <div class="footer-items">
-                            <a class="navbar-brand" href="index.html">
-                                <img src="assets/img/logo/logo.png" alt="">
-                            </a>
-                            <div class="social-icons d-flex justify-content-center my-4">
-                                <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank">
-                                    <i class="fab fa-x-twitter"></i>
-                                </a>
-                                <a class="reddit" href="https://www.reddit.com/" target="_blank">
-                                    <i class="fab fa-reddit"></i>
-                                </a>
-                                <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank">
-                                    <i class="fab fa-telegram-plane"></i>
-                                </a>
-                            </div>
-                            <div class="copyright-area py-4">©2025 CFT Ecosystem, All Rights Reserved</div>
-                        </div>
-                        <div id="scroll-to-top" class="scroll-to-top">
-                            <a href="#header" class="smooth-anchor">
-                                <i class="fa-solid fa-arrow-up"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </footer>
-        <!--====== Footer Area End ======-->
+          <div id="collapseUserJs" class="collapse" data-bs-parent="#energy-accordion">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-12 single-staking-item">
+                  <p>
+                    The <code>user.js</code> script allows you to delegate energy on the TRON blockchain, making it easier to rent energy for your transactions without manual payments.
+                    You can choose to pay directly with TRX, where the script automatically sends the payment from your wallet, or use pre-deposited credits.
+                    The pricing is 65,000 energy units for 6.5 TRX or 135,000 units for 13 TRX, for a 5-minute duration.
+                    This script is ideal for automating energy delegation for your TRON-based projects.
+                  </p>
 
-        <!--====== Modal Responsive Menu Area Start ======-->
-        <div id="menu" class="modal fade p-0">
-            <div class="modal-dialog dialog-animated">
-                <div class="modal-content h-100">
-                    <div class="modal-header" data-bs-dismiss="modal">
-                        Menu <i class="far fa-times-circle icon-close"></i>
-                    </div>
-                    <div class="menu modal-body">
-                        <div class="row w-100">
-                            <div class="items p-0 col-12 text-center"></div>
-                        </div>
-                    </div>
+                  <h4 class="mt-4">Step-by-Step Guide</h4>
+                  <p>Follow these steps to set up and run the <code>user.js</code> script:</p>
+                  <ol>
+                    <li>
+                      <strong>Install Node.js:</strong> Download and install from <a href="https://nodejs.org/" target="_blank">nodejs.org</a>.
+                    </li>
+                    <li>
+                      <strong>Create a Project Directory:</strong>
+                      <div class="code-block inline">
+                        <pre id="code-block-step1"><code>mkdir energy-delegation && cd energy-delegation</code></pre>
+                        <button class="copy-button inline" onclick="copyCode('code-block-step1')">Copy Code</button>
+                      </div>
+                    </li>
+                    <li>
+                      <strong>Install the <code>tronweb</code> Package:</strong>
+                      <div class="code-block inline">
+                        <pre id="code-block-step2"><code>npm install tronweb</code></pre>
+                        <button class="copy-button inline" onclick="copyCode('code-block-step2')">Copy Code</button>
+                      </div>
+                    </li>
+                    <li>
+                      <strong>Copy the Script:</strong> Save the provided script as <code>user.js</code> in your project folder.
+                    </li>
+                    <li>
+                      <strong>Configure the Script:</strong> Edit <code>user.js</code> and update:
+                      <ul>
+                        <li><code>TRONGRID_API_KEY</code>: Get from <a href="https://trongrid.io/" target="_blank">Trongrid</a></li>
+                        <li><code>PRIVATE_KEY</code>: Your TRON wallet private key</li>
+                        <li><code>API_KEY</code>: Your Energy API key</li>
+                        <li><code>order.receiver</code>: Target TRON wallet</li>
+                        <li><code>USE_CREDITS</code>: Set <code>true</code> to use credits, or <code>false</code> to pay with TRX</li>
+                      </ul>
+                    </li>
+                    <li>
+                      <strong>Run the Script:</strong>
+                      <div class="code-block inline">
+                        <pre id="code-block-step3"><code>node user.js</code></pre>
+                        <button class="copy-button inline" onclick="copyCode('code-block-step3')">Copy Code</button>
+                      </div>
+                      <p>The script will automatically delegate energy.</p>
+                    </li>
+                  </ol>
+
+                  <h4 class="mt-4">user.js Script</h4>
+                  <div class="code-block relative">
+                    <pre id="code-block-main"><code>[Insert cleaned script here if needed]</code></pre>
+                    <button class="copy-button" onclick="copyCode('code-block-main')">Copy Code</button>
+                  </div>
                 </div>
+              </div>
             </div>
+          </div>
+
         </div>
-        <!--====== Modal Responsive Menu Area End ======-->
+      </div>
+    </div>
+  </div>
+</section>
+
+
+    <!-- CTA Section -->
+    <section class="cta-area p-0">
+      <div class="container">
+        <div class="row">
+          <div class="col-12 card">
+            <div class="row align-items-center justify-content-center">
+              <div class="col-12 col-md-5 text-center">
+                <img src="assets/img/content/cftlogo300.png" alt="CFT Logo" />
+              </div>
+              <div class="col-12 col-md-6 mt-4 mt-md-0">
+                <h2 class="m-0">Apply for project staking</h2>
+                <p>Earn weekly rewards from staked CFT to build your project</p>
+                <p>Soon available for projects on any chain</p>
+                <a class="btn btn-bordered active d-inline-block"><i class="icon-rocket me-2"></i>Coming Soon</a>
+              </div>
+            </div>
+            <a class="cta-link" href="apply.html"></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer-area">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-md-8 text-center">
+            <div class="footer-items">
+              <a class="navbar-brand" href="index.html">
+                <img src="assets/img/logo/logo.png" alt="Footer Logo" />
+              </a>
+              <div class="social-icons d-flex justify-content-center my-4">
+                <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
+                <a class="reddit" href="https://www.reddit.com/" target="_blank"><i class="fab fa-reddit"></i></a>
+                <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
+              </div>
+              <div class="copyright-area py-4">
+                ©2025 CFT Ecosystem, All Rights Reserved
+              </div>
+              <div id="scroll-to-top" class="scroll-to-top">
+                <a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Mobile Menu Modal -->
+    <div id="menu" class="modal fade p-0">
+      <div class="modal-dialog dialog-animated">
+        <div class="modal-content h-100">
+          <div class="modal-header" data-bs-dismiss="modal">
+            Menu <i class="far fa-times-circle icon-close"></i>
+          </div>
+          <div class="menu modal-body">
+            <div class="row w-100">
+              <div class="items p-0 col-12 text-center"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- ***** All jQuery Plugins ***** -->
+    <!-- Scripts -->
     <script src="assets/js/vendor/jquery.min.js"></script>
     <script src="assets/js/vendor/popper.min.js"></script>
     <script src="assets/js/vendor/bootstrap.min.js"></script>
@@ -550,18 +375,18 @@ const headers = {
     <script src="assets/js/main.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
 
-    <!-- Copy Code Functionality -->
+    <!-- Copy Code Utility -->
     <script>
-        function copyCode(blockId) {
-            const codeBlock = document.getElementById(blockId);
-            const text = codeBlock.innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                alert('Code copied to clipboard!');
-            }).catch(err => {
-                console.error('Failed to copy code:', err);
-            });
-        }
+      function copyCode(blockId) {
+        const codeBlock = document.getElementById(blockId);
+        const text = codeBlock.innerText;
+        navigator.clipboard.writeText(text)
+          .then(() => alert('Code copied to clipboard!'))
+          .catch(err => console.error('Failed to copy code:', err));
+      }
     </script>
+  </div>
 </body>
 
 </html>
+
