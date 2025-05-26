@@ -960,13 +960,13 @@ async function updateTokenUI(token) {
     console.error(`Error updating UI for ${token}:`, error);
     // Fallback to sequential updates with 100ms delays
     await updateAvailableTokens(token);
-    await delay(100);
+    await delay(200);
     await updateStakedAmount(token);
-    await delay(100);
+    await delay(200);
     await updateProjectedRewards(token);
-    await delay(100);
+    await delay(200);
     await updateClaimableRewards(token);
-    await delay(100);
+    await delay(200);
     await updateTotalClaimedRewards(token);
   }
 }
