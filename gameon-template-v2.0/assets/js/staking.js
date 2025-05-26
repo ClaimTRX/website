@@ -11,7 +11,7 @@ const tokenDetails = {
     decimals: 6,
     displayName: 'CFT'
   },
-  cft: {
+  cftx: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
     stakingAddress: 'THLETrCqWHVJNURBQNKLBYJTLBGpUnDatp',
     decimals: 6,
