@@ -186,6 +186,16 @@ const stakingConfigs = [
         rewardUnit: 'CFT',
         isSameToken: true
     },
+
+    {
+        name: 'CFT/X Staking',
+        tokenContractAddress: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
+        stakingContractAddress: 'THLETrCqWHVJNURBQNKLBYJTLBGpUnDatp',
+        stakingContractAbi: cftStakingContractAbi,
+        tokenContractAbi: tokenContractAbi,
+        rewardUnit: 'STABLEX',
+        isSameToken: true
+    },
     
     {
         name: 'TuruCFT',
