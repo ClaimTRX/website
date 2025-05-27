@@ -194,7 +194,7 @@ const stakingConfigs = [
         stakingContractAbi: cftStakingContractAbi,
         tokenContractAbi: tokenContractAbi,
         rewardUnit: 'STABLEX',
-        isSameToken: true
+        isSameToken: false
     },
     
     {
