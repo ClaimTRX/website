@@ -186,7 +186,6 @@ const stakingConfigs = [
         rewardUnit: 'CFT',
         isSameToken: true
     },
-
     {
         name: 'CFT/X Staking',
         tokenContractAddress: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
@@ -196,7 +195,6 @@ const stakingConfigs = [
         rewardUnit: 'STABLEX',
         isSameToken: false
     },
-    
     {
         name: 'TuruCFT',
         tokenContractAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
@@ -302,13 +300,11 @@ async function initializeTronWeb() {
         }
     }
 
-    // Updated admin check to use array
+    // Admin check
     if (adminWallets.includes(userAddress)) {
         document.getElementById('admin-panel').style.display = 'block';
         document.getElementById('access-denied').style.display = 'none';
-        // Render contracts before updating UI
         await renderContracts();
-        // Update UI for all contracts after rendering
         await updateAdminUI();
         setInterval(() => updateAdminUI(), 60000);
     } else {
@@ -324,9 +320,8 @@ async function renderContracts() {
         console.error('Contracts container not found in DOM');
         return;
     }
-    container.innerHTML = ''; // Clear existing content
+    container.innerHTML = '';
 
-    // Create accordion wrapper
     container.innerHTML = `
         <section class="staking-area">
             <div id="contracts-accordion" class="container accordion">
@@ -404,7 +399,6 @@ async function renderContracts() {
         accordionBody.insertAdjacentHTML('beforeend', cardHtml);
     });
 
-    // Add event listeners for deposit buttons
     document.querySelectorAll('.deposit-button').forEach(button => {
         button.addEventListener('click', async () => {
             const contractIndex = button.getAttribute('data-contract-index');
@@ -418,7 +412,7 @@ async function updateAdminUI() {
     for (let index = 0; index < contracts.length; index++) {
         await updateContractUI(index);
         if (index < contracts.length - 1) {
-            await delay(500); // 500ms delay before next contract
+            await delay(500);
         }
     }
 }
@@ -427,9 +421,8 @@ async function updateAdminUI() {
 async function updateContractUI(contractIndex) {
     const contract = contracts[contractIndex];
     const maxRetries = 3;
-    const retryDelay = 2000; // 2 seconds for retries on 403 errors
+    const retryDelay = 2000;
 
-    // Helper function to execute a contract call with retries
     async function executeWithRetry(fn, operationName, retries = maxRetries) {
         for (let attempt = 1; attempt <= retries; attempt++) {
             try {
@@ -440,17 +433,18 @@ async function updateContractUI(contractIndex) {
                     await delay(retryDelay);
                     continue;
                 }
-                throw error; // Rethrow if max retries reached or non-403 error
+                throw error;
             }
         }
     }
 
     try {
-        // Fetch decimals first (reused for all calculations)
-        const decimals = await executeWithRetry(
+        // Fetch decimals
+        const decimalsRaw = await executeWithRetry(
             () => contract.tokenContract.methods.decimals().call(),
             `decimals-${contractIndex}`
         );
+        const decimals = Number(decimalsRaw);
         await delay(500);
 
         // Fetch available tokens
@@ -458,9 +452,10 @@ async function updateContractUI(contractIndex) {
         if (availableTokensElement) {
             await executeWithRetry(async () => {
                 const balanceRaw = await contract.tokenContract.methods.balanceOf(userAddress).call();
-                availableTokensElement.innerText = formatNumber(Number(balanceRaw) / 10 ** decimals);
+                const balance = Number(BigInt(balanceRaw) / BigInt(10 ** decimals));
+                availableTokensElement.innerText = formatNumber(balance);
             }, `available-tokens-${contractIndex}`);
-        } else if (userAddress === adminWallet) {
+        } else if (adminWallets.includes(userAddress)) {
             console.warn(`Element available-tokens-admin-${contractIndex} not found`);
         }
         await delay(500);
@@ -470,7 +465,7 @@ async function updateContractUI(contractIndex) {
             () => contract.tokenContract.methods.balanceOf(contract.config.stakingContractAddress).call(),
             `contract-balance-${contractIndex}`
         );
-        const contractBalance = Number(contractBalanceRaw) / 10 ** decimals;
+        const contractBalance = Number(BigInt(contractBalanceRaw) / BigInt(10 ** decimals));
         await delay(500);
 
         // Fetch total unclaimed rewards
@@ -478,7 +473,7 @@ async function updateContractUI(contractIndex) {
             () => contract.stakingContract.methods.viewTotalUnclaimedRewards().call(),
             `total-unclaimed-${contractIndex}`
         );
-        const totalUnclaimed = Number(totalUnclaimedRaw) / 10 ** decimals;
+        const totalUnclaimed = Number(BigInt(totalUnclaimedRaw) / BigInt(10 ** decimals));
         await delay(500);
 
         // Calculate rewards left
@@ -488,7 +483,7 @@ async function updateContractUI(contractIndex) {
                 () => contract.stakingContract.methods.viewTotalStaked().call(),
                 `total-staked-${contractIndex}`
             );
-            const totalStaked = Number(totalStakedRaw) / 10 ** decimals;
+            const totalStaked = Number(BigInt(totalStakedRaw) / BigInt(10 ** decimals));
             rewardsLeft = contractBalance - totalStaked - totalUnclaimed;
             await delay(500);
         } else {
@@ -508,7 +503,7 @@ async function updateContractUI(contractIndex) {
             () => contract.stakingContract.methods.viewDailyReward().call(),
             `daily-rewards-${contractIndex}`
         );
-        const dailyRewards = Number(dailyRewardsRaw) / 10 ** decimals;
+        const dailyRewards = Number(BigInt(dailyRewardsRaw) / BigInt(10 ** decimals));
         await delay(500);
 
         const dailyRewardsElement = document.getElementById(`daily-rewards-${contractIndex}`);
@@ -534,20 +529,33 @@ async function updateContractUI(contractIndex) {
 // Deposit rewards for a specific contract
 async function depositRewards(contractIndex) {
     const contract = contracts[contractIndex];
-    const amount = document.getElementById(`deposit-amount-${contractIndex}`).value;
-    const decimals = await contract.tokenContract.methods.decimals().call();
-    const amountToDeposit = BigInt(Math.floor(parseFloat(amount) * (10 ** decimals)));
+    const amountInput = document.getElementById(`deposit-amount-${contractIndex}`).value;
+    const amount = parseFloat(amountInput);
 
-    const allowance = await contract.tokenContract.methods.allowance(userAddress, contract.config.stakingContractAddress).call();
-    const allowanceBigInt = BigInt(allowance);
-
-    if (allowanceBigInt < amountToDeposit) {
-        await contract.tokenContract.methods.approve(contract.config.stakingContractAddress, maxUint256).send();
-        await delay(1000);
+    if (isNaN(amount) || amount <= 0) {
+        alert('Please enter a valid amount');
+        return;
     }
 
-    await contract.stakingContract.methods.depositReward(amountToDeposit.toString()).send();
-    setTimeout(() => updateContractUI(contractIndex), 3000);
+    try {
+        const decimalsRaw = await contract.tokenContract.methods.decimals().call();
+        const decimals = Number(decimalsRaw);
+        const amountToDeposit = BigInt(Math.floor(amount * (10 ** decimals)));
+
+        const allowance = await contract.tokenContract.methods.allowance(userAddress, contract.config.stakingContractAddress).call();
+        const allowanceBigInt = BigInt(allowance);
+
+        if (allowanceBigInt < amountToDeposit) {
+            await contract.tokenContract.methods.approve(contract.config.stakingContractAddress, maxUint256).send();
+            await delay(1000);
+        }
+
+        await contract.stakingContract.methods.depositReward(amountToDeposit.toString()).send();
+        setTimeout(() => updateContractUI(contractIndex), 3000);
+    } catch (error) {
+        console.error(`Error depositing rewards for ${contract.config.name}:`, error);
+        alert('Failed to deposit rewards. Please try again.');
+    }
 }
 
 // Utility functions
