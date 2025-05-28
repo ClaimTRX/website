@@ -4,6 +4,11 @@ const usddContractAddress = 'TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz';
 const marketplaceContractAddress = 'TDxSTFQvsxeSfsSgokKxMU2e8uXKAgp3vw';
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
+// Cache for StableX balance
+let lastStableXBalance = null;
+let lastBalanceTime = 0;
+const cacheDuration = 30_000; // 30 seconds
+
 const tokenContractAbi = [
     {
         "inputs": [],
@@ -169,20 +174,31 @@ const marketplaceContractAbi = [
 document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('connect-button').addEventListener('click', connectWallet);
 
-    if (await checkTronLinkInstalled()) {
-        await initializeTronWeb();
-        setInterval(updateUI, 60000);
-    } else {
-        console.error('TronLink is not installed.');
+    try {
+        if (await checkTronLinkInstalled()) {
+            await initializeTronWeb();
+            setInterval(updateUI, 60000);
+        } else {
+            console.error('TronLink is not installed.');
+            alert('Please install and log in to TronLink to continue.');
+        }
+    } catch (error) {
+        console.error('Error checking TronLink:', error);
+        alert('Failed to detect TronLink. Please ensure it is installed and active.');
     }
 });
 
 async function checkTronLinkInstalled() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+        const startTime = Date.now();
         const interval = setInterval(() => {
             if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
                 clearInterval(interval);
                 resolve(true);
+            }
+            if (Date.now() - startTime > 10_000) { // 10-second timeout
+                clearInterval(interval);
+                reject(new Error('TronLink not detected after timeout'));
             }
         }, 1000);
     });
@@ -204,6 +220,7 @@ async function connectWallet() {
         await updateUI();
     } catch (e) {
         console.error("Failed to connect:", e);
+        alert('Failed to connect to TronLink. Please try again.');
     }
 }
 
@@ -225,6 +242,7 @@ async function initializeTronWeb() {
         setupEventListeners();
     } catch (error) {
         console.error('Error initializing TronWeb or Contracts:', error);
+        alert('Failed to initialize TronWeb. Please refresh and try again.');
     }
 }
 
@@ -251,7 +269,7 @@ function setupEventListeners() {
                 await approveAndListTokens(tokenAmount);
             } catch (error) {
                 console.error('Error listing tokens:', error);
-                alert('Failed to list tokens.');
+                alert('Failed to list tokens. Please try again.');
             }
         }
     });
@@ -269,13 +287,26 @@ async function updateStableXBalance() {
         console.error("Element with ID 'user-stablex-balance' not found in the DOM.");
         return;
     }
+
+    const now = Date.now();
+    if (lastStableXBalance && now - lastBalanceTime < cacheDuration) {
+        balanceElement.textContent = lastStableXBalance;
+        return;
+    }
+
     try {
         const balance = await tokenContract.balanceOf(userAddress).call();
-        const formattedBalance = (balance / 1e6).toFixed(2);
+        // Dynamically fetch decimals for flexibility
+        const decimals = await tokenContract.decimals().call();
+        const divisor = 10 ** Number(decimals);
+        const formattedBalance = (Number(balance) / divisor).toFixed(2);
         balanceElement.textContent = formattedBalance;
+        lastStableXBalance = formattedBalance;
+        lastBalanceTime = now;
     } catch (error) {
         console.error('Error fetching StableX balance:', error);
-        balanceElement.textContent = 'Error';
+        balanceElement.textContent = 'Failed to load';
+        lastStableXBalance = null; // Clear cache on error
     }
 }
 
