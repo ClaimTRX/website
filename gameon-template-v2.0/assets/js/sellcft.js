@@ -1,4 +1,5 @@
 const tokenContractAbi = [
+    {const tokenContractAbi = [
     {
         "inputs": [],
         "stateMutability": "nonpayable",
@@ -682,7 +683,7 @@ async function buyToken(listingId) {
     try {
         // Convert input to a number and validate
         const amountToBuy = Number(amountToBuyInput);
-        if (isNaN(amountToBuy)) {
+        if (isNaN(amountToBuy) || amountToBuy <= 0) {
             alert("Invalid amount entered.");
             return;
         }
@@ -695,7 +696,7 @@ async function buyToken(listingId) {
         // Find the listing
         let listing = null;
         for (let i = 0; i < listingIds.length; i++) {
-            if (listingIds[i].toString() == listingId) { // Ensure listingId comparison is safe
+            if (listingIds[i].toString() == listingId) {
                 listing = listings[i];
                 break;
             }
@@ -708,13 +709,22 @@ async function buyToken(listingId) {
 
         // Convert pricePerCFT from sun to TRX (1 TRX = 1e6 sun)
         const pricePerCFT = Number(listing.pricePerCFT) / 1e6; // Convert BigInt to Number
-        const totalPrice = amountToBuy * pricePerCFT; // Now both are Numbers
+        // Calculate totalPrice in TRX, round to 6 decimals to avoid floating-point issues
+        const totalPrice = Number((amountToBuy * pricePerCFT).toFixed(6));
+        // Convert totalPrice to sun (integer)
+        const totalPriceSun = Math.floor(totalPrice * 1e6); // Ensure integer
 
-        console.log(`Buying ${amountToBuy} CFT at ${pricePerCFT} TRX per CFT. Total price: ${totalPrice} TRX`);
+        console.log(`Buying ${amountToBuy} CFT at ${pricePerCFT} TRX per CFT. Total price: ${totalPrice} TRX (${totalPriceSun} sun)`);
+
+        // Validate totalPriceSun
+        if (totalPriceSun <= 0) {
+            alert("Invalid total price calculated.");
+            return;
+        }
 
         // Execute buy transaction
         await marketplaceContract.methods.buyToken(listingId, tronWeb.toSun(amountToBuy)).send({
-            callValue: tronWeb.toSun(totalPrice) // Convert totalPrice to sun
+            callValue: totalPriceSun // Use integer sun value
         });
 
         fetchListings();
@@ -770,4 +780,3 @@ function formatNumber(num, decimals = 0) {
         maximumFractionDigits: decimals
     });
 }
-
