@@ -387,8 +387,7 @@ const tokenContractAbi = [
     }
 ];
 
-  
-  const marketplaceContractAbi = [
+const marketplaceContractAbi = [
     {
         "inputs": [
             {
@@ -521,11 +520,8 @@ const tokenContractAbi = [
     }
 ];
 
-
 const tokenContractAddress = 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK';
 const marketplaceContractAddress = 'TQt7KfGA331s64EqaHUzyKMo187MfNqRGj';
-
-
 
 let tronWeb, userAddress, tokenContract, marketplaceContract;
 
@@ -644,8 +640,6 @@ async function fetchListings() {
     }
 }
 
-
-
 async function listTokens() {
     if (!tronWeb) {
         alert("TronLink not detected. Please connect your wallet.");
@@ -679,22 +673,29 @@ async function listTokens() {
 }
 
 async function buyToken(listingId) {
-    const amountToBuy = document.getElementById(`buy-amount-${listingId}`).value;
-    if (!amountToBuy || amountToBuy <= 0) {
+    const amountToBuyInput = document.getElementById(`buy-amount-${listingId}`).value;
+    if (!amountToBuyInput || amountToBuyInput <= 0) {
         alert("Enter a valid amount to buy.");
         return;
     }
 
     try {
+        // Convert input to a number and validate
+        const amountToBuy = Number(amountToBuyInput);
+        if (isNaN(amountToBuy)) {
+            alert("Invalid amount entered.");
+            return;
+        }
+
         // Fetch all active listings
         const result = await marketplaceContract.methods.getActiveListings().call();
         const listingIds = result[0];
         const listings = result[1];
 
-        // Find the listing in the array
+        // Find the listing
         let listing = null;
         for (let i = 0; i < listingIds.length; i++) {
-            if (listingIds[i] == listingId) {
+            if (listingIds[i].toString() == listingId) { // Ensure listingId comparison is safe
                 listing = listings[i];
                 break;
             }
@@ -705,22 +706,17 @@ async function buyToken(listingId) {
             return;
         }
 
-        // Price per CFT is already in TRX (not in sun)
-        const pricePerCFT = listing.pricePerCFT / 1e6; // Convert from 6 decimal scaling
-        const totalPrice = amountToBuy * pricePerCFT; // Correct TRX price
+        // Convert pricePerCFT from sun to TRX (1 TRX = 1e6 sun)
+        const pricePerCFT = Number(listing.pricePerCFT) / 1e6; // Convert BigInt to Number
+        const totalPrice = amountToBuy * pricePerCFT; // Now both are Numbers
 
         console.log(`Buying ${amountToBuy} CFT at ${pricePerCFT} TRX per CFT. Total price: ${totalPrice} TRX`);
 
-        // Execute buy transaction with correct TRX amount
+        // Execute buy transaction
         await marketplaceContract.methods.buyToken(listingId, tronWeb.toSun(amountToBuy)).send({
             callValue: tronWeb.toSun(totalPrice) // Convert totalPrice to sun
         });
 
-        
-
-
-
-       
         fetchListings();
     } catch (error) {
         console.error("Error buying token:", error);
@@ -746,8 +742,6 @@ async function cancelListing(listingId) {
     }
 }
 
-
-
 document.addEventListener("DOMContentLoaded", async () => {
     const connectButton = document.getElementById("connect-button");
     const listButton = document.getElementById("list-button");
@@ -770,12 +764,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
-
 function formatNumber(num, decimals = 0) {
     return Number(num).toLocaleString("en-US", {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals
     });
 }
-
 
