@@ -1,19 +1,16 @@
 $(document).ready(function() {
-    // Fetch daily energy sales data when the page loads
     fetchDailyEnergySales();
 });
 
 function fetchDailyEnergySales() {
     $.ajax({
-        url: '/api/daily-energy-sales',
+        url: 'http://157.245.39.65:3000/api/daily-energy-sales', // Point to Ubuntu server
         method: 'GET',
         dataType: 'json',
         success: function(response) {
             const tbody = $('#daily-sales-body');
-            tbody.empty(); // Clear loading message
-
+            tbody.empty();
             if (response.success && response.data.length > 0) {
-                // Populate table with data
                 response.data.forEach(row => {
                     const tr = $('<tr>');
                     tr.append(`<td>${row.date}</td>`);
@@ -23,7 +20,6 @@ function fetchDailyEnergySales() {
                     tbody.append(tr);
                 });
             } else {
-                // Show message if no data
                 tbody.append('<tr><td colspan="4" class="text-center">No data available</td></tr>');
             }
         },
@@ -31,7 +27,7 @@ function fetchDailyEnergySales() {
             console.error('Error fetching daily energy sales:', error);
             const tbody = $('#daily-sales-body');
             tbody.empty();
-            tbody.append('<tr><td colspan="4" class="text-center">Error loading data</td></tr>');
+            tbody.append('<tr><td colspan="4" class="text-center">Error loading data: ' + error + '</td></tr>');
         }
     });
 }
