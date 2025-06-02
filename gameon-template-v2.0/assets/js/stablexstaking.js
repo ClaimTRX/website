@@ -874,7 +874,9 @@ async function updateTokenUI(token) {
 async function updateAvailableTokens(token) {
     try {
         const balanceRaw = await tokenContracts[token].methods.balanceOf(userAddress).call();
-        const balance = Number(balanceRaw) / Math.pow(10, tokenDetails[token].decimals);
+        const decimals = BigInt(tokenDetails[token].decimals);
+        const divisor = BigInt(10) ** decimals; // Use BigInt for 10^decimals
+        const balance = Number(balanceRaw) / Number(divisor); // Convert both to number for division
         document.getElementById(`available-tokens-${token}`).innerText = balance.toFixed(2);
     } catch (error) {
         console.error(`Error updating available tokens for ${token}:`, error);
@@ -885,7 +887,9 @@ async function updateAvailableTokens(token) {
 async function updateStakedAmount(token) {
     try {
         const stakedAmountRaw = await stakingContracts[token].methods.viewStakedAmount(userAddress).call();
-        const stakedAmount = Number(stakedAmountRaw) / Math.pow(10, tokenDetails[token].decimals);
+        const decimals = BigInt(tokenDetails[token].decimals);
+        const divisor = BigInt(10) ** decimals;
+        const stakedAmount = Number(stakedAmountRaw) / Number(divisor);
         document.getElementById(`staked-amount-${token}`).innerText = stakedAmount.toFixed(2);
     } catch (error) {
         console.error(`Error updating staked amount for ${token}:`, error);
@@ -894,28 +898,29 @@ async function updateStakedAmount(token) {
 
 async function updateAPR(token) {
     try {
-        // Only StableX has viewAPR in its smart contract
         if (token === "stablex") {
             if (!stakingContracts[token].methods.viewAPR) {
                 console.error(`viewAPR function is missing in ${token} staking contract.`);
                 return;
             }
             const aprRaw = await stakingContracts[token].methods.viewAPR().call();
-            document.getElementById(`estimated-apr-${token}`).innerText = (aprRaw / 1e4).toFixed(2) + ' %';
-        } else if (token === "cft") {
-            // Manually calculate APR for CFT staking
+            const apr = Number(aprRaw) / 1e4; // Convert BigInt to number for division
+            document.getElementById(`estimated-apr-${token}`).innerText = apr.toFixed(2) + ' %';
+        } else if (token === "cftnew") { // Corrected from "cft" to "cftnew" to match tokenDetails
             const stakedAmountRaw = await stakingContracts[token].methods.viewStakedAmount(userAddress).call();
             const projectedRewardsRaw = await stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call();
 
-            if (stakedAmountRaw == 0) {
+            if (stakedAmountRaw == 0) { // Loose comparison ok here, but consider BigInt(0)
                 document.getElementById(`estimated-apr-${token}`).innerText = '0.00 %';
                 return;
             }
 
-            const stakedTokens = Number(stakedAmountRaw) / Math.pow(10, tokenDetails[token].decimals);
-            const annualRewardTokens = Number(projectedRewardsRaw) / Math.pow(10, tokenDetails[token].decimals);
+            const decimals = BigInt(tokenDetails[token].decimals);
+            const divisor = BigInt(10) ** decimals;
+            const stakedTokens = Number(stakedAmountRaw) / Number(divisor);
+            const annualRewardTokens = Number(projectedRewardsRaw) / Number(divisor);
             const stakedValueUSD = stakedTokens * 1; // Assuming StableX is $1
-            const annualRewardValueUSD = annualRewardTokens * tokenDetails[token].price; // Use predefined CFT price
+            const annualRewardValueUSD = annualRewardTokens * tokenDetails[token].price;
 
             const apr = (annualRewardValueUSD / stakedValueUSD) * 100;
             document.getElementById(`estimated-apr-${token}`).innerText = apr.toFixed(2) + ' %';
@@ -927,29 +932,25 @@ async function updateAPR(token) {
 
 // Update projected rewards
 async function updateProjectedRewards(token) {
-  try {
-    const projectedRewardsRaw = await stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call();
-    // Use rewardDecimals if defined (for cftturu), otherwise use staking token decimals
-    const rewardDecimals = tokenDetails[token].rewardDecimals || tokenDetails[token].decimals;
-    const projectedRewards = Number(projectedRewardsRaw) / Math.pow(10, rewardDecimals);
-
-    // Display the projected rewards
-    document.getElementById(`projected-rewards-${token}`).innerText = Math.floor(projectedRewards).toLocaleString('en-US');
-  } catch (error) {
-    console.error(`Error updating projected rewards for ${token}:`, error);
-  }
+    try {
+        const projectedRewardsRaw = await stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call();
+        const rewardDecimals = tokenDetails[token].rewardDecimals || tokenDetails[token].decimals;
+        const divisor = BigInt(10) ** BigInt(rewardDecimals);
+        const projectedRewards = Number(projectedRewardsRaw) / Number(divisor);
+        document.getElementById(`projected-rewards-${token}`).innerText = Math.floor(projectedRewards).toLocaleString('en-US');
+    } catch (error) {
+        console.error(`Error updating projected rewards for ${token}:`, error);
+    }
 }
 
 
 async function updateClaimableRewards(token) {
     try {
         const claimableRewardsRaw = await stakingContracts[token].methods.viewPendingReward(userAddress).call();
-        const claimableRewards = claimableRewardsRaw / Math.pow(10, tokenDetails[token].decimals);
-
-        // Get the token's display name, default to uppercase key if not found
+        const decimals = BigInt(tokenDetails[token].decimals);
+        const divisor = BigInt(10) ** decimals;
+        const claimableRewards = Number(claimableRewardsRaw) / Number(divisor);
         const tokenName = tokenDetails[token].displayName || token.toUpperCase();
-
-        // Update the UI with the correct token name
         document.getElementById(`claimable-rewards-${token}`).innerText =
             claimableRewards.toFixed(2) + " " + tokenName;
     } catch (error) {
@@ -963,7 +964,9 @@ async function updateClaimableRewards(token) {
 async function updateTotalClaimedRewards(token) {
     try {
         const totalClaimedRewardsRaw = await stakingContracts[token].methods.viewTotalClaimedRewards(userAddress).call();
-        const totalClaimedRewards = totalClaimedRewardsRaw / Math.pow(10, tokenDetails[token].decimals);
+        const decimals = BigInt(tokenDetails[token].decimals);
+        const divisor = BigInt(10) ** decimals;
+        const totalClaimedRewards = Number(totalClaimedRewardsRaw) / Number(divisor);
         document.getElementById(`total-claimed-rewards-${token}`).innerText = totalClaimedRewards.toFixed(2);
     } catch (error) {
         console.error(`Error updating total claimed rewards for ${token}:`, error);
