@@ -19,7 +19,7 @@ const PAYMENT_ADDRESS = "TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn";
 const SPECIAL_WALLET_ADDRESSES = [
     "TR4y25VA1muQJoonLA6JQRamRNpHw88cfa", // Replace with actual wallet address
     "TPf7aDHu51f5UTFcUcU9XvttfViie4XRXw", // Replace with actual wallet address
-    "TYourSpecialWalletAddress3"  // Replace with actual wallet address
+    "TEMkRpEAVu3yDdfbUVERyZNvHByTDJVse9"  // Replace with actual wallet address
 ];
 
 // Server address for API calls
