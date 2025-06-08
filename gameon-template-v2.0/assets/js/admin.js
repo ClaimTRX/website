@@ -231,15 +231,7 @@ const stakingConfigs = [
         rewardUnit: 'StableX',
         isSameToken: true
     },
-    {
-        name: 'StableX/CFT',
-        tokenContractAddress: 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA',
-        stakingContractAddress: 'TUvHH8QtyXvMubLJRgKBdwfG7Y2TRLGSE6',
-        stakingContractAbi: cftStakingContractAbi,
-        tokenContractAbi: tokenContractAbi,
-        rewardUnit: 'CFT',
-        isSameToken: false
-    },
+    
     {
         name: 'StableX/CFTnew',
         tokenContractAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
