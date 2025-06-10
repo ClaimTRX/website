@@ -679,8 +679,11 @@ async function listTokens() {
 }
 
 async function buyToken(listingId) {
-    const amountToBuy = document.getElementById(`buy-amount-${listingId}`).value;
-    if (!amountToBuy || amountToBuy <= 0) {
+    const amountToBuyInput = document.getElementById(`buy-amount-${listingId}`).value;
+    const amountToBuy = parseFloat(amountToBuyInput); // Convert string to number
+
+    // Validate input
+    if (!amountToBuyInput || isNaN(amountToBuy) || amountToBuy <= 0) {
         alert("Enter a valid amount to buy.");
         return;
     }
@@ -705,9 +708,12 @@ async function buyToken(listingId) {
             return;
         }
 
-        // Price per CFT is already in TRX (not in sun)
-        const pricePerCFT = listing.pricePerCFT / 1e6; // Convert from 6 decimal scaling
-        const totalPrice = amountToBuy * pricePerCFT; // Correct TRX price
+        // Convert pricePerCFT from BigInt to number (in TRX, not sun)
+        const pricePerCFTBigInt = BigInt(listing.pricePerCFT); // Ensure BigInt
+        const pricePerCFT = Number(pricePerCFTBigInt) / 1e6; // Convert to TRX
+
+        // Calculate total price in TRX
+        const totalPrice = amountToBuy * pricePerCFT; // Both are numbers now
 
         console.log(`Buying ${amountToBuy} CFT at ${pricePerCFT} TRX per CFT. Total price: ${totalPrice} TRX`);
 
@@ -716,11 +722,6 @@ async function buyToken(listingId) {
             callValue: tronWeb.toSun(totalPrice) // Convert totalPrice to sun
         });
 
-        
-
-
-
-       
         fetchListings();
     } catch (error) {
         console.error("Error buying token:", error);
