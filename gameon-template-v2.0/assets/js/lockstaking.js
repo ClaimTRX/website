@@ -744,7 +744,7 @@ async function tronGridApiCall(endpoint, params = {}) {
 // Update UI for a specific token
 async function updateTokenUI(token) {
   try {
-    const [balanceRaw, stakedAmount, totalBalance, remainingLockTime, remainingStakeable, apr] = await Promise.all([
+    const [balanceRaw, stakedAmount, totalBalance, remainingLockTime, remainingStakeable, apr, pendingReward] = await Promise.all([
       tokenContracts[token].methods.balanceOf(userAddress).call().catch(error => {
         console.error(`Error fetching balance for ${token}:`, error);
         return '0';
@@ -768,6 +768,10 @@ async function updateTokenUI(token) {
       stakingContracts[token].methods.viewAPR().call().catch(error => {
         console.error(`Error fetching APR for ${token}:`, error);
         return '30';
+      }),
+      stakingContracts[token].methods.viewPendingReward(userAddress).call().catch(error => {
+        console.error(`Error fetching pending reward for ${token}:`, error);
+        return '0';
       })
     ]);
 
@@ -775,7 +779,7 @@ async function updateTokenUI(token) {
     const tokenName = tokenDetails[token].displayName || token.toUpperCase();
 
     // Update available tokens (wallet balance)
-    const balance = Number(BigInt(balanceRaw) / BigInt(10 ** decimals)).toLocaleString('en-US', { maximumFractionDigits: 4 });
+    const balance = (Number(BigInt(balanceRaw) / BigInt(10 ** decimals))).toFixed(6);
     const balanceElement = document.getElementById(`available-tokens-${token}`);
     if (balanceElement) {
       balanceElement.innerText = balance;
@@ -785,18 +789,28 @@ async function updateTokenUI(token) {
     }
     await delay(200);
 
-    // Update staked amount
-    const staked = Number(BigInt(stakedAmount) / BigInt(10 ** decimals)).toLocaleString('en-US', { maximumFractionDigits: 4 });
-    const stakedElement = document.getElementById(`staked-amount-${token}`);
-    if (stakedElement) {
-      stakedElement.innerText = staked;
+    // Update initial stake
+    const staked = (Number(BigInt(stakedAmount) / BigInt(10 ** decimals))).toFixed(6);
+    const initialStakeElement = document.getElementById(`initial-stake-${token}`);
+    if (initialStakeElement) {
+      initialStakeElement.innerText = staked;
     } else {
-      console.error(`Element staked-amount-${token} not found`);
+      console.error(`Element initial-stake-${token} not found`);
+    }
+    await delay(200);
+
+    // Update earned rewards
+    const rewards = (Number(BigInt(pendingReward) / BigInt(10 ** decimals))).toFixed(6);
+    const rewardsElement = document.getElementById(`earned-rewards-${token}`);
+    if (rewardsElement) {
+      rewardsElement.innerText = rewards;
+    } else {
+      console.error(`Element earned-rewards-${token} not found`);
     }
     await delay(200);
 
     // Update total balance (staked + rewards)
-    const total = Number(BigInt(totalBalance) / BigInt(10 ** decimals)).toLocaleString('en-US', { maximumFractionDigits: 4 });
+    const total = (Number(BigInt(totalBalance) / BigInt(10 ** decimals))).toFixed(6);
     const totalElement = document.getElementById(`total-balance-${token}`);
     if (totalElement) {
       totalElement.innerText = `${total} ${tokenName}`;
@@ -816,7 +830,7 @@ async function updateTokenUI(token) {
     await delay(200);
 
     // Update remaining stakeable CFT
-    const stakeable = Number(BigInt(remainingStakeable) / BigInt(10 ** decimals)).toLocaleString('en-US', { maximumFractionDigits: 4 });
+    const stakeable = (Number(BigInt(remainingStakeable) / BigInt(10 ** decimals))).toFixed(6);
     const stakeableElement = document.getElementById(`remaining-stakeable-${token}`);
     if (stakeableElement) {
       stakeableElement.innerText = stakeable;
@@ -834,14 +848,22 @@ async function updateTokenUI(token) {
     }
     await delay(200);
 
-    // Toggle Stake/Unstake buttons
-    const stakeButton = document.getElementById(`stake-button-${token}`);
-    const unstakeArea = document.getElementById(`unstake-area-${token}`);
+    // Toggle Deposit and Withdraw sections
     const hasStaked = BigInt(stakedAmount) > 0;
+    const depositSection = document.getElementById(`deposit-section-${token}`);
+    const withdrawSection = document.getElementById(`withdraw-section-${token}`);
     const isUnlocked = Number(remainingLockTime) === 0;
 
-    if (stakeButton) {
-      stakeButton.classList.toggle('d-none', hasStaked);
+    if (depositSection) {
+      depositSection.style.display = hasStaked ? 'none' : 'block';
+    } else {
+      console.error(`Element deposit-section-${token} not found`);
+    }
+
+    if (withdrawSection) {
+      withdrawSection.style.display = hasStaked ? 'block' : 'none';
+    } else {
+      console.error(`Element withdraw-section-${token} not found`);
     }
 
     // Remove existing unstake button if present
@@ -850,6 +872,8 @@ async function updateTokenUI(token) {
       existingUnstakeButton.remove();
     }
 
+    // Add unstake button if staked
+    const unstakeArea = document.getElementById(`unstake-area-${token}`);
     if (hasStaked && unstakeArea) {
       const unstakeButton = document.createElement('a');
       unstakeButton.id = `unstake-button-${token}`;
