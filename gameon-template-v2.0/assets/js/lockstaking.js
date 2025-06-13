@@ -10,8 +10,8 @@ const TRONGRID_API_URL = 'https://api.trongrid.io'; // Mainnet
 // Define contract for CFT
 const tokenDetails = {
   cft: {
-    tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // REPLACE with actual CFT token address (mainnet)
-    stakingAddress: 'TBJrdmgoiw9oherVBwm22N8D9pB7ZQdxNo', // REPLACE with actual CFTStaking address (mainnet)
+    tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // CFT token address (mainnet)
+    stakingAddress: 'TBJrdmgoiw9oherVBwm22N8D9pB7ZQdxNo', // CFTStaking address (mainnet)
     decimals: 6,
     displayName: 'CFT'
   }
@@ -695,7 +695,7 @@ async function initializeTronWeb() {
       console.log(`Token contract for ${key}:`, tokenContracts[key]);
       console.log(`Staking contract for ${key}:`, stakingContracts[key]);
       if (!details.decimals) {
-        tokenDetails[key].decimals = await tokenContracts[key].decimals().call();
+        tokenDetails[key].decimals = await tokenContracts[key].methods.decimals().call();
         console.log(`Decimals for ${key}:`, tokenDetails[key].decimals);
       }
     }
@@ -745,27 +745,27 @@ async function tronGridApiCall(endpoint, params = {}) {
 async function updateTokenUI(token) {
   try {
     const [balanceRaw, stakedAmount, totalBalance, remainingLockTime, remainingStakeable, apr] = await Promise.all([
-      tokenContracts[token].balanceOf(userAddress).call().catch(error => {
+      tokenContracts[token].methods.balanceOf(userAddress).call().catch(error => {
         console.error(`Error fetching balance for ${token}:`, error);
         return '0';
       }),
-      stakingContracts[token].viewStakedAmount(userAddress).call().catch(error => {
+      stakingContracts[token].methods.viewStakedAmount(userAddress).call().catch(error => {
         console.error(`Error fetching staked amount for ${token}:`, error);
         return '0';
       }),
-      stakingContracts[token].viewTotalBalance(userAddress).call().catch(error => {
+      stakingContracts[token].methods.viewTotalBalance(userAddress).call().catch(error => {
         console.error(`Error fetching total balance for ${token}:`, error);
         return '0';
       }),
-      stakingContracts[token].viewRemainingLockTime(userAddress).call().catch(error => {
+      stakingContracts[token].methods.viewRemainingLockTime(userAddress).call().catch(error => {
         console.error(`Error fetching remaining lock time for ${token}:`, error);
         return '0';
       }),
-      stakingContracts[token].viewRemainingStakeableCFT().call().catch(error => {
+      stakingContracts[token].methods.viewRemainingStakeableCFT().call().catch(error => {
         console.error(`Error fetching remaining stakeable for ${token}:`, error);
         return '400000000000'; // Default to 400,000 * 1e6
       }),
-      stakingContracts[token].viewAPR().call().catch(error => {
+      stakingContracts[token].methods.viewAPR().call().catch(error => {
         console.error(`Error fetching APR for ${token}:`, error);
         return '30';
       })
@@ -872,6 +872,7 @@ async function updateTokenUI(token) {
   }
 }
 
+// Staking function
 async function stakeTokens(token, amount) {
   try {
     if (!isValidTronAddress(tokenDetails[token].stakingAddress)) {
@@ -889,10 +890,10 @@ async function stakeTokens(token, amount) {
     const tokenContract = tokenContracts[token];
     const stakingContract = stakingContracts[token];
 
-    if (!tokenContract || !tokenContract.allowance) {
+    if (!tokenContract || !tokenContract.methods.allowance) {
       throw new Error(`Token contract for ${token} not properly initialized. Check token address.`);
     }
-    if (!stakingContract || !stakingContract.stake) {
+    if (!stakingContract || !stakingContract.methods.stake) {
       throw new Error(`Staking contract for ${token} not properly initialized. Check staking address.`);
     }
 
@@ -902,30 +903,24 @@ async function stakeTokens(token, amount) {
     console.log('User Address:', userAddress);
     console.log('Amount to Stake:', amountToStake.toString());
 
-    // Log hexadecimal address for reference
-    const stakingContractAddressHex = tronWeb.address.toHex(stakingContractAddress);
-    console.log('Staking Contract Address (Hex, for reference):', stakingContractAddressHex);
-
     // Test contract interaction
     console.log('Testing balanceOf call...');
-    const balance = await tokenContract.balanceOf(userAddress).call();
+    const balance = await tokenContract.methods.balanceOf(userAddress).call();
     console.log('User Balance:', balance.toString());
 
     console.log('Checking allowance...');
-    const allowanceRaw = await tokenContract.allowance(userAddress, stakingContractAddress).call();
+    const allowanceRaw = await tokenContract.methods.allowance(userAddress, stakingContractAddress).call();
     const allowance = BigInt(allowanceRaw);
     console.log('Current Allowance:', allowance.toString());
 
     if (allowance >= amountToStake) {
       console.log(`Sufficient approval detected: ${allowance}`);
       console.log('Sending stake transaction...');
-      await stakingContract.stake(amountToStake.toString()).send({
-        from: userAddress
-      });
+      await stakingContract.methods.stake(amountToStake.toString()).send();
       console.log('Tokens staked successfully!');
     } else {
       console.log('Approval is too low. Requesting approval...');
-      const approvalAmount = amountToStake.toString(); // Use exact amount for debugging
+      const approvalAmount = maxUint256; // Use maxUint256 as in the working code
       console.log('Sending approve transaction with amount:', approvalAmount);
       console.log('Approve parameters:', {
         spender: stakingContractAddress,
@@ -933,19 +928,14 @@ async function stakeTokens(token, amount) {
         from: userAddress
       });
       try {
-        // Use base58 address for approve
-        const tx = await tokenContract.approve(stakingContractAddress, approvalAmount);
-        console.log('Approve transaction object:', tx);
-        await tx.send({ from: userAddress });
+        await tokenContract.methods.approve(stakingContractAddress, approvalAmount).send();
         console.log('Approval granted. Proceeding with staking...');
       } catch (approveError) {
         console.error('Approve transaction failed:', approveError);
         throw new Error(`Approve transaction failed: ${approveError.message}`);
       }
       console.log('Sending stake transaction after approval...');
-      await stakingContract.stake(amountToStake.toString()).send({
-        from: userAddress
-      });
+      await stakingContract.methods.stake(amountToStake.toString()).send();
       console.log('Tokens staked successfully after approval!');
     }
 
@@ -960,11 +950,11 @@ async function stakeTokens(token, amount) {
 async function unstakeTokens(token) {
   try {
     const stakingContract = stakingContracts[token];
-    if (!stakingContract || !stakingContract.withdraw) {
+    if (!stakingContract || !stakingContract.methods.withdraw) {
       throw new Error(`Staking contract for ${token} not properly initialized.`);
     }
     console.log('Sending withdraw transaction...');
-    await stakingContract.withdraw().send();
+    await stakingContract.methods.withdraw().send();
     console.log('Unstake successful!');
     await updateTokenUI(token);
   } catch (error) {
