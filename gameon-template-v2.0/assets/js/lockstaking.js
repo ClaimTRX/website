@@ -5,16 +5,22 @@ const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
 // TronGrid API configuration
 const TRONGRID_API_KEY = 'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca'; // Replace with your TronGrid API key
-const TRONGRID_API_URL = 'https://api.trongrid.io';
+const TRONGRID_API_URL = 'https://trongrid.io'; // Use Nile testnet for testing
+
 // Define contract for CFT
 const tokenDetails = {
   cft: {
-    tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // Replace with actual CFT token address
-    stakingAddress: 'TBJrdmgoiw9oherVBwm22N8D9pB7ZQdxNo', // Replace with actual CFTStaking address
+    tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // REPLACE with actual CFT token address
+    stakingAddress: 'TBJrdmgoiw9oherVBwm22N8D9pB7ZQdxNo', // REPLACE with actual CFTStaking address
     decimals: 6,
     displayName: 'CFT'
   }
 };
+
+// Validate TRON address format (base58, starts with 'T', 34 chars)
+function isValidTronAddress(address) {
+  return typeof address === 'string' && address.startsWith('T') && address.length === 34 && /^[A-Za-z1-9]+$/.test(address);
+}
 
 const stakingContractAbi = [
   {
@@ -557,7 +563,7 @@ const tokenContractAbi = [
         "type": "address"
       },
       {
-        "name": "value",
+        "name": "_value",
         "type": "uint256"
       }
     ],
@@ -630,6 +636,7 @@ async function initialize() {
     setInterval(updateAllUI, 60000); // Update UI every minute
   } else {
     console.error('TronLink is not installed.');
+    alert('TronLink is not installed. Please install TronLink to continue.');
   }
 }
 
@@ -644,6 +651,10 @@ async function checkTronLinkInstalled() {
         resolve(true);
       }
     }, 1000);
+    setTimeout(() => {
+      clearInterval(interval);
+      resolve(false);
+    }, 5000); // Timeout after 5 seconds
   });
 }
 
@@ -663,12 +674,21 @@ async function initializeTronWeb() {
   try {
     tronWeb = window.tronWeb;
     userAddress = tronWeb.defaultAddress.base58;
+    if (!userAddress) {
+      throw new Error('No user address found. Ensure TronLink is connected.');
+    }
     console.log('User Address:', userAddress);
     
     document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
 
     for (let key in tokenDetails) {
       let details = tokenDetails[key];
+      if (!isValidTronAddress(details.tokenAddress)) {
+        throw new Error(`Invalid token address for ${key}: ${details.tokenAddress}`);
+      }
+      if (!isValidTronAddress(details.stakingAddress)) {
+        throw new Error(`Invalid staking address for ${key}: ${details.stakingAddress}`);
+      }
       tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
       stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
       console.log(`Token contract for ${key}:`, tokenContracts[key]);
@@ -681,7 +701,7 @@ async function initializeTronWeb() {
     await updateAllUI();
   } catch (error) {
     console.error('Error initializing TronWeb or Contracts:', error);
-    alert('Error initializing contracts. Please refresh and try again.');
+    alert(`Error initializing contracts: ${error.message}. Please refresh and try again.`);
   }
 }
 
@@ -838,9 +858,23 @@ async function updateTokenUI(token) {
 // Staking function
 async function stakeTokens(token, amount) {
   try {
+    if (!isValidTronAddress(tokenDetails[token].stakingAddress)) {
+      throw new Error(`Invalid staking address: ${tokenDetails[token].stakingAddress}`);
+    }
+    if (!isValidTronAddress(tokenDetails[token].tokenAddress)) {
+      throw new Error(`Invalid token address: ${tokenDetails[token].tokenAddress}`);
+    }
+    if (!userAddress || !isValidTronAddress(userAddress)) {
+      throw new Error('Invalid user address. Please reconnect wallet.');
+    }
+
     const amountToStake = BigInt(amount) * BigInt(10 ** tokenDetails[token].decimals);
     const stakingContractAddress = tokenDetails[token].stakingAddress;
     const tokenContract = tokenContracts[token];
+
+    if (!tokenContract) {
+      throw new Error(`Token contract for ${token} not initialized.`);
+    }
 
     console.log('Token Contract:', tokenContract);
     console.log('Staking Contract Address:', stakingContractAddress);
@@ -866,7 +900,7 @@ async function stakeTokens(token, amount) {
     await updateTokenUI(token);
   } catch (error) {
     console.error(`Error staking tokens for ${token}:`, error);
-    alert(`Error staking tokens for ${token}. Please check the console for details.`);
+    alert(`Error staking tokens for ${token}: ${error.message}. Please check the console for details.`);
   }
 }
 
@@ -877,7 +911,7 @@ async function unstakeTokens(token) {
     await updateTokenUI(token);
   } catch (error) {
     console.error(`Error unstaking tokens for ${token}:`, error);
-    alert(`Error unstaking tokens for ${token}. Please check the console for details.`);
+    alert(`Error unstaking tokens for ${token}: ${error.message}. Please check the console for details.`);
   }
 }
 
