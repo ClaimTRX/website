@@ -141,7 +141,7 @@
 										</div>
 										<div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
 											<div class="col single-item"><span id="staking-apr-cft">30%</span><span>APR</span></div>
-											<div class="col single-item"><span id="total-balance-cft">0 CFT</span><span>Total Balance</span></div>
+											<div class="col single-item"><span id="total-balance-cft">0.000000 CFT</span><span>Total Balance</span></div>
 											<div class="col single-item"><span id="remaining-lock-time-cft">0 days</span><span>Lock Time</span></div>
 										</div>
 									</button>
@@ -151,19 +151,20 @@
 								<div class="card-body">
 									<div class="row">
 										<!-- Deposit -->
-										<div class="col-12 col-md-6 single-staking-item input-box">
+										<div class="col-12 col-md-6 single-staking-item input-box" id="deposit-section-cft">
 											<span class="item-title mb-2">Deposit</span>
-											<p><span id="available-tokens-cft">0</span> CFT available in wallet</p>
-											<p><span id="remaining-stakeable-cft">400,000</span> CFT available to stake</p>
+											<p><span id="available-tokens-cft">0.000000</span> CFT available in wallet</p>
+											<p><span id="remaining-stakeable-cft">400,000.000000</span> CFT available to stake</p>
 											<div class="input-area d-flex flex-column">
 												<div class="input-text"><input type="text" placeholder="0" id="stake-amount-cft"></div>
 												<a href="#" class="btn input-btn mt-2" id="stake-button-cft">Stake</a>
 											</div>
 										</div>
 										<!-- Withdraw -->
-										<div class="col-12 col-md-6 single-staking-item input-box">
+										<div class="col-12 col-md-6 single-staking-item input-box" id="withdraw-section-cft" style="display: none;">
 											<span class="item-title mb-2">Withdraw</span>
-											<p><span id="staked-amount-cft">0</span> CFT staked</p>
+											<p><span id="initial-stake-cft">0.000000</span> CFT initial stake</p>
+											<p><span id="earned-rewards-cft">0.000000</span> CFT earned rewards</p>
 											<div class="input-area d-flex flex-column" id="unstake-area-cft">
 												<!-- Unstake button added dynamically -->
 											</div>
