@@ -134,7 +134,7 @@
 													<img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
 													<div class="content media-body mt-4 mt-md-0 ms-md-4">
 														<h4 class="m-0">CFT Staking</h4>
-														<p>Stake CFT for CFT rewards with a 6-month lock</p>
+														<p>Stake up to 100,000 CFT for CFT rewards with a 6-month lock</p>
 													</div>
 												</div>
 											</div>
@@ -153,8 +153,8 @@
 										<!-- Deposit -->
 										<div class="col-12 col-md-6 single-staking-item input-box">
 											<span class="item-title mb-2">Deposit</span>
-											<span id="available-tokens-cft">0</span> CFT available
-											<span id="remaining-stakeable-cft" class="ms-2">400,000</span> remaining to stake
+											<p><span id="available-tokens-cft">0</span> CFT available in wallet</p>
+											<p><span id="remaining-stakeable-cft">400,000</span> CFT available to stake</p>
 											<div class="input-area d-flex flex-column">
 												<div class="input-text"><input type="text" placeholder="0" id="stake-amount-cft"></div>
 												<a href="#" class="btn input-btn mt-2" id="stake-button-cft">Stake</a>
@@ -163,9 +163,9 @@
 										<!-- Withdraw -->
 										<div class="col-12 col-md-6 single-staking-item input-box">
 											<span class="item-title mb-2">Withdraw</span>
-											<span id="staked-amount-cft">0</span> CFT staked
-											<div class="input-area d-flex flex-column">
-												<a href="#" class="btn input-btn mt-2" id="unstake-button-cft">Unstake All</a>
+											<p><span id="staked-amount-cft">0</span> CFT staked</p>
+											<div class="input-area d-flex flex-column" id="unstake-area-cft">
+												<!-- Unstake button added dynamically -->
 											</div>
 										</div>
 									</div>
