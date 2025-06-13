@@ -11,7 +11,7 @@ const TRONGRID_API_URL = 'https://api.trongrid.io';
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // Verify this address
-    stakingAddress: 'TMrDKEu6vSBSwstToiiooAiwB5xKNghEy8', // Verify this address
+    stakingAddress: 'TBJrdmgoiw9oherVBwm22N8D9pB7ZQdxNo', // Verify this address
     decimals: 6,
     displayName: 'CFT'
   }
