@@ -812,7 +812,7 @@ async function updateTokenUI(token) {
     }
 
     // Update available tokens (wallet balance)
-    const balance = (Number(BigInt(balanceRaw) / BigInt(10 ** decimals))).toFixed(6);
+    const balance = (Number(balanceRaw) / Math.pow(10, decimals)).toFixed(6);
     const balanceElement = document.getElementById(`available-tokens-${token}`);
     if (balanceElement) {
       balanceElement.innerText = balance;
@@ -823,7 +823,7 @@ async function updateTokenUI(token) {
     await delay(200);
 
     // Update initial stake
-    const staked = (Number(BigInt(stakedAmount) / BigInt(10 ** decimals))).toFixed(6);
+    const staked = (Number(stakedAmount) / Math.pow(10, decimals)).toFixed(6);
     const initialStakeElement = document.getElementById(`initial-stake-${token}`);
     if (initialStakeElement) {
       initialStakeElement.innerText = staked;
@@ -833,7 +833,7 @@ async function updateTokenUI(token) {
     await delay(200);
 
     // Update earned rewards with correct decimal scaling
-    const rewards = (Number(BigInt(rewardsRaw) / BigInt(10 ** rewardDecimals))).toFixed(6);
+    const rewards = (Number(rewardsRaw) / Math.pow(10, rewardDecimals)).toFixed(6);
     const rewardsElement = document.getElementById(`earned-rewards-${token}`);
     if (rewardsElement) {
       rewardsElement.innerText = rewards;
@@ -844,7 +844,7 @@ async function updateTokenUI(token) {
     await delay(200);
 
     // Update total balance (staked + rewards)
-    const total = (Number(BigInt(totalBalance) / BigInt(10 ** decimals))).toFixed(6);
+    const total = (Number(totalBalance) / Math.pow(10, decimals)).toFixed(6);
     const totalElement = document.getElementById(`total-balance-${token}`);
     if (totalElement) {
       totalElement.innerText = `${total} ${tokenName}`;
@@ -864,7 +864,7 @@ async function updateTokenUI(token) {
     await delay(200);
 
     // Update remaining stakeable CFT
-    const stakeable = (Number(BigInt(remainingStakeable) / BigInt(10 ** decimals))).toFixed(6);
+    const stakeable = (Number(remainingStakeable) / Math.pow(10, decimals)).toFixed(6);
     const stakeableElement = document.getElementById(`remaining-stakeable-${token}`);
     if (stakeableElement) {
       stakeableElement.innerText = stakeable;
