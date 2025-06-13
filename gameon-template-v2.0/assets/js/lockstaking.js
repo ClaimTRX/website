@@ -4,7 +4,7 @@ const tokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
 // TronGrid API configuration
-const TRONGRID_API_KEY = 'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca'; // Replace with your valid TronGrid API key
+const TRONGRID_API_KEY = 'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca'; // REPLACE with your valid TronGrid API key
 const TRONGRID_API_URL = 'https://api.trongrid.io'; // Mainnet
 
 // Define contract for CFT
@@ -905,7 +905,7 @@ async function stakeTokens(token, amount) {
 
     // Test contract interaction
     console.log('Testing balanceOf call...');
-    const balance = await tokenContracts[token].balanceOf(userAddress).call();
+    const balance = await tokenContract.balanceOf(userAddress).call();
     console.log('User Balance:', balance.toString());
 
     console.log('Checking allowance...');
