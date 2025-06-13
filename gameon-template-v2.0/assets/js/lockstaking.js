@@ -7,13 +7,13 @@ const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 const TRONGRID_API_KEY = 'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca'; // REPLACE with your valid TronGrid API key
 const TRONGRID_API_URL = 'https://api.trongrid.io'; // Mainnet
 
-// Define contract for CFT with rewardDecimals
+// Define contract for CFT with correct rewardDecimals
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // CFT token address (mainnet)
     stakingAddress: 'TBJrdmgoiw9oherVBwm22N8D9pB7ZQdxNo', // CFTStaking address (mainnet)
     decimals: 6,
-    rewardDecimals: 0, // Rewards are unscaled, adjust if contract uses different scaling
+    rewardDecimals: 6, // Match token decimals, as rewards are scaled by 10^6
     displayName: 'CFT'
   }
 };
@@ -795,7 +795,7 @@ async function updateTokenUI(token) {
     ]);
 
     const decimals = tokenDetails[token].decimals;
-    const rewardDecimals = tokenDetails[token].rewardDecimals || 0; // Use 0 if not specified
+    const rewardDecimals = tokenDetails[token].rewardDecimals || decimals; // Use decimals if rewardDecimals not set
     const tokenName = tokenDetails[token].displayName || token.toUpperCase();
 
     // Log raw reward values for debugging
@@ -804,7 +804,7 @@ async function updateTokenUI(token) {
     console.log(`Raw totalBalance for ${token}:`, totalBalance);
     console.log(`Raw stakedAmount for ${token}:`, stakedAmount);
 
-    // Use earnedReward if pendingReward is 0 but totalBalance > stakedAmount
+    // Use the highest non-zero reward value
     let rewardsRaw = pendingReward !== '0' ? pendingReward : earnedReward;
     if (rewardsRaw === '0' && BigInt(totalBalance) > BigInt(stakedAmount)) {
       rewardsRaw = (BigInt(totalBalance) - BigInt(stakedAmount)).toString();
