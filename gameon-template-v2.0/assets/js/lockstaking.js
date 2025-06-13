@@ -11,7 +11,7 @@ const TRONGRID_API_URL = 'https://nile.trongrid.io'; // Use Nile testnet for tes
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // Replace with actual CFT token address
-    stakingAddress: 'TMrDKEu6vSBSwstToiiooAiwB5xKNghEy8', // Replace with actual CFTStaking address
+    stakingAddress: 'TBJrdmgoiw9oherVBwm22N8D9pB7ZQdxNo', // Replace with actual CFTStaking address
     decimals: 6,
     displayName: 'CFT'
   }
