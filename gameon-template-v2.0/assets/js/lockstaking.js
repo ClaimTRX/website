@@ -916,15 +916,22 @@ async function stakeTokens(token, amount) {
     if (allowance >= amountToStake) {
       console.log(`Sufficient approval detected: ${allowance}`);
       console.log('Sending stake transaction...');
-      await stakingContract.stake(amountToStake.toString()).send();
+      await stakingContract.stake(amountToStake.toString()).send({
+    from: userAddress
+});
+
       console.log("Tokens staked successfully!");
     } else {
       console.log("Approval is too low. Requesting approval...");
       console.log('Sending approve transaction...');
-      await tokenContract.approve(stakingContractAddress, maxUint256).send();
+      await tokenContract.approve(stakingContractAddress, maxUint256).send({
+    from: userAddress
+});
       console.log("Approval granted. Proceeding with staking...");
       console.log('Sending stake transaction after approval...');
-      await stakingContract.stake(amountToStake.toString()).send();
+      await stakingContract.stake(amountToStake.toString()).send({
+    from: userAddress
+});
       console.log("Tokens staked successfully after approval!");
     }
 
