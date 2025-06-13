@@ -5,8 +5,7 @@ const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
 // TronGrid API configuration
 const TRONGRID_API_KEY = 'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca'; // Replace with your TronGrid API key
-const TRONGRID_API_URL = 'https://nile.trongrid.io'; // Use Nile testnet for testing
-
+const TRONGRID_API_URL = 'https://api.trongrid.io';
 // Define contract for CFT
 const tokenDetails = {
   cft: {
