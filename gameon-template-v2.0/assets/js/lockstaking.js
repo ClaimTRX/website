@@ -741,10 +741,24 @@ async function tronGridApiCall(endpoint, params = {}) {
   }
 }
 
+// Retry contract call with exponential backoff
+async function retryContractCall(fn, maxRetries = 3, delayMs = 1000) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await fn();
+      return result;
+    } catch (error) {
+      console.error(`Attempt ${attempt} failed:`, error);
+      if (attempt === maxRetries) throw error;
+      await delay(delayMs * Math.pow(2, attempt - 1)); // Exponential backoff
+    }
+  }
+}
+
 // Update UI for a specific token
 async function updateTokenUI(token) {
   try {
-    const [balanceRaw, stakedAmount, totalBalance, remainingLockTime, remainingStakeable, apr, pendingReward] = await Promise.all([
+    const [balanceRaw, stakedAmount, totalBalance, remainingLockTime, remainingStakeable, apr, pendingReward, earnedReward] = await Promise.all([
       tokenContracts[token].methods.balanceOf(userAddress).call().catch(error => {
         console.error(`Error fetching balance for ${token}:`, error);
         return '0';
@@ -769,14 +783,31 @@ async function updateTokenUI(token) {
         console.error(`Error fetching APR for ${token}:`, error);
         return '30';
       }),
-      stakingContracts[token].methods.viewPendingReward(userAddress).call().catch(error => {
-        console.error(`Error fetching pending reward for ${token}:`, error);
+      retryContractCall(() => stakingContracts[token].methods.viewPendingReward(userAddress).call()).catch(error => {
+        console.error(`Error fetching pending reward for ${token} after retries:`, error);
+        return '0';
+      }),
+      retryContractCall(() => stakingContracts[token].methods.earned(userAddress).call()).catch(error => {
+        console.error(`Error fetching earned reward for ${token} after retries:`, error);
         return '0';
       })
     ]);
 
     const decimals = tokenDetails[token].decimals;
     const tokenName = tokenDetails[token].displayName || token.toUpperCase();
+
+    // Log raw reward values for debugging
+    console.log(`Raw pendingReward for ${token}:`, pendingReward);
+    console.log(`Raw earnedReward for ${token}:`, earnedReward);
+    console.log(`Raw totalBalance for ${token}:`, totalBalance);
+    console.log(`Raw stakedAmount for ${token}:`, stakedAmount);
+
+    // Use earnedReward if pendingReward is 0 but totalBalance > stakedAmount
+    let rewardsRaw = pendingReward !== '0' ? pendingReward : earnedReward;
+    if (rewardsRaw === '0' && BigInt(totalBalance) > BigInt(stakedAmount)) {
+      rewardsRaw = (BigInt(totalBalance) - BigInt(stakedAmount)).toString();
+      console.log(`Calculated rewards from totalBalance - stakedAmount:`, rewardsRaw);
+    }
 
     // Update available tokens (wallet balance)
     const balance = (Number(BigInt(balanceRaw) / BigInt(10 ** decimals))).toFixed(6);
@@ -800,10 +831,11 @@ async function updateTokenUI(token) {
     await delay(200);
 
     // Update earned rewards
-    const rewards = (Number(BigInt(pendingReward) / BigInt(10 ** decimals))).toFixed(6);
+    const rewards = (Number(BigInt(rewardsRaw) / BigInt(10 ** decimals))).toFixed(6);
     const rewardsElement = document.getElementById(`earned-rewards-${token}`);
     if (rewardsElement) {
       rewardsElement.innerText = rewards;
+      console.log(`Formatted rewards for ${token}:`, rewards);
     } else {
       console.error(`Element earned-rewards-${token} not found`);
     }
