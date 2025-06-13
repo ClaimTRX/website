@@ -11,7 +11,7 @@ const TRONGRID_API_URL = 'https://nile.trongrid.io'; // Use Nile testnet for tes
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // Replace with actual CFT token address
-    stakingAddress: 'TBJrdmgoiw9oherVBwm22N8D9pB7ZQdxNo', // Replace with actual CFTStaking address
+    stakingAddress: 'TMrDKEu6vSBSwstToiiooAiwB5xKNghEy8', // Replace with actual CFTStaking address
     decimals: 6,
     displayName: 'CFT'
   }
@@ -558,7 +558,7 @@ const tokenContractAbi = [
         "type": "address"
       },
       {
-        "name": "_value",
+        "name": "value",
         "type": "uint256"
       }
     ],
@@ -731,7 +731,7 @@ async function updateTokenUI(token) {
       stakingContracts[token].viewStakedAmount(userAddress).call().catch(() => '0'),
       stakingContracts[token].viewTotalBalance(userAddress).call().catch(() => '0'),
       stakingContracts[token].viewRemainingLockTime(userAddress).call().catch(() => '0'),
-      stakingContracts[token].viewRemainingStakeableCFT().call().catch(() => '0'),
+      stakingContracts[token].viewRemainingStakeableCFT().call().catch(() => '400000000000'), // Default to 400,000 * 1e6
       stakingContracts[token].viewAPR().call().catch(() => '30')
     ]);
 
@@ -783,7 +783,7 @@ async function updateTokenUI(token) {
     const stakeable = Number(BigInt(remainingStakeable) / BigInt(10 ** decimals)).toLocaleString('en-US', { maximumFractionDigits: 4 });
     const stakeableElement = document.getElementById(`remaining-stakeable-${token}`);
     if (stakeableElement) {
-      stakeableElement.innerText = `${stakeable} ${tokenName}`;
+      stakeableElement.innerText = stakeable;
     } else {
       console.error(`Element remaining-stakeable-${token} not found`);
     }
@@ -797,6 +797,38 @@ async function updateTokenUI(token) {
       console.error(`Element staking-apr-${token} not found`);
     }
     await delay(200);
+
+    // Toggle Stake/Unstake buttons
+    const stakeButton = document.getElementById(`stake-button-${token}`);
+    const unstakeArea = document.getElementById(`unstake-area-${token}`);
+    const hasStaked = BigInt(stakedAmount) > 0;
+    const isUnlocked = Number(remainingLockTime) === 0;
+
+    if (stakeButton) {
+      stakeButton.classList.toggle('d-none', hasStaked);
+    }
+
+    // Remove existing unstake button if present
+    const existingUnstakeButton = document.getElementById(`unstake-button-${token}`);
+    if (existingUnstakeButton) {
+      existingUnstakeButton.remove();
+    }
+
+    if (hasStaked && unstakeArea) {
+      const unstakeButton = document.createElement('a');
+      unstakeButton.id = `unstake-button-${token}`;
+      unstakeButton.href = '#';
+      unstakeButton.className = 'btn input-btn mt-2';
+      unstakeButton.innerText = 'Unstake All';
+      unstakeButton.disabled = !isUnlocked;
+      unstakeButton.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (!unstakeButton.disabled) {
+          await unstakeTokens(token);
+        }
+      });
+      unstakeArea.appendChild(unstakeButton);
+    }
 
   } catch (error) {
     console.error(`Error updating UI for ${token}:`, error);
@@ -854,20 +886,12 @@ async function unstakeTokens(token) {
 for (let key in tokenDetails) {
   const stakeButton = document.getElementById(`stake-button-${key}`);
   if (stakeButton) {
-    stakeButton.addEventListener('click', async () => {
+    stakeButton.addEventListener('click', async (e) => {
+      e.preventDefault();
       const amount = document.getElementById(`stake-amount-${key}`).value;
       await stakeTokens(key, amount);
     });
   } else {
     console.error(`Stake button for ${key} not found`);
-  }
-
-  const unstakeButton = document.getElementById(`unstake-button-${key}`);
-  if (unstakeButton) {
-    unstakeButton.addEventListener('click', async () => {
-      await unstakeTokens(key);
-    });
-  } else {
-    console.error(`Unstake button for ${key} not found`);
   }
 }
