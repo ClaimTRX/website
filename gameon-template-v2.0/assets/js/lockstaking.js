@@ -872,7 +872,6 @@ async function updateTokenUI(token) {
   }
 }
 
-// Staking function
 async function stakeTokens(token, amount) {
   try {
     if (!isValidTronAddress(tokenDetails[token].stakingAddress)) {
@@ -917,22 +916,28 @@ async function stakeTokens(token, amount) {
       console.log(`Sufficient approval detected: ${allowance}`);
       console.log('Sending stake transaction...');
       await stakingContract.stake(amountToStake.toString()).send({
-    from: userAddress
-});
-
-      console.log("Tokens staked successfully!");
+        from: userAddress
+      });
+      console.log('Tokens staked successfully!');
     } else {
-      console.log("Approval is too low. Requesting approval...");
-      console.log('Sending approve transaction...');
-      await tokenContract.approve(stakingContractAddress, maxUint256).send({
-    from: userAddress
-});
-      console.log("Approval granted. Proceeding with staking...");
+      console.log('Approval is too low. Requesting approval...');
+      // Use a large decimal string instead of maxUint256
+      const approvalAmount = '1000000000000000000000000000000'; // 10^30, adjust as needed
+      console.log('Sending approve transaction with amount:', approvalAmount);
+      try {
+        await tokenContract.approve(stakingContractAddress, approvalAmount).send({
+          from: userAddress
+        });
+        console.log('Approval granted. Proceeding with staking...');
+      } catch (approveError) {
+        console.error('Approve transaction failed:', approveError);
+        throw new Error(`Approve transaction failed: ${approveError.message}`);
+      }
       console.log('Sending stake transaction after approval...');
       await stakingContract.stake(amountToStake.toString()).send({
-    from: userAddress
-});
-      console.log("Tokens staked successfully after approval!");
+        from: userAddress
+      });
+      console.log('Tokens staked successfully after approval!');
     }
 
     await updateTokenUI(token);
