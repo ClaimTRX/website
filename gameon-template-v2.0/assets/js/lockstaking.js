@@ -5,13 +5,13 @@ const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
 // TronGrid API configuration
 const TRONGRID_API_KEY = 'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca'; // Replace with your TronGrid API key
-const TRONGRID_API_URL = 'https://api.trongrid.io';
+const TRONGRID_API_URL = 'https://nile.trongrid.io'; // Use Nile testnet for testing
 
 // Define contract for CFT
 const tokenDetails = {
   cft: {
-    tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // Verify this address
-    stakingAddress: 'TBJrdmgoiw9oherVBwm22N8D9pB7ZQdxNo', // Verify this address
+    tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // Replace with actual CFT token address
+    stakingAddress: 'TBJrdmgoiw9oherVBwm22N8D9pB7ZQdxNo', // Replace with actual CFTStaking address
     decimals: 6,
     displayName: 'CFT'
   }
@@ -723,17 +723,16 @@ async function tronGridApiCall(endpoint, params = {}) {
 // Update UI for a specific token
 async function updateTokenUI(token) {
   try {
-    // Fetch all required data in parallel
-    const [balanceRaw, stakedAmount, totalBalance, pendingRewards, remainingLockTime, remainingStakeable] = await Promise.all([
+    const [balanceRaw, stakedAmount, totalBalance, remainingLockTime, remainingStakeable, apr] = await Promise.all([
       tokenContracts[token].balanceOf(userAddress).call().catch(error => {
         console.error(`Error fetching balance for ${token}:`, error);
         return '0';
       }),
       stakingContracts[token].viewStakedAmount(userAddress).call().catch(() => '0'),
       stakingContracts[token].viewTotalBalance(userAddress).call().catch(() => '0'),
-      stakingContracts[token].viewPendingReward(userAddress).call().catch(() => '0'),
       stakingContracts[token].viewRemainingLockTime(userAddress).call().catch(() => '0'),
-      stakingContracts[token].viewRemainingStakeableCFT().call().catch(() => '0')
+      stakingContracts[token].viewRemainingStakeableCFT().call().catch(() => '0'),
+      stakingContracts[token].viewAPR().call().catch(() => '30')
     ]);
 
     const decimals = tokenDetails[token].decimals;
@@ -770,16 +769,6 @@ async function updateTokenUI(token) {
     }
     await delay(200);
 
-    // Update pending rewards
-    const rewards = Number(BigInt(pendingRewards) / BigInt(10 ** decimals)).toLocaleString('en-US', { maximumFractionDigits: 4 });
-    const rewardsElement = document.getElementById(`pending-rewards-${token}`);
-    if (rewardsElement) {
-      rewardsElement.innerText = `${rewards} ${tokenName}`;
-    } else {
-      console.error(`Element pending-rewards-${token} not found`);
-    }
-    await delay(200);
-
     // Update remaining lock time
     const lockTimeDays = Math.floor(Number(remainingLockTime) / 86400);
     const lockTimeElement = document.getElementById(`remaining-lock-time-${token}`);
@@ -800,6 +789,15 @@ async function updateTokenUI(token) {
     }
     await delay(200);
 
+    // Update APR
+    const aprElement = document.getElementById(`staking-apr-${token}`);
+    if (aprElement) {
+      aprElement.innerText = `${Number(apr)}%`;
+    } else {
+      console.error(`Element staking-apr-${token} not found`);
+    }
+    await delay(200);
+
   } catch (error) {
     console.error(`Error updating UI for ${token}:`, error);
     alert(`Error updating UI for ${token}. Please check the console for details.`);
@@ -813,8 +811,14 @@ async function stakeTokens(token, amount) {
     const stakingContractAddress = tokenDetails[token].stakingAddress;
     const tokenContract = tokenContracts[token];
 
+    console.log('Token Contract:', tokenContract);
+    console.log('Staking Contract Address:', stakingContractAddress);
+    console.log('User Address:', userAddress);
+    console.log('Amount to Stake:', amountToStake.toString());
+
     const allowanceRaw = await tokenContract.allowance(userAddress, stakingContractAddress).call();
     const allowance = BigInt(allowanceRaw);
+    console.log('Current Allowance:', allowance.toString());
 
     if (allowance >= amountToStake) {
       console.log(`Sufficient approval detected: ${allowance}`);
