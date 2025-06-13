@@ -4,14 +4,14 @@ const tokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
 // TronGrid API configuration
-const TRONGRID_API_KEY = 'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca'; // Replace with your TronGrid API key
-const TRONGRID_API_URL = 'https://api.trongrid.io';
+const TRONGRID_API_KEY = 'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca'; // Replace with your valid TronGrid API key
+const TRONGRID_API_URL = 'https://api.trongrid.io'; // Mainnet
 
 // Define contract for CFT
 const tokenDetails = {
   cft: {
-    tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // REPLACE with actual CFT token address
-    stakingAddress: 'TBJrdmgoiw9oherVBwm22N8D9pB7ZQdxNo', // REPLACE with actual CFTStaking address
+    tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // REPLACE with actual CFT token address (mainnet)
+    stakingAddress: 'TBJrdmgoiw9oherVBwm22N8D9pB7ZQdxNo', // REPLACE with actual CFTStaking address (mainnet)
     decimals: 6,
     displayName: 'CFT'
   }
@@ -19,7 +19,8 @@ const tokenDetails = {
 
 // Validate TRON address format (base58, starts with 'T', 34 chars)
 function isValidTronAddress(address) {
-  return typeof address === 'string' && address.startsWith('T') && address.length === 34 && /^[A-Za-z1-9]+$/.test(address);
+  if (!address || typeof address !== 'string') return false;
+  return address.startsWith('T') && address.length === 34 && /^[A-Za-z1-9]+$/.test(address);
 }
 
 const stakingContractAbi = [
@@ -665,7 +666,7 @@ async function connectWallet() {
     await initializeTronWeb();
   } catch (e) {
     console.error('Failed to connect to TronLink:', e);
-    alert('Failed to connect to TronLink. Please ensure TronLink is installed and try again.');
+    alert('Failed to connect to TronLink. Please ensure TronLink is installed, set to mainnet, and try again.');
   }
 }
 
@@ -675,7 +676,7 @@ async function initializeTronWeb() {
     tronWeb = window.tronWeb;
     userAddress = tronWeb.defaultAddress.base58;
     if (!userAddress) {
-      throw new Error('No user address found. Ensure TronLink is connected.');
+      throw new Error('No user address found. Ensure TronLink is connected and set to mainnet.');
     }
     console.log('User Address:', userAddress);
     
@@ -684,14 +685,15 @@ async function initializeTronWeb() {
     for (let key in tokenDetails) {
       let details = tokenDetails[key];
       if (!isValidTronAddress(details.tokenAddress)) {
-        throw new Error(`Invalid token address for ${key}: ${details.tokenAddress}`);
+        throw new Error(`Invalid token address for ${key}: ${details.tokenAddress}. Please update tokenDetails.cft.tokenAddress.`);
       }
       if (!isValidTronAddress(details.stakingAddress)) {
-        throw new Error(`Invalid staking address for ${key}: ${details.stakingAddress}`);
+        throw new Error(`Invalid staking address for ${key}: ${details.stakingAddress}. Please update tokenDetails.cft.stakingAddress.`);
       }
       tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
       stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
       console.log(`Token contract for ${key}:`, tokenContracts[key]);
+      console.log(`Staking contract for ${key}:`, stakingContracts[key]);
       if (!details.decimals) {
         tokenDetails[key].decimals = await tokenContracts[key].decimals().call();
         console.log(`Decimals for ${key}:`, tokenDetails[key].decimals);
@@ -701,7 +703,7 @@ async function initializeTronWeb() {
     await updateAllUI();
   } catch (error) {
     console.error('Error initializing TronWeb or Contracts:', error);
-    alert(`Error initializing contracts: ${error.message}. Please refresh and try again.`);
+    alert(`Error initializing contracts: ${error.message}. Please ensure correct contract addresses and mainnet configuration.`);
   }
 }
 
@@ -747,11 +749,26 @@ async function updateTokenUI(token) {
         console.error(`Error fetching balance for ${token}:`, error);
         return '0';
       }),
-      stakingContracts[token].viewStakedAmount(userAddress).call().catch(() => '0'),
-      stakingContracts[token].viewTotalBalance(userAddress).call().catch(() => '0'),
-      stakingContracts[token].viewRemainingLockTime(userAddress).call().catch(() => '0'),
-      stakingContracts[token].viewRemainingStakeableCFT().call().catch(() => '400000000000'), // Default to 400,000 * 1e6
-      stakingContracts[token].viewAPR().call().catch(() => '30')
+      stakingContracts[token].viewStakedAmount(userAddress).call().catch(error => {
+        console.error(`Error fetching staked amount for ${token}:`, error);
+        return '0';
+      }),
+      stakingContracts[token].viewTotalBalance(userAddress).call().catch(error => {
+        console.error(`Error fetching total balance for ${token}:`, error);
+        return '0';
+      }),
+      stakingContracts[token].viewRemainingLockTime(userAddress).call().catch(error => {
+        console.error(`Error fetching remaining lock time for ${token}:`, error);
+        return '0';
+      }),
+      stakingContracts[token].viewRemainingStakeableCFT().call().catch(error => {
+        console.error(`Error fetching remaining stakeable for ${token}:`, error);
+        return '400000000000'; // Default to 400,000 * 1e6
+      }),
+      stakingContracts[token].viewAPR().call().catch(error => {
+        console.error(`Error fetching APR for ${token}:`, error);
+        return '30';
+      })
     ]);
 
     const decimals = tokenDetails[token].decimals;
@@ -851,7 +868,7 @@ async function updateTokenUI(token) {
 
   } catch (error) {
     console.error(`Error updating UI for ${token}:`, error);
-    alert(`Error updating UI for ${token}. Please check the console for details.`);
+    alert(`Error updating UI for ${token}: ${error.message}. Please check the console for details.`);
   }
 }
 
@@ -859,10 +876,10 @@ async function updateTokenUI(token) {
 async function stakeTokens(token, amount) {
   try {
     if (!isValidTronAddress(tokenDetails[token].stakingAddress)) {
-      throw new Error(`Invalid staking address: ${tokenDetails[token].stakingAddress}`);
+      throw new Error(`Invalid staking address: ${tokenDetails[token].stakingAddress}. Please update tokenDetails.cft.stakingAddress.`);
     }
     if (!isValidTronAddress(tokenDetails[token].tokenAddress)) {
-      throw new Error(`Invalid token address: ${tokenDetails[token].tokenAddress}`);
+      throw new Error(`Invalid token address: ${tokenDetails[token].tokenAddress}. Please update tokenDetails.cft.tokenAddress.`);
     }
     if (!userAddress || !isValidTronAddress(userAddress)) {
       throw new Error('Invalid user address. Please reconnect wallet.');
@@ -871,43 +888,63 @@ async function stakeTokens(token, amount) {
     const amountToStake = BigInt(amount) * BigInt(10 ** tokenDetails[token].decimals);
     const stakingContractAddress = tokenDetails[token].stakingAddress;
     const tokenContract = tokenContracts[token];
+    const stakingContract = stakingContracts[token];
 
-    if (!tokenContract) {
-      throw new Error(`Token contract for ${token} not initialized.`);
+    if (!tokenContract || !tokenContract.allowance) {
+      throw new Error(`Token contract for ${token} not properly initialized. Check token address.`);
+    }
+    if (!stakingContract || !stakingContract.stake) {
+      throw new Error(`Staking contract for ${token} not properly initialized. Check staking address.`);
     }
 
     console.log('Token Contract:', tokenContract);
+    console.log('Staking Contract:', stakingContract);
     console.log('Staking Contract Address:', stakingContractAddress);
     console.log('User Address:', userAddress);
     console.log('Amount to Stake:', amountToStake.toString());
 
+    // Test contract interaction
+    console.log('Testing balanceOf call...');
+    const balance = await tokenContracts[token].balanceOf(userAddress).call();
+    console.log('User Balance:', balance.toString());
+
+    console.log('Checking allowance...');
     const allowanceRaw = await tokenContract.allowance(userAddress, stakingContractAddress).call();
     const allowance = BigInt(allowanceRaw);
     console.log('Current Allowance:', allowance.toString());
 
     if (allowance >= amountToStake) {
       console.log(`Sufficient approval detected: ${allowance}`);
-      await stakingContracts[token].stake(amountToStake.toString()).send();
+      console.log('Sending stake transaction...');
+      await stakingContract.stake(amountToStake.toString()).send();
       console.log("Tokens staked successfully!");
     } else {
       console.log("Approval is too low. Requesting approval...");
+      console.log('Sending approve transaction...');
       await tokenContract.approve(stakingContractAddress, maxUint256).send();
       console.log("Approval granted. Proceeding with staking...");
-      await stakingContracts[token].stake(amountToStake.toString()).send();
+      console.log('Sending stake transaction after approval...');
+      await stakingContract.stake(amountToStake.toString()).send();
       console.log("Tokens staked successfully after approval!");
     }
 
     await updateTokenUI(token);
   } catch (error) {
     console.error(`Error staking tokens for ${token}:`, error);
-    alert(`Error staking tokens for ${token}: ${error.message}. Please check the console for details.`);
+    alert(`Error staking tokens for ${token}: ${error.message}. Please ensure correct contract addresses, sufficient TRX for energy, and mainnet configuration. Check the console for details.`);
   }
 }
 
 // Unstaking function
 async function unstakeTokens(token) {
   try {
-    await stakingContracts[token].withdraw().send();
+    const stakingContract = stakingContracts[token];
+    if (!stakingContract || !stakingContract.withdraw) {
+      throw new Error(`Staking contract for ${token} not properly initialized.`);
+    }
+    console.log('Sending withdraw transaction...');
+    await stakingContract.withdraw().send();
+    console.log('Unstake successful!');
     await updateTokenUI(token);
   } catch (error) {
     console.error(`Error unstaking tokens for ${token}:`, error);
@@ -922,6 +959,10 @@ for (let key in tokenDetails) {
     stakeButton.addEventListener('click', async (e) => {
       e.preventDefault();
       const amount = document.getElementById(`stake-amount-${key}`).value;
+      if (!amount || isNaN(amount) || Number(amount) <= 0) {
+        alert('Please enter a valid amount to stake.');
+        return;
+      }
       await stakeTokens(key, amount);
     });
   } else {
