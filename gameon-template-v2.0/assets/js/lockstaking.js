@@ -887,6 +887,7 @@ async function stakeTokens(token, amount) {
 
     const amountToStake = BigInt(amount) * BigInt(10 ** tokenDetails[token].decimals);
     const stakingContractAddress = tokenDetails[token].stakingAddress;
+    const tokenAddress = tokenDetails[token].tokenAddress;
     const tokenContract = tokenContracts[token];
     const stakingContract = stakingContracts[token];
 
@@ -900,6 +901,7 @@ async function stakeTokens(token, amount) {
     console.log('Token Contract:', tokenContract);
     console.log('Staking Contract:', stakingContract);
     console.log('Staking Contract Address (Base58):', stakingContractAddress);
+    console.log('Token Address (Base58):', tokenAddress);
     console.log('User Address:', userAddress);
     console.log('Amount to Stake:', amountToStake.toString());
 
@@ -928,15 +930,43 @@ async function stakeTokens(token, amount) {
         from: userAddress
       });
       try {
-        await tokenContract.methods.approve(stakingContractAddress, approvalAmount).send();
+        // Use triggerSmartContract for approve to bypass .send() issues
+        const parameter = [
+          { type: 'address', value: stakingContractAddress },
+          { type: 'uint256', value: approvalAmount }
+        ];
+
+        const transaction = await tronWeb.transactionBuilder.triggerSmartContract(
+          tokenAddress,
+          'approve(address,uint256)',
+          {},
+          parameter,
+          userAddress
+        );
+
+        if (!transaction.result || !transaction.transaction) {
+          throw new Error('Failed to create approve transaction');
+        }
+
+        console.log('Approve transaction before signing:', transaction.transaction);
+
+        const signedTx = await tronWeb.trx.sign(transaction.transaction);
+        const broadcast = await tronWeb.trx.sendRawTransaction(signedTx);
+
+        if (!broadcast.result) {
+          throw new Error('Failed to broadcast approve transaction');
+        }
+
+        console.log('Approval transaction broadcasted:', broadcast.txid);
+
         console.log('Approval granted. Proceeding with staking...');
+        console.log('Sending stake transaction after approval...');
+        await stakingContract.methods.stake(amountToStake.toString()).send();
+        console.log('Tokens staked successfully after approval!');
       } catch (approveError) {
         console.error('Approve transaction failed:', approveError);
         throw new Error(`Approve transaction failed: ${approveError.message}`);
       }
-      console.log('Sending stake transaction after approval...');
-      await stakingContract.methods.stake(amountToStake.toString()).send();
-      console.log('Tokens staked successfully after approval!');
     }
 
     await updateTokenUI(token);
