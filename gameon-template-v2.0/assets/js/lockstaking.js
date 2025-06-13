@@ -902,9 +902,9 @@ async function stakeTokens(token, amount) {
     console.log('User Address:', userAddress);
     console.log('Amount to Stake:', amountToStake.toString());
 
-    // Convert stakingContractAddress to hexadecimal
+    // Log hexadecimal address for reference
     const stakingContractAddressHex = tronWeb.address.toHex(stakingContractAddress);
-    console.log('Staking Contract Address (Hex):', stakingContractAddressHex);
+    console.log('Staking Contract Address (Hex, for reference):', stakingContractAddressHex);
 
     // Test contract interaction
     console.log('Testing balanceOf call...');
@@ -925,19 +925,18 @@ async function stakeTokens(token, amount) {
       console.log('Tokens staked successfully!');
     } else {
       console.log('Approval is too low. Requesting approval...');
-      // Use the exact amount to stake for approval (temporary for debugging)
-      const approvalAmount = amountToStake.toString();
+      const approvalAmount = amountToStake.toString(); // Use exact amount for debugging
       console.log('Sending approve transaction with amount:', approvalAmount);
       console.log('Approve parameters:', {
         spender: stakingContractAddress,
-        spenderHex: stakingContractAddressHex,
         amount: approvalAmount,
         from: userAddress
       });
       try {
-        await tokenContract.approve(stakingContractAddressHex, approvalAmount).send({
-          from: userAddress
-        });
+        // Use base58 address for approve
+        const tx = await tokenContract.approve(stakingContractAddress, approvalAmount);
+        console.log('Approve transaction object:', tx);
+        await tx.send({ from: userAddress });
         console.log('Approval granted. Proceeding with staking...');
       } catch (approveError) {
         console.error('Approve transaction failed:', approveError);
