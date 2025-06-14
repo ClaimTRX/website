@@ -11,7 +11,7 @@ const TRONGRID_API_URL = 'https://api.trongrid.io'; // Mainnet
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // CFT token address (mainnet)
-    stakingAddress: 'TMEMRDCrzqEZ6cK2U1SQbzxmoerMwueRvw', // CFTStaking address (mainnet)
+    stakingAddress: 'TFRaWd2qpgEVXi2mqNjV9sM6Uwx1gNB1fV', // CFTStaking address (mainnet)
     decimals: 6,
     rewardDecimals: 6, // Match token decimals, as rewards are scaled by 10^6
     displayName: 'CFT'
@@ -199,7 +199,33 @@ const stakingContractAbi = [
         "type": "uint256"
       }
     ],
-    "name": "RewardsAdded",
+    "name": "RewardsDeposited",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newMax",
+        "type": "uint256"
+      }
+    ],
+    "name": "MaxStakePerWalletUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newMax",
+        "type": "uint256"
+      }
+    ],
+    "name": "MaxTotalStakedUpdated",
     "type": "event"
   },
   {
@@ -210,7 +236,33 @@ const stakingContractAbi = [
         "type": "uint256"
       }
     ],
-    "name": "addRewards",
+    "name": "depositRewards",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_maxStakePerWallet",
+        "type": "uint256"
+      }
+    ],
+    "name": "setMaxStakePerWallet",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_maxTotalStaked",
+        "type": "uint256"
+      }
+    ],
+    "name": "setMaxTotalStaked",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -428,6 +480,32 @@ const stakingContractAbi = [
   },
   {
     "inputs": [],
+    "name": "viewTotalStaked",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "viewTotalDepositedRewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "viewTotalEarnedRewards",
     "outputs": [
       {
@@ -441,7 +519,7 @@ const stakingContractAbi = [
   },
   {
     "inputs": [],
-    "name": "viewTotalRemainingRewards",
+    "name": "viewTotalClaimedRewards",
     "outputs": [
       {
         "internalType": "uint256",
@@ -454,7 +532,7 @@ const stakingContractAbi = [
   },
   {
     "inputs": [],
-    "name": "viewTotalStaked",
+    "name": "viewTotalUnclaimedRewards",
     "outputs": [
       {
         "internalType": "uint256",
@@ -792,7 +870,19 @@ async function retryContractCall(fn, maxRetries = 3, delayMs = 1000) {
 // Update UI for a specific token
 async function updateTokenUI(token) {
   try {
-    const [balanceRaw, stakedAmount, totalBalance, lockEndTime, remainingStakeable, apr, pendingReward, earnedReward] = await Promise.all([
+    const [
+      balanceRaw,
+      stakedAmount,
+      totalBalance,
+      lockEndTime,
+      remainingStakeable,
+      apr,
+      pendingReward,
+      totalDepositedRewards,
+      totalEarnedRewards,
+      totalClaimedRewards,
+      totalUnclaimedRewards
+    ] = await Promise.all([
       tokenContracts[token].methods.balanceOf(userAddress).call().catch(error => {
         console.error(`Error fetching balance for ${token}:`, error);
         return '0';
@@ -821,34 +911,42 @@ async function updateTokenUI(token) {
         console.error(`Error fetching pending reward for ${token} after retries:`, error);
         return '0';
       }),
-      retryContractCall(() => stakingContracts[token].methods.earned(userAddress).call()).catch(error => {
-        console.error(`Error fetching earned reward for ${token} after retries:`, error);
+      stakingContracts[token].methods.viewTotalDepositedRewards().call().catch(error => {
+        console.error(`Error fetching total deposited rewards for ${token}:`, error);
+        return '0';
+      }),
+      stakingContracts[token].methods.viewTotalEarnedRewards().call().catch(error => {
+        console.error(`Error fetching total earned rewards for ${token}:`, error);
+        return '0';
+      }),
+      stakingContracts[token].methods.viewTotalClaimedRewards().call().catch(error => {
+        console.error(`Error fetching total claimed rewards for ${token}:`, error);
+        return '0';
+      }),
+      stakingContracts[token].methods.viewTotalUnclaimedRewards().call().catch(error => {
+        console.error(`Error fetching total unclaimed rewards for ${token}:`, error);
         return '0';
       })
     ]);
 
     const decimals = tokenDetails[token].decimals;
-    const rewardDecimals = tokenDetails[token].rewardDecimals || decimals; // Use decimals if rewardDecimals not set
+    const rewardDecimals = tokenDetails[token].rewardDecimals || decimals;
     const tokenName = tokenDetails[token].displayName || token.toUpperCase();
 
     // Calculate remaining lock time from lock end time
-    const currentTimestamp = Math.floor(Date.now() / 1000); // Current time in seconds
+    const currentTimestamp = Math.floor(Date.now() / 1000);
     const remainingLockTime = Number(lockEndTime) > 0 ? Math.max(0, Number(lockEndTime) - currentTimestamp) : 0;
 
-    // Log raw reward values for debugging
+    // Log raw values for debugging
     console.log(`Raw pendingReward for ${token}:`, pendingReward);
-    console.log(`Raw earnedReward for ${token}:`, earnedReward);
     console.log(`Raw totalBalance for ${token}:`, totalBalance);
     console.log(`Raw stakedAmount for ${token}:`, stakedAmount);
     console.log(`Raw lockEndTime for ${token}:`, lockEndTime);
+    console.log(`Raw totalDepositedRewards for ${token}:`, totalDepositedRewards);
+    console.log(`Raw totalEarnedRewards for ${token}:`, totalEarnedRewards);
+    console.log(`Raw totalClaimedRewards for ${token}:`, totalClaimedRewards);
+    console.log(`Raw totalUnclaimedRewards for ${token}:`, totalUnclaimedRewards);
     console.log(`Calculated remainingLockTime for ${token}:`, remainingLockTime);
-
-    // Use the highest non-zero reward value
-    let rewardsRaw = pendingReward !== '0' ? pendingReward : earnedReward;
-    if (rewardsRaw === '0' && BigInt(totalBalance) > BigInt(stakedAmount)) {
-      rewardsRaw = (BigInt(totalBalance) - BigInt(stakedAmount)).toString();
-      console.log(`Calculated rewards from totalBalance - stakedAmount:`, rewardsRaw);
-    }
 
     // Update available tokens (wallet balance)
     const balance = (Number(balanceRaw) / Math.pow(10, decimals)).toFixed(6);
@@ -871,8 +969,8 @@ async function updateTokenUI(token) {
     }
     await delay(200);
 
-    // Update earned rewards with correct decimal scaling
-    const rewards = (Number(rewardsRaw) / Math.pow(10, rewardDecimals)).toFixed(6);
+    // Update earned rewards
+    const rewards = (Number(pendingReward) / Math.pow(10, rewardDecimals)).toFixed(6);
     const rewardsElement = document.getElementById(`earned-rewards-${token}`);
     if (rewardsElement) {
       rewardsElement.innerText = rewards;
@@ -918,6 +1016,46 @@ async function updateTokenUI(token) {
       aprElement.innerText = `${Number(apr)}%`;
     } else {
       console.error(`Element staking-apr-${token} not found`);
+    }
+    await delay(200);
+
+    // Update total deposited rewards
+    const depositedRewards = (Number(totalDepositedRewards) / Math.pow(10, rewardDecimals)).toFixed(6);
+    const depositedRewardsElement = document.getElementById(`total-deposited-rewards-${token}`);
+    if (depositedRewardsElement) {
+      depositedRewardsElement.innerText = depositedRewards;
+    } else {
+      console.warn(`Element total-deposited-rewards-${token} not found`);
+    }
+    await delay(200);
+
+    // Update total earned rewards
+    const earnedRewards = (Number(totalEarnedRewards) / Math.pow(10, rewardDecimals)).toFixed(6);
+    const earnedRewardsElement = document.getElementById(`total-earned-rewards-${token}`);
+    if (earnedRewardsElement) {
+      earnedRewardsElement.innerText = earnedRewards;
+    } else {
+      console.warn(`Element total-earned-rewards-${token} not found`);
+    }
+    await delay(200);
+
+    // Update total claimed rewards
+    const claimedRewards = (Number(totalClaimedRewards) / Math.pow(10, rewardDecimals)).toFixed(6);
+    const claimedRewardsElement = document.getElementById(`total-claimed-rewards-${token}`);
+    if (claimedRewardsElement) {
+      claimedRewardsElement.innerText = claimedRewards;
+    } else {
+      console.warn(`Element total-claimed-rewards-${token} not found`);
+    }
+    await delay(200);
+
+    // Update total unclaimed rewards
+    const unclaimedRewards = (Number(totalUnclaimedRewards) / Math.pow(10, rewardDecimals)).toFixed(6);
+    const unclaimedRewardsElement = document.getElementById(`total-unclaimed-rewards-${token}`);
+    if (unclaimedRewardsElement) {
+      unclaimedRewardsElement.innerText = unclaimedRewards;
+    } else {
+      console.warn(`Element total-unclaimed-rewards-${token} not found`);
     }
     await delay(200);
 
@@ -995,6 +1133,12 @@ async function stakeTokens(token, amount) {
       throw new Error(`Staking contract for ${token} not properly initialized. Check staking address.`);
     }
 
+    // Check balance
+    const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
+    if (BigInt(balanceRaw) < amountToStake) {
+      throw new Error('Insufficient balance to stake.');
+    }
+
     console.log('Token Contract:', tokenContract);
     console.log('Staking Contract:', stakingContract);
     console.log('Staking Contract Address (Base58):', stakingContractAddress);
@@ -1002,108 +1146,40 @@ async function stakeTokens(token, amount) {
     console.log('User Address:', userAddress);
     console.log('Amount to Stake:', amountToStake.toString());
 
-    // Test contract interaction
-    console.log('Testing balanceOf call...');
-    const balance = await tokenContract.methods.balanceOf(userAddress).call();
-    console.log('User Balance:', balance.toString());
-
     console.log('Checking allowance...');
     const allowanceRaw = await tokenContract.methods.allowance(userAddress, stakingContractAddress).call();
     const allowance = BigInt(allowanceRaw);
     console.log('Current Allowance:', allowance.toString());
 
-    if (allowance >= amountToStake) {
-      console.log(`Sufficient approval detected: ${allowance}`);
-      console.log('Sending stake transaction...');
-      await stakingContract.methods.stake(amountToStake.toString()).send();
-      console.log('Tokens staked successfully!');
-    } else {
+    if (allowance < amountToStake) {
       console.log('Approval is too low. Requesting approval...');
-      const approvalAmount = maxUint256; // Use maxUint256 as in the working code
-      console.log('Sending approve transaction with amount:', approvalAmount);
-      console.log('Approve parameters:', {
-        spender: stakingContractAddress,
-        amount: approvalAmount,
-        from: userAddress
-      });
-      try {
-        // Use triggerSmartContract for approve to bypass .send() issues
-        const parameter = [
-          { type: 'address', value: stakingContractAddress },
-          { type: 'uint256', value: approvalAmount }
-        ];
+      const approvalAmount = maxUint256;
+      const parameter = [
+        { type: 'address', value: stakingContractAddress },
+        { type: 'uint256', value: approvalAmount }
+      ];
 
-        const transaction = await tronWeb.transactionBuilder.triggerSmartContract(
-          tokenAddress,
-          'approve(address,uint256)',
-          {},
-          parameter,
-          userAddress
-        );
+      const transaction = await tronWeb.transactionBuilder.triggerSmartContract(
+        tokenAddress,
+        'approve(address,uint256)',
+        {},
+        parameter,
+        userAddress
+      );
 
-        if (!transaction.result || !transaction.transaction) {
-          throw new Error('Failed to create approve transaction');
-        }
-
-        console.log('Approve transaction before signing:', transaction.transaction);
-
-        const signedTx = await tronWeb.trx.sign(transaction.transaction);
-        const broadcast = await tronWeb.trx.sendRawTransaction(signedTx);
-
-        if (!broadcast.result) {
-          throw new Error('Failed to broadcast approve transaction');
-        }
-
-        console.log('Approval transaction broadcasted:', broadcast.txid);
-
-        console.log('Approval granted. Proceeding with staking...');
-        console.log('Sending stake transaction after approval...');
-        await stakingContract.methods.stake(amountToStake.toString()).send();
-        console.log('Tokens staked successfully after approval!');
-      } catch (approveError) {
-        console.error('Approve transaction failed:', approveError);
-        throw new Error(`Approve transaction failed: ${approveError.message}`);
+      if (!transaction.result || !transaction.transaction) {
+        throw new Error('Failed to create approve transaction');
       }
+
+      const signedTx = await tronWeb.trx.sign(transaction.transaction);
+      const broadcast = await tronWeb.trx.sendRawTransaction(signedTx);
+
+      if (!broadcast.result) {
+        throw new Error('Failed to broadcast approve transaction');
+      }
+
+      console.log('Approval transaction broadcasted:', broadcast.txid);
     }
 
-    await updateTokenUI(token);
-  } catch (error) {
-    console.error(`Error staking tokens for ${token}:`, error);
-    alert(`Error staking tokens for ${token}: ${error.message}. Please ensure correct contract addresses, sufficient TRX for energy, and mainnet configuration. Check the console for details.`);
-  }
-}
-
-// Unstaking function
-async function unstakeTokens(token) {
-  try {
-    const stakingContract = stakingContracts[token];
-    if (!stakingContract || !stakingContract.methods.withdraw) {
-      throw new Error(`Staking contract for ${token} not properly initialized.`);
-    }
-    console.log('Sending withdraw transaction...');
-    await stakingContract.methods.withdraw().send();
-    console.log('Unstake successful!');
-    await updateTokenUI(token);
-  } catch (error) {
-    console.error(`Error unstaking tokens for ${token}:`, error);
-    alert(`Error unstaking tokens for ${token}: ${error.message}. Please check the console for details.`);
-  }
-}
-
-// Attach event listeners dynamically
-for (let key in tokenDetails) {
-  const stakeButton = document.getElementById(`stake-button-${key}`);
-  if (stakeButton) {
-    stakeButton.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const amount = document.getElementById(`stake-amount-${key}`).value;
-      if (!amount || isNaN(amount) || Number(amount) <= 0) {
-        alert('Please enter a valid amount to stake.');
-        return;
-      }
-      await stakeTokens(key, amount);
-    });
-  } else {
-    console.error(`Stake button for ${key} not found`);
-  }
-}
+    console.log('Sending stake transaction...');
+    const
