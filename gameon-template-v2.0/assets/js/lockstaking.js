@@ -751,6 +751,25 @@ const tokenContractAbi = [
   }
 ];
 
+// Show transaction processing modal
+function showProcessingModal() {
+  const modalElement = document.getElementById('transaction-processing-modal');
+  if (!modalElement) {
+    console.error('Transaction processing modal element not found');
+    throw new Error('Transaction processing modal not found in the page.');
+  }
+  const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
+  modal.show();
+  return modal;
+}
+
+// Hide transaction processing modal
+function hideProcessingModal(modal) {
+  if (modal) {
+    modal.hide();
+  }
+}
+
 // Check user's available energy
 async function checkUserEnergy(address) {
   try {
@@ -789,7 +808,9 @@ async function checkDelegatorEnergy(requiredAmount) {
 
 // Request energy rental
 async function requestEnergyRental(rentalEnergy, rentalCostTrx) {
+  let processingModal = null;
   try {
+    processingModal = showProcessingModal();
     if (!userAddress) {
       throw new Error('Please connect your wallet first.');
     }
@@ -824,8 +845,11 @@ async function requestEnergyRental(rentalEnergy, rentalCostTrx) {
     }
 
     console.log('Waiting for energy delegation...');
-    return await pollDelegationStatus(data.requestId);
+    const delegationResult = await pollDelegationStatus(data.requestId);
+    hideProcessingModal(processingModal);
+    return delegationResult;
   } catch (error) {
+    hideProcessingModal(processingModal);
     console.error('Error requesting energy rental:', error);
     throw error;
   }
@@ -1256,6 +1280,7 @@ async function updateTokenUI(token) {
 
 // Staking function
 async function stakeTokens(token, amount) {
+  let processingModal = null;
   try {
     if (!isValidTronAddress(tokenDetails[token].stakingAddress)) {
       throw new Error(`Invalid staking address: ${tokenDetails[token].stakingAddress}. Please update tokenDetails.cft.stakingAddress.`);
@@ -1291,6 +1316,8 @@ async function stakeTokens(token, amount) {
         throw new Error('Insufficient energy available from delegator. Please try again later.');
       }
     }
+
+    processingModal = showProcessingModal();
 
     const amountToStake = BigInt(amount) * BigInt(10 ** tokenDetails[token].decimals);
     const stakingContractAddress = tokenDetails[token].stakingAddress;
@@ -1374,8 +1401,10 @@ async function stakeTokens(token, amount) {
     }
 
     console.log('Stake transaction broadcasted:', broadcastStake.txid);
+    hideProcessingModal(processingModal);
     await updateTokenUI(token);
   } catch (error) {
+    hideProcessingModal(processingModal);
     console.error(`Error staking tokens for ${token}:`, error);
     alert(`Error staking tokens for ${token}: ${error.message}. Please ensure sufficient TRX for energy and correct contract addresses.`);
   }
@@ -1383,6 +1412,7 @@ async function stakeTokens(token, amount) {
 
 // Unstaking function
 async function unstakeTokens(token) {
+  let processingModal = null;
   try {
     const stakingContract = stakingContracts[token];
     if (!stakingContract || !stakingContract.methods.withdraw) {
@@ -1413,6 +1443,8 @@ async function unstakeTokens(token) {
         throw new Error('Insufficient energy available from delegator. Please try again later.');
       }
     }
+
+    processingModal = showProcessingModal();
 
     // Check if user has staked and if lock period has ended
     const [stakedAmount, lockEndTime] = await Promise.all([
@@ -1450,8 +1482,10 @@ async function unstakeTokens(token) {
     }
 
     console.log('Withdraw transaction broadcasted:', broadcastWithdraw.txid);
+    hideProcessingModal(processingModal);
     await updateTokenUI(token);
   } catch (error) {
+    hideProcessingModal(processingModal);
     console.error(`Error unstaking tokens for ${token}:`, error);
     alert(`Error unstaking tokens for ${token}: ${error.message}. Please check the console for details.`);
   }
