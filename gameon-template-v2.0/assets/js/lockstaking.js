@@ -1039,25 +1039,9 @@ async function updateTokenUI(token) {
     }
     await delay(200);
 
-    // Update total claimed rewards
-    const claimedRewards = (Number(totalClaimedRewards) / Math.pow(10, rewardDecimals)).toFixed(6);
-    const claimedRewardsElement = document.getElementById(`total-claimed-rewards-${token}`);
-    if (claimedRewardsElement) {
-      claimedRewardsElement.innerText = claimedRewards;
-    } else {
-      console.warn(`Element total-claimed-rewards-${token} not found`);
-    }
-    await delay(200);
+    
 
-    // Update total unclaimed rewards
-    const unclaimedRewards = (Number(totalUnclaimedRewards) / Math.pow(10, rewardDecimals)).toFixed(6);
-    const unclaimedRewardsElement = document.getElementById(`total-unclaimed-rewards-${token}`);
-    if (unclaimedRewardsElement) {
-      unclaimedRewardsElement.innerText = unclaimedRewards;
-    } else {
-      console.warn(`Element total-unclaimed-rewards-${token} not found`);
-    }
-    await delay(200);
+    
 
     // Toggle Deposit and Withdraw sections
     const hasStaked = BigInt(stakedAmount) > 0;
@@ -1260,135 +1244,11 @@ async function unstakeTokens(token) {
   }
 }
 
-// Owner function: Deposit rewards
-async function depositRewards(token, amount) {
-  try {
-    const stakingContract = stakingContracts[token];
-    const tokenContract = tokenContracts[token];
-    const stakingContractAddress = tokenDetails[token].stakingAddress;
 
-    if (!stakingContract || !stakingContract.methods.depositRewards) {
-      throw new Error(`Staking contract for ${token} not properly initialized.`);
-    }
 
-    const amountToDeposit = BigInt(amount) * BigInt(10 ** tokenDetails[token].decimals);
+    
 
-    // Check balance
-    const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
-    if (BigInt(balanceRaw) < amountToDeposit) {
-      throw new Error('Insufficient balance to deposit rewards.');
-    }
 
-    // Approve tokens
-    const allowanceRaw = await tokenContract.methods.allowance(userAddress, stakingContractAddress).call();
-    if (BigInt(allowanceRaw) < amountToDeposit) {
-      const approvalAmount = maxUint256;
-      const approveTx = await tronWeb.transactionBuilder.triggerSmartContract(
-        tokenDetails[token].tokenAddress,
-        'approve(address,uint256)',
-        {},
-        [
-          { type: 'address', value: stakingContractAddress },
-          { type: 'uint256', value: approvalAmount }
-        ],
-        userAddress
-      );
-
-      const signedApproveTx = await tronWeb.trx.sign(approveTx.transaction);
-      const broadcastApprove = await tronWeb.trx.sendRawTransaction(signedApproveTx);
-
-      if (!broadcastApprove.result) {
-        throw new Error('Failed to broadcast approve transaction');
-      }
-    }
-
-    // Deposit rewards
-    const depositTx = await tronWeb.transactionBuilder.triggerSmartContract(
-      stakingContractAddress,
-      'depositRewards(uint256)',
-      {},
-      [{ type: 'uint256', value: amountToDeposit.toString() }],
-      userAddress
-    );
-
-    const signedDepositTx = await tronWeb.trx.sign(depositTx.transaction);
-    const broadcastDeposit = await tronWeb.trx.sendRawTransaction(signedDepositTx);
-
-    if (!broadcastDeposit.result) {
-      throw new Error('Failed to broadcast deposit rewards transaction');
-    }
-
-    console.log('Rewards deposited:', broadcastDeposit.txid);
-    await updateTokenUI(token);
-  } catch (error) {
-    console.error(`Error depositing rewards for ${token}:`, error);
-    alert(`Error depositing rewards: ${error.message}. Ensure you are the owner and have sufficient balance.`);
-  }
-}
-
-// Owner function: Set max stake per wallet
-async function setMaxStakePerWallet(token, maxStake) {
-  try {
-    const stakingContract = stakingContracts[token];
-    if (!stakingContract || !stakingContract.methods.setMaxStakePerWallet) {
-      throw new Error(`Staking contract for ${token} not properly initialized.`);
-    }
-
-    const maxStakeRaw = BigInt(maxStake) * BigInt(10 ** tokenDetails[token].decimals);
-    const tx = await tronWeb.transactionBuilder.triggerSmartContract(
-      tokenDetails[token].stakingAddress,
-      'setMaxStakePerWallet(uint256)',
-      {},
-      [{ type: 'uint256', value: maxStakeRaw.toString() }],
-      userAddress
-    );
-
-    const signedTx = await tronWeb.trx.sign(tx.transaction);
-    const broadcast = await tronWeb.trx.sendRawTransaction(signedTx);
-
-    if (!broadcast.result) {
-      throw new Error('Failed to broadcast setMaxStakePerWallet transaction');
-    }
-
-    console.log('Max stake per wallet updated:', broadcast.txid);
-    await updateTokenUI(token);
-  } catch (error) {
-    console.error(`Error setting max stake per wallet for ${token}:`, error);
-    alert(`Error setting max stake per wallet: ${error.message}. Ensure you are the owner.`);
-  }
-}
-
-// Owner function: Set max total staked
-async function setMaxTotalStaked(token, maxTotal) {
-  try {
-    const stakingContract = stakingContracts[token];
-    if (!stakingContract || !stakingContract.methods.setMaxTotalStaked) {
-      throw new Error(`Staking contract for ${token} not properly initialized.`);
-    }
-
-    const maxTotalRaw = BigInt(maxTotal) * BigInt(10 ** tokenDetails[token].decimals);
-    const tx = await tronWeb.transactionBuilder.triggerSmartContract(
-      tokenDetails[token].stakingAddress,
-      'setMaxTotalStaked(uint256)',
-      {},
-      [{ type: 'uint256', value: maxTotalRaw.toString() }],
-      userAddress
-    );
-
-    const signedTx = await tronWeb.trx.sign(tx.transaction);
-    const broadcast = await tronWeb.trx.sendRawTransaction(signedTx);
-
-    if (!broadcast.result) {
-      throw new Error('Failed to broadcast setMaxTotalStaked transaction');
-    }
-
-    console.log('Max total staked updated:', broadcast.txid);
-    await updateTokenUI(token);
-  } catch (error) {
-    console.error(`Error setting max total staked for ${token}:`, error);
-    alert(`Error setting max total staked: ${error.message}. Ensure you are the owner and value is valid.`);
-  }
-}
 
 // Attach event listeners dynamically
 for (let key in tokenDetails) {
