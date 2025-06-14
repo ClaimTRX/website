@@ -101,6 +101,68 @@
 			margin-top: 10px;
 		}
 
+		/* Energy rental modal styling */
+		#energy-rental-modal .modal-content {
+			background: #111;
+			border: 1px solid #444;
+			border-radius: 6px;
+			color: #fff;
+		}
+
+		#energy-rental-modal .modal-header {
+			border-bottom: 1px solid #444;
+			padding: 15px;
+		}
+
+		#energy-rental-modal .modal-title {
+			font-size: 1.5em;
+			color: #fff;
+		}
+
+		#energy-rental-modal .modal-body {
+			padding: 20px;
+			text-align: center;
+		}
+
+		#energy-rental-modal .modal-body p {
+			margin-bottom: 15px;
+			font-size: 1.1em;
+		}
+
+		#energy-rental-modal .modal-footer {
+			border-top: 1px solid #444;
+			padding: 15px;
+			justify-content: center;
+		}
+
+		#energy-rental-modal .btn-rent {
+			background: #00ff88;
+			color: #111;
+			border: none;
+			padding: 10px 20px;
+			border-radius: 6px;
+			font-weight: bold;
+			transition: background 0.3s;
+		}
+
+		#energy-rental-modal .btn-rent:hover {
+			background: #00cc66;
+		}
+
+		#energy-rental-modal .btn-cancel {
+			background: #ff4d4d;
+			color: #fff;
+			border: none;
+			padding: 10px 20px;
+			border-radius: 6px;
+			font-weight: bold;
+			transition: background 0.3s;
+		}
+
+		#energy-rental-modal .btn-cancel:hover {
+			background: #cc3333;
+		}
+
 		@media (max-width: 768px) {
 			.staking-info .apr-apy-pair {
 				flex-direction: column;
@@ -109,6 +171,10 @@
 
 			.owner-controls {
 				padding: 15px;
+			}
+
+			#energy-rental-modal .modal-body p {
+				font-size: 1em;
 			}
 		}
 	</style>
@@ -238,7 +304,6 @@
 										<div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
 											<div class="col-4 single-item apr-apy-pair">
 												<div><span id="staking-apr-cft">30%</span><span> APR</span></div>
-												
 											</div>
 											<div class="col-4 single-item"><span id="total-balance-cft">0.000000 CFT</span><span>Total Balance</span></div>
 											<div class="col-4 single-item"><span id="remaining-lock-time-cft">Unlocked</span><span>Unlock Time</span></div>
@@ -309,6 +374,27 @@
 			</div>
 		</section>
 		<!-- ***** CTA Area End ***** -->
+
+		<!-- ***** Energy Rental Modal Start ***** -->
+		<div class="modal fade" id="energy-rental-modal" tabindex="-1" aria-labelledby="energyRentalModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="energyRentalModalLabel">Insufficient Energy</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+					</div>
+					<div class="modal-body">
+						<p>Your wallet has <span id="user-energy">0</span> energy available, but <span id="required-energy">200,000</span> energy is required for this transaction.</p>
+						<p>Rent <span id="rental-energy">200,000</span> energy for <span id="rental-duration">5</span> minutes at a cost of <span id="rental-cost">2</span> TRX?</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
+						<button type="button" class="btn btn-rent" id="rent-energy-confirm">Rent Energy</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- ***** Energy Rental Modal End ***** -->
 
 		<!--====== Footer Area Start ======-->
 		<footer class="footer-area">
