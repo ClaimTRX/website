@@ -1182,4 +1182,270 @@ async function stakeTokens(token, amount) {
     }
 
     console.log('Sending stake transaction...');
-    const
+    const stakeTx = await tronWeb.transactionBuilder.triggerSmartContract(
+      stakingContractAddress,
+      'stake(uint256)',
+      {},
+      [{ type: 'uint256', value: amountToStake.toString() }],
+      userAddress
+    );
+
+    if (!stakeTx.result || !stakeTx.transaction) {
+      throw new Error('Failed to create stake transaction');
+    }
+
+    const signedStakeTx = await tronWeb.trx.sign(stakeTx.transaction);
+    const broadcastStake = await tronWeb.trx.sendRawTransaction(signedStakeTx);
+
+    if (!broadcastStake.result) {
+      throw new Error('Failed to broadcast stake transaction');
+    }
+
+    console.log('Stake transaction broadcasted:', broadcastStake.txid);
+    await updateTokenUI(token);
+  } catch (error) {
+    console.error(`Error staking tokens for ${token}:`, error);
+    alert(`Error staking tokens for ${token}: ${error.message}. Please ensure sufficient TRX for energy and correct contract addresses.`);
+  }
+}
+
+// Unstaking function
+async function unstakeTokens(token) {
+  try {
+    const stakingContract = stakingContracts[token];
+    if (!stakingContract || !stakingContract.methods.withdraw) {
+      throw new Error(`Staking contract for ${token} not properly initialized.`);
+    }
+
+    // Check if user has staked and if lock period has ended
+    const [stakedAmount, lockEndTime] = await Promise.all([
+      stakingContract.methods.viewStakedAmount(userAddress).call(),
+      stakingContract.methods.viewUserLockEndTime(userAddress).call()
+    ]);
+
+    if (BigInt(stakedAmount) === 0n) {
+      throw new Error('No staked tokens to withdraw.');
+    }
+
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    if (Number(lockEndTime) > currentTimestamp && !(await stakingContract.methods.emergencyUnlock().call())) {
+      throw new Error('Tokens are still locked.');
+    }
+
+    console.log('Sending withdraw transaction...');
+    const withdrawTx = await tronWeb.transactionBuilder.triggerSmartContract(
+      tokenDetails[token].stakingAddress,
+      'withdraw()',
+      {},
+      [],
+      userAddress
+    );
+
+    if (!withdrawTx.result || !withdrawTx.transaction) {
+      throw new Error('Failed to create withdraw transaction');
+    }
+
+    const signedWithdrawTx = await tronWeb.trx.sign(withdrawTx.transaction);
+    const broadcastWithdraw = await tronWeb.trx.sendRawTransaction(signedWithdrawTx);
+
+    if (!broadcastWithdraw.result) {
+      throw new Error('Failed to broadcast withdraw transaction');
+    }
+
+    console.log('Withdraw transaction broadcasted:', broadcastWithdraw.txid);
+    await updateTokenUI(token);
+  } catch (error) {
+    console.error(`Error unstaking tokens for ${token}:`, error);
+    alert(`Error unstaking tokens for ${token}: ${error.message}. Please check the console for details.`);
+  }
+}
+
+// Owner function: Deposit rewards
+async function depositRewards(token, amount) {
+  try {
+    const stakingContract = stakingContracts[token];
+    const tokenContract = tokenContracts[token];
+    const stakingContractAddress = tokenDetails[token].stakingAddress;
+
+    if (!stakingContract || !stakingContract.methods.depositRewards) {
+      throw new Error(`Staking contract for ${token} not properly initialized.`);
+    }
+
+    const amountToDeposit = BigInt(amount) * BigInt(10 ** tokenDetails[token].decimals);
+
+    // Check balance
+    const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
+    if (BigInt(balanceRaw) < amountToDeposit) {
+      throw new Error('Insufficient balance to deposit rewards.');
+    }
+
+    // Approve tokens
+    const allowanceRaw = await tokenContract.methods.allowance(userAddress, stakingContractAddress).call();
+    if (BigInt(allowanceRaw) < amountToDeposit) {
+      const approvalAmount = maxUint256;
+      const approveTx = await tronWeb.transactionBuilder.triggerSmartContract(
+        tokenDetails[token].tokenAddress,
+        'approve(address,uint256)',
+        {},
+        [
+          { type: 'address', value: stakingContractAddress },
+          { type: 'uint256', value: approvalAmount }
+        ],
+        userAddress
+      );
+
+      const signedApproveTx = await tronWeb.trx.sign(approveTx.transaction);
+      const broadcastApprove = await tronWeb.trx.sendRawTransaction(signedApproveTx);
+
+      if (!broadcastApprove.result) {
+        throw new Error('Failed to broadcast approve transaction');
+      }
+    }
+
+    // Deposit rewards
+    const depositTx = await tronWeb.transactionBuilder.triggerSmartContract(
+      stakingContractAddress,
+      'depositRewards(uint256)',
+      {},
+      [{ type: 'uint256', value: amountToDeposit.toString() }],
+      userAddress
+    );
+
+    const signedDepositTx = await tronWeb.trx.sign(depositTx.transaction);
+    const broadcastDeposit = await tronWeb.trx.sendRawTransaction(signedDepositTx);
+
+    if (!broadcastDeposit.result) {
+      throw new Error('Failed to broadcast deposit rewards transaction');
+    }
+
+    console.log('Rewards deposited:', broadcastDeposit.txid);
+    await updateTokenUI(token);
+  } catch (error) {
+    console.error(`Error depositing rewards for ${token}:`, error);
+    alert(`Error depositing rewards: ${error.message}. Ensure you are the owner and have sufficient balance.`);
+  }
+}
+
+// Owner function: Set max stake per wallet
+async function setMaxStakePerWallet(token, maxStake) {
+  try {
+    const stakingContract = stakingContracts[token];
+    if (!stakingContract || !stakingContract.methods.setMaxStakePerWallet) {
+      throw new Error(`Staking contract for ${token} not properly initialized.`);
+    }
+
+    const maxStakeRaw = BigInt(maxStake) * BigInt(10 ** tokenDetails[token].decimals);
+    const tx = await tronWeb.transactionBuilder.triggerSmartContract(
+      tokenDetails[token].stakingAddress,
+      'setMaxStakePerWallet(uint256)',
+      {},
+      [{ type: 'uint256', value: maxStakeRaw.toString() }],
+      userAddress
+    );
+
+    const signedTx = await tronWeb.trx.sign(tx.transaction);
+    const broadcast = await tronWeb.trx.sendRawTransaction(signedTx);
+
+    if (!broadcast.result) {
+      throw new Error('Failed to broadcast setMaxStakePerWallet transaction');
+    }
+
+    console.log('Max stake per wallet updated:', broadcast.txid);
+    await updateTokenUI(token);
+  } catch (error) {
+    console.error(`Error setting max stake per wallet for ${token}:`, error);
+    alert(`Error setting max stake per wallet: ${error.message}. Ensure you are the owner.`);
+  }
+}
+
+// Owner function: Set max total staked
+async function setMaxTotalStaked(token, maxTotal) {
+  try {
+    const stakingContract = stakingContracts[token];
+    if (!stakingContract || !stakingContract.methods.setMaxTotalStaked) {
+      throw new Error(`Staking contract for ${token} not properly initialized.`);
+    }
+
+    const maxTotalRaw = BigInt(maxTotal) * BigInt(10 ** tokenDetails[token].decimals);
+    const tx = await tronWeb.transactionBuilder.triggerSmartContract(
+      tokenDetails[token].stakingAddress,
+      'setMaxTotalStaked(uint256)',
+      {},
+      [{ type: 'uint256', value: maxTotalRaw.toString() }],
+      userAddress
+    );
+
+    const signedTx = await tronWeb.trx.sign(tx.transaction);
+    const broadcast = await tronWeb.trx.sendRawTransaction(signedTx);
+
+    if (!broadcast.result) {
+      throw new Error('Failed to broadcast setMaxTotalStaked transaction');
+    }
+
+    console.log('Max total staked updated:', broadcast.txid);
+    await updateTokenUI(token);
+  } catch (error) {
+    console.error(`Error setting max total staked for ${token}:`, error);
+    alert(`Error setting max total staked: ${error.message}. Ensure you are the owner and value is valid.`);
+  }
+}
+
+// Attach event listeners dynamically
+for (let key in tokenDetails) {
+  const stakeButton = document.getElementById(`stake-button-${key}`);
+  if (stakeButton) {
+    stakeButton.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const amount = document.getElementById(`stake-amount-${key}`).value;
+      if (!amount || isNaN(amount) || Number(amount) <= 0) {
+        alert('Please enter a valid amount to stake.');
+        return;
+      }
+      await stakeTokens(key, amount);
+    });
+  } else {
+    console.error(`Stake button for ${key} not found`);
+  }
+
+  // Add event listener for deposit rewards button (owner only)
+  const depositRewardsButton = document.getElementById(`deposit-rewards-button-${key}`);
+  if (depositRewardsButton) {
+    depositRewardsButton.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const amount = document.getElementById(`deposit-rewards-amount-${key}`).value;
+      if (!amount || isNaN(amount) || Number(amount) <= 0) {
+        alert('Please enter a valid amount to deposit.');
+        return;
+      }
+      await depositRewards(key, amount);
+    });
+  }
+
+  // Add event listener for set max stake per wallet button (owner only)
+  const setMaxStakeButton = document.getElementById(`set-max-stake-button-${key}`);
+  if (setMaxStakeButton) {
+    setMaxStakeButton.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const maxStake = document.getElementById(`max-stake-amount-${key}`).value;
+      if (!maxStake || isNaN(maxStake) || Number(maxStake) <= 0) {
+        alert('Please enter a valid max stake amount.');
+        return;
+      }
+      await setMaxStakePerWallet(key, maxStake);
+    });
+  }
+
+  // Add event listener for set max total staked button (owner only)
+  const setMaxTotalButton = document.getElementById(`set-max-total-button-${key}`);
+  if (setMaxTotalButton) {
+    setMaxTotalButton.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const maxTotal = document.getElementById(`max-total-amount-${key}`).value;
+      if (!maxTotal || isNaN(maxTotal) || Number(maxTotal) <= 0) {
+        alert('Please enter a valid max total staked amount.');
+        return;
+      }
+      await setMaxTotalStaked(key, maxTotal);
+    });
+  }
+}
