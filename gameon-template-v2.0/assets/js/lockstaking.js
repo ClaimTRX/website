@@ -899,7 +899,7 @@ function showEnergyRentalModal(userEnergy, shortfall) {
       'required-energy': REQUIRED_ENERGY.toLocaleString(),
       'rental-energy': rentalEnergy.toLocaleString(),
       'rental-cost': rentalCostSun.toLocaleString(),
-      'rental-cost-trx': rentalCostTrx.toFixed(6),
+      'rental-cost-trx': rentalCostTrx.toFixed(2),
       'rental-duration': ENERGY_RENTAL_DURATION
     };
 
