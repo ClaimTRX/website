@@ -102,34 +102,40 @@
 		}
 
 		/* Energy rental modal styling */
-		#energy-rental-modal .modal-content {
+		#energy-rental-modal .modal-content,
+		#transaction-processing-modal .modal-content {
 			background: #111;
 			border: 1px solid #444;
 			border-radius: 6px;
 			color: #fff;
 		}
 
-		#energy-rental-modal .modal-header {
+		#energy-rental-modal .modal-header,
+		#transaction-processing-modal .modal-header {
 			border-bottom: 1px solid #444;
 			padding: 15px;
 		}
 
-		#energy-rental-modal .modal-title {
+		#energy-rental-modal .modal-title,
+		#transaction-processing-modal .modal-title {
 			font-size: 1.5em;
 			color: #fff;
 		}
 
-		#energy-rental-modal .modal-body {
+		#energy-rental-modal .modal-body,
+		#transaction-processing-modal .modal-body {
 			padding: 20px;
 			text-align: center;
 		}
 
-		#energy-rental-modal .modal-body p {
+		#energy-rental-modal .modal-body p,
+		#transaction-processing-modal .modal-body p {
 			margin-bottom: 15px;
 			font-size: 1.1em;
 		}
 
-		#energy-rental-modal .modal-footer {
+		#energy-rental-modal .modal-footer,
+		#transaction-processing-modal .modal-footer {
 			border-top: 1px solid #444;
 			padding: 15px;
 			justify-content: center;
@@ -163,6 +169,22 @@
 			background: #cc3333;
 		}
 
+		/* Transaction processing modal specific styles */
+		#transaction-processing-modal .spinner {
+			border: 4px solid #00ff88;
+			border-top: 4px solid transparent;
+			border-radius: 50%;
+			width: 40px;
+			height: 40px;
+			animation: spin 1s linear infinite;
+			margin: 0 auto 15px;
+		}
+
+		@keyframes spin {
+			0% { transform: rotate(0deg); }
+			100% { transform: rotate(360deg); }
+		}
+
 		@media (max-width: 768px) {
 			.staking-info .apr-apy-pair {
 				flex-direction: column;
@@ -173,7 +195,8 @@
 				padding: 15px;
 			}
 
-			#energy-rental-modal .modal-body p {
+			#energy-rental-modal .modal-body p,
+			#transaction-processing-modal .modal-body p {
 				font-size: 1em;
 			}
 		}
@@ -396,6 +419,22 @@
 		</div>
 		<!-- ***** Energy Rental Modal End ***** -->
 
+		<!-- ***** Transaction Processing Modal Start ***** -->
+		<div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-labelledby="transactionProcessingModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="transactionProcessingModalLabel">Processing Transaction</h5>
+					</div>
+					<div class="modal-body">
+						<div class="spinner"></div>
+						<p>Please wait for the approval transaction and staking transaction to proceed.</p>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- ***** Transaction Processing Modal End ***** -->
+
 		<!--====== Footer Area Start ======-->
 		<footer class="footer-area">
 			<div class="container">
@@ -425,30 +464,31 @@
 		<div id="search" class="modal fade p-0">
 			<div class="modal-dialog dialog-animated">
 				<div class="modal-content h-100">
-				<div class="modal-header" data-bs-dismiss="modal">
-					Search <i class="far fa-times-circle icon-close"></i>
-				</div>
-				<div class="modal-body">
-					<form class="row">
-						<div class="col-12 align-self-center">
-							<div class="row">
-								<div class="col-12 pb-3">
-									<h2 class="search-title mt-0 mb-3">What are you looking for?</h2>
-									<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+					<div class="modal-header" data-bs-dismiss="modal">
+						Search <i class="far fa-times-circle icon-close"></i>
+					</div>
+					<div class="modal-body">
+						<form class="row">
+							<div class="col-12 align-self-center">
+								<div class="row">
+									<div class="col-12 pb-3">
+										<h2 class="search-title mt-0 mb-3">What are you looking for?</h2>
+										<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-12 input-group mt-md-4">
+										<input type="text" placeholder="Enter your keywords">
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-12 input-group align-self-center">
+										<button class="btn btn-bordered-white mt-3">Search</button>
+									</div>
 								</div>
 							</div>
-							<div class="row">
-								<div class="col-12 input-group mt-md-4">
-									<input type="text" placeholder="Enter your keywords">
-								</div>
-							</div>
-							<div class="row">
-								<div class="col-12 input-group align-self-center">
-									<button class="btn btn-bordered-white mt-3">Search</button>
-								</div>
-							</div>
-						</div>
-					</form>
+						</form>
+					</div>
 				</div>
 			</div>
 		</div>
