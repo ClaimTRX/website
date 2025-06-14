@@ -950,10 +950,10 @@ async function updateTokenUI(token) {
     console.log(`Raw totalBalance for ${token}:`, totalBalance);
     console.log(`Raw stakedAmount for ${token}:`, stakedAmount);
     console.log(`Raw lockEndTime for ${token}:`, lockEndTime);
-    console.log(`Raw totalDepositedRewards for ${token}:`, totalDepositedRewards);
+    
     console.log(`Raw totalEarnedRewards for ${token}:`, totalEarnedRewards);
-    console.log(`Raw totalClaimedRewards for ${token}:`, totalClaimedRewards);
-    console.log(`Raw totalUnclaimedRewards for ${token}:`, totalUnclaimedRewards);
+    
+    
 
     // Update available tokens (wallet balance)
     const balance = (Number(balanceRaw) / Math.pow(10, decimals)).toFixed(0);
@@ -977,7 +977,7 @@ async function updateTokenUI(token) {
     await delay(200);
 
     // Update earned rewards
-    const rewards = (Number(pendingReward) / Math.pow(10, rewardDecimals)).toFixed(0);
+    const rewards = (Number(pendingReward) / Math.pow(10, rewardDecimals)).toFixed(6);
     const rewardsElement = document.getElementById(`earned-rewards-${token}`);
     if (rewardsElement) {
       rewardsElement.innerText = rewards;
@@ -1025,25 +1025,9 @@ async function updateTokenUI(token) {
     }
     await delay(200);
 
-    // Update total deposited rewards
-    const depositedRewards = (Number(totalDepositedRewards) / Math.pow(10, rewardDecimals)).toFixed(0);
-    const depositedRewardsElement = document.getElementById(`total-deposited-rewards-${token}`);
-    if (depositedRewardsElement) {
-      depositedRewardsElement.innerText = depositedRewards;
-    } else {
-      console.warn(`Element total-deposited-rewards-${token} not found`);
-    }
-    await delay(200);
+    
 
-    // Update total earned rewards
-    const earnedRewards = (Number(totalEarnedRewards) / Math.pow(10, rewardDecimals)).toFixed(0);
-    const earnedRewardsElement = document.getElementById(`total-earned-rewards-${token}`);
-    if (earnedRewardsElement) {
-      earnedRewardsElement.innerText = earnedRewards;
-    } else {
-      console.warn(`Element total-earned-rewards-${token} not found`);
-    }
-    await delay(200);
+    
 
     // Toggle Deposit and Withdraw sections
     const hasStaked = BigInt(stakedAmount) > 0;
