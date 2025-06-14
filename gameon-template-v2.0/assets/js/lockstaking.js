@@ -190,6 +190,32 @@ const stakingContractAbi = [
     "type": "event"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "RewardsAdded",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "addRewards",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -370,25 +396,6 @@ const stakingContractAbi = [
         "type": "address"
       }
     ],
-    "name": "viewRemainingLockTime",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
     "name": "viewStakedAmount",
     "outputs": [
       {
@@ -409,6 +416,32 @@ const stakingContractAbi = [
       }
     ],
     "name": "viewTotalBalance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "viewTotalEarnedRewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "viewTotalRemainingRewards",
     "outputs": [
       {
         "internalType": "uint256",
@@ -759,7 +792,7 @@ async function retryContractCall(fn, maxRetries = 3, delayMs = 1000) {
 // Update UI for a specific token
 async function updateTokenUI(token) {
   try {
-    const [balanceRaw, stakedAmount, totalBalance, remainingLockTime, remainingStakeable, apr, pendingReward, earnedReward] = await Promise.all([
+    const [balanceRaw, stakedAmount, totalBalance, lockEndTime, remainingStakeable, apr, pendingReward, earnedReward] = await Promise.all([
       tokenContracts[token].methods.balanceOf(userAddress).call().catch(error => {
         console.error(`Error fetching balance for ${token}:`, error);
         return '0';
@@ -772,8 +805,8 @@ async function updateTokenUI(token) {
         console.error(`Error fetching total balance for ${token}:`, error);
         return '0';
       }),
-      stakingContracts[token].methods.viewRemainingLockTime(userAddress).call().catch(error => {
-        console.error(`Error fetching remaining lock time for ${token}:`, error);
+      stakingContracts[token].methods.viewUserLockEndTime(userAddress).call().catch(error => {
+        console.error(`Error fetching lock end time for ${token}:`, error);
         return '0';
       }),
       stakingContracts[token].methods.viewRemainingStakeableCFT().call().catch(error => {
@@ -798,11 +831,17 @@ async function updateTokenUI(token) {
     const rewardDecimals = tokenDetails[token].rewardDecimals || decimals; // Use decimals if rewardDecimals not set
     const tokenName = tokenDetails[token].displayName || token.toUpperCase();
 
+    // Calculate remaining lock time from lock end time
+    const currentTimestamp = Math.floor(Date.now() / 1000); // Current time in seconds
+    const remainingLockTime = Number(lockEndTime) > 0 ? Math.max(0, Number(lockEndTime) - currentTimestamp) : 0;
+
     // Log raw reward values for debugging
     console.log(`Raw pendingReward for ${token}:`, pendingReward);
     console.log(`Raw earnedReward for ${token}:`, earnedReward);
     console.log(`Raw totalBalance for ${token}:`, totalBalance);
     console.log(`Raw stakedAmount for ${token}:`, stakedAmount);
+    console.log(`Raw lockEndTime for ${token}:`, lockEndTime);
+    console.log(`Calculated remainingLockTime for ${token}:`, remainingLockTime);
 
     // Use the highest non-zero reward value
     let rewardsRaw = pendingReward !== '0' ? pendingReward : earnedReward;
@@ -886,7 +925,7 @@ async function updateTokenUI(token) {
     const hasStaked = BigInt(stakedAmount) > 0;
     const depositSection = document.getElementById(`deposit-section-${token}`);
     const withdrawSection = document.getElementById(`withdraw-section-${token}`);
-    const isUnlocked = Number(remainingLockTime) === 0;
+    const isUnlocked = remainingLockTime === 0;
 
     if (depositSection) {
       depositSection.style.display = hasStaked ? 'none' : 'block';
