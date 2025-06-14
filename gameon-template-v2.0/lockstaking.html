@@ -16,6 +16,24 @@
 
 	<!-- Style css -->
 	<link rel="stylesheet" href="assets/css/style.css">
+	<style>
+		/* Center Deposit and Withdraw sections */
+		.single-staking-item {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			text-align: center;
+			padding: 20px;
+		}
+		.input-area {
+			width: 100%;
+			max-width: 300px; /* Limit width for better centering */
+		}
+		.input-text input {
+			width: 100%;
+			text-align: center;
+		}
+	</style>
 </head>
 
 <body>
@@ -140,9 +158,12 @@
 											</div>
 										</div>
 										<div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
-											<div class="col single-item"><span id="staking-apr-cft">30%</span><span>APR</span></div>
+											<div class="col single-item">
+												<span id="staking-apr-cft">30%</span><span>APR</span>
+												<span>34.98%</span><span>APY</span>
+											</div>
 											<div class="col single-item"><span id="total-balance-cft">0.000000 CFT</span><span>Total Balance</span></div>
-											<div class="col single-item"><span id="remaining-lock-time-cft">0 days</span><span>Lock Time</span></div>
+											<div class="col single-item"><span id="remaining-lock-time-cft">Unlocked</span><span>Unlock Time</span></div>
 										</div>
 									</button>
 								</h2>
