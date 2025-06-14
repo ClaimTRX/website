@@ -24,14 +24,29 @@
 			align-items: center;
 			text-align: center;
 			padding: 20px;
+			width: 100%;
 		}
 		.input-area {
 			width: 100%;
 			max-width: 300px; /* Limit width for better centering */
+			display: flex;
+			flex-direction: column;
+			align-items: center;
 		}
 		.input-text input {
 			width: 100%;
 			text-align: center;
+			margin-bottom: 10px;
+		}
+		.staking-info .single-item {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			gap: 5px; /* Space between APR and APY */
+			white-space: nowrap; /* Prevent line breaks */
+		}
+		.staking-info .single-item span:first-child {
+			margin-right: 5px; /* Space between value and label */
 		}
 	</style>
 </head>
@@ -170,7 +185,7 @@
 							</div>
 							<div id="collapseCFT" class="collapse" data-bs-parent="#gameon-accordion">
 								<div class="card-body">
-									<div class="row">
+									<div class="row justify-content-center">
 										<!-- Deposit -->
 										<div class="col-12 col-md-6 single-staking-item input-box" id="deposit-section-cft">
 											<span class="item-title mb-2">Deposit</span>
