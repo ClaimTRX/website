@@ -11,7 +11,7 @@ const TRONGRID_API_URL = 'https://api.trongrid.io'; // Mainnet
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // CFT token address (mainnet)
-    stakingAddress: 'TBJrdmgoiw9oherVBwm22N8D9pB7ZQdxNo', // CFTStaking address (mainnet)
+    stakingAddress: 'TMEMRDCrzqEZ6cK2U1SQbzxmoerMwueRvw', // CFTStaking address (mainnet)
     decimals: 6,
     rewardDecimals: 6, // Match token decimals, as rewards are scaled by 10^6
     displayName: 'CFT'
