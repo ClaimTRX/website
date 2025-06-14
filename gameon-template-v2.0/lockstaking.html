@@ -163,6 +163,34 @@
 			background: #cc3333;
 		}
 
+		/* Loading state styling */
+		#energy-rental-loading {
+			display: none;
+			flex-direction: column;
+			align-items: center;
+			padding: 20px;
+		}
+
+		#energy-rental-loading .spinner {
+			border: 4px solid #00ff88;
+			border-top: 4px solid transparent;
+			border-radius: 50%;
+			width: 40px;
+			height: 40px;
+			animation: spin 1s linear infinite;
+			margin-bottom: 10px;
+		}
+
+		@keyframes spin {
+			0% { transform: rotate(0deg); }
+			100% { transform: rotate(360deg); }
+		}
+
+		#energy-rental-loading p {
+			font-size: 1.1em;
+			color: #00ff88;
+		}
+
 		@media (max-width: 768px) {
 			.staking-info .apr-apy-pair {
 				flex-direction: column;
@@ -384,8 +412,15 @@
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
 					</div>
 					<div class="modal-body">
-						<p>Your wallet has <span id="user-energy">0</span> energy available, but <span id="required-energy">200,000</span> energy is required for this transaction.</p>
-						<p>Rent <span id="rental-energy">200,000</span> energy for <span id="rental-duration">5</span> minutes at a cost of <span id="rental-cost">2</span> TRX?</p>
+						<div id="energy-rental-prompt">
+							<p>Your wallet has <span id="user-energy">0</span> energy available, but <span id="required-energy">200,000</span> energy is required for this transaction.</p>
+							<p>Rent <span id="rental-energy">0</span> energy for <span id="rental-duration">5</span> minutes at a cost of <span id="rental-cost">0</span> SUN (<span id="rental-cost-trx">0</span> TRX)?</p>
+							<p>Note: An additional 5,000 energy will be delegated for safety at no extra cost.</p>
+						</div>
+						<div id="energy-rental-loading">
+							<div class="spinner"></div>
+							<p>Processing energy delegation... This may take a few seconds.</p>
+						</div>
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
