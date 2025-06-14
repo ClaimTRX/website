@@ -17,51 +17,72 @@
 	<!-- Style css -->
 	<link rel="stylesheet" href="assets/css/style.css">
 	<style>
-		/* Center Deposit and Withdraw sections */
-		.single-staking-item {
-			display: flex;
+			.single-staking-item {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		padding: 20px;
+		width: 100%;
+		margin: 0 auto;
+	}
+
+	.input-area {
+		width: 100%;
+		max-width: 300px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin: 0 auto;
+	}
+
+	.input-text input {
+		width: 100%;
+		text-align: center;
+		margin-bottom: 10px;
+		padding: 8px;
+		border-radius: 6px;
+		border: 1px solid #444;
+		background: #111;
+		color: #fff;
+	}
+
+	/* APR + APY same line */
+	.staking-info .apr-apy-pair {
+		display: flex;
+		gap: 12px;
+		align-items: center;
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+
+	.staking-info .single-item {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		font-size: 1.1em;
+		white-space: nowrap;
+	}
+
+	.staking-info .single-item span {
+		margin-right: 5px;
+	}
+
+	.staking-info .single-item span:last-child {
+		margin-right: 0;
+	}
+
+	.card-body .row {
+		justify-content: center !important;
+	}
+
+	@media (max-width: 768px) {
+		.staking-info .apr-apy-pair {
 			flex-direction: column;
-			align-items: center;
-			text-align: center;
-			padding: 20px;
-			width: 100%;
-			margin: 0 auto; /* Center horizontally */
+			gap: 5px;
 		}
-		.input-area {
-			width: 100%;
-			max-width: 300px; /* Limit width for better centering */
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-		}
-		.input-text input {
-			width: 100%;
-			text-align: center;
-			margin-bottom: 10px;
-		}
-		.staking-info .single-item {
-			display: flex;
-			flex-direction: row;
-			align-items: center;
-			gap: 10px; /* Increased space between APR and APY */
-			white-space: nowrap; /* Prevent line breaks */
-			font-size: 1.1em; /* Ensure readability */
-		}
-		.staking-info .single-item span {
-			margin-right: 5px; /* Space between value and label */
-		}
-		.staking-info .single-item span:last-child {
-			margin-right: 0; /* Remove extra space at the end */
-		}
-		.card-body .row {
-			justify-content: center !important; /* Override any conflicting styles */
-		}
-		@media (max-width: 768px) {
-			.staking-info .single-item {
-				flex-direction: column; /* Stack on small screens */
-				gap: 5px;
-			}
-		}
+	}
 	</style>
 </head>
 
@@ -187,10 +208,11 @@
 											</div>
 										</div>
 										<div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
-											<div class="col-4 single-item">
-												<span id="staking-apr-cft">30%</span><span>APR</span>
-												<span>34.98%</span><span>APY</span>
-											</div>
+											<div class="col-4 single-item apr-apy-pair">
+	<div><span id="staking-apr-cft">30%</span><span> APR</span></div>
+	<div><span>34.98%</span><span> APY</span></div>
+</div>
+
 											<div class="col-4 single-item"><span id="total-balance-cft">0.000000 CFT</span><span>Total Balance</span></div>
 											<div class="col-4 single-item"><span id="remaining-lock-time-cft">Unlocked</span><span>Unlock Time</span></div>
 										</div>
