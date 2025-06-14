@@ -831,7 +831,7 @@ async function updateAllUI() {
   }
 }
 
-// Utility function to make TronGrid API calls (kept for future use)
+// Utility function to make TronGrid API calls with fallback
 async function tronGridApiCall(endpoint, params = {}) {
   try {
     const response = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
@@ -842,6 +842,10 @@ async function tronGridApiCall(endpoint, params = {}) {
       },
       body: JSON.stringify(params)
     });
+    if (response.status === 403) {
+      console.warn('TronGrid API key is invalid or rate-limited. Falling back to local node.');
+      return { error: 'API key invalid or rate-limited' };
+    }
     const data = await response.json();
     if (data.Error) {
       throw new Error(data.Error);
@@ -849,7 +853,7 @@ async function tronGridApiCall(endpoint, params = {}) {
     return data;
   } catch (error) {
     console.error(`TronGrid API error at ${endpoint}:`, error);
-    throw error;
+    return { error: error.message };
   }
 }
 
@@ -933,9 +937,13 @@ async function updateTokenUI(token) {
     const rewardDecimals = tokenDetails[token].rewardDecimals || decimals;
     const tokenName = tokenDetails[token].displayName || token.toUpperCase();
 
-    // Calculate remaining lock time from lock end time
-    const currentTimestamp = Math.floor(Date.now() / 1000);
-    const remainingLockTime = Number(lockEndTime) > 0 ? Math.max(0, Number(lockEndTime) - currentTimestamp) : 0;
+    // Convert lock end time to local date/time
+    const lockEndTimestamp = Number(lockEndTime) * 1000; // Convert seconds to milliseconds
+    let lockTimeDisplay = 'Unlocked';
+    if (lockEndTimestamp > 0) {
+      const lockEndDate = new Date(lockEndTimestamp);
+      lockTimeDisplay = lockEndDate.toLocaleString(); // Display in local date/time
+    }
 
     // Log raw values for debugging
     console.log(`Raw pendingReward for ${token}:`, pendingReward);
@@ -946,10 +954,9 @@ async function updateTokenUI(token) {
     console.log(`Raw totalEarnedRewards for ${token}:`, totalEarnedRewards);
     console.log(`Raw totalClaimedRewards for ${token}:`, totalClaimedRewards);
     console.log(`Raw totalUnclaimedRewards for ${token}:`, totalUnclaimedRewards);
-    console.log(`Calculated remainingLockTime for ${token}:`, remainingLockTime);
 
     // Update available tokens (wallet balance)
-    const balance = (Number(balanceRaw) / Math.pow(10, decimals)).toFixed(6);
+    const balance = (Number(balanceRaw) / Math.pow(10, decimals)).toFixed(0);
     const balanceElement = document.getElementById(`available-tokens-${token}`);
     if (balanceElement) {
       balanceElement.innerText = balance;
@@ -960,7 +967,7 @@ async function updateTokenUI(token) {
     await delay(200);
 
     // Update initial stake
-    const staked = (Number(stakedAmount) / Math.pow(10, decimals)).toFixed(6);
+    const staked = (Number(stakedAmount) / Math.pow(10, decimals)).toFixed(0);
     const initialStakeElement = document.getElementById(`initial-stake-${token}`);
     if (initialStakeElement) {
       initialStakeElement.innerText = staked;
@@ -970,7 +977,7 @@ async function updateTokenUI(token) {
     await delay(200);
 
     // Update earned rewards
-    const rewards = (Number(pendingReward) / Math.pow(10, rewardDecimals)).toFixed(6);
+    const rewards = (Number(pendingReward) / Math.pow(10, rewardDecimals)).toFixed(0);
     const rewardsElement = document.getElementById(`earned-rewards-${token}`);
     if (rewardsElement) {
       rewardsElement.innerText = rewards;
@@ -991,17 +998,16 @@ async function updateTokenUI(token) {
     await delay(200);
 
     // Update remaining lock time
-    const lockTimeDays = Math.floor(Number(remainingLockTime) / 86400);
     const lockTimeElement = document.getElementById(`remaining-lock-time-${token}`);
     if (lockTimeElement) {
-      lockTimeElement.innerText = lockTimeDays > 0 ? `${lockTimeDays} days` : 'Unlocked';
+      lockTimeElement.innerText = lockTimeDisplay;
     } else {
       console.error(`Element remaining-lock-time-${token} not found`);
     }
     await delay(200);
 
     // Update remaining stakeable CFT
-    const stakeable = (Number(remainingStakeable) / Math.pow(10, decimals)).toFixed(6);
+    const stakeable = (Number(remainingStakeable) / Math.pow(10, decimals)).toFixed(0);
     const stakeableElement = document.getElementById(`remaining-stakeable-${token}`);
     if (stakeableElement) {
       stakeableElement.innerText = stakeable;
@@ -1020,7 +1026,7 @@ async function updateTokenUI(token) {
     await delay(200);
 
     // Update total deposited rewards
-    const depositedRewards = (Number(totalDepositedRewards) / Math.pow(10, rewardDecimals)).toFixed(6);
+    const depositedRewards = (Number(totalDepositedRewards) / Math.pow(10, rewardDecimals)).toFixed(0);
     const depositedRewardsElement = document.getElementById(`total-deposited-rewards-${token}`);
     if (depositedRewardsElement) {
       depositedRewardsElement.innerText = depositedRewards;
@@ -1030,7 +1036,7 @@ async function updateTokenUI(token) {
     await delay(200);
 
     // Update total earned rewards
-    const earnedRewards = (Number(totalEarnedRewards) / Math.pow(10, rewardDecimals)).toFixed(6);
+    const earnedRewards = (Number(totalEarnedRewards) / Math.pow(10, rewardDecimals)).toFixed(0);
     const earnedRewardsElement = document.getElementById(`total-earned-rewards-${token}`);
     if (earnedRewardsElement) {
       earnedRewardsElement.innerText = earnedRewards;
@@ -1039,15 +1045,11 @@ async function updateTokenUI(token) {
     }
     await delay(200);
 
-    
-
-    
-
     // Toggle Deposit and Withdraw sections
     const hasStaked = BigInt(stakedAmount) > 0;
     const depositSection = document.getElementById(`deposit-section-${token}`);
     const withdrawSection = document.getElementById(`withdraw-section-${token}`);
-    const isUnlocked = remainingLockTime === 0;
+    const isUnlocked = lockEndTimestamp <= Date.now();
 
     if (depositSection) {
       depositSection.style.display = hasStaked ? 'none' : 'block';
@@ -1243,12 +1245,6 @@ async function unstakeTokens(token) {
     alert(`Error unstaking tokens for ${token}: ${error.message}. Please check the console for details.`);
   }
 }
-
-
-
-    
-
-
 
 // Attach event listeners dynamically
 for (let key in tokenDetails) {
