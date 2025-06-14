@@ -12,7 +12,7 @@ const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
 const REQUIRED_ENERGY = 200000; // Energy required for stake/unstake
 const SAFETY_ENERGY = 5000; // Extra energy for safety
-const ENERGY_PRICE_SUN = 15; // Price per energy unit in SUN
+const ENERGY_PRICE_SUN = 10; // Price per energy unit in SUN
 const SUN_PER_TRX = 1000000; // 1 TRX = 1,000,000 SUN
 const ENERGY_RENTAL_DURATION = 5; // Duration in minutes
 
