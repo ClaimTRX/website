@@ -10,7 +10,7 @@ const TRONGRID_API_URL = 'https://api.trongrid.io'; // Mainnet
 // Payment wallet for energy rental
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
-const REQUIRED_ENERGY = 200000; // Energy required for stake/unstake
+const REQUIRED_ENERGY = 150000; // Energy required for stake/unstake
 const SAFETY_ENERGY = 5000; // Extra energy for safety
 const ENERGY_PRICE_SUN = 10; // Price per energy unit in SUN
 const SUN_PER_TRX = 1000000; // 1 TRX = 1,000,000 SUN
@@ -919,9 +919,9 @@ function showEnergyRentalModal(userEnergy, shortfall) {
 
     // Update modal content
     const elements = {
-      'user-energy': userEnergy.toLocaleString(),
-      'required-energy': REQUIRED_ENERGY.toLocaleString(),
-      'rental-energy': rentalEnergy.toLocaleString(),
+      'user-energy': userEnergy.toLocaleString('en-US'),
+      'required-energy': REQUIRED_ENERGY.toLocaleString('en-US'),
+      'rental-energy': rentalEnergy.toLocaleString('en-US'),
       'rental-cost-trx': rentalCostTrx.toFixed(2),
       'rental-duration': ENERGY_RENTAL_DURATION
     };
@@ -1162,7 +1162,7 @@ async function updateTokenUI(token) {
     console.log(`Raw lockEndTime for ${token}:`, lockEndTime);
 
     // Update available tokens (wallet balance)
-    const balance = (Number(balanceRaw) / Math.pow(10, decimals)).toFixed(0);
+    const balance = (Number(balanceRaw) / Math.pow(10, decimals)).toLocaleString('en-US', { maximumFractionDigits: 0 });
     const balanceElement = document.getElementById(`available-tokens-${token}`);
     if (balanceElement) {
       balanceElement.innerText = balance;
@@ -1173,7 +1173,7 @@ async function updateTokenUI(token) {
     await delay(200);
 
     // Update initial stake
-    const staked = (Number(stakedAmount) / Math.pow(10, decimals)).toFixed(0);
+    const staked = (Number(stakedAmount) / Math.pow(10, decimals)).toLocaleString('en-US', { maximumFractionDigits: 0 });
     const initialStakeElement = document.getElementById(`initial-stake-${token}`);
     if (initialStakeElement) {
       initialStakeElement.innerText = staked;
@@ -1183,7 +1183,7 @@ async function updateTokenUI(token) {
     await delay(200);
 
     // Update earned rewards
-    const rewards = (Number(pendingReward) / Math.pow(10, rewardDecimals)).toFixed(6);
+    const rewards = (Number(pendingReward) / Math.pow(10, rewardDecimals)).toLocaleString('en-US', { minimumFractionDigits: 6, maximumFractionDigits: 6 });
     const rewardsElement = document.getElementById(`earned-rewards-${token}`);
     if (rewardsElement) {
       rewardsElement.innerText = rewards;
@@ -1194,7 +1194,7 @@ async function updateTokenUI(token) {
     await delay(200);
 
     // Update total balance (staked + rewards)
-    const total = (Number(totalBalance) / Math.pow(10, decimals)).toFixed(6);
+    const total = (Number(totalBalance) / Math.pow(10, decimals)).toLocaleString('en-US', { minimumFractionDigits: 6, maximumFractionDigits: 6 });
     const totalElement = document.getElementById(`total-balance-${token}`);
     if (totalElement) {
       totalElement.innerText = `${total} ${tokenName}`;
@@ -1213,7 +1213,7 @@ async function updateTokenUI(token) {
     await delay(200);
 
     // Update remaining stakeable CFT
-    const stakeable = (Number(remainingStakeable) / Math.pow(10, decimals)).toFixed(0);
+    const stakeable = (Number(remainingStakeable) / Math.pow(10, decimals)).toLocaleString('en-US', { maximumFractionDigits: 0 });
     const stakeableElement = document.getElementById(`remaining-stakeable-${token}`);
     if (stakeableElement) {
       stakeableElement.innerText = stakeable;
