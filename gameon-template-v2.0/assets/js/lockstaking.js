@@ -7,6 +7,13 @@ const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 const TRONGRID_API_KEY = 'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca'; // REPLACE with your valid TronGrid API key
 const TRONGRID_API_URL = 'https://api.trongrid.io'; // Mainnet
 
+// Payment wallet for energy rental
+const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
+const SERVER_URL = 'https://api.cftecosystem.com';
+const REQUIRED_ENERGY = 200000; // Energy required for stake/unstake
+const ENERGY_RENTAL_COST = 2; // Cost in TRX for renting energy
+const ENERGY_RENTAL_DURATION = 5; // Duration in minutes
+
 // Define contract for CFT with correct rewardDecimals
 const tokenDetails = {
   cft: {
@@ -24,7 +31,9 @@ function isValidTronAddress(address) {
   return address.startsWith('T') && address.length === 34 && /^[A-Za-z1-9]+$/.test(address);
 }
 
+// ABI definitions remain unchanged
 const stakingContractAbi = [
+  // ... (same as provided in the original lockstaking.js)
   {
     "inputs": [
       {
@@ -572,6 +581,7 @@ const stakingContractAbi = [
 ];
 
 const tokenContractAbi = [
+  // ... (same as provided in the original lockstaking.js)
   {
     "constant": true,
     "inputs": [
@@ -741,6 +751,131 @@ const tokenContractAbi = [
   }
 ];
 
+// Check user's available energy
+async function checkUserEnergy(address) {
+  try {
+    console.log(`Checking energy for address: ${address}`);
+    const resources = await tronWeb.trx.getAccountResources(address);
+    const energyLimit = resources.EnergyLimit || 0;
+    const energyUsed = resources.EnergyUsed || 0;
+    const availableEnergy = energyLimit - energyUsed;
+    console.log(`Energy for ${address}: Limit=${energyLimit}, Used=${energyUsed}, Available=${availableEnergy}`);
+    return availableEnergy;
+  } catch (error) {
+    console.error(`Error checking energy for ${address}:`, error);
+    return 0;
+  }
+}
+
+// Check delegator's available energy
+async function checkDelegatorEnergy() {
+  try {
+    console.log('Fetching delegator available energy...');
+    const response = await fetch(`${SERVER_URL}/api/available-energy`);
+    const data = await response.json();
+    if (data.success) {
+      const availableEnergy = Number(data.availableEnergy);
+      console.log(`Delegator available energy: ${availableEnergy}`);
+      return availableEnergy;
+    } else {
+      throw new Error('Failed to fetch delegator energy');
+    }
+  } catch (error) {
+    console.error('Error fetching delegator energy:', error);
+    return 0;
+  }
+}
+
+// Request energy rental
+async function requestEnergyRental() {
+  try {
+    if (!userAddress) {
+      throw new Error('Please connect your wallet first.');
+    }
+
+    console.log(`Initiating payment of ${ENERGY_RENTAL_COST} TRX for energy rental...`);
+    const result = await tronWeb.trx.sendTransaction(PAYMENT_ADDRESS, ENERGY_RENTAL_COST * 1e6);
+    console.log('Payment transaction sent:', result);
+    console.log('Payment transaction ID:', result.txid);
+
+    if (!result.result) {
+      throw new Error('Transaction was rejected or failed.');
+    }
+
+    console.log('Notifying server of energy request...');
+    const response = await fetch(`${SERVER_URL}/api/request-energy`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        energyAmount: REQUIRED_ENERGY,
+        receiverAddress: userAddress,
+        trxPrice: ENERGY_RENTAL_COST,
+        userAddress,
+        paymentTxId: result.txid,
+        delegationDuration: ENERGY_RENTAL_DURATION
+      })
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(`Server error: ${data.message}`);
+    }
+
+    console.log('Waiting for energy delegation...');
+    return await pollDelegationStatus(data.requestId);
+  } catch (error) {
+    console.error('Error requesting energy rental:', error);
+    throw error;
+  }
+}
+
+// Poll for delegation status
+async function pollDelegationStatus(requestId) {
+  console.log(`Starting to poll delegation status for request ${requestId}...`);
+  const maxPollAttempts = 30;
+  let pollAttempts = 0;
+
+  return new Promise((resolve, reject) => {
+    const interval = setInterval(async () => {
+      pollAttempts++;
+      try {
+        console.log(`Polling delegation status for request ${requestId}, attempt ${pollAttempts}...`);
+        const response = await fetch(`${SERVER_URL}/api/delegation-status?requestId=${requestId}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log(`Delegation status for request ${requestId}:`, data);
+
+        if (data.status === 'delegated') {
+          clearInterval(interval);
+          console.log(`Energy delegated successfully for request ${requestId}`);
+          resolve(true);
+        } else if (data.status === 'failed' || data.status === 'expired') {
+          clearInterval(interval);
+          console.error(`Delegation failed for request ${requestId}: ${data.message}`);
+          reject(new Error(`Delegation failed: ${data.message}`));
+        } else if (pollAttempts >= maxPollAttempts) {
+          clearInterval(interval);
+          console.error(`Delegation timed out for request ${requestId}`);
+          reject(new Error('Delegation timed out after 60 seconds.'));
+        }
+      } catch (error) {
+        console.error(`Error polling delegation status for request ${requestId}:`, error);
+        if (pollAttempts >= maxPollAttempts) {
+          clearInterval(interval);
+          reject(new Error(`Error polling delegation status: ${error.message}`));
+        }
+      }
+    }, 2000);
+  });
+}
+
 // DOMContentLoaded Event Listener
 async function initialize() {
   document.getElementById('connect-button').addEventListener('click', connectWallet);
@@ -881,11 +1016,7 @@ async function updateTokenUI(token) {
       lockEndTime,
       remainingStakeable,
       apr,
-      pendingReward,
-      totalDepositedRewards,
-      totalEarnedRewards,
-      totalClaimedRewards,
-      totalUnclaimedRewards
+      pendingReward
     ] = await Promise.all([
       tokenContracts[token].methods.balanceOf(userAddress).call().catch(error => {
         console.error(`Error fetching balance for ${token}:`, error);
@@ -914,11 +1045,8 @@ async function updateTokenUI(token) {
       retryContractCall(() => stakingContracts[token].methods.viewPendingReward(userAddress).call()).catch(error => {
         console.error(`Error fetching pending reward for ${token} after retries:`, error);
         return '0';
-        })
+      })
     ]);
-      
-      
-      
 
     const decimals = tokenDetails[token].decimals;
     const rewardDecimals = tokenDetails[token].rewardDecimals || decimals;
@@ -937,10 +1065,6 @@ async function updateTokenUI(token) {
     console.log(`Raw totalBalance for ${token}:`, totalBalance);
     console.log(`Raw stakedAmount for ${token}:`, stakedAmount);
     console.log(`Raw lockEndTime for ${token}:`, lockEndTime);
-    
-    
-    
-    
 
     // Update available tokens (wallet balance)
     const balance = (Number(balanceRaw) / Math.pow(10, decimals)).toFixed(0);
@@ -1012,10 +1136,6 @@ async function updateTokenUI(token) {
     }
     await delay(200);
 
-    
-
-    
-
     // Toggle Deposit and Withdraw sections
     const hasStaked = BigInt(stakedAmount) > 0;
     const depositSection = document.getElementById(`deposit-section-${token}`);
@@ -1057,7 +1177,6 @@ async function updateTokenUI(token) {
       });
       unstakeArea.appendChild(unstakeButton);
     }
-
   } catch (error) {
     console.error(`Error updating UI for ${token}:`, error);
     alert(`Error updating UI for ${token}: ${error.message}. Please check the console for details.`);
@@ -1075,6 +1194,33 @@ async function stakeTokens(token, amount) {
     }
     if (!userAddress || !isValidTronAddress(userAddress)) {
       throw new Error('Invalid user address. Please reconnect wallet.');
+    }
+
+    // Check user's energy
+    const userEnergy = await checkUserEnergy(userAddress);
+    if (userEnergy < REQUIRED_ENERGY) {
+      // Check delegator's energy
+      const delegatorEnergy = await checkDelegatorEnergy();
+      if (delegatorEnergy >= REQUIRED_ENERGY) {
+        const rentEnergy = confirm(
+          `Your wallet has insufficient energy (${userEnergy} available, ${REQUIRED_ENERGY} required) to complete this transaction. ` +
+          `Would you like to rent ${REQUIRED_ENERGY} energy for ${ENERGY_RENTAL_DURATION} minutes at a cost of ${ENERGY_RENTAL_COST} TRX?`
+        );
+        if (rentEnergy) {
+          try {
+            await requestEnergyRental();
+            console.log('Energy rented successfully. Proceeding with staking...');
+            // Wait briefly to ensure energy is delegated
+            await delay(5000);
+          } catch (error) {
+            throw new Error(`Failed to rent energy: ${error.message}`);
+          }
+        } else {
+          throw new Error('User declined to rent energy. Transaction cancelled.');
+        }
+      } else {
+        throw new Error('Insufficient energy available from delegator. Please try again later.');
+      }
     }
 
     const amountToStake = BigInt(amount) * BigInt(10 ** tokenDetails[token].decimals);
@@ -1172,6 +1318,33 @@ async function unstakeTokens(token) {
     const stakingContract = stakingContracts[token];
     if (!stakingContract || !stakingContract.methods.withdraw) {
       throw new Error(`Staking contract for ${token} not properly initialized.`);
+    }
+
+    // Check user's energy
+    const userEnergy = await checkUserEnergy(userAddress);
+    if (userEnergy < REQUIRED_ENERGY) {
+      // Check delegator's energy
+      const delegatorEnergy = await checkDelegatorEnergy();
+      if (delegatorEnergy >= REQUIRED_ENERGY) {
+        const rentEnergy = confirm(
+          `Your wallet has insufficient energy (${userEnergy} available, ${REQUIRED_ENERGY} required) to complete this transaction. ` +
+          `Would you like to rent ${REQUIRED_ENERGY} energy for ${ENERGY_RENTAL_DURATION} minutes at a cost of ${ENERGY_RENTAL_COST} TRX?`
+        );
+        if (rentEnergy) {
+          try {
+            await requestEnergyRental();
+            console.log('Energy rented successfully. Proceeding with unstaking...');
+            // Wait briefly to ensure energy is delegated
+            await delay(5000);
+          } catch (error) {
+            throw new Error(`Failed to rent energy: ${error.message}`);
+          }
+        } else {
+          throw new Error('User declined to rent energy. Transaction cancelled.');
+        }
+      } else {
+        throw new Error('Insufficient energy available from delegator. Please try again later.');
+      }
     }
 
     // Check if user has staked and if lock period has ended
