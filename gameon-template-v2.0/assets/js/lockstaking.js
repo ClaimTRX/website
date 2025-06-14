@@ -33,7 +33,6 @@ function isValidTronAddress(address) {
 
 // ABI definitions remain unchanged
 const stakingContractAbi = [
-  // ... (same as provided in the original lockstaking.js)
   {
     "inputs": [
       {
@@ -581,7 +580,6 @@ const stakingContractAbi = [
 ];
 
 const tokenContractAbi = [
-  // ... (same as provided in the original lockstaking.js)
   {
     "constant": true,
     "inputs": [
@@ -873,6 +871,41 @@ async function pollDelegationStatus(requestId) {
         }
       }
     }, 2000);
+  });
+}
+
+// Show energy rental modal and return user decision
+function showEnergyRentalModal(userEnergy, requiredEnergy = REQUIRED_ENERGY, rentalEnergy = REQUIRED_ENERGY, rentalCost = ENERGY_RENTAL_COST, rentalDuration = ENERGY_RENTAL_DURATION) {
+  return new Promise((resolve) => {
+    // Update modal content
+    document.getElementById('user-energy').textContent = userEnergy.toLocaleString();
+    document.getElementById('required-energy').textContent = requiredEnergy.toLocaleString();
+    document.getElementById('rental-energy').textContent = rentalEnergy.toLocaleString();
+    document.getElementById('rental-cost').textContent = rentalCost;
+    document.getElementById('rental-duration').textContent = rentalDuration;
+
+    // Initialize modal
+    const modalElement = document.getElementById('energy-rental-modal');
+    const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
+
+    // Handle confirm button
+    const confirmButton = document.getElementById('rent-energy-confirm');
+    const confirmHandler = () => {
+      modal.hide();
+      resolve(true);
+      confirmButton.removeEventListener('click', confirmHandler);
+    };
+    confirmButton.addEventListener('click', confirmHandler);
+
+    // Handle cancel button and modal close
+    const cancelHandler = () => {
+      modal.hide();
+      resolve(false);
+    };
+    modalElement.addEventListener('hidden.bs.modal', cancelHandler, { once: true });
+
+    // Show modal
+    modal.show();
   });
 }
 
@@ -1202,10 +1235,7 @@ async function stakeTokens(token, amount) {
       // Check delegator's energy
       const delegatorEnergy = await checkDelegatorEnergy();
       if (delegatorEnergy >= REQUIRED_ENERGY) {
-        const rentEnergy = confirm(
-          `Your wallet has insufficient energy (${userEnergy} available, ${REQUIRED_ENERGY} required) to complete this transaction. ` +
-          `Would you like to rent ${REQUIRED_ENERGY} energy for ${ENERGY_RENTAL_DURATION} minutes at a cost of ${ENERGY_RENTAL_COST} TRX?`
-        );
+        const rentEnergy = await showEnergyRentalModal(userEnergy);
         if (rentEnergy) {
           try {
             await requestEnergyRental();
@@ -1326,10 +1356,7 @@ async function unstakeTokens(token) {
       // Check delegator's energy
       const delegatorEnergy = await checkDelegatorEnergy();
       if (delegatorEnergy >= REQUIRED_ENERGY) {
-        const rentEnergy = confirm(
-          `Your wallet has insufficient energy (${userEnergy} available, ${REQUIRED_ENERGY} required) to complete this transaction. ` +
-          `Would you like to rent ${REQUIRED_ENERGY} energy for ${ENERGY_RENTAL_DURATION} minutes at a cost of ${ENERGY_RENTAL_COST} TRX?`
-        );
+        const rentEnergy = await showEnergyRentalModal(userEnergy);
         if (rentEnergy) {
           try {
             await requestEnergyRental();
