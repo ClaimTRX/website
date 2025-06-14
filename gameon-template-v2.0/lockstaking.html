@@ -17,72 +17,100 @@
 	<!-- Style css -->
 	<link rel="stylesheet" href="assets/css/style.css">
 	<style>
-			.single-staking-item {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		text-align: center;
-		padding: 20px;
-		width: 100%;
-		margin: 0 auto;
-	}
-
-	.input-area {
-		width: 100%;
-		max-width: 300px;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		margin: 0 auto;
-	}
-
-	.input-text input {
-		width: 100%;
-		text-align: center;
-		margin-bottom: 10px;
-		padding: 8px;
-		border-radius: 6px;
-		border: 1px solid #444;
-		background: #111;
-		color: #fff;
-	}
-
-	/* APR + APY same line */
-	.staking-info .apr-apy-pair {
-		display: flex;
-		gap: 12px;
-		align-items: center;
-		justify-content: center;
-		flex-wrap: wrap;
-	}
-
-	.staking-info .single-item {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		text-align: center;
-		font-size: 1.1em;
-		white-space: nowrap;
-	}
-
-	.staking-info .single-item span {
-		margin-right: 5px;
-	}
-
-	.staking-info .single-item span:last-child {
-		margin-right: 0;
-	}
-
-	.card-body .row {
-		justify-content: center !important;
-	}
-
-	@media (max-width: 768px) {
-		.staking-info .apr-apy-pair {
+		.single-staking-item {
+			display: flex;
 			flex-direction: column;
-			gap: 5px;
+			align-items: center;
+			text-align: center;
+			padding: 20px;
+			width: 100%;
+			margin: 0 auto;
 		}
-	}
+
+		.input-area {
+			width: 100%;
+			max-width: 300px;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			margin: 0 auto;
+		}
+
+		.input-text input {
+			width: 100%;
+			text-align: center;
+			margin-bottom: 10px;
+			padding: 8px;
+			border-radius: 6px;
+			border: 1px solid #444;
+			background: #111;
+			color: #fff;
+		}
+
+		/* APR + APY same line */
+		.staking-info .apr-apy-pair {
+			display: flex;
+			gap: 12px;
+			align-items: center;
+			justify-content: center;
+			flex-wrap: wrap;
+		}
+
+		.staking-info .single-item {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			text-align: center;
+			font-size: 1.1em;
+			white-space: nowrap;
+		}
+
+		.staking-info .single-item span {
+			margin-right: 5px;
+		}
+
+		.staking-info .single-item span:last-child {
+			margin-right: 0;
+		}
+
+		.card-body .row {
+			justify-content: center !important;
+		}
+
+		/* Owner controls styling */
+		.owner-controls {
+			margin-top: 20px;
+			padding: 20px;
+			border: 1px solid #444;
+			border-radius: 6px;
+			background: #111;
+		}
+
+		.owner-controls h3 {
+			margin-bottom: 15px;
+			font-size: 1.5em;
+		}
+
+		.owner-controls .input-area {
+			margin-bottom: 15px;
+		}
+
+		.no-tronlink-message {
+			color: #ff4d4d;
+			font-weight: bold;
+			margin-top: 10px;
+		}
+
+		@media (max-width: 768px) {
+			.staking-info .apr-apy-pair {
+				flex-direction: column;
+				gap: 5px;
+			}
+
+			.owner-controls {
+				padding: 15px;
+			}
+		}
 	</style>
 </head>
 
@@ -111,7 +139,7 @@
 				<div class="container header">
 					<!-- Logo -->
 					<a class="navbar-brand" href="index.html">
-						<img src="assets/img/logo/logo.png" alt="" />
+						<img src="assets/img/logo/logo.png" alt="CFT Ecosystem Logo" />
 					</a>
 					<div class="ms-auto"></div>
 					<!-- Navbar Nav -->
@@ -199,20 +227,19 @@
 										<div class="row">
 											<div class="col-12 col-md-8">
 												<div class="media flex-column flex-md-row">
-													<img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+													<img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="CFT Logo">
 													<div class="content media-body mt-4 mt-md-0 ms-md-4">
 														<h4 class="m-0">CFT Staking</h4>
-														<p>Stake up to 100,000 CFT for CFT rewards with a 6-month lock</p>
+														<p>Stake up to <span id="max-stake-per-wallet-cft">100,000.000000</span> CFT for CFT rewards with a 6-month lock</p>
 													</div>
 												</div>
 											</div>
 										</div>
 										<div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
 											<div class="col-4 single-item apr-apy-pair">
-	<div><span id="staking-apr-cft">30%</span><span> APR</span></div>
-	<div><span>34.98%</span><span> APY</span></div>
-</div>
-
+												<div><span id="staking-apr-cft">30%</span><span> APR</span></div>
+												<div><span>34.98%</span><span> APY</span></div>
+											</div>
 											<div class="col-4 single-item"><span id="total-balance-cft">0.000000 CFT</span><span>Total Balance</span></div>
 											<div class="col-4 single-item"><span id="remaining-lock-time-cft">Unlocked</span><span>Unlock Time</span></div>
 										</div>
@@ -226,11 +253,12 @@
 										<div class="col-12 col-md-6 single-staking-item input-box" id="deposit-section-cft">
 											<span class="item-title mb-2">Deposit</span>
 											<p><span id="available-tokens-cft">0.000000</span> CFT available in wallet</p>
-											<p><span id="remaining-stakeable-cft">400,000.000000</span> CFT available to stake</p>
+											<p><span id="remaining-stakeable-cft">400,000.000000</span> of <span id="max-total-staked-cft">400,000.000000</span> CFT available to stake</p>
 											<div class="input-area d-flex flex-column">
-												<div class="input-text"><input type="text" placeholder="0" id="stake-amount-cft"></div>
-												<a href="#" class="btn input-btn mt-2" id="stake-button-cft">Stake</a>
+												<div class="input-text"><input type="number" placeholder="Enter CFT amount" id="stake-amount-cft" min="0" step="0.000001"></div>
+												<button class="btn input-btn mt-2" id="stake-button-cft">Stake</button>
 											</div>
+											<p id="no-tronlink-message-cft" class="no-tronlink-message" style="display: none;">Please install TronLink to stake.</p>
 										</div>
 										<!-- Withdraw -->
 										<div class="col-12 col-md-6 single-staking-item input-box" id="withdraw-section-cft" style="display: none;">
@@ -239,6 +267,39 @@
 											<p><span id="earned-rewards-cft">0.000000</span> CFT earned rewards</p>
 											<div class="input-area d-flex flex-column" id="unstake-area-cft">
 												<!-- Unstake button added dynamically -->
+											</div>
+										</div>
+									</div>
+									<!-- Reward Metrics -->
+									<div class="row justify-content-center mt-4">
+										<div class="col-12">
+											<h4>Reward Metrics</h4>
+											<div class="row staking-info align-items-center justify-content-center">
+												<div class="col-3 single-item"><span id="total-deposited-rewards-cft">0.000000</span><span>Total Deposited</span></div>
+												<div class="col-3 single-item"><span id="total-earned-rewards-cft">0.000000</span><span>Total Earned</span></div>
+												<div class="col-3 single-item"><span id="total-claimed-rewards-cft">0.000000</span><span>Total Claimed</span></div>
+												<div class="col-3 single-item"><span id="total-unclaimed-rewards-cft">0.000000</span><span>Total Unclaimed</span></div>
+											</div>
+										</div>
+									</div>
+									<!-- Owner Controls -->
+									<div class="row justify-content-center mt-4">
+										<div class="col-12 col-md-10 owner-controls" id="owner-controls-cft" style="display: none;">
+											<h3>Owner Controls</h3>
+											<div class="input-area">
+												<span class="item-title mb-2">Deposit Rewards</span>
+												<div class="input-text"><input type="number" placeholder="Enter CFT amount" id="deposit-rewards-amount-cft" min="0" step="0.000001"></div>
+												<button class="btn input-btn mt-2" id="deposit-rewards-button-cft">Deposit Rewards</button>
+											</div>
+											<div class="input-area">
+												<span class="item-title mb-2">Set Max Stake Per Wallet</span>
+												<div class="input-text"><input type="number" placeholder="Enter max CFT per wallet" id="max-stake-amount-cft" min="0" step="0.000001"></div>
+												<button class="btn input-btn mt-2" id="set-max-stake-button-cft">Set Max Stake</button>
+											</div>
+											<div class="input-area">
+												<span class="item-title mb-2">Set Max Total Staked</span>
+												<div class="input-text"><input type="number" placeholder="Enter max total CFT" id="max-total-amount-cft" min="0" step="0.000001"></div>
+												<button class="btn input-btn mt-2" id="set-max-total-button-cft">Set Max Total</button>
 											</div>
 										</div>
 									</div>
@@ -265,7 +326,7 @@
 					<div class="col-12 card">
 						<div class="row align-items-center justify-content-center">
 							<div class="col-12 col-md-5 text-center">
-								<img src="assets/img/content/cftlogo300.png" alt="">
+								<img src="assets/img/content/cftlogo300.png" alt="CFT Logo">
 							</div>
 							<div class="col-12 col-md-6 mt-4 mt-md-0">
 								<h2 class="m-0">Apply for project staking</h2>
@@ -288,7 +349,7 @@
 					<div class="col-12 col-md-8 text-center">
 						<div class="footer-items">
 							<a class="navbar-brand" href="index.html">
-								<img src="assets/img/logo/logo.png" alt="">
+								<img src="assets/img/logo/logo.png" alt="CFT Ecosystem Logo">
 							</a>
 							<div class="social-icons d-flex justify-content-center my-4">
 								<a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
