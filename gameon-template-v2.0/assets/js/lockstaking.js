@@ -20,7 +20,7 @@ const ENERGY_RENTAL_DURATION = 5; // Duration in minutes
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // CFT token address (mainnet)
-    stakingAddress: 'TP9AQZV9GhnJth2bhH1L2qVtUCJpewM8Ao', // CFTStaking address (mainnet)
+    stakingAddress: 'TFRaWd2qpgEVXi2mqNjV9sM6Uwx1gNB1fV', // CFTStaking address (mainnet)
     decimals: 6,
     rewardDecimals: 6, // Match token decimals, as rewards are scaled by 10^6
     displayName: 'CFT'
@@ -898,7 +898,6 @@ function showEnergyRentalModal(userEnergy, shortfall) {
       'user-energy': userEnergy.toLocaleString(),
       'required-energy': REQUIRED_ENERGY.toLocaleString(),
       'rental-energy': rentalEnergy.toLocaleString(),
-      'rental-cost': rentalCostSun.toLocaleString(),
       'rental-cost-trx': rentalCostTrx.toFixed(2),
       'rental-duration': ENERGY_RENTAL_DURATION
     };
