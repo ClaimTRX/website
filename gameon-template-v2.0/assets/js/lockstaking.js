@@ -914,7 +914,7 @@ async function updateTokenUI(token) {
       retryContractCall(() => stakingContracts[token].methods.viewPendingReward(userAddress).call()).catch(error => {
         console.error(`Error fetching pending reward for ${token} after retries:`, error);
         return '0';
-      }),
+      })
       
       
       
