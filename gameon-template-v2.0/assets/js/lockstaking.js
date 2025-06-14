@@ -915,23 +915,9 @@ async function updateTokenUI(token) {
         console.error(`Error fetching pending reward for ${token} after retries:`, error);
         return '0';
       }),
-      stakingContracts[token].methods.viewTotalDepositedRewards().call().catch(error => {
-        console.error(`Error fetching total deposited rewards for ${token}:`, error);
-        return '0';
-      }),
-      stakingContracts[token].methods.viewTotalEarnedRewards().call().catch(error => {
-        console.error(`Error fetching total earned rewards for ${token}:`, error);
-        return '0';
-      }),
-      stakingContracts[token].methods.viewTotalClaimedRewards().call().catch(error => {
-        console.error(`Error fetching total claimed rewards for ${token}:`, error);
-        return '0';
-      }),
-      stakingContracts[token].methods.viewTotalUnclaimedRewards().call().catch(error => {
-        console.error(`Error fetching total unclaimed rewards for ${token}:`, error);
-        return '0';
-      })
-    ]);
+      
+      
+      
 
     const decimals = tokenDetails[token].decimals;
     const rewardDecimals = tokenDetails[token].rewardDecimals || decimals;
@@ -951,7 +937,7 @@ async function updateTokenUI(token) {
     console.log(`Raw stakedAmount for ${token}:`, stakedAmount);
     console.log(`Raw lockEndTime for ${token}:`, lockEndTime);
     
-    console.log(`Raw totalEarnedRewards for ${token}:`, totalEarnedRewards);
+    
     
     
 
