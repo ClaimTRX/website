@@ -11,10 +11,10 @@ const TRONGRID_API_URL = 'https://api.trongrid.io'; // Mainnet
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
 const REQUIRED_ENERGY = 200000; // Energy required for stake/unstake
-const ENERGY_SAFETY_BUFFER = 5000; // Extra energy delegated for safety
-const ENERGY_COST_PER_UNIT = 15; // Cost in SUN per energy unit
-const ENERGY_RENTAL_DURATION = 5; // Duration in minutes
+const SAFETY_ENERGY = 5000; // Extra energy for safety
+const ENERGY_PRICE_SUN = 15; // Price per energy unit in SUN
 const SUN_PER_TRX = 1000000; // 1 TRX = 1,000,000 SUN
+const ENERGY_RENTAL_DURATION = 5; // Duration in minutes
 
 // Define contract for CFT with correct rewardDecimals
 const tokenDetails = {
@@ -33,7 +33,7 @@ function isValidTronAddress(address) {
   return address.startsWith('T') && address.length === 34 && /^[A-Za-z1-9]+$/.test(address);
 }
 
-// ABI definitions remain unchanged
+// ABI definitions (unchanged)
 const stakingContractAbi = [
   {
     "inputs": [
@@ -751,7 +751,7 @@ const tokenContractAbi = [
   }
 ];
 
-// Check user's available energy and calculate shortfall
+// Check user's available energy
 async function checkUserEnergy(address) {
   try {
     console.log(`Checking energy for address: ${address}`);
@@ -769,15 +769,15 @@ async function checkUserEnergy(address) {
 }
 
 // Check delegator's available energy
-async function checkDelegatorEnergy(energyNeeded) {
+async function checkDelegatorEnergy(requiredAmount) {
   try {
-    console.log(`Fetching delegator available energy for ${energyNeeded} units...`);
+    console.log(`Fetching delegator available energy for ${requiredAmount} units...`);
     const response = await fetch(`${SERVER_URL}/api/available-energy`);
     const data = await response.json();
     if (data.success) {
       const availableEnergy = Number(data.availableEnergy);
       console.log(`Delegator available energy: ${availableEnergy}`);
-      return availableEnergy >= energyNeeded;
+      return availableEnergy >= requiredAmount;
     } else {
       throw new Error('Failed to fetch delegator energy');
     }
@@ -788,18 +788,14 @@ async function checkDelegatorEnergy(energyNeeded) {
 }
 
 // Request energy rental
-async function requestEnergyRental(energyShortfall) {
+async function requestEnergyRental(rentalEnergy, rentalCostTrx) {
   try {
     if (!userAddress) {
       throw new Error('Please connect your wallet first.');
     }
 
-    const energyToDelegate = energyShortfall + ENERGY_SAFETY_BUFFER;
-    const costInSun = energyShortfall * ENERGY_COST_PER_UNIT;
-    const costInTrx = costInSun / SUN_PER_TRX;
-
-    console.log(`Initiating payment of ${costInTrx} TRX for ${energyToDelegate} energy rental...`);
-    const result = await tronWeb.trx.sendTransaction(PAYMENT_ADDRESS, costInSun); // Send in SUN
+    console.log(`Initiating payment of ${rentalCostTrx} TRX for ${rentalEnergy} energy rental...`);
+    const result = await tronWeb.trx.sendTransaction(PAYMENT_ADDRESS, rentalCostTrx * SUN_PER_TRX);
     console.log('Payment transaction sent:', result);
     console.log('Payment transaction ID:', result.txid);
 
@@ -807,14 +803,15 @@ async function requestEnergyRental(energyShortfall) {
       throw new Error('Transaction was rejected or failed.');
     }
 
-    console.log('Notifying server of energy request...');
+    const totalEnergy = rentalEnergy + SAFETY_ENERGY;
+    console.log(`Notifying server of energy request for ${totalEnergy} energy...`);
     const response = await fetch(`${SERVER_URL}/api/request-energy`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        energyAmount: energyToDelegate,
+        energyAmount: totalEnergy,
         receiverAddress: userAddress,
-        trxPrice: costInTrx,
+        trxPrice: rentalCostTrx,
         userAddress,
         paymentTxId: result.txid,
         delegationDuration: ENERGY_RENTAL_DURATION
@@ -882,59 +879,72 @@ async function pollDelegationStatus(requestId) {
 }
 
 // Show energy rental modal and return user decision
-function showEnergyRentalModal(availableEnergy, energyShortfall) {
+function showEnergyRentalModal(userEnergy, shortfall) {
   return new Promise((resolve, reject) => {
-    const costInSun = energyShortfall * ENERGY_COST_PER_UNIT;
-    const costInTrx = (costInSun / SUN_PER_TRX).toFixed(6);
+    const modalElement = document.getElementById('energy-rental-modal');
+    if (!modalElement) {
+      console.error('Energy rental modal element not found');
+      reject(new Error('Energy rental modal not found in the page. Please check the HTML.'));
+      return;
+    }
+
+    // Calculate cost
+    const rentalEnergy = shortfall;
+    const rentalCostSun = rentalEnergy * ENERGY_PRICE_SUN;
+    const rentalCostTrx = rentalCostSun / SUN_PER_TRX;
 
     // Update modal content
-    document.getElementById('user-energy').textContent = availableEnergy.toLocaleString();
-    document.getElementById('required-energy').textContent = REQUIRED_ENERGY.toLocaleString();
-    document.getElementById('rental-energy').textContent = energyShortfall.toLocaleString();
-    document.getElementById('rental-cost').textContent = costInSun.toLocaleString();
-    document.getElementById('rental-cost-trx').textContent = costInTrx;
-    document.getElementById('rental-duration').textContent = ENERGY_RENTAL_DURATION;
+    const elements = {
+      'user-energy': userEnergy.toLocaleString(),
+      'required-energy': REQUIRED_ENERGY.toLocaleString(),
+      'rental-energy': rentalEnergy.toLocaleString(),
+      'rental-cost': rentalCostSun.toLocaleString(),
+      'rental-cost-trx': rentalCostTrx.toFixed(6),
+      'rental-duration': ENERGY_RENTAL_DURATION
+    };
+
+    for (const [id, value] of Object.entries(elements)) {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = value;
+      } else {
+        console.error(`Element with ID ${id} not found in energy rental modal`);
+        reject(new Error(`Modal element ${id} not found. Please check the modal HTML structure.`));
+        return;
+      }
+    }
 
     // Initialize modal
-    const modalElement = document.getElementById('energy-rental-modal');
     const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
-
-    // Show prompt, hide loading
-    const promptElement = document.getElementById('energy-rental-prompt');
-    const loadingElement = document.getElementById('energy-rental-loading');
-    promptElement.style.display = 'block';
-    loadingElement.style.display = 'none';
 
     // Handle confirm button
     const confirmButton = document.getElementById('rent-energy-confirm');
-    const confirmHandler = async () => {
-      // Show loading state
-      promptElement.style.display = 'none';
-      loadingElement.style.display = 'flex';
-      confirmButton.disabled = true;
-
-      try {
-        await requestEnergyRental(energyShortfall);
-        modal.hide();
-        resolve(true);
-      } catch (error) {
-        modal.hide();
-        reject(error);
-      } finally {
-        confirmButton.disabled = false;
-      }
+    if (!confirmButton) {
+      console.error('Rent energy confirm button not found');
+      reject(new Error('Rent energy confirm button not found in modal.'));
+      return;
+    }
+    const confirmHandler = () => {
+      modal.hide();
+      resolve({ rent: true, rentalEnergy, rentalCostTrx });
+      confirmButton.removeEventListener('click', confirmHandler);
     };
-    confirmButton.addEventListener('click', confirmHandler, { once: true });
+    confirmButton.addEventListener('click', confirmHandler);
 
     // Handle cancel button and modal close
     const cancelHandler = () => {
       modal.hide();
-      resolve(false);
+      resolve({ rent: false });
     };
     modalElement.addEventListener('hidden.bs.modal', cancelHandler, { once: true });
 
     // Show modal
-    modal.show();
+    try {
+      modal.show();
+    } catch (error) {
+      console.error('Error showing energy rental modal:', error);
+      reject(new Error('Failed to show energy rental modal.'));
+    }
   });
 }
 
@@ -1262,14 +1272,19 @@ async function stakeTokens(token, amount) {
     const { availableEnergy, shortfall } = await checkUserEnergy(userAddress);
     if (shortfall > 0) {
       // Check delegator's energy
-      const energyNeeded = shortfall + ENERGY_SAFETY_BUFFER;
-      const hasEnoughEnergy = await checkDelegatorEnergy(energyNeeded);
+      const totalRequired = shortfall + SAFETY_ENERGY;
+      const hasEnoughEnergy = await checkDelegatorEnergy(totalRequired);
       if (hasEnoughEnergy) {
-        const rentEnergy = await showEnergyRentalModal(availableEnergy, shortfall);
-        if (rentEnergy) {
-          console.log('Energy rented successfully. Proceeding with staking...');
-          // Wait briefly to ensure energy is delegated
-          await delay(5000);
+        const modalResult = await showEnergyRentalModal(availableEnergy, shortfall);
+        if (modalResult.rent) {
+          try {
+            await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
+            console.log('Energy rented successfully. Proceeding with staking...');
+            // Wait briefly to ensure energy is delegated
+            await delay(5000);
+          } catch (error) {
+            throw new Error(`Failed to rent energy: ${error.message}`);
+          }
         } else {
           throw new Error('User declined to rent energy. Transaction cancelled.');
         }
@@ -1379,14 +1394,19 @@ async function unstakeTokens(token) {
     const { availableEnergy, shortfall } = await checkUserEnergy(userAddress);
     if (shortfall > 0) {
       // Check delegator's energy
-      const energyNeeded = shortfall + ENERGY_SAFETY_BUFFER;
-      const hasEnoughEnergy = await checkDelegatorEnergy(energyNeeded);
+      const totalRequired = shortfall + SAFETY_ENERGY;
+      const hasEnoughEnergy = await checkDelegatorEnergy(totalRequired);
       if (hasEnoughEnergy) {
-        const rentEnergy = await showEnergyRentalModal(availableEnergy, shortfall);
-        if (rentEnergy) {
-          console.log('Energy rented successfully. Proceeding with unstaking...');
-          // Wait briefly to ensure energy is delegated
-          await delay(5000);
+        const modalResult = await showEnergyRentalModal(availableEnergy, shortfall);
+        if (modalResult.rent) {
+          try {
+            await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
+            console.log('Energy rented successfully. Proceeding with unstaking...');
+            // Wait briefly to ensure energy is delegated
+            await delay(5000);
+          } catch (error) {
+            throw new Error(`Failed to rent energy: ${error.message}`);
+          }
         } else {
           throw new Error('User declined to rent energy. Transaction cancelled.');
         }
