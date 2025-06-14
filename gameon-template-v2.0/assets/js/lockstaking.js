@@ -914,7 +914,8 @@ async function updateTokenUI(token) {
       retryContractCall(() => stakingContracts[token].methods.viewPendingReward(userAddress).call()).catch(error => {
         console.error(`Error fetching pending reward for ${token} after retries:`, error);
         return '0';
-      })
+        })
+    ]);
       
       
       
@@ -935,7 +936,7 @@ async function updateTokenUI(token) {
     console.log(`Raw pendingReward for ${token}:`, pendingReward);
     console.log(`Raw totalBalance for ${token}:`, totalBalance);
     console.log(`Raw stakedAmount for ${token}:`, stakedAmount);
-    console.log(`Raw lockEndTime for ${token}:`, lockEndTime)
+    console.log(`Raw lockEndTime for ${token}:`, lockEndTime);
     
     
     
