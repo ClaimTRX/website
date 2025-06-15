@@ -10,7 +10,8 @@ const TRONGRID_API_URL = 'https://api.trongrid.io'; // Mainnet
 // Payment wallet for energy rental
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
-const REQUIRED_ENERGY = 170000; // Energy required for stake/unstake
+const STAKE_REQUIRED_ENERGY = 170000; // Energy required for stake
+const UNSTAKE_REQUIRED_ENERGY = 150000; // Energy required for unstake
 const SAFETY_ENERGY = 5000; // Extra energy for safety
 const ENERGY_PRICE_SUN = 10; // Price per energy unit in SUN
 const SUN_PER_TRX = 1000000; // 1 TRX = 1,000,000 SUN
@@ -578,6 +579,19 @@ const stakingContractAbi = [
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "emergencyUnlock",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   }
 ];
 
@@ -771,19 +785,21 @@ function hideProcessingModal(modal) {
 }
 
 // Check user's available energy
-async function checkUserEnergy(address) {
+async function checkUserEnergy(address, action = 'stake') {
   try {
-    console.log(`Checking energy for address: ${address}`);
+    console.log(`Checking energy for address: ${address}, action: ${action}`);
     const resources = await tronWeb.trx.getAccountResources(address);
     const energyLimit = resources.EnergyLimit || 0;
     const energyUsed = resources.EnergyUsed || 0;
     const availableEnergy = energyLimit - energyUsed;
-    const shortfall = Math.max(0, REQUIRED_ENERGY - availableEnergy);
-    console.log(`Energy for ${address}: Limit=${energyLimit}, Used=${energyUsed}, Available=${availableEnergy}, Shortfall=${shortfall}`);
-    return { availableEnergy, shortfall };
+    const requiredEnergy = action === 'stake' ? STAKE_REQUIRED_ENERGY : UNSTAKE_REQUIRED_ENERGY;
+    const shortfall = Math.max(0, requiredEnergy - availableEnergy);
+    console.log(`Energy for ${address}: Limit=${energyLimit}, Used=${energyUsed}, Available=${availableEnergy}, Required=${requiredEnergy}, Shortfall=${shortfall}`);
+    return { availableEnergy, shortfall, requiredEnergy };
   } catch (error) {
     console.error(`Error checking energy for ${address}:`, error);
-    return { availableEnergy: 0, shortfall: REQUIRED_ENERGY };
+    const requiredEnergy = action === 'stake' ? STAKE_REQUIRED_ENERGY : UNSTAKE_REQUIRED_ENERGY;
+    return { availableEnergy: 0, shortfall: requiredEnergy, requiredEnergy };
   }
 }
 
@@ -903,7 +919,7 @@ async function pollDelegationStatus(requestId) {
 }
 
 // Show energy rental modal and return user decision
-function showEnergyRentalModal(userEnergy, shortfall) {
+function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy) {
   return new Promise((resolve, reject) => {
     const modalElement = document.getElementById('energy-rental-modal');
     if (!modalElement) {
@@ -920,7 +936,7 @@ function showEnergyRentalModal(userEnergy, shortfall) {
     // Update modal content
     const elements = {
       'user-energy': userEnergy.toLocaleString('en-US'),
-      'required-energy': REQUIRED_ENERGY.toLocaleString('en-US'),
+      'required-energy': requiredEnergy.toLocaleString('en-US'),
       'rental-energy': rentalEnergy.toLocaleString('en-US'),
       'rental-cost-trx': rentalCostTrx.toFixed(2),
       'rental-duration': ENERGY_RENTAL_DURATION
@@ -1111,7 +1127,8 @@ async function updateTokenUI(token) {
       lockEndTime,
       remainingStakeable,
       apr,
-      pendingReward
+      pendingReward,
+      emergencyUnlock
     ] = await Promise.all([
       tokenContracts[token].methods.balanceOf(userAddress).call().catch(error => {
         console.error(`Error fetching balance for ${token}:`, error);
@@ -1140,6 +1157,10 @@ async function updateTokenUI(token) {
       retryContractCall(() => stakingContracts[token].methods.viewPendingReward(userAddress).call()).catch(error => {
         console.error(`Error fetching pending reward for ${token} after retries:`, error);
         return '0';
+      }),
+      stakingContracts[token].methods.emergencyUnlock().call().catch(error => {
+        console.error(`Error fetching emergencyUnlock for ${token}:`, error);
+        return false;
       })
     ]);
 
@@ -1150,7 +1171,7 @@ async function updateTokenUI(token) {
     // Convert lock end time to local date/time
     const lockEndTimestamp = Number(lockEndTime) * 1000; // Convert seconds to milliseconds
     let lockTimeDisplay = 'Unlocked';
-    if (lockEndTimestamp > 0) {
+    if (lockEndTimestamp > 0 && !emergencyUnlock) {
       const lockEndDate = new Date(lockEndTimestamp);
       lockTimeDisplay = lockEndDate.toLocaleString(); // Display in local date/time
     }
@@ -1160,6 +1181,7 @@ async function updateTokenUI(token) {
     console.log(`Raw totalBalance for ${token}:`, totalBalance);
     console.log(`Raw stakedAmount for ${token}:`, stakedAmount);
     console.log(`Raw lockEndTime for ${token}:`, lockEndTime);
+    console.log(`Emergency Unlock for ${token}:`, emergencyUnlock);
 
     // Update available tokens (wallet balance)
     const balance = (Number(balanceRaw) / Math.pow(10, decimals)).toLocaleString('en-US', { maximumFractionDigits: 0 });
@@ -1235,7 +1257,7 @@ async function updateTokenUI(token) {
     const hasStaked = BigInt(stakedAmount) > 0;
     const depositSection = document.getElementById(`deposit-section-${token}`);
     const withdrawSection = document.getElementById(`withdraw-section-${token}`);
-    const isUnlocked = lockEndTimestamp <= Date.now();
+    const isUnlocked = emergencyUnlock || lockEndTimestamp <= Date.now();
 
     if (depositSection) {
       depositSection.style.display = hasStaked ? 'none' : 'block';
@@ -1267,7 +1289,10 @@ async function updateTokenUI(token) {
       unstakeButton.addEventListener('click', async (e) => {
         e.preventDefault();
         if (!unstakeButton.disabled) {
+          console.log(`Unstake button clicked for ${token}`);
           await unstakeTokens(token);
+        } else {
+          console.log(`Unstake button disabled for ${token}`);
         }
       });
       unstakeArea.appendChild(unstakeButton);
@@ -1293,13 +1318,13 @@ async function stakeTokens(token, amount) {
     }
 
     // Check user's energy
-    const { availableEnergy, shortfall } = await checkUserEnergy(userAddress);
+    const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, 'stake');
     if (shortfall > 0) {
       // Check delegator's energy
       const totalRequired = shortfall + SAFETY_ENERGY;
       const hasEnoughEnergy = await checkDelegatorEnergy(totalRequired);
       if (hasEnoughEnergy) {
-        const modalResult = await showEnergyRentalModal(availableEnergy, shortfall);
+        const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy);
         if (modalResult.rent) {
           try {
             await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
@@ -1420,13 +1445,13 @@ async function unstakeTokens(token) {
     }
 
     // Check user's energy
-    const { availableEnergy, shortfall } = await checkUserEnergy(userAddress);
+    const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, 'unstake');
     if (shortfall > 0) {
       // Check delegator's energy
       const totalRequired = shortfall + SAFETY_ENERGY;
       const hasEnoughEnergy = await checkDelegatorEnergy(totalRequired);
       if (hasEnoughEnergy) {
-        const modalResult = await showEnergyRentalModal(availableEnergy, shortfall);
+        const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy);
         if (modalResult.rent) {
           try {
             await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
@@ -1446,10 +1471,11 @@ async function unstakeTokens(token) {
 
     processingModal = showProcessingModal();
 
-    // Check if user has staked and if lock period has ended
-    const [stakedAmount, lockEndTime] = await Promise.all([
+    // Check if user has staked and if lock period has ended or emergencyUnlock is enabled
+    const [stakedAmount, lockEndTime, emergencyUnlock] = await Promise.all([
       stakingContract.methods.viewStakedAmount(userAddress).call(),
-      stakingContract.methods.viewUserLockEndTime(userAddress).call()
+      stakingContract.methods.viewUserLockEndTime(userAddress).call(),
+      stakingContract.methods.emergencyUnlock().call()
     ]);
 
     if (BigInt(stakedAmount) === 0n) {
@@ -1457,7 +1483,7 @@ async function unstakeTokens(token) {
     }
 
     const currentTimestamp = Math.floor(Date.now() / 1000);
-    if (Number(lockEndTime) > currentTimestamp && !(await stakingContract.methods.emergencyUnlock().call())) {
+    if (!emergencyUnlock && Number(lockEndTime) > currentTimestamp) {
       throw new Error('Tokens are still locked.');
     }
 
