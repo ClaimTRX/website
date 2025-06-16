@@ -1412,83 +1412,153 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-
 // UI update functions
 async function updateAvailableTokens(type) {
-    const tokenContract = tokenContracts[type];
-    const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
-    const decimals = await tokenContract.methods.decimals().call();
-    const balance = Number(balanceRaw) / 10 ** Number(decimals); // Convert to number for formatting
-    document.getElementById(`available-tokens-${type}`).innerText = formatNumber(balance);
+    try {
+        const tokenContract = tokenContracts[type];
+        const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
+        const decimals = await tokenContract.methods.decimals().call();
+        if (!balanceRaw || !decimals) {
+            console.error(`Invalid balanceRaw or decimals for ${type}:`, balanceRaw, decimals);
+            document.getElementById(`available-tokens-${type}`).innerText = '0';
+            return;
+        }
+        const balance = Number(balanceRaw) / 10 ** Number(decimals);
+        document.getElementById(`available-tokens-${type}`).innerText = formatNumber(balance);
+    } catch (e) {
+        console.error(`Error updating available tokens for ${type}:`, e);
+        document.getElementById(`available-tokens-${type}`).innerText = '0';
+    }
 }
 
 async function updateStakedAmount(type) {
-    const stakingContract = stakingContracts[type];
-    const stakedAmountRaw = await stakingContract.methods.viewStakedAmount(userAddress).call();
-    const tokenContract = tokenContracts[type];
-    const decimals = await tokenContract.methods.decimals().call();
-    document.getElementById(`staked-amount-${type}`).innerText = formatWholeNumber(stakedAmountRaw / 10 ** decimals);
+    try {
+        const stakingContract = stakingContracts[type];
+        const stakedAmountRaw = await stakingContract.methods.viewStakedAmount(userAddress).call();
+        const tokenContract = tokenContracts[type];
+        const decimals = await tokenContract.methods.decimals().call();
+        if (!stakedAmountRaw || !decimals) {
+            console.error(`Invalid stakedAmountRaw or decimals for ${type}:`, stakedAmountRaw, decimals);
+            document.getElementById(`staked-amount-${type}`).innerText = '0';
+            return;
+        }
+        const stakedAmount = Number(stakedAmountRaw) / 10 ** Number(decimals);
+        document.getElementById(`staked-amount-${type}`).innerText = formatWholeNumber(stakedAmount);
+    } catch (e) {
+        console.error(`Error updating staked amount for ${type}:`, e);
+        document.getElementById(`staked-amount-${type}`).innerText = '0';
+    }
 }
 
 async function updateEstimatedAPR(type) {
-    const config = stakingConfigs[type];
-    const stakingContract = stakingContracts[type];
-    const tokenContract = tokenContracts[type];
-    const decimals = await tokenContract.methods.decimals().call();
-
-    if (config.aprCalculation === 'dailyRewardBased') {
-        // CFT: APR based on daily rewards
-        const dailyRewardRaw = await stakingContract.methods.viewDailyReward().call();
-        const totalStakedRaw = await stakingContract.methods.viewTotalStaked().call();
-        const dailyReward = Number(dailyRewardRaw) / 10 ** Number(decimals);
-const totalStaked = Number(totalStakedRaw) / 10 ** Number(decimals);
-        const apr = totalStaked > 0 ? ((dailyReward / totalStaked) * 365 * 100).toFixed(2) + '%' : 'N/A';
-        document.getElementById(`estimated-apr-${type}`).innerText = apr;
-    } else if (config.aprCalculation === 'projectedRewardsBased') {
-        // TRX/USDT: APR based on projected yearly rewards
-        const projectedRewardsRaw = await stakingContract.methods.viewProjectedRewardsForYear(userAddress).call();
-        const projectedRewards = parseFloat(tronWeb.fromSun(projectedRewardsRaw));
-        const stakedAmountRaw = await stakingContract.methods.viewStakedAmount(userAddress).call();
-        const stakedAmountCFT = parseFloat(stakedAmountRaw) / 10 ** decimals;
-        let apr;
-        if (type === 'trx') {
-            const yearlyRewardsUSD = projectedRewards * config.priceTRX;
-            const stakedValueUSD = stakedAmountCFT * config.priceCFT;
-            apr = stakedValueUSD > 0 ? (yearlyRewardsUSD / stakedValueUSD * 100).toFixed(2) + '%' : 'N/A';
-        } else if (type === 'usdt') {
-            const stakedValueUSD = stakedAmountCFT * config.priceCFT;
-            apr = stakedValueUSD > 0 ? (projectedRewards / stakedValueUSD * 100).toFixed(2) + '%' : 'N/A';
+    try {
+        const config = stakingConfigs[type];
+        const stakingContract = stakingContracts[type];
+        const tokenContract = tokenContracts[type];
+        const decimals = await tokenContract.methods.decimals().call();
+        if (!decimals) {
+            console.error(`Invalid decimals for ${type}:`, decimals);
+            document.getElementById(`estimated-apr-${type}`).innerText = 'N/A';
+            return;
         }
-        document.getElementById(`estimated-apr-${type}`).innerText = apr;
+
+        if (config.aprCalculation === 'dailyRewardBased') {
+            // CFT: APR based on daily rewards
+            const dailyRewardRaw = await stakingContract.methods.viewDailyReward().call();
+            const totalStakedRaw = await stakingContract.methods.viewTotalStaked().call();
+            if (!dailyRewardRaw || !totalStakedRaw) {
+                console.error(`Invalid dailyRewardRaw or totalStakedRaw for ${type}:`, dailyRewardRaw, totalStakedRaw);
+                document.getElementById(`estimated-apr-${type}`).innerText = 'N/A';
+                return;
+            }
+            const dailyReward = Number(dailyRewardRaw) / 10 ** Number(decimals);
+            const totalStaked = Number(totalStakedRaw) / 10 ** Number(decimals);
+            const apr = totalStaked > 0 ? ((dailyReward / totalStaked) * 365 * 100).toFixed(2) + '%' : 'N/A';
+            document.getElementById(`estimated-apr-${type}`).innerText = apr;
+        } else if (config.aprCalculation === 'projectedRewardsBased') {
+            // TRX/USDT: APR based on projected yearly rewards
+            const projectedRewardsRaw = await stakingContract.methods.viewProjectedRewardsForYear(userAddress).call();
+            const stakedAmountRaw = await stakingContract.methods.viewStakedAmount(userAddress).call();
+            if (!projectedRewardsRaw || !stakedAmountRaw) {
+                console.error(`Invalid projectedRewardsRaw or stakedAmountRaw for ${type}:`, projectedRewardsRaw, stakedAmountRaw);
+                document.getElementById(`estimated-apr-${type}`).innerText = 'N/A';
+                return;
+            }
+            const projectedRewards = Number(tronWeb.fromSun(projectedRewardsRaw));
+            const stakedAmountCFT = Number(stakedAmountRaw) / 10 ** Number(decimals);
+            let apr;
+            if (type === 'trx') {
+                const yearlyRewardsUSD = projectedRewards * config.priceTRX;
+                const stakedValueUSD = stakedAmountCFT * config.priceCFT;
+                apr = stakedValueUSD > 0 ? (yearlyRewardsUSD / stakedValueUSD * 100).toFixed(2) + '%' : 'N/A';
+            } else if (type === 'usdt') {
+                const stakedValueUSD = stakedAmountCFT * config.priceCFT;
+                apr = stakedValueUSD > 0 ? (projectedRewards / stakedValueUSD * 100).toFixed(2) + '%' : 'N/A';
+            }
+            document.getElementById(`estimated-apr-${type}`).innerText = apr;
+        }
+    } catch (e) {
+        console.error(`Error updating estimated APR for ${type}:`, e);
+        document.getElementById(`estimated-apr-${type}`).innerText = 'N/A';
     }
 }
 
 async function updateClaimableRewards(type) {
-    const stakingContract = stakingContracts[type];
-    const claimableRewardsRaw = await stakingContract.methods.viewPendingReward(userAddress).call();
-    const config = stakingConfigs[type];
-    let claimableRewards;
-    if (type === 'cft') {
-        const decimals = await tokenContracts[type].methods.decimals().call();
-        claimableRewards = Number(claimableRewardsRaw) / 10 ** Number(decimals);
-    } else {
-        claimableRewards = tronWeb.fromSun(claimableRewardsRaw);
+    try {
+        const stakingContract = stakingContracts[type];
+        const claimableRewardsRaw = await stakingContract.methods.viewPendingReward(userAddress).call();
+        const config = stakingConfigs[type];
+        let claimableRewards;
+        if (type === 'cft') {
+            const decimals = await tokenContracts[type].methods.decimals().call();
+            if (!claimableRewardsRaw || !decimals) {
+                console.error(`Invalid claimableRewardsRaw or decimals for ${type}:`, claimableRewardsRaw, decimals);
+                document.getElementById(`claimable-rewards-${type}`).innerText = `0 ${config.rewardUnit}`;
+                return;
+            }
+            claimableRewards = Number(claimableRewardsRaw) / 10 ** Number(decimals);
+        } else {
+            if (!claimableRewardsRaw) {
+                console.error(`Invalid claimableRewardsRaw for ${type}:`, claimableRewardsRaw);
+                document.getElementById(`claimable-rewards-${type}`).innerText = `0 ${config.rewardUnit}`;
+                return;
+            }
+            claimableRewards = Number(tronWeb.fromSun(claimableRewardsRaw));
+        }
+        document.getElementById(`claimable-rewards-${type}`).innerText = formatNumber(claimableRewards) + ' ' + config.rewardUnit;
+    } catch (e) {
+        console.error(`Error updating claimable rewards for ${type}:`, e);
+        document.getElementById(`claimable-rewards-${type}`).innerText = `0 ${stakingConfigs[type].rewardUnit}`;
     }
-    document.getElementById(`claimable-rewards-${type}`).innerText = formatNumber(claimableRewards) + ' ' + config.rewardUnit;
 }
 
 async function updateTotalClaimedRewards(type) {
-    const stakingContract = stakingContracts[type];
-    const totalClaimedRaw = await stakingContract.methods.viewTotalClaimedRewards(userAddress).call();
-    const config = stakingConfigs[type];
-    let totalClaimed;
-    if (type === 'cft') {
-        const decimals = await tokenContracts[type].methods.decimals().call();
-        totalClaimed = Number(totalClaimedRaw) / 10 ** Number(decimals);
-    } else {
-        totalClaimed = tronWeb.fromSun(totalClaimedRaw);
+    try {
+        const stakingContract = stakingContracts[type];
+        const totalClaimedRaw = await stakingContract.methods.viewTotalClaimedRewards(userAddress).call();
+        const config = stakingConfigs[type];
+        let totalClaimed;
+        if (type === 'cft') {
+            const decimals = await tokenContracts[type].methods.decimals().call();
+            if (!totalClaimedRaw || !decimals) {
+                console.error(`Invalid totalClaimedRaw or decimals for ${type}:`, totalClaimedRaw, decimals);
+                document.getElementById(`total-claimed-rewards-${type}`).innerText = '0';
+                return;
+            }
+            totalClaimed = Number(totalClaimedRaw) / 10 ** Number(decimals);
+        } else {
+            if (!totalClaimedRaw) {
+                console.error(`Invalid totalClaimedRaw for ${type}:`, totalClaimedRaw);
+                document.getElementById(`total-claimed-rewards-${type}`).innerText = '0';
+                return;
+            }
+            totalClaimed = Number(tronWeb.fromSun(totalClaimedRaw));
+        }
+        document.getElementById(`total-claimed-rewards-${type}`).innerText = formatNumber(totalClaimed);
+    } catch (e) {
+        console.error(`Error updating total claimed rewards for ${type}:`, e);
+        document.getElementById(`total-claimed-rewards-${type}`).innerText = '0';
     }
-    document.getElementById(`total-claimed-rewards-${type}`).innerText = formatNumber(totalClaimed);
 }
 
 // Staking actions
@@ -1510,7 +1580,6 @@ async function stakeTokens(type) {
     await stakingContract.methods.stake(amountToStake.toString()).send();
     setTimeout(() => updateAllUI(), 3000);
 }
-
 
 async function unstakeTokens(type) {
     const amount = document.getElementById(`withdraw-amount-${type}`).value;
