@@ -1440,8 +1440,8 @@ async function updateEstimatedAPR(type) {
         // CFT: APR based on daily rewards
         const dailyRewardRaw = await stakingContract.methods.viewDailyReward().call();
         const totalStakedRaw = await stakingContract.methods.viewTotalStaked().call();
-        const dailyReward = parseFloat(dailyRewardRaw) / 10 ** decimals;
-        const totalStaked = parseFloat(totalStakedRaw) / 10 ** decimals;
+        const dailyReward = Number(dailyRewardRaw) / 10 ** Number(decimals);
+const totalStaked = Number(totalStakedRaw) / 10 ** Number(decimals);
         const apr = totalStaked > 0 ? ((dailyReward / totalStaked) * 365 * 100).toFixed(2) + '%' : 'N/A';
         document.getElementById(`estimated-apr-${type}`).innerText = apr;
     } else if (config.aprCalculation === 'projectedRewardsBased') {
@@ -1470,7 +1470,7 @@ async function updateClaimableRewards(type) {
     let claimableRewards;
     if (type === 'cft') {
         const decimals = await tokenContracts[type].methods.decimals().call();
-        claimableRewards = claimableRewardsRaw / 10 ** decimals;
+        claimableRewards = Number(claimableRewardsRaw) / 10 ** Number(decimals);
     } else {
         claimableRewards = tronWeb.fromSun(claimableRewardsRaw);
     }
@@ -1484,7 +1484,7 @@ async function updateTotalClaimedRewards(type) {
     let totalClaimed;
     if (type === 'cft') {
         const decimals = await tokenContracts[type].methods.decimals().call();
-        totalClaimed = totalClaimedRaw / 10 ** decimals;
+        totalClaimed = Number(totalClaimedRaw) / 10 ** Number(decimals);
     } else {
         totalClaimed = tronWeb.fromSun(totalClaimedRaw);
     }
