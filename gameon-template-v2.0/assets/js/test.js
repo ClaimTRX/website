@@ -1418,7 +1418,8 @@ async function updateAvailableTokens(type) {
     const tokenContract = tokenContracts[type];
     const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
     const decimals = await tokenContract.methods.decimals().call();
-    document.getElementById(`available-tokens-${type}`).innerText = formatNumber(balanceRaw / 10 ** decimals);
+    const balance = Number(balanceRaw) / 10 ** Number(decimals); // Convert to number for formatting
+    document.getElementById(`available-tokens-${type}`).innerText = formatNumber(balance);
 }
 
 async function updateStakedAmount(type) {
