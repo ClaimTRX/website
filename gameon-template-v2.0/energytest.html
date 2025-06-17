@@ -1,46 +1,62 @@
-<!DOCTYPE html>
+<!doctype html>
 <html class="no-js" lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="description" content="">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <title>CFT Ecosystem. Sell Energy</title>
-    <!-- Favicon: Ensure favicon.png is in assets/img/ in your GitHub repo -->
+
+    <!-- Title -->
+    <title>CFT Ecosystem - Bulk Energy Orders</title>
+
+    <!-- Favicon -->
     <link rel="icon" href="assets/img/favicon.png">
-    <!-- Style CSS: Ensure style.css is in assets/css/ in your GitHub repo -->
+
+    <!-- Style css -->
     <link rel="stylesheet" href="assets/css/style.css">
+
+    <!-- Custom Styles -->
     <style>
-        select#energy-amount, select#lock-duration, input#receiver-address, input#cft-price {
+        select#energy-amount,
+        select#lock-duration,
+        select#payment-currency {
             color: #000 !important;
         }
-        select#energy-amount:focus, select#lock-duration:focus, input#receiver-address:focus, input#cft-price:focus {
+        select#energy-amount:focus,
+        select#lock-duration:focus,
+        select#payment-currency:focus {
             color: #000 !important;
         }
-        select#energy-amount option, select#lock-duration option {
+        select#energy-amount option,
+        select#lock-duration option,
+        select#payment-currency option {
             color: #000 !important;
         }
-        select#energy-amount option:checked, select#lock-duration option:checked {
+        select#energy-amount option:checked,
+        select#lock-duration option:checked,
+        select#payment-currency option:checked {
             color: #000 !important;
         }
-        .status-message {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 5px;
+        .marketplace-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
         }
-        .status-message.success {
-            background-color: #d4edda;
-            color: #155724;
+        .marketplace-table th, .marketplace-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
         }
-        .status-message.error {
-            background-color: #f8d7da;
-            color: #721c24;
+        .marketplace-table th {
+            background-color: #f2f2f2;
         }
     </style>
 </head>
+
 <body>
-    <!-- Preloader: Ensure images are in assets/img/ -->
+    <!-- Preloader -->
     <div id="gameon-preloader" class="gameon-preloader">
         <div class="preloader-animation">
             <div class="spinner"></div>
@@ -55,11 +71,12 @@
             </div>
         </div>
     </div>
+
     <div class="main">
+        <!-- Header -->
         <header id="header">
             <nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
                 <div class="container header">
-                    <!-- Logo: Ensure logo.png is in assets/img/logo/ -->
                     <a class="navbar-brand" href="index.html">
                         <img src="assets/img/logo/logo.png" alt="" />
                     </a>
@@ -92,7 +109,7 @@
                             <ul class="dropdown-menu">
                                 <li class="nav-item"><a href="feb.html" class="nav-link">FEB</a></li>
                                 <li class="nav-item"><a href="energy.html" class="nav-link">Rent Energy</a></li>
-                                <li class="nav-item"><a href="sellenergy.html" class="nav-link">Sell Energy</a></li>
+                                <li class="nav-item"><a href="bulk-energy.html" class="nav-link">Bulk Energy Orders</a></li>
                             </ul>
                         </li>
                         <li class="nav-item"><a href="swap.html" class="nav-link">Swap</a></li>
@@ -114,6 +131,8 @@
                 </div>
             </nav>
         </header>
+
+        <!-- Hero Area -->
         <section class="hero-section">
             <div class="container">
                 <div class="row align-items-center justify-content-center">
@@ -121,31 +140,32 @@
                         <div class="hero-content">
                             <div class="intro text-center mb-5">
                                 <span class="intro-text">CFT Ecosystem</span>
-                                <h1 class="mt-4">Sell Energy</h1>
-                                <p>Earn CFT tokens by delegating your energy</p>
+                                <h1 class="mt-4">Bulk Energy Orders</h1>
+                                <p>Trade large energy quantities over extended periods</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
+
+        <!-- Bulk Energy Area -->
         <section class="staking-area">
-            <div id="sell-energy-accordion" class="container accordion">
+            <div id="bulk-energy-accordion" class="container accordion">
                 <div class="row justify-content-center">
                     <div class="col-12 col-md-10">
+                        <!-- Order Creation -->
                         <div class="single-accordion-item">
                             <div class="card-header bg-inherit border-0 p-0">
                                 <h2 class="m-0">
-                                    <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSellEnergy">
+                                    <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOrder">
                                         <div class="row">
                                             <div class="col-12 col-md-8">
                                                 <div class="media flex-column flex-md-row">
-                                                    <!-- Image: Ensure cftlogo518.png is in assets/img/content/ -->
                                                     <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
                                                     <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                        <h4 class="m-0">Sell Energy</h4>
-                                                        <p>Earn CFT tokens by delegating energy to our ecosystem</p>
-                                                        <p>Default rate: 1 CFT per 100,000 Energy per day</p>
+                                                        <h4 class="m-0">Create Bulk Energy Order</h4>
+                                                        <p>Post an order for sellers to fulfill</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -153,42 +173,120 @@
                                     </button>
                                 </h2>
                             </div>
-                            <div id="collapseSellEnergy" class="collapse" data-bs-parent="#sell-energy-accordion">
+                            <div id="collapseOrder" class="collapse" data-bs-parent="#bulk-energy-accordion">
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-12 col-md-6 single-staking-item input-box">
-                                            <span class="item-title mb-2">Select Energy Amount</span>
-                                            <select id="energy-amount" class="form-select form-select-sm mb-3">
-                                                <option value="100000">100,000 Energy</option>
-                                                <option value="200000">200,000 Energy</option>
-                                                <option value="300000">300,000 Energy</option>
-                                                <option value="400000">400,000 Energy</option>
-                                                <option value="500000">500,000 Energy</option>
-                                                <option value="600000">600,000 Energy</option>
-                                                <option value="700000">700,000 Energy</option>
-                                                <option value="800000">800,000 Energy</option>
-                                                <option value="900000">900,000 Energy</option>
-                                                <option value="1000000">1,000,000 Energy</option>
-                                            </select>
-                                            <span class="item-title mb-2">Select Lock Duration</span>
+                                            <span class="item-title mb-2">Energy Amount</span>
+                                            <input type="number" id="energy-amount" class="form-control form-control-sm mb-3" placeholder="e.g., 1000000" min="100000" step="1000">
+                                            <span class="item-title mb-2">Lock Duration (days)</span>
                                             <select id="lock-duration" class="form-select form-select-sm mb-3">
                                                 <option value="1">1 Day</option>
-                                                <option value="3">3 Days</option>
                                                 <option value="7">7 Days</option>
                                                 <option value="30">30 Days</option>
+                                                <option value="90">90 Days</option>
                                             </select>
-                                            <span class="item-title mb-2">CFT Price per 100,000 Energy per Day</span>
-                                            <input type="number" id="cft-price" class="form-control form-control-sm mb-3" placeholder="Enter CFT price (e.g., 1)" value="1" min="0.1" step="0.1">
-                                            <span class="item-title mb-2">Your Wallet Address</span>
-                                            <input type="text" id="receiver-address" class="form-control form-control-sm mb-2" placeholder="Your wallet for CFT payment (defaults to connected wallet)" readonly>
-                                            <p>Total CFT to Earn: <span id="total-cft">Select options</span></p>
-                                            <a href="#" class="btn input-btn btn-sm mt-2" id="sell-energy-button">Sell Energy</a>
-                                            <div id="delegation-status" class="status-message" style="display: none;">
-                                                <p id="delegation-message"></p>
-                                                <p>Transaction Hash: <a id="delegation-hash" href="#" target="_blank" style="display: none;"></a></p>
+                                            <span class="item-title mb-2">Payment Currency</span>
+                                            <select id="payment-currency" class="form-select form-select-sm mb-3">
+                                                <option value="TRX">TRX</option>
+                                                <option value="CFT">CFT</option>
+                                            </select>
+                                            <p>Total Payment: <span id="total-payment">Enter amount</span></p>
+                                            <a href="#" class="btn input-btn btn-sm mt-2" id="create-order-button">Create Order</a>
+                                            <div id="order-status" class="status-message" style="display: none;">
+                                                <p id="order-message"></p>
+                                                <p>Order ID: <span id="order-id"></span></p>
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Marketplace -->
+                        <div class="single-accordion-item mt-4">
+                            <div class="card-header bg-inherit border-0 p-0">
+                                <h2 class="m-0">
+                                    <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMarketplace">
+                                        <div class="row">
+                                            <div class="col-12 col-md-8">
+                                                <div class="media flex-column flex-md-row">
+                                                    <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                                                    <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                        <h4 class="m-0">Energy Marketplace</h4>
+                                                        <p>Fulfill open energy orders</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="collapseMarketplace" class="collapse" data-bs-parent="#bulk-energy-accordion">
+                                <div class="card-body">
+                                    <table class="marketplace-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Order ID</th>
+                                                <th>Energy Amount</th>
+                                                <th>Remaining</th>
+                                                <th>Lock Duration</th>
+                                                <th>Currency</th>
+                                                <th>Total Payment</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="marketplace-table-body"></tbody>
+                                    </table>
+                                    <div id="fulfillment-form" style="display: none; margin-top: 20px;">
+                                        <h5>Fulfill Order</h5>
+                                        <p>Order ID: <span id="selected-order-id"></span></p>
+                                        <span class="item-title mb-2">Energy to Delegate</span>
+                                        <input type="number" id="delegate-amount" class="form-control form-control-sm mb-3" placeholder="Enter amount" min="1000">
+                                        <a href="#" class="btn input-btn btn-sm mt-2" id="fulfill-order-button">Fulfill Order</a>
+                                        <div id="fulfillment-status" class="status-message" style="display: none;">
+                                            <p id="fulfillment-message"></p>
+                                            <p>Transaction Hash: <a id="fulfillment-hash" href="#" target="_blank" style="display: none;"></a></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seller Dashboard -->
+                        <div class="single-accordion-item mt-4">
+                            <div class="card-header bg-inherit border-0 p-0">
+                                <h2 class="m-0">
+                                    <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDashboard">
+                                        <div class="row">
+                                            <div class="col-12 col-md-8">
+                                                <div class="media flex-column flex-md-row">
+                                                    <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                                                    <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                        <h4 class="m-0">Seller Dashboard</h4>
+                                                        <p>Manage your fulfillments</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="collapseDashboard" class="collapse" data-bs-parent="#bulk-energy-accordion">
+                                <div class="card-body">
+                                    <table class="marketplace-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Fulfillment ID</th>
+                                                <th>Order ID</th>
+                                                <th>Energy Delegated</th>
+                                                <th>Lock End</th>
+                                                <th>Status</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="dashboard-table-body"></tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -196,27 +294,8 @@
                 </div>
             </div>
         </section>
-        <section class="cta-area p-0">
-            <div class="container">
-                <div class="row">
-                    <div class="col-12 card">
-                        <div class="row align-items-center justify-content-center">
-                            <div class="col-12 col-md-5 text-center">
-                                <!-- Image: Ensure cftlogo300.png is in assets/img/content/ -->
-                                <img src="assets/img/content/cftlogo300.png" alt="">
-                            </div>
-                            <div class="col-12 col-md-6 mt-4 mt-md-0">
-                                <h2 class="m-0">Apply for project staking</h2>
-                                <p>Earn weekly rewards from staked CFT to build your project</p>
-                                <p>Soon available for projects on any chain</p>
-                                <a class="btn btn-bordered active d-inline-block"><i class="icon-rocket me-2"></i>Coming Soon</a>
-                            </div>
-                        </div>
-                        <a class="cta-link" href="apply.html"></a>
-                    </div>
-                </div>
-            </div>
-        </section>
+
+        <!-- Footer -->
         <footer class="footer-area">
             <div class="container">
                 <div class="row justify-content-center">
@@ -226,58 +305,21 @@
                                 <img src="assets/img/logo/logo.png" alt="">
                             </a>
                             <div class="social-icons d-flex justify-content-center my-4">
-                                <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank">
-                                    <i class="fab fa-x-twitter"></i>
-                                </a>
-                                <a class="reddit" href="https://www.reddit.com/" target="_blank">
-                                    <i class="fab fa-reddit"></i>
-                                </a>
-                                <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank">
-                                    <i class="fab fa-telegram-plane"></i>
-                                </a>
+                                <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
+                                <a class="reddit" href="https://www.reddit.com/" target="_blank"><i class="fab fa-reddit"></i></a>
+                                <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
                             </div>
                             <div class="copyright-area py-4">©2025 CFT Ecosystem, All Rights Reserved</div>
                         </div>
                         <div id="scroll-to-top" class="scroll-to-top">
-                            <a href="#header" class="smooth-anchor">
-                                <i class="fa-solid fa-arrow-up"></i>
-                            </a>
+                            <a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a>
                         </div>
                     </div>
                 </div>
             </div>
         </footer>
-        <div id="search" class="modal fade p-0">
-            <div class="modal-dialog dialog-animated">
-                <div class="modal-content h-100">
-                    <div class="modal-header" data-bs-dismiss="modal">
-                        Search <i class="far fa-times-circle icon-close"></i>
-                    </div>
-                    <div class="modal-body">
-                        <form class="row">
-                            <div class="col-12 align-self-center">
-                                <div class="row">
-                                    <div class="col-12 pb-3">
-                                        <h2 class="search-title mt-0 mb-3">What are you looking for?</h2>
-                                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-12 input-group mt-md-4">
-                                        <input type="text" placeholder="Enter your keywords">
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-12 input-group align-self-center">
-                                        <button class="btn btn-bordered-white mt-3">Search</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
+
+        <!-- Modal Responsive Menu -->
         <div id="menu" class="modal fade p-0">
             <div class="modal-dialog dialog-animated">
                 <div class="modal-content h-100">
@@ -293,7 +335,8 @@
             </div>
         </div>
     </div>
-    <!-- Scripts: Ensure all JS files are in assets/js/ or use CDNs -->
+
+    <!-- Scripts -->
     <script src="assets/js/vendor/jquery.min.js"></script>
     <script src="assets/js/vendor/popper.min.js"></script>
     <script src="assets/js/vendor/bootstrap.min.js"></script>
@@ -304,7 +347,6 @@
     <script src="assets/js/vendor/shuffle.min.js"></script>
     <script src="assets/js/main.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
-    <!-- sellenergy.js: Ensure this is in assets/js/ in your GitHub repo -->
     <script src="assets/js/energytest.js"></script>
 </body>
 </html>
