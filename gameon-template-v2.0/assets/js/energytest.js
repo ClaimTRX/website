@@ -1,182 +1,482 @@
-// WARNING: This file includes a private key for demo purposes only.
-// NEVER expose private keys in client-side JavaScript in production.
-// For a secure implementation, move CFT payments to a server-side API endpoint
-// and store the private key in a secure environment (e.g., .env file).
+let tronWeb, userAddress;
 
 // Constants
-const CFT_CONTRACT_ADDRESS = 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK'; // REPLACE with actual CFT TRC20 contract address
-const ENERGY_DELEGATION_WALLET = 'TD8QG6sQFy2cdsnvPXv3yfXai1avwrG1jU'; // Wallet to receive energy delegations
-const CFT_PAYMENT_WALLET = 'TWzsvYAurZoKojdyrszU6aR94JEXQkL1jr'; // REPLACE with your CFT payment wallet address
-const CFT_PAYMENT_PRIVATE_KEY = 'd822042898f0bf772c8e47a200930b275269c1667c12183b382a6443c4b46249'; // REPLACE with your CFT payment wallet private key
-const TRONGRID_API_KEY = '1c09f073-c70c-4840-8d24-7fef9dcc84f0'; // REPLACE with your TronGrid API key (optional, for rate limits)
+const SERVER_URL = "https://api.cftecosystem.com"; // Your server URL
+const ESCROW_CONTRACT_ADDRESS = "TWzsvYAurZoKojdyrszU6aR94JEXQkL1jr"; // Replace with deployed contract address
+const CFT_CONTRACT_ADDRESS = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK"; // Replace with CFT TRC-20 contract address
+const PRICE_PER_ENERGY = 10; // 10 SUN per energy unit
+const SUN_PER_TRX = 1e6; // 1 TRX = 1,000,000 SUN
+const CFT_PER_TRX = 1; // 1 TRX = 1 CFT
 
-// Initialize TronWeb for CFT payments (for demo only)
-const paymentTronWeb = new TronWeb({
-    fullHost: 'https://api.trongrid.io',
-    headers: { 'TRON-PRO-API-KEY': TRONGRID_API_KEY },
-    privateKey: CFT_PAYMENT_PRIVATE_KEY
-});
-
-let connectedAddress = null;
-let userTronWeb = null;
-
-async function init() {
-    // DOM Elements
-    const connectButton = document.getElementById('connect-button');
-    const energyAmountSelect = document.getElementById('energy-amount');
-    const lockDurationSelect = document.getElementById('lock-duration');
-    const cftPriceInput = document.getElementById('cft-price');
-    const receiverAddressInput = document.getElementById('receiver-address');
-    const totalCftSpan = document.getElementById('total-cft');
-    const sellEnergyButton = document.getElementById('sell-energy-button');
-    const delegationStatusDiv = document.getElementById('delegation-status');
-    const delegationMessageP = document.getElementById('delegation-message');
-    const delegationHashA = document.getElementById('delegation-hash');
-
-    // Wallet Connection
-    connectButton.addEventListener('click', async () => {
-        try {
-            if (window.tronLink) {
-                await window.tronLink.request({ method: 'tron_requestAccounts' });
-                if (window.tronLink.ready) {
-                    userTronWeb = window.tronLink.tronWeb;
-                    connectedAddress = userTronWeb.defaultAddress.base58;
-                    connectButton.innerHTML = `<i class="icon-wallet me-md-2"></i> ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}`;
-                    receiverAddressInput.value = connectedAddress;
-                    updateTotalCft();
-                } else {
-                    alert('Please unlock TronLink or install the extension.');
-                }
-            } else {
-                alert('TronLink is not installed. Please install TronLink extension.');
-            }
-        } catch (error) {
-            console.error('Error connecting wallet:', error);
-            alert('Failed to connect wallet. Please try again.');
-        }
-    });
-
-    // Auto-populate receiver address when connected
-    if (window.tronLink && window.tronLink.ready) {
-        userTronWeb = window.tronLink.tronWeb;
-        connectedAddress = userTronWeb.defaultAddress.base58;
-        connectButton.innerHTML = `<i class="icon-wallet me-md-2"></i> ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}`;
-        receiverAddressInput.value = connectedAddress;
+// ABI for Escrow Contract (simplified)
+const ESCROW_ABI = [
+    {
+        "inputs": [
+            {"name": "orderId", "type": "uint256"},
+            {"name": "energyAmount", "type": "uint256"},
+            {"name": "lockDuration", "type": "uint256"},
+            {"name": "currency", "type": "string"},
+            {"name": "totalPayment", "type": "uint256"}
+        ],
+        "name": "createOrder",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"name": "orderId", "type": "uint256"},
+            {"name": "energyAmount", "type": "uint256"},
+            {"name": "receiverAddress", "type": "address"}
+        ],
+        "name": "submitFulfillment",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"name": "fulfillmentId", "type": "uint256"}
+        ],
+        "name": "releasePayment",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
     }
+];
 
-    // Update total CFT calculation
-    function updateTotalCft() {
-        const energyAmount = parseInt(energyAmountSelect.value);
-        const lockDuration = parseInt(lockDurationSelect.value);
-        const cftPrice = parseFloat(cftPriceInput.value) || 0;
-        if (energyAmount && lockDuration && cftPrice >= 0.1) {
-            const totalCft = (energyAmount / 100000) * cftPrice * lockDuration;
-            totalCftSpan.textContent = `${totalCft.toFixed(6)} CFT`;
-        } else {
-            totalCftSpan.textContent = 'Select valid options';
-        }
+// ABI for CFT TRC-20 Token
+const CFT_ABI = [
+    {
+        "constant": false,
+        "inputs": [
+            {"name": "_to", "type": "address"},
+            {"name": "_value", "type": "uint256"}
+        ],
+        "name": "transfer",
+        "outputs": [{"name": "success", "type": "bool"}],
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {"name": "_spender", "type": "address"},
+            {"name": "_value", "type": "uint256"}
+        ],
+        "name": "approve",
+        "outputs": [{"name": "success", "type": "bool"}],
+        "type": "function"
     }
+];
 
-    energyAmountSelect.addEventListener('change', updateTotalCft);
-    lockDurationSelect.addEventListener('change', updateTotalCft);
-    cftPriceInput.addEventListener('input', updateTotalCft);
-
-    // Sell Energy Button
-    sellEnergyButton.addEventListener('click', async (event) => {
-        event.preventDefault();
-        if (!connectedAddress || !userTronWeb) {
-            alert('Please connect your wallet first.');
-            return;
-        }
-
-        const energyAmount = parseInt(energyAmountSelect.value);
-        const lockDuration = parseInt(lockDurationSelect.value);
-        const cftPrice = parseFloat(cftPriceInput.value);
-        let receiverAddress = receiverAddressInput.value;
-
-        if (!energyAmount || !lockDuration || cftPrice < 0.1) {
-            alert('Please select valid energy amount, lock duration, and CFT price (minimum 0.1 CFT).');
-            return;
-        }
-
-        if (!userTronWeb.isAddress(receiverAddress)) {
-            alert('Invalid receiver address.');
-            return;
-        }
-
-        // Default to connected wallet if receiver address is empty
-        if (!receiverAddress) {
-            receiverAddress = connectedAddress;
-            receiverAddressInput.value = connectedAddress;
-        }
-
-        const totalCft = (energyAmount / 100000) * cftPrice * lockDuration;
-        const totalCftWei = Math.floor(totalCft * 1e6); // CFT has 6 decimals
-
-        delegationStatusDiv.style.display = 'none';
-        delegationMessageP.textContent = '';
-        delegationHashA.style.display = 'none';
-        sellEnergyButton.disabled = true;
-        sellEnergyButton.textContent = 'Processing...';
-
-        try {
-            // Check available energy
-            const resources = await userTronWeb.trx.getAccountResources(connectedAddress);
-            const availableEnergy = (resources.EnergyLimit || 0) - (resources.EnergyUsed || 0);
-            if (availableEnergy < energyAmount) {
-                throw new Error(`Insufficient energy. Available: ${availableEnergy}, Required: ${energyAmount}`);
+// Check if TronLink is installed
+async function checkTronLinkInstalled() {
+    return new Promise((resolve) => {
+        const interval = setInterval(() => {
+            if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+                clearInterval(interval);
+                resolve(true);
             }
-
-            // Check CFT balance of payment wallet
-            const cftContract = await paymentTronWeb.contract().at(CFT_CONTRACT_ADDRESS);
-            const balance = await cftContract.balanceOf(CFT_PAYMENT_WALLET).call();
-            if (balance.lt(totalCftWei)) {
-                throw new Error(`Insufficient CFT balance in payment wallet. Required: ${totalCft.toFixed(6)} CFT`);
-            }
-
-            // Delegate energy
-            const tx = await userTronWeb.transactionBuilder.delegateResource(
-                energyAmount,
-                ENERGY_DELEGATION_WALLET,
-                'ENERGY',
-                connectedAddress,
-                false
-            );
-            const signedTx = await userTronWeb.trx.sign(tx);
-            const broadcast = await userTronWeb.trx.sendRawTransaction(signedTx);
-
-            if (!broadcast.result || !broadcast.txID) {
-                throw new Error('Failed to delegate energy.');
-            }
-
-            // Send CFT payment (WARNING: Client-side private key usage)
-            const cftTx = await cftContract.transfer(receiverAddress, totalCftWei.toString()).send({
-                from: CFT_PAYMENT_WALLET
-            });
-
-            // Update UI with success
-            delegationStatusDiv.style.display = 'block';
-            delegationStatusDiv.className = 'status-message success';
-            delegationMessageP.textContent = `Successfully delegated ${energyAmount} energy for ${lockDuration} day(s). You received ${totalCft.toFixed(6)} CFT.`;
-            delegationHashA.style.display = 'inline';
-            delegationHashA.href = `https://tronscan.org/#/transaction/${broadcast.txID}`;
-            delegationHashA.textContent = broadcast.txID.slice(0, 10) + '...';
-
-            // Log transaction (console for demo; replace with server logging in production)
-            console.log(`Delegation TxID: ${broadcast.txID}`);
-            console.log(`CFT Payment TxID: ${cftTx}`);
-            console.log(`Energy: ${energyAmount}, Duration: ${lockDuration} days, CFT: ${totalCft.toFixed(6)}`);
-
-        } catch (error) {
-            console.error('Error selling energy:', error);
-            delegationStatusDiv.style.display = 'block';
-            delegationStatusDiv.className = 'status-message error';
-            delegationMessageP.textContent = `Error: ${error.message || 'Transaction failed'}`;
-        } finally {
-            sellEnergyButton.disabled = false;
-            sellEnergyButton.textContent = 'Sell Energy';
-        }
+        }, 1000);
+        setTimeout(() => {
+            clearInterval(interval);
+            resolve(false);
+        }, 10000);
     });
 }
 
-window.addEventListener('load', init);
+// Auto-connect wallet
+async function autoConnectWallet() {
+    if (window.tronWeb && window.tronLink) {
+        tronWeb = window.tronWeb;
+        userAddress = tronWeb.defaultAddress.base58;
+        if (userAddress && userAddress !== "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb") {
+            console.log("Auto-connected wallet:", userAddress);
+            updateWalletUI(true);
+            fetchOpenOrders();
+            fetchSellerFulfillments();
+        }
+    }
+}
+
+// Manually connect wallet
+async function connectWallet() {
+    if (!window.tronWeb || !window.tronLink) {
+        alert("TronLink not found. Please install TronLink and log in.");
+        return;
+    }
+    try {
+        await window.tronLink.request({ method: "tron_requestAccounts" });
+        tronWeb = window.tronWeb;
+        userAddress = tronWeb.defaultAddress.base58;
+        updateWalletUI(true);
+        console.log("Wallet connected:", userAddress);
+        fetchOpenOrders();
+        fetchSellerFulfillments();
+    } catch (e) {
+        console.error("Wallet connection failed:", e);
+    }
+}
+
+// Update wallet UI
+function updateWalletUI(isConnected) {
+    const connectButton = document.getElementById("connect-button");
+    if (connectButton) {
+        connectButton.innerHTML = isConnected
+            ? `<i class="icon-wallet"></i> Wallet Connected`
+            : `<i class="icon-wallet"></i> Connect Wallet`;
+    }
+}
+
+// Calculate and update total payment
+function updateTotalPayment() {
+    const energyAmount = parseInt(document.getElementById("energy-amount").value);
+    const currency = document.getElementById("payment-currency").value;
+    const totalPaymentDisplay = document.getElementById("total-payment");
+
+    if (isNaN(energyAmount) || energyAmount < 100000) {
+        totalPaymentDisplay.textContent = "Enter valid amount (min 100,000)";
+        return;
+    }
+
+    // Calculate payment: 10 SUN per energy unit
+    const sunRequired = energyAmount * PRICE_PER_ENERGY;
+    const trxPayment = sunRequired / SUN_PER_TRX; // Convert SUN to TRX
+    const payment = currency === "TRX" ? trxPayment : trxPayment * CFT_PER_TRX; // CFT = TRX 1:1
+    const unit = currency === "TRX" ? "TRX" : "CFT";
+
+    totalPaymentDisplay.textContent = `${payment.toFixed(6)} ${unit}`;
+}
+
+// Create energy order
+async function createOrder() {
+    if (!userAddress) {
+        alert("Please connect your wallet first.");
+        return;
+    }
+
+    const energyAmount = parseInt(document.getElementById("energy-amount").value);
+    const lockDuration = parseInt(document.getElementById("lock-duration").value);
+    const currency = document.getElementById("payment-currency").value;
+
+    if (isNaN(energyAmount) || energyAmount < 100000) {
+        alert("Please enter a valid energy amount (minimum 100,000).");
+        return;
+    }
+
+    const sunRequired = energyAmount * PRICE_PER_ENERGY;
+    const totalPayment = sunRequired / SUN_PER_TRX; // Payment in TRX or CFT
+    const paymentInSun = totalPayment * SUN_PER_TRX; // Convert to SUN for contract
+
+    try {
+        document.getElementById("order-status").style.display = "block";
+        document.getElementById("order-message").textContent = "Creating order...";
+
+        // Generate order ID (timestamp-based)
+        const orderId = Date.now();
+
+        // Interact with escrow contract
+        const contract = await tronWeb.contract(ESCROW_ABI, ESCROW_CONTRACT_ADDRESS);
+
+        if (currency === "CFT") {
+            // Approve CFT transfer
+            const cftContract = await tronWeb.contract(CFT_ABI, CFT_CONTRACT_ADDRESS);
+            const approveResult = await cftContract.approve(
+                ESCROW_CONTRACT_ADDRESS,
+                paymentInSun
+            ).send({
+                feeLimit: 100000000,
+                callValue: 0
+            });
+            console.log("CFT approval sent:", approveResult);
+        }
+
+        // Create order in escrow contract
+        const result = await contract.createOrder(
+            orderId,
+            energyAmount,
+            lockDuration * 24 * 60 * 60, // Convert days to seconds
+            currency,
+            paymentInSun
+        ).send({
+            feeLimit: 100000000,
+            callValue: currency === "TRX" ? paymentInSun : 0
+        });
+        console.log("Order creation sent:", result);
+
+        // Notify server
+        const response = await fetch(`${SERVER_URL}/api/create-order`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                orderId,
+                buyerAddress: userAddress,
+                energyAmount,
+                lockDuration,
+                currency,
+                totalPayment,
+                txId: result
+            })
+        });
+
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.message);
+        }
+
+        document.getElementById("order-message").textContent = "Order created successfully!";
+        document.getElementById("order-id").textContent = orderId;
+        fetchOpenOrders();
+    } catch (error) {
+        console.error("Error creating order:", error);
+        document.getElementById("order-message").textContent = `Error: ${error.message}`;
+    }
+}
+
+// Fetch and display open orders
+async function fetchOpenOrders() {
+    try {
+        const response = await fetch(`${SERVER_URL}/api/open-orders`);
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.message);
+        }
+
+        const tableBody = document.getElementById("marketplace-table-body");
+        tableBody.innerHTML = "";
+
+        data.orders.forEach(order => {
+            const payment = order.totalPayment.toFixed(6);
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${order.orderId}</td>
+                <td>${order.energyAmount.toLocaleString()}</td>
+                <td>${order.remainingEnergy.toLocaleString()}</td>
+                <td>${order.lockDuration} days</td>
+                <td>${order.currency}</td>
+                <td>${payment} ${order.currency}</td>
+                <td><a href="#" class="fulfill-btn" data-order-id="${order.orderId}" data-remaining="${order.remainingEnergy}">Fulfill</a></td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        // Add click listeners to fulfill buttons
+        document.querySelectorAll(".fulfill-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                const orderId = btn.getAttribute("data-order-id");
+                const remaining = parseInt(btn.getAttribute("data-remaining"));
+                document.getElementById("selected-order-id").textContent = orderId;
+                document.getElementById("delegate-amount").max = remaining;
+                document.getElementById("fulfillment-form").style.display = "block";
+            });
+        });
+    } catch (error) {
+        console.error("Error fetching open orders:", error);
+    }
+}
+
+// Fulfill an order
+async function fulfillOrder() {
+    if (!userAddress) {
+        alert("Please connect your wallet first.");
+        return;
+    }
+
+    const orderId = document.getElementById("selected-order-id").textContent;
+    const energyAmount = parseInt(document.getElementById("delegate-amount").value);
+    const receiverAddress = userAddress; // Seller delegates to themselves for verification
+
+    if (isNaN(energyAmount) || energyAmount < 1000) {
+        alert("Please enter a valid energy amount (minimum 1,000).");
+        return;
+    }
+
+    try {
+        document.getElementById("fulfillment-status").style.display = "block";
+        document.getElementById("fulfillment-message").textContent = "Delegating energy...";
+
+        // Calculate SUN required
+        const sunRequired = energyAmount * PRICE_PER_ENERGY;
+
+        // Delegate energy
+        const tx = await tronWeb.transactionBuilder.delegateResource(
+            sunRequired,
+            receiverAddress,
+            "ENERGY",
+            userAddress,
+            false
+        );
+        const signed = await tronWeb.trx.sign(tx);
+        const result = await tronWeb.trx.broadcast(signed);
+        console.log("Delegation sent:", result);
+
+        if (!result.result || !result.txid) {
+            throw new Error("Delegation failed");
+        }
+
+        // Notify server
+        const response = await fetch(`${SERVER_URL}/api/submit-fulfillment`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                orderId,
+                sellerAddress: userAddress,
+                energyAmount,
+                receiverAddress,
+                txId: result.txid
+            })
+        });
+
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.message);
+        }
+
+        document.getElementById("fulfillment-message").textContent = "Fulfillment submitted! Waiting for verification...";
+        document.getElementById("fulfillment-hash").textContent = result.txid;
+        document.getElementById("fulfillment-hash").href = `https://tronscan.org/#/transaction/${result.txid}`;
+        document.getElementById("fulfillment-hash").style.display = "block";
+
+        // Poll for fulfillment status
+        pollFulfillmentStatus(data.fulfillmentId);
+    } catch (error) {
+        console.error("Error fulfilling order:", error);
+        document.getElementById("fulfillment-message").textContent = `Error: ${error.message}`;
+    }
+}
+
+// Poll fulfillment status
+async function pollFulfillmentStatus(fulfillmentId) {
+    const maxPollAttempts = 30;
+    let pollAttempts = 0;
+
+    const interval = setInterval(async () => {
+        pollAttempts++;
+        try {
+            const response = await fetch(`${SERVER_URL}/api/fulfillment-status?fulfillmentId=${fulfillmentId}`);
+            const data = await response.json();
+
+            if (data.status === "confirmed") {
+                clearInterval(interval);
+                document.getElementById("fulfillment-message").textContent = "Fulfillment confirmed! Payment released.";
+                fetchOpenOrders();
+                fetchSellerFulfillments();
+            } else if (data.status === "failed") {
+                clearInterval(interval);
+                document.getElementById("fulfillment-message").textContent = `Fulfillment failed: ${data.message}`;
+            } else if (pollAttempts >= maxPollAttempts) {
+                clearInterval(interval);
+                document.getElementById("fulfillment-message").textContent = "Fulfillment timed out.";
+            }
+        } catch (error) {
+            console.error("Error polling fulfillment status:", error);
+            if (pollAttempts >= maxPollAttempts) {
+                clearInterval(interval);
+                document.getElementById("fulfillment-message").textContent = "Error polling fulfillment status.";
+            }
+        }
+    }, 2000);
+}
+
+// Fetch and display seller fulfillments
+async function fetchSellerFulfillments() {
+    if (!userAddress) return;
+
+    try {
+        const response = await fetch(`${SERVER_URL}/api/seller-fulfillments?address=${userAddress}`);
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.message);
+        }
+
+        const tableBody = document.getElementById("dashboard-table-body");
+        tableBody.innerHTML = "";
+
+        data.fulfillments.forEach(f => {
+            const lockEnd = new Date(f.lockEnd).toLocaleString();
+            const canUndelegate = new Date() > new Date(f.lockEnd) && f.status === "confirmed";
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${f.fulfillmentId}</td>
+                <td>${f.orderId}</td>
+                <td>${f.energyAmount.toLocaleString()}</td>
+                <td>${lockEnd}</td>
+                <td>${f.status}</td>
+                <td>
+                    ${canUndelegate ? `<a href="#" class="undelegate-btn" data-fulfillment-id="${f.fulfillmentId}" data-amount="${f.energyAmount}">Undelegate</a>` : ''}
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        // Add click listeners to undelegate buttons
+        document.querySelectorAll(".undelegate-btn").forEach(btn => {
+            btn.addEventListener("click", async (e) => {
+                e.preventDefault();
+                const fulfillmentId = btn.getAttribute("data-fulfillment-id");
+                const energyAmount = parseInt(btn.getAttribute("data-amount"));
+                await undelegateEnergy(fulfillmentId, energyAmount);
+            });
+        });
+    } catch (error) {
+        console.error("Error fetching seller fulfillments:", error);
+    }
+}
+
+// Undelegate energy
+async function undelegateEnergy(fulfillmentId, energyAmount) {
+    try {
+        const sunRequired = energyAmount * PRICE_PER_ENERGY;
+        const tx = await tronWeb.transactionBuilder.undelegateResource(
+            sunRequired,
+            userAddress,
+            "ENERGY",
+            userAddress
+        );
+        const signed = await tronWeb.trx.sign(tx);
+        const result = await tronWeb.trx.broadcast(signed);
+        console.log("Undelegation sent:", result);
+
+        if (!result.result || !result.txid) {
+            throw new Error("Undelegation failed");
+        }
+
+        // Notify server
+        await fetch(`${SERVER_URL}/api/undelegate-energy`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fulfillmentId, txId: result.txid })
+        });
+
+        alert("Energy undelegated successfully!");
+        fetchSellerFulfillments();
+    } catch (error) {
+        console.error("Error undelegating energy:", error);
+        alert(`Error undelegating energy: ${error.message}`);
+    }
+}
+
+// Event listeners
+document.addEventListener("DOMContentLoaded", async () => {
+    await autoConnectWallet();
+
+    const connectButton = document.getElementById("connect-button");
+    if (connectButton) connectButton.addEventListener("click", connectWallet);
+
+    const energyAmountInput = document.getElementById("energy-amount");
+    if (energyAmountInput) energyAmountInput.addEventListener("input", updateTotalPayment);
+
+    const currencySelect = document.getElementById("payment-currency");
+    if (currencySelect) currencySelect.addEventListener("change", updateTotalPayment);
+
+    const createOrderButton = document.getElementById("create-order-button");
+    if (createOrderButton) createOrderButton.addEventListener("click", createOrder);
+
+    const fulfillOrderButton = document.getElementById("fulfill-order-button");
+    if (fulfillOrderButton) fulfillOrderButton.addEventListener("click", fulfillOrder);
+
+    updateTotalPayment();
+    fetchOpenOrders();
+    fetchSellerFulfillments();
+});
