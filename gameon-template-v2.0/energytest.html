@@ -7,76 +7,24 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-	<!-- Bootstrap 5 CSS -->
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-	<!-- Title -->
+	<!-- The above 4 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+
+	<!-- Title  -->
 	<title>CFT Ecosystem. The first treasury VC on Tron</title>
 
-	<!-- Favicon -->
+	<!-- Favicon  -->
 	<link rel="icon" href="assets/img/favicon.png">
+
+	<!-- ***** All CSS Files ***** -->
 
 	<!-- Style css -->
 	<link rel="stylesheet" href="assets/css/style.css">
+
 	<style>
-		.single-staking-item {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			text-align: center;
-			padding: 20px;
-			width: 100%;
-			margin: 0 auto;
-		}
 
-		.input-area {
-			width: 100%;
-			max-width: 300px;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			margin: 0 auto;
-		}
-
-		.input-text input {
-			width: 100%;
-			text-align: center;
-			margin-bottom: 10px;
-			padding: 8px;
-			border-radius: 6px;
-			border: 1px solid #444;
-			background: #111;
-			color: #fff;
-		}
-
-		.staking-info .single-item {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			text-align: center;
-			font-size: 1.1em;
-			white-space: nowrap;
-		}
-
-		.staking-info .single-item span {
-			margin-right: 5px;
-		}
-
-		.staking-info .single-item span:last-child {
-			margin-right: 0;
-		}
-
-		.card-body .row {
-			justify-content: center !important;
-		}
-
-		.no-tronlink-message {
-			color: #ff4d4d;
-			font-weight: bold;
-			margin-top: 10px;
-		}
-
-		/* Energy rental and transaction processing modal styling */
+	/* Energy rental and transaction processing modal styling */
 		#energy-rental-modal .modal-content,
 		#transaction-processing-modal .modal-content {
 			background: #111;
@@ -180,21 +128,37 @@
 			margin: 0 auto;
 		}
 	</style>
+
 </head>
 
 <body>
 	<!--====== Preloader Area Start ======-->
 	<div id="gameon-preloader" class="gameon-preloader">
+		<!-- Preloader Animation -->
 		<div class="preloader-animation">
+			<!-- Spinner -->
 			<div class="spinner"></div>
 			<p class="fw-5 text-center text-uppercase">Loading</p>
 		</div>
+		<!-- Loader Animation -->
 		<div class="loader-animation">
 			<div class="row h-100">
-				<div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
-				<div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
-				<div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
-				<div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
+				<!-- Single Loader -->
+				<div class="col-3 single-loader p-0">
+					<div class="loader-bg"></div>
+				</div>
+				<!-- Single Loader -->
+				<div class="col-3 single-loader p-0">
+					<div class="loader-bg"></div>
+				</div>
+				<!-- Single Loader -->
+				<div class="col-3 single-loader p-0">
+					<div class="loader-bg"></div>
+				</div>
+				<!-- Single Loader -->
+				<div class="col-3 single-loader p-0">
+					<div class="loader-bg"></div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -203,46 +167,82 @@
 	<div class="main">
 		<!-- ***** Header Start ***** -->
 		<header id="header">
+			<!-- Navbar -->
 			<nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
 				<div class="container header">
+
 					<!-- Logo -->
 					<a class="navbar-brand" href="index.html">
-						<img src="assets/img/logo/logo.png" alt="CFT Ecosystem Logo" />
+						<img src="assets/img/logo/logo.png" alt="" />
 					</a>
+
 					<div class="ms-auto"></div>
+
 					<!-- Navbar Nav -->
 					<ul class="navbar-nav items mx-auto">
-						<li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
+						<li class="nav-item">
+							<a href="index.html" class="nav-link">Home</a>
+						</li>
+						
 						<li class="nav-item dropdown">
 							<a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
 							<ul class="dropdown-menu">
-								<li class="nav-item"><a href="staking.html" class="nav-link">Staking</a></li>
-								<li class="nav-item"><a href="sellcft.html" class="nav-link">Trading</a></li>
+								
+								<li class="nav-item">
+									<a href="staking.html" class="nav-link">Staking</a>
+								</li>
+
+								<li class="nav-item">
+									<a href="sellcft.html" class="nav-link">Trading</a>
+								</li>
+								
 							</ul>
 						</li>
 						<li class="nav-item dropdown">
 							<a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
 							<ul class="dropdown-menu">
-								<li class="nav-item"><a href="buystablex.html" class="nav-link">Buy StableX</a></li>
-								<li class="nav-item"><a href="sellstablex.html" class="nav-link">Sell StableX</a></li>
-								<li class="nav-item"><a href="stablexstaking.html" class="nav-link">Stake StableX</a></li>
+								<li class="nav-item">
+									<a href="buystablex.html" class="nav-link">Buy StableX</a>
+								</li>
+								<li class="nav-item">
+									<a href="sellstablex.html" class="nav-link">Sell StableX</a>
+								</li>
+								<li class="nav-item">
+									<a href="stablexstaking.html" class="nav-link">Stake StableX</a>
+								</li>
 							</ul>
 						</li>
 						<li class="nav-item dropdown">
 							<a href="#" class="nav-link">CFT News <i class="icon-arrow-down"></i></a>
 							<ul class="dropdown-menu">
-								<li class="nav-item"><a href="blog.html" class="nav-link">News</a></li>
+								<li class="nav-item">
+									<a href="blog.html" class="nav-link">News</a>
+								</li>
 							</ul>
 						</li>
+
 						<li class="nav-item dropdown">
 							<a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
 							<ul class="dropdown-menu">
-								<li class="nav-item"><a href="feb.html" class="nav-link">FEB</a></li>
-								<li class="nav-item"><a href="energy.html" class="nav-link">Rent Energy</a></li>
+								<li class="nav-item">
+									<a href="feb.html" class="nav-link">FEB</a>
+								</li>
+								<li class="nav-item">
+									<a href="energy.html" class="nav-link">Rent Energy</a>
+								</li>
+							
 							</ul>
 						</li>
-						<li class="nav-item"><a href="swap.html" class="nav-link">Swap</a></li>
+						<li class="nav-item">
+									<a href="swap.html" class="nav-link">Swap</a>
+								</li>
+						
+						
 					</ul>
+
+					<!-- Navbar Icons -->
+					
+
 					<!-- Navbar Toggler -->
 					<ul class="navbar-nav toggle">
 						<li class="nav-item">
@@ -251,14 +251,19 @@
 							</a>
 						</li>
 					</ul>
+
 					<!-- Navbar Action Button -->
 					<ul class="navbar-nav action">
-						<li class="nav-item ms-2">
-							<button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
-								<i class="icon-wallet me-md-2"></i> Wallet Connect
-							</button>
-						</li>
+						<ul class="navbar-nav action">
+    <li class="nav-item ms-2">
+        <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
+            <i class="icon-wallet me-md-2"></i> Wallet Connect
+        </button>
+    </li>
+</ul>
+
 					</ul>
+
 				</div>
 			</nav>
 		</header>
@@ -269,12 +274,15 @@
 			<div class="container">
 				<div class="row align-items-center justify-content-center">
 					<div class="col-12 col-md-6 col-lg-9 text-center">
+						<!-- Hero Content -->
 						<div class="hero-content">
 							<div class="intro text-center mb-5">
 								<span class="intro-text">CFT Ecosystem</span>
 								<h1 class="mt-4">CFT Staking</h1>
 								<p>Grow your wealth through staking rewards</p>
 							</div>
+							<!-- Buttons -->
+							
 						</div>
 					</div>
 				</div>
@@ -283,397 +291,404 @@
 		<!-- ***** Hero Area End ***** -->
 
 		<!-- ***** Staking Area Start ***** -->
-		<section class="staking-area">
-			<div id="gameon-accordion" class="container accordion">
-				<div class="row justify-content-center">
-					<div class="col-12 col-md-10">
-						<!-- CFT Staking -->
-						<div class="single-accordion-item">
-							<div class="card-header bg-inherit border-0 p-0">
-								<h2 class="m-0">
-									<button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCFT">
-										<div class="row">
-											<div class="col-12 col-md-8">
-												<div class="media flex-column flex-md-row">
-													<img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
-													<div class="content media-body mt-4 mt-md-0 ms-md-4">
-														<h4 class="m-0">CFT Staking</h4>
-														<p>Stake CFT for CFT rewards.</p>
-													</div>
-												</div>
-											</div>
-										</div>
-										<div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
-											<div class="col single-item"><span id="staked-amount-cft"></span><span>Staked</span></div>
-											<div class="col single-item"><span id="projected-rewards-cft"></span><span>Yearly Rewards</span></div>
-											<div class="col single-item"><span id="total-claimed-rewards-cft"></span><span>Total Claimed</span></div>
-										</div>
-									</button>
-								</h2>
-							</div>
-							<div id="collapseCFT" class="collapse" data-bs-parent="#gameon-accordion">
-								<div class="card-body">
-									<div class="row">
-										<!-- Deposit -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Deposit</span>
-											<span id="available-tokens-cft"></span> available
-											<div class="input-area d-flex flex-column">
-												<div class="input-text"><input type="text" placeholder="0" id="stake-amount-cft"></div>
-												<a href="#" class="btn input-btn mt-2" id="stake-button-cft">Stake</a>
-											</div>
-										</div>
-										<!-- Withdraw -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Withdraw</span>
-											<div class="input-area d-flex flex-column">
-												<div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-cft"></div>
-												<a href="#" class="btn input-btn mt-2" id="unstake-button-cft">Withdraw</a>
-											</div>
-										</div>
-										<!-- Rewards -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Pending Rewards</span>
-											<div class="input-area d-flex flex-column">
-												<h4 class="price m-0" id="claimable-rewards-cft">0 CFT</h4>
-												<span class="reward my-2">Energy cost applies</span>
-												<a href="#" class="btn input-btn mt-2" id="claim-rewards-button-cft"><i class="fa-solid fa-lock me-1"></i> Claim</a>
-											</div>
-										</div>
-									</div>
-									<div class="row justify-content-center mt-4">
-										<div class="col-12 text-center">
-											<a href="leaderboardcftnew.html" class="btn btn-bordered">
-												<i class="fa-solid fa-trophy me-2"></i> View Leaderboard
-											</a>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
+<section class="staking-area">
+    <div id="gameon-accordion" class="container accordion">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-10">
 
-						<!-- CFTx Staking -->
-						<div class="single-accordion-item">
-							<div class="card-header bg-inherit border-0 p-0">
-								<h2 class="m-0">
-									<button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCFTx">
-										<div class="row">
-											<div class="col-12 col-md-8">
-												<div class="media flex-column flex-md-row">
-													<img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
-													<div class="content media-body mt-4 mt-md-0 ms-md-4">
-														<h4 class="m-0">CFT Staking</h4>
-														<p>Stake CFT for StableX rewards.</p>
-													</div>
-												</div>
-											</div>
-										</div>
-										<div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
-											<div class="col single-item"><span id="staked-amount-cftx"></span><span>Staked</span></div>
-											<div class="col single-item"><span id="projected-rewards-cftx"></span><span>Yearly Rewards</span></div>
-											<div class="col single-item"><span id="total-claimed-rewards-cftx"></span><span>Total Claimed</span></div>
-										</div>
-									</button>
-								</h2>
-							</div>
-							<div id="collapseCFTx" class="collapse" data-bs-parent="#gameon-accordion">
-								<div class="card-body">
-									<div class="row">
-										<!-- Deposit -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Deposit</span>
-											<span id="available-tokens-cftx"></span> available
-											<div class="input-area d-flex flex-column">
-												<div class="input-text"><input type="text" placeholder="0" id="stake-amount-cftx"></div>
-												<a href="#" class="btn input-btn mt-2" id="stake-button-cftx">Stake</a>
-											</div>
-										</div>
-										<!-- Withdraw -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Withdraw</span>
-											<div class="input-area d-flex flex-column">
-												<div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-cftx"></div>
-												<a href="#" class="btn input-btn mt-2" id="unstake-button-cftx">Withdraw</a>
-											</div>
-										</div>
-										<!-- Rewards -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Pending Rewards</span>
-											<div class="input-area d-flex flex-column">
-												<h4 class="price m-0" id="claimable-rewards-cftx">0 StableX</h4>
-												<span class="reward my-2">Energy cost applies</span>
-												<a href="#" class="btn input-btn mt-2" id="claim-rewards-button-cftx"><i class="fa-solid fa-lock me-1"></i> Claim</a>
-											</div>
-										</div>
-									</div>
-									<div class="row justify-content-center mt-4">
-										<div class="col-12 text-center">
-											<a href="leaderboardcftx.html" class="btn btn-bordered">
-												<i class="fa-solid fa-trophy me-2"></i> View Leaderboard
-											</a>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
+              <!-- CFT Staking -->
+                <div class="single-accordion-item">
+                    <div class="card-header bg-inherit border-0 p-0">
+                        <h2 class="m-0">
+                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCFT">
+                                <div class="row">
+                                    <div class="col-12 col-md-8">
+                                        <div class="media flex-column flex-md-row">
+                                            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                <h4 class="m-0">CFT Staking</h4>
+                                                <p>Stake CFT for CFT rewards.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                    <div class="col single-item"><span id="staked-amount-cft"></span><span>Staked</span></div>
+                                    <div class="col single-item"><span id="projected-rewards-cft"></span><span>Yearly Rewards</span></div>
+                                    <div class="col single-item"><span id="total-claimed-rewards-cft"></span><span>Total Claimed</span></div>
+                                </div>
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseCFT" class="collapse" data-bs-parent="#gameon-accordion">
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Deposit -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Deposit</span>
+                                    <span id="available-tokens-cft"></span> available
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="stake-amount-cft"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="stake-button-cft">Stake</a>
+                                    </div>
+                                </div>
+                                <!-- Withdraw -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Withdraw</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-cft"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="unstake-button-cft">Withdraw</a>
+                                    </div>
+                                </div>
+                                <!-- Rewards -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Pending Rewards</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <h4 class="price m-0" id="claimable-rewards-cft">0 CFT</h4>
+                                        <span class="reward my-2">Energy cost applies</span>
+                                        <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-cft"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                                    </div>
+                                </div>
+                            </div>
+				<div class="row justify-content-center mt-4">
+        <div class="col-12 text-center">
+            <a href="leaderboardcftnew.html" class="btn btn-bordered">
+                <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
+            </a>
+        </div>
+    </div>
+                        </div>
+                    </div>
+                </div>
 
-						<!-- CFT/BBT Staking -->
-						<div class="single-accordion-item">
-							<div class="card-header bg-inherit border-0 p-0">
-								<h2 class="m-0">
-									<button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapsecftBBT">
-										<div class="row">
-											<div class="col-12 col-md-8">
-												<div class="media flex-column flex-md-row">
-													<img class="avatar-max-lg" src="assets/img/content/turu.png" alt="">
-													<div class="content media-body mt-4 mt-md-0 ms-md-4">
-														<h4 class="m-0">BBT Staking</h4>
-														<p>Stake BBT for CFT rewards.</p>
-													</div>
-												</div>
-											</div>
-										</div>
-										<div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
-											<div class="col single-item"><span id="staked-amount-cftturu"></span><span>Staked</span></div>
-											<div class="col single-item"><span id="projected-rewards-cftturu"></span><span>Yearly Rewards</span></div>
-											<div class="col single-item"><span id="total-claimed-rewards-cftturu"></span><span>Total Claimed</span></div>
-										</div>
-									</button>
-								</h2>
-							</div>
-							<div id="collapsecftBBT" class="collapse" data-bs-parent="#gameon-accordion">
-								<div class="card-body">
-									<div class="row">
-										<!-- Deposit -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Deposit</span>
-											<span id="available-tokens-cftturu"></span> available
-											<div class="input-area d-flex flex-column">
-												<div class="input-text"><input type="text" placeholder="0" id="stake-amount-cftturu"></div>
-												<a href="#" class="btn input-btn mt-2" id="stake-button-cftturu">Stake</a>
-											</div>
-										</div>
-										<!-- Withdraw -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Withdraw</span>
-											<div class="input-area d-flex flex-column">
-												<div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-cftturu"></div>
-												<a href="#" class="btn input-btn mt-2" id="unstake-button-cftturu">Withdraw</a>
-											</div>
-										</div>
-										<!-- Rewards -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Pending Rewards</span>
-											<div class="input-area d-flex flex-column">
-												<h4 class="price m-0" id="claimable-rewards-cftturu">0 BBT</h4>
-												<span class="reward my-2">Energy cost applies</span>
-												<a href="#" class="btn input-btn mt-2" id="claim-rewards-button-cftturu"><i class="fa-solid fa-lock me-1"></i> Claim</a>
-											</div>
-										</div>
-									</div>
-									<div class="row justify-content-center mt-4">
-										<div class="col-12 text-center">
-											<a href="leaderboardbbt.html" class="btn btn-bordered">
-												<i class="fa-solid fa-trophy me-2"></i> View Leaderboard
-											</a>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
+		    <!-- CFTx Staking -->
+                <div class="single-accordion-item">
+                    <div class="card-header bg-inherit border-0 p-0">
+                        <h2 class="m-0">
+                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCFTx">
+                                <div class="row">
+                                    <div class="col-12 col-md-8">
+                                        <div class="media flex-column flex-md-row">
+                                            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                <h4 class="m-0">CFT Staking</h4>
+                                                <p>Stake CFT for StableX rewards.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                    <div class="col single-item"><span id="staked-amount-cftx"></span><span>Staked</span></div>
+                                    <div class="col single-item"><span id="projected-rewards-cftx"></span><span>Yearly Rewards</span></div>
+                                    <div class="col single-item"><span id="total-claimed-rewards-cftx"></span><span>Total Claimed</span></div>
+                                </div>
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseCFTx" class="collapse" data-bs-parent="#gameon-accordion">
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Deposit -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Deposit</span>
+                                    <span id="available-tokens-cftx"></span> available
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="stake-amount-cftx"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="stake-button-cftx">Stake</a>
+                                    </div>
+                                </div>
+                                <!-- Withdraw -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Withdraw</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-cftx"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="unstake-button-cftx">Withdraw</a>
+                                    </div>
+                                </div>
+                                <!-- Rewards -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Pending Rewards</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <h4 class="price m-0" id="claimable-rewards-cftx">0 StableX</h4>
+                                        <span class="reward my-2">Energy cost applies</span>
+                                        <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-cftx"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                                    </div>
+                                </div>
+                            </div>
+				<div class="row justify-content-center mt-4">
+        <div class="col-12 text-center">
+            <a href="leaderboardcftx.html" class="btn btn-bordered">
+                <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
+            </a>
+        </div>
+    </div>
+                        </div>
+                    </div>
+                </div>
 
-						<!-- BBT Staking -->
-						<div class="single-accordion-item">
-							<div class="card-header bg-inherit border-0 p-0">
-								<h2 class="m-0">
-									<button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBBT">
-										<div class="row">
-											<div class="col-12 col-md-8">
-												<div class="media flex-column flex-md-row">
-													<img class="avatar-max-lg" src="assets/img/content/turu.png" alt="">
-													<div class="content media-body mt-4 mt-md-0 ms-md-4">
-														<h4 class="m-0">BBT Staking</h4>
-														<p>Stake BBT for BBT rewards.</p>
-													</div>
-												</div>
-											</div>
-										</div>
-										<div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
-											<div class="col single-item"><span id="staked-amount-turu"></span><span>Staked</span></div>
-											<div class="col single-item"><span id="projected-rewards-turu"></span><span>Yearly Rewards</span></div>
-											<div class="col single-item"><span id="total-claimed-rewards-turu"></span><span>Total Claimed</span></div>
-										</div>
-									</button>
-								</h2>
-							</div>
-							<div id="collapseBBT" class="collapse" data-bs-parent="#gameon-accordion">
-								<div class="card-body">
-									<div class="row">
-										<!-- Deposit -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Deposit</span>
-											<span id="available-tokens-turu"></span> available
-											<div class="input-area d-flex flex-column">
-												<div class="input-text"><input type="text" placeholder="0" id="stake-amount-turu"></div>
-												<a href="#" class="btn input-btn mt-2" id="stake-button-turu">Stake</a>
-											</div>
-										</div>
-										<!-- Withdraw -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Withdraw</span>
-											<div class="input-area d-flex flex-column">
-												<div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-turu"></div>
-												<a href="#" class="btn input-btn mt-2" id="unstake-button-turu">Withdraw</a>
-											</div>
-										</div>
-										<!-- Rewards -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Pending Rewards</span>
-											<div class="input-area d-flex flex-column">
-												<h4 class="price m-0" id="claimable-rewards-turu">0 BBT</h4>
-												<span class="reward my-2">Energy cost applies</span>
-												<a href="#" class="btn input-btn mt-2" id="claim-rewards-button-turu"><i class="fa-solid fa-lock me-1"></i> Claim</a>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
+<!-- CFT/BBT Staking -->
+                <div class="single-accordion-item">
+                    <div class="card-header bg-inherit border-0 p-0">
+                        <h2 class="m-0">
+                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapsecftBBT">
+                                <div class="row">
+                                    <div class="col-12 col-md-8">
+                                        <div class="media flex-column flex-md-row">
+                                            <img class="avatar-max-lg" src="assets/img/content/turu.png" alt="">
+                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                <h4 class="m-0">BBT Staking</h4>
+                                                <p>Stake BBT for CFT rewards.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                    <div class="col single-item"><span id="staked-amount-cftturu"></span><span>Staked</span></div>
+                                    <div class="col single-item"><span id="projected-rewards-cftturu"></span><span>Yearly Rewards</span></div>
+                                    <div class="col single-item"><span id="total-claimed-rewards-cftturu"></span><span>Total Claimed</span></div>
+                                </div>
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapsecftBBT" class="collapse" data-bs-parent="#gameon-accordion">
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Deposit -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Deposit</span>
+                                    <span id="available-tokens-cftturu"></span> available
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="stake-amount-cftturu"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="stake-button-cftturu">Stake</a>
+                                    </div>
+                                </div>
+                                <!-- Withdraw -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Withdraw</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-cftturu"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="unstake-button-cftturu">Withdraw</a>
+                                    </div>
+                                </div>
+                                <!-- Rewards -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Pending Rewards</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <h4 class="price m-0" id="claimable-rewards-cftturu">0 BBT</h4>
+                                        <span class="reward my-2">Energy cost applies</span>
+                                        <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-cftturu"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                                    </div>
+                                </div>
+                            </div>
+				<div class="row justify-content-center mt-4">
+        <div class="col-12 text-center">
+            <a href="leaderboardbbt.html" class="btn btn-bordered">
+                <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
+            </a>
+        </div>
+    </div>
+                        </div>
+                    </div>
+                </div>
+              
+                <!-- BBT Staking -->
+                <div class="single-accordion-item">
+                    <div class="card-header bg-inherit border-0 p-0">
+                        <h2 class="m-0">
+                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBBT">
+                                <div class="row">
+                                    <div class="col-12 col-md-8">
+                                        <div class="media flex-column flex-md-row">
+                                            <img class="avatar-max-lg" src="assets/img/content/turu.png" alt="">
+                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                <h4 class="m-0">BBT Staking</h4>
+                                                <p>Stake BBT for BBT rewards.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                    <div class="col single-item"><span id="staked-amount-turu"></span><span>Staked</span></div>
+                                    <div class="col single-item"><span id="projected-rewards-turu"></span><span>Yearly Rewards</span></div>
+                                    <div class="col single-item"><span id="total-claimed-rewards-turu"></span><span>Total Claimed</span></div>
+                                </div>
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseBBT" class="collapse" data-bs-parent="#gameon-accordion">
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Deposit -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Deposit</span>
+                                    <span id="available-tokens-turu"></span> available
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="stake-amount-turu"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="stake-button-turu">Stake</a>
+                                    </div>
+                                </div>
+                                <!-- Withdraw -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Withdraw</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-turu"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="unstake-button-turu">Withdraw</a>
+                                    </div>
+                                </div>
+                                <!-- Rewards -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Pending Rewards</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <h4 class="price m-0" id="claimable-rewards-turu">0 BBT</h4>
+                                        <span class="reward my-2">Energy cost applies</span>
+                                        <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-turu"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-						<!-- KING Staking -->
-						<div class="single-accordion-item">
-							<div class="card-header bg-inherit border-0 p-0">
-								<h2 class="m-0">
-									<button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseKING">
-										<div class="row">
-											<div class="col-12 col-md-8">
-												<div class="media flex-column flex-md-row">
-													<img class="avatar-max-lg" src="assets/img/content/king.png" alt="">
-													<div class="content media-body mt-4 mt-md-0 ms-md-4">
-														<h4 class="m-0">KING Staking</h4>
-														<p>Stake KING for CFT rewards.</p>
-													</div>
-												</div>
-											</div>
-										</div>
-										<div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
-											<div class="col single-item"><span id="staked-amount-king"></span><span>Staked</span></div>
-											<div class="col single-item"><span id="projected-rewards-king"></span><span>Yearly Rewards</span></div>
-											<div class="col single-item"><span id="total-claimed-rewards-king"></span><span>Total Claimed</span></div>
-										</div>
-									</button>
-								</h2>
-							</div>
-							<div id="collapseKING" class="collapse" data-bs-parent="#gameon-accordion">
-								<div class="card-body">
-									<div class="row">
-										<!-- Deposit -->
-										<div class="col-14 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Deposit</span>
-											<span id="available-tokens-king"></span> available
-											<div class="input-area d-flex flex-column">
-												<div class="input-text"><input type="text" placeholder="0" id="stake-amount-king"></div>
-												<a href="#" class="btn input-btn mt-2" id="stake-button-king">Stake</a>
-											</div>
-										</div>
-										<!-- Withdraw -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Withdraw</span>
-											<div class="input-area d-flex flex-column">
-												<div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-king"></div>
-												<a href="#" class="btn input-btn mt-2" id="unstake-button-king">Withdraw</a>
-											</div>
-										</div>
-										<!-- Rewards -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Pending Rewards</span>
-											<div class="input-area d-flex flex-column">
-												<h4 class="price m-0" id="claimable-rewards-king">0 CFT</h4>
-												<span class="reward my-2">Energy cost applies</span>
-												<a href="#" class="btn input-btn mt-2" id="claim-rewards-button-king"><i class="fa-solid fa-lock me-1"></i> Claim</a>
-											</div>
-										</div>
-									</div>
-									<div class="row justify-content-center mt-4">
-										<div class="col-12 text-center">
-											<a href="leaderboardking.html" class="btn btn-bordered">
-												<i class="fa-solid fa-trophy me-2"></i> View Leaderboard
-											</a>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
+                <!-- KING Staking -->
+                <div class="single-accordion-item">
+                    <div class="card-header bg-inherit border-0 p-0">
+                        <h2 class="m-0">
+                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseKING">
+                                <div class="row">
+                                    <div class="col-12 col-md-8">
+                                        <div class="media flex-column flex-md-row">
+                                            <img class="avatar-max-lg" src="assets/img/content/king.png" alt="">
+                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                <h4 class="m-0">KING Staking</h4>
+                                                <p>Stake KING for CFT rewards.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                    <div class="col single-item"><span id="staked-amount-king"></span><span>Staked</span></div>
+                                    <div class="col single-item"><span id="projected-rewards-king"></span><span>Yearly Rewards</span></div>
+                                    <div class="col single-item"><span id="total-claimed-rewards-king"></span><span>Total Claimed</span></div>
+                                </div>
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseKING" class="collapse" data-bs-parent="#gameon-accordion">
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Deposit -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Deposit</span>
+                                    <span id="available-tokens-king"></span> available
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="stake-amount-king"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="stake-button-king">Stake</a>
+                                    </div>
+                                </div>
+                                <!-- Withdraw -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Withdraw</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-king"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="unstake-button-king">Withdraw</a>
+                                    </div>
+                                </div>
+                                <!-- Rewards -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Pending Rewards</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <h4 class="price m-0" id="claimable-rewards-king">0 CFT</h4>
+                                        <span class="reward my-2">Energy cost applies</span>
+                                        <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-king"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                                    </div>
+                                </div>
+                            </div>
+				<div class="row justify-content-center mt-4">
+        <div class="col-12 text-center">
+            <a href="leaderboardking.html" class="btn btn-bordered">
+                <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
+            </a>
+        </div>
+    </div>
+                        </div>
+                    </div>
+                </div>
 
-						<!-- FYM Staking -->
-						<div class="single-accordion-item">
-							<div class="card-header bg-inherit border-0 p-0">
-								<h2 class="m-0">
-									<button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFYM">
-										<div class="row">
-											<div class="col-12 col-md-8">
-												<div class="media flex-column flex-md-row">
-													<img class="avatar-max-lg" src="assets/img/content/fym.png" alt="">
-													<div class="content media-body mt-4 mt-md-0 ms-md-4">
-														<h4 class="m-0">FYM Staking</h4>
-														<p>Stake FYM for CFT rewards.</p>
-													</div>
-												</div>
-											</div>
-										</div>
-										<div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
-											<div class="col single-item"><span id="staked-amount-fym"></span><span>Staked</span></div>
-											<div class="col single-item"><span id="projected-rewards-fym"></span><span>Yearly Rewards</span></div>
-											<div class="col single-item"><span id="total-claimed-rewards-fym"></span><span>Total Claimed</span></div>
-										</div>
-									</button>
-								</h2>
-							</div>
-							<div id="collapseFYM" class="collapse" data-bs-parent="#gameon-accordion">
-								<div class="card-body">
-									<div class="row">
-										<!-- Deposit -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Deposit</span>
-											<span id="available-tokens-fym"></span> available
-											<div class="input-area d-flex flex-column">
-												<div class="input-text"><input type="text" placeholder="0" id="stake-amount-fym"></div>
-												<a href="#" class="btn input-btn mt-2" id="stake-button-fym">Stake</a>
-											</div>
-										</div>
-										<!-- Withdraw -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Withdraw</span>
-											<div class="input-area d-flex flex-column">
-												<div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-fym"></div>
-												<a href="#" class="btn input-btn mt-2" id="unstake-button-fym">Withdraw</a>
-											</div>
-										</div>
-										<!-- Rewards -->
-										<div class="col-12 col-md-4 single-staking-item input-box">
-											<span class="item-title mb-2">Pending Rewards</span>
-											<div class="input-area d-flex flex-column">
-												<h4 class="price m-0" id="claimable-rewards-fym">0 CFT</h4>
-												<span class="reward my-2">Energy cost applies</span>
-												<a href="#" class="btn input-btn mt-2" id="claim-rewards-button-fym"><i class="fa-solid fa-lock me-1"></i> Claim</a>
-											</div>
-										</div>
-									</div>
-									<div class="row justify-content-center mt-4">
-										<div class="col-12 text-center">
-											<a href="leaderboardfym.html" class="btn btn-bordered">
-												<i class="fa-solid fa-trophy me-2"></i> View Leaderboard
-											</a>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- ***** Staking Area End ***** -->
+                <!-- FYM Staking -->
+                <div class="single-accordion-item">
+                    <div class="card-header bg-inherit border-0 p-0">
+                        <h2 class="m-0">
+                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFYM">
+                                <div class="row">
+                                    <div class="col-12 col-md-8">
+                                        <div class="media flex-column flex-md-row">
+                                            <img class="avatar-max-lg" src="assets/img/content/fym.png" alt="">
+                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                <h4 class="m-0">FYM Staking</h4>
+                                                <p>Stake FYM for CFT rewards.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                    <div class="col single-item"><span id="staked-amount-fym"></span><span>Staked</span></div>
+                                    <div class="col single-item"><span id="projected-rewards-fym"></span><span>Yearly Rewards</span></div>
+                                    <div class="col single-item"><span id="total-claimed-rewards-fym"></span><span>Total Claimed</span></div>
+                                </div>
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseFYM" class="collapse" data-bs-parent="#gameon-accordion">
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Deposit -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Deposit</span>
+                                    <span id="available-tokens-fym"></span> available
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="stake-amount-fym"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="stake-button-fym">Stake</a>
+                                    </div>
+                                </div>
+                                <!-- Withdraw -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Withdraw</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-fym"></div>
+                                        <a href="#" class="btn input-btn mt-2" id="unstake-button-fym">Withdraw</a>
+                                    </div>
+                                </div>
+                                <!-- Rewards -->
+                                <div class="col-12 col-md-4 single-staking-item input-box">
+                                    <span class="item-title mb-2">Pending Rewards</span>
+                                    <div class="input-area d-flex flex-column">
+                                        <h4 class="price m-0" id="claimable-rewards-fym">0 CFT</h4>
+                                        <span class="reward my-2">Energy cost applies</span>
+                                        <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-fym"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                                    </div>
+                                </div>
+                            </div>
+				<div class="row justify-content-center mt-4">
+        <div class="col-12 text-center">
+            <a href="leaderboardfym.html" class="btn btn-bordered">
+                <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
+            </a>
+        </div>
+    </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+
+                <!-- End of Unified Staking Sections -->
+            </div>
+        </div>
+    </div>
+</section>
+<!-- ***** Staking Area End ***** -->
+
+
 
 		<!-- ***** CTA Area Start ***** -->
 		<section class="cta-area p-0">
@@ -688,7 +703,7 @@
 								<h2 class="m-0">Apply for project staking</h2>
 								<p>Earn weekly rewards from staked CFT to build your project</p>
 								<p>Soon available for projects on any chain</p>
-								<a class="btn btn-bordered active d-inline-block"><i class="icon-rocket me-2"></i>Coming Soon</a>
+								<a class="btn btn-bordered active d-inline-block" ><i class="icon-rocket me-2"></i>Coming Soon</a>
 							</div>
 						</div>
 						<a class="cta-link" href="apply.html"></a>
@@ -740,19 +755,40 @@
 			<div class="container">
 				<div class="row justify-content-center">
 					<div class="col-12 col-md-8 text-center">
+						<!-- Footer Items -->
 						<div class="footer-items">
+							<!-- Logo -->
 							<a class="navbar-brand" href="index.html">
 								<img src="assets/img/logo/logo.png" alt="">
 							</a>
+							<!-- Social Icons -->
 							<div class="social-icons d-flex justify-content-center my-4">
-								<a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
-								<a class="reddit" href="https://www.reddit.com/" target="_blank"><i class="fab fa-reddit"></i></a>
-								<a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
-							</div>
-							<div class="copyright-area py-4">©2025 CFT Ecosystem, All Rights Reserved</div>
+    <!-- X (Formerly Twitter) -->
+    <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank">
+        <i class="fab fa-x-twitter"></i>
+    </a>
+
+    <!-- Reddit -->
+    <a class="reddit" href="https://www.reddit.com/" target="_blank">
+        <i class="fab fa-reddit"></i>
+    </a>
+
+    <!-- Telegram -->
+    <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank">
+        <i class="fab fa-telegram-plane"></i>
+    </a>
+</div>
+
+
+							
+							<!-- Copyright Area -->
+							<div class="copyright-area py-4">&copy;2025 CFT Ecosystem, All Rights Reserved </div>
 						</div>
+						<!-- Scroll To Top -->
 						<div id="scroll-to-top" class="scroll-to-top">
-							<a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a>
+							<a href="#header" class="smooth-anchor">
+								<i class="fa-solid fa-arrow-up"></i>
+							</a>
 						</div>
 					</div>
 				</div>
@@ -811,19 +847,29 @@
 		</div>
 		<!--====== Modal Responsive Menu Area End ======-->
 
-		<!-- ***** All jQuery Plugins ***** -->
-		<script src="assets/js/vendor/jquery.min.js"></script>
-		<script src="assets/js/vendor/popper.min.js"></script>
-		<!-- Bootstrap 5 JS -->
-		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-		<script src="assets/js/vendor/all.min.js"></script>
-		<script src="assets/js/vendor/gallery.min.js"></script>
-		<script src="assets/js/vendor/slider.min.js"></script>
-		<script src="assets/js/vendor/countdown.min.js"></script>
-		<script src="assets/js/vendor/shuffle.min.js"></script>
-		<script src="assets/js/main.js"></script>
-		<script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
-		<script src="assets/js/staking.js"></script>
 	</div>
+
+	<!-- ***** All jQuery Plugins ***** -->
+
+	<!-- jQuery(necessary for all JavaScript plugins) -->
+	<script src="assets/js/vendor/jquery.min.js"></script>
+
+	<!-- Bootstrap js -->
+	<script src="assets/js/vendor/popper.min.js"></script>
+	<script src="assets/js/vendor/bootstrap.min.js"></script>
+
+	<!-- Plugins js -->
+	<script src="assets/js/vendor/all.min.js"></script>
+	<script src="assets/js/vendor/gallery.min.js"></script>
+	<script src="assets/js/vendor/slider.min.js"></script>
+	<script src="assets/js/vendor/countdown.min.js"></script>
+	<script src="assets/js/vendor/shuffle.min.js"></script>
+
+	<!-- Main js -->
+	<script src="assets/js/main.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+	<!-- Staking Script -->
+
+  <script src="assets/js/energytest.js"></script>
+
 </body>
-</html>
