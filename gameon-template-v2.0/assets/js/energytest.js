@@ -10,10 +10,10 @@ const TRONGRID_API_URL = 'https://api.trongrid.io';
 // Payment wallet for energy rental
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
-const SAFETY_ENERGY = 5000; // Extra energy for safety
+const SAFETY_ENERGY = 20000; // Extra energy for safety
 const ENERGY_PRICE_SUN = 10; // Price per energy unit in SUN
 const SUN_PER_TRX = 1000000; // 1 TRX = 1,000,000 SUN
-const ENERGY_RENTAL_DURATION = 5; // Duration in minutes
+const ENERGY_RENTAL_DURATION = 2; // Duration in minutes
 
 // Define contracts for StableX and CFT with energy costs
 const tokenDetails = {
@@ -23,8 +23,8 @@ const tokenDetails = {
     decimals: 6,
     displayName: 'CFT',
     energyCosts: {
-      stake: 170000,
-      unstake: 150000,
+      stake: 120000,
+      unstake: 75000,
       claimRewards: 100000
     }
   },
@@ -34,9 +34,9 @@ const tokenDetails = {
     decimals: 6,
     displayName: 'STABLEX',
     energyCosts: {
-      stake: 180000,
-      unstake: 160000,
-      claimRewards: 110000
+      stake: 120000,
+      unstake: 75000,
+      claimRewards: 100000
     }
   },
   cftturu: {
@@ -46,9 +46,9 @@ const tokenDetails = {
     rewardDecimals: 6,
     displayName: 'CFT',
     energyCosts: {
-      stake: 175000,
-      unstake: 155000,
-      claimRewards: 105000
+      stake: 120000,
+      unstake: 75000,
+      claimRewards: 100000
     }
   },
   turu: {
@@ -57,9 +57,9 @@ const tokenDetails = {
     decimals: 8,
     displayName: 'BBT',
     energyCosts: {
-      stake: 165000,
-      unstake: 145000,
-      claimRewards: 95000
+      stake: 120000,
+      unstake: 75000,
+      claimRewards: 100000
     }
   },
   king: {
@@ -68,8 +68,8 @@ const tokenDetails = {
     decimals: 6,
     displayName: 'CFT',
     energyCosts: {
-      stake: 170000,
-      unstake: 150000,
+      stake: 120000,
+      unstake: 75000,
       claimRewards: 100000
     }
   },
@@ -79,9 +79,9 @@ const tokenDetails = {
     decimals: 6,
     displayName: 'CFT',
     energyCosts: {
-      stake: 172000,
-      unstake: 152000,
-      claimRewards: 102000
+      stake: 120000,
+      unstake: 75000,
+      claimRewards: 100000
     }
   }
 };
