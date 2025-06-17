@@ -526,7 +526,7 @@ const tokenContractAbi = [
     "name": "owner",
     "outputs": [
       {
-        "internalType": "address",
+        "internallevelType": "address",
         "name": "",
         "type": "address"
       }
@@ -853,11 +853,17 @@ const tokenContractAbi = [
 ];
 
 // Show transaction processing modal
-function showProcessingModal() {
+function showProcessingModal(transactionStep = '') {
   const modalElement = document.getElementById('transaction-processing-modal');
   if (!modalElement) {
     console.error('Transaction processing modal element not found');
     throw new Error('Transaction processing modal not found in the page.');
+  }
+  const titleElement = document.getElementById('transactionProcessingModalLabel');
+  if (titleElement) {
+    titleElement.textContent = `Processing Transaction ${transactionStep}`;
+  } else {
+    console.error('Transaction processing modal title element not found');
   }
   const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
   modal.show();
@@ -913,7 +919,7 @@ async function checkDelegatorEnergy(requiredAmount) {
 async function requestEnergyRental(rentalEnergy, rentalCostTrx) {
   let processingModal = null;
   try {
-    processingModal = showProcessingModal();
+    processingModal = showProcessingModal('(1/2)'); // Updated to show "Transaction 1/2"
     if (!userAddress) {
       throw new Error('Please connect your wallet first.');
     }
@@ -979,7 +985,7 @@ async function pollDelegationStatus(requestId) {
         }
 
         const data = await response.json();
-        console.log(`Delegation status for request ${requestId}:`, data);
+        console.log(`Delegation status for ${requestId}:`, data);
 
         if (data.status === 'delegated') {
           clearInterval(interval);
@@ -1292,7 +1298,7 @@ async function stakeTokens(token, amount) {
       }
     }
 
-    processingModal = showProcessingModal();
+    processingModal = showProcessingModal('(2/2)'); // Updated to show "Transaction 2/2"
 
     const amountToStake = BigInt(amount) * BigInt(10 ** tokenDetails[token].decimals);
     const stakingContractAddress = tokenDetails[token].stakingAddress;
@@ -1409,7 +1415,7 @@ async function unstakeTokens(token) {
       }
     }
 
-    processingModal = showProcessingModal();
+    processingModal = showProcessingModal('(2/2)'); // Updated to show "Transaction 2/2"
 
     const amountToUnstake = BigInt(unstakeAmount) * BigInt(10 ** tokenDetails[token].decimals);
     const stakingContract = stakingContracts[token];
@@ -1485,7 +1491,7 @@ async function claimRewards(token) {
       }
     }
 
-    processingModal = showProcessingModal();
+    processingModal = showProcessingModal('(2/2)'); // Updated to show "Transaction 2/2"
 
     const stakingContract = stakingContracts[token];
     if (!stakingContract || !stakingContract.methods.claimReward) {
@@ -1545,7 +1551,7 @@ for (let key in tokenDetails) {
 
   const unstakeButton = document.getElementById(`unstake-button-${key}`);
   if (unstakeButton) {
-    stakeButton.addEventListener('click', async (e) => {
+    unstakeButton.addEventListener('click', async (e) => {
       e.preventDefault();
       await unstakeTokens(key);
     });
