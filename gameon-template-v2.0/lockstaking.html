@@ -47,7 +47,7 @@
 			color: #fff;
 		}
 
-		/* APR + APY same line */
+		/* APR + APY styling */
 		.staking-info .apr-apy-pair {
 			display: flex;
 			gap: 12px;
@@ -71,6 +71,22 @@
 
 		.staking-info .single-item span:last-child {
 			margin-right: 0;
+		}
+
+		/* New APR/APY specific styling */
+		.apr-apy-container {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+		}
+
+		.apr-value {
+			font-size: 1.1em;
+		}
+
+		.apy-value {
+			font-size: 0.8em;
+			color: #aaa;
 		}
 
 		.card-body .row {
@@ -346,8 +362,10 @@
 										</div>
 										<div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
 											<div class="col-4 single-item apr-apy-pair">
-												<span id="staking-apr-cft">30%</span><span>APR</span>
-												<span>34.98%</span><span>APY</span>
+												<div class="apr-apy-container">
+													<span class="apr-value" id="staking-apr-cft">30% APR</span>
+													<span class="apy-value">(34.98% APY)</span>
+												</div>
 											</div>
 											<div class="col-4 single-item"><span id="total-balance-cft">0.000000 CFT</span><span>Total Balance</span></div>
 											<div class="col-4 single-item"><span id="remaining-lock-time-cft">Unlocked</span><span>Unlock Time</span></div>
