@@ -15,74 +15,44 @@ const ENERGY_PRICE_SUN = 10; // Price per energy unit in SUN
 const SUN_PER_TRX = 1000000; // 1 TRX = 1,000,000 SUN
 const ENERGY_RENTAL_DURATION = 5; // Duration in minutes
 
-// Define contracts for StableX and CFT with energy costs
+// Define contracts for StableX and CFT without hardcoded energy costs
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
     stakingAddress: 'TMrDKEu6vSBSwstToiiooAiwB5xKNghEy8',
     decimals: 6,
-    displayName: 'CFT',
-    energyCosts: {
-      stake: 170000,
-      unstake: 150000,
-      claimRewards: 100000
-    }
+    displayName: 'CFT'
   },
   cftx: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
     stakingAddress: 'THLETrCqWHVJNURBQNKLBYJTLBGpUnDatp',
     decimals: 6,
-    displayName: 'STABLEX',
-    energyCosts: {
-      stake: 180000,
-      unstake: 160000,
-      claimRewards: 110000
-    }
+    displayName: 'STABLEX'
   },
   cftturu: {
     tokenAddress: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
     stakingAddress: 'TXgt8nXRDTbYxbhDbkZyqs9cgjoBikQa72',
     decimals: 8,
     rewardDecimals: 6,
-    displayName: 'CFT',
-    energyCosts: {
-      stake: 175000,
-      unstake: 155000,
-      claimRewards: 105000
-    }
+    displayName: 'CFT'
   },
   turu: {
     tokenAddress: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
     stakingAddress: 'TLQPUiSeCHZ92UcphkesN46XtPN55MkNcm',
     decimals: 8,
-    displayName: 'BBT',
-    energyCosts: {
-      stake: 165000,
-      unstake: 145000,
-      claimRewards: 95000
-    }
+    displayName: 'BBT'
   },
   king: {
     tokenAddress: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
     stakingAddress: 'TEppqmC7mb2wF4ExBYbQF6LraqD6qXW5Aj',
     decimals: 6,
-    displayName: 'CFT',
-    energyCosts: {
-      stake: 170000,
-      unstake: 150000,
-      claimRewards: 100000
-    }
+    displayName: 'CFT'
   },
   fym: {
     tokenAddress: 'TCTvRkt5kVndeGKWJmMUxEc2rovdrGNoK3',
     stakingAddress: 'TP4HhAWv2WbSMCH2CRhdSsiwBP6JzViouq',
     decimals: 6,
-    displayName: 'CFT',
-    energyCosts: {
-      stake: 172000,
-      unstake: 152000,
-      claimRewards: 102000
-    }
+    displayName: 'CFT'
   }
 };
 
@@ -526,7 +496,7 @@ const tokenContractAbi = [
     "name": "owner",
     "outputs": [
       {
-        "internallevelType": "address",
+        "internalType": "address",
         "name": "",
         "type": "address"
       }
@@ -877,7 +847,7 @@ function hideProcessingModal(modal) {
   }
 }
 
-// Check user's available energy
+// Check user's available energy and estimate required energy
 async function checkUserEnergy(address, token, action) {
   try {
     console.log(`Checking energy for address: ${address}, token: ${token}, action: ${action}`);
@@ -885,13 +855,67 @@ async function checkUserEnergy(address, token, action) {
     const energyLimit = resources.EnergyLimit || 0;
     const energyUsed = resources.EnergyUsed || 0;
     const availableEnergy = energyLimit - energyUsed;
-    const requiredEnergy = tokenDetails[token].energyCosts[action];
+
+    let requiredEnergy;
+    const stakingContractAddress = tokenDetails[token].stakingAddress;
+    
+    // Estimate energy based on action
+    if (action === 'stake') {
+      // For stake, include both approve and stake transactions
+      const amountToStake = BigInt(1) * BigInt(10 ** tokenDetails[token].decimals); // Use minimal amount for estimation
+      const approveEstimate = await tronWeb.transactionBuilder.estimateEnergy(
+        tokenDetails[token].tokenAddress,
+        'approve(address,uint256)',
+        {},
+        [
+          { type: 'address', value: stakingContractAddress },
+          { type: 'uint256', value: maxUint256 }
+        ],
+        address
+      );
+      const stakeEstimate = await tronWeb.transactionBuilder.estimateEnergy(
+        stakingContractAddress,
+        'stake(uint256)',
+        {},
+        [{ type: 'uint256', value: amountToStake.toString() }],
+        address
+      );
+      requiredEnergy = (approveEstimate.energy_used || 65000) + (stakeEstimate.energy_used || 100000) + SAFETY_ENERGY;
+    } else if (action === 'unstake') {
+      const amountToUnstake = BigInt(1) * BigInt(10 ** tokenDetails[token].decimals); // Use minimal amount
+      const estimate = await tronWeb.transactionBuilder.estimateEnergy(
+        stakingContractAddress,
+        'withdraw(uint256)',
+        {},
+        [{ type: 'uint256', value: amountToUnstake.toString() }],
+        address
+      );
+      requiredEnergy = (estimate.energy_used || 150000) + SAFETY_ENERGY;
+    } else if (action === 'claimRewards') {
+      const estimate = await tronWeb.transactionBuilder.estimateEnergy(
+        stakingContractAddress,
+        'claimReward()',
+        {},
+        [],
+        address
+      );
+      requiredEnergy = (estimate.energy_used || 100000) + SAFETY_ENERGY;
+    } else {
+      throw new Error(`Unsupported action: ${action}`);
+    }
+
     const shortfall = Math.max(0, requiredEnergy - availableEnergy);
     console.log(`Energy for ${address}: Limit=${energyLimit}, Used=${energyUsed}, Available=${availableEnergy}, Required=${requiredEnergy}, Shortfall=${shortfall}`);
     return { availableEnergy, shortfall, requiredEnergy };
   } catch (error) {
     console.error(`Error checking energy for ${address}:`, error);
-    const requiredEnergy = tokenDetails[token].energyCosts[action];
+    // Fallback to conservative defaults
+    const defaultEnergy = {
+      stake: 180000 + SAFETY_ENERGY,
+      unstake: 150000 + SAFETY_ENERGY,
+      claimRewards: 100000 + SAFETY_ENERGY
+    };
+    const requiredEnergy = defaultEnergy[action] || 150000 + SAFETY_ENERGY;
     return { availableEnergy: 0, shortfall: requiredEnergy, requiredEnergy };
   }
 }
@@ -919,7 +943,7 @@ async function checkDelegatorEnergy(requiredAmount) {
 async function requestEnergyRental(rentalEnergy, rentalCostTrx) {
   let processingModal = null;
   try {
-    processingModal = showProcessingModal('(1/2)'); // Updated to show "Transaction 1/2"
+    processingModal = showProcessingModal('(1/2)');
     if (!userAddress) {
       throw new Error('Please connect your wallet first.');
     }
@@ -1298,7 +1322,7 @@ async function stakeTokens(token, amount) {
       }
     }
 
-    processingModal = showProcessingModal('(2/2)'); // Updated to show "Transaction 2/2"
+    processingModal = showProcessingModal('(2/2)');
 
     const amountToStake = BigInt(amount) * BigInt(10 ** tokenDetails[token].decimals);
     const stakingContractAddress = tokenDetails[token].stakingAddress;
@@ -1415,7 +1439,7 @@ async function unstakeTokens(token) {
       }
     }
 
-    processingModal = showProcessingModal('(2/2)'); // Updated to show "Transaction 2/2"
+    processingModal = showProcessingModal('(2/2)');
 
     const amountToUnstake = BigInt(unstakeAmount) * BigInt(10 ** tokenDetails[token].decimals);
     const stakingContract = stakingContracts[token];
@@ -1491,7 +1515,7 @@ async function claimRewards(token) {
       }
     }
 
-    processingModal = showProcessingModal('(2/2)'); // Updated to show "Transaction 2/2"
+    processingModal = showProcessingModal('(2/2)');
 
     const stakingContract = stakingContracts[token];
     if (!stakingContract || !stakingContract.methods.claimReward) {
