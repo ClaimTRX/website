@@ -7,8 +7,8 @@ const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 const tokenDetails = {
     
   cft: {
-        tokenAddress: 'TAQzALyftaynnr3VG3rCvzkY2KouFH79sA',
-        stakingAddress: 'TBJrdmgoiw9oherVBwm22N8D9pB7ZQdxNo',
+        tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
+        stakingAddress: 'TP9AQZV9GhnJth2bhH1L2qVtUCJpewM8Ao',
         decimals: 6,
     }
 };
