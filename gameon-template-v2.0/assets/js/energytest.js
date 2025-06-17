@@ -92,7 +92,7 @@ function isValidTronAddress(address) {
   return address.startsWith('T') && address.length === 34 && /^[A-Za-z1-9]+$/.test(address);
 }
 
-// Staking and token contract ABIs (unchanged from original)
+// Staking and token contract ABIs
 const stakingContractAbi = [
   {
     "inputs": [
@@ -1070,50 +1070,60 @@ function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy) {
 
 // DOMContentLoaded Event Listener
 async function initialize() {
-  document.getElementById('connect-button').addEventListener('click', connectWallet);
-  if (await checkTronLinkInstalled()) {
-    await initializeTronWeb();
-    setInterval(updateAllUI, 60000); // Update UI every minute
-  } else {
-    console.error('TronLink is not installed.');
-    alert('TronLink is not installed. Please install TronLink to continue.');
+  const connectButton = document.getElementById('connect-button');
+  if (!connectButton) {
+    console.error('Connect button not found. Ensure HTML has <button id="connect-button">');
+    return;
   }
+  connectButton.addEventListener('click', connectWallet);
+  console.log('Waiting for manual wallet connection.');
 }
 
 async function checkTronLinkInstalled() {
   return new Promise(resolve => {
+    let attempts = 0;
+    const maxAttempts = 10; // Wait up to 10 seconds
     const interval = setInterval(() => {
+      attempts++;
       if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
         clearInterval(interval);
+        console.log('TronLink detected and ready.');
         resolve(true);
+      } else if (attempts >= maxAttempts) {
+        clearInterval(interval);
+        console.log('TronLink not detected after 10 seconds.');
+        resolve(false);
       }
     }, 1000);
-    setTimeout(() => {
-      clearInterval(interval);
-      resolve(false);
-    }, 5000); // Timeout after 5 seconds
   });
 }
 
 async function connectWallet() {
   try {
-    await tronLink.request({ method: 'tron_requestAccounts' });
+    if (!window.tronLink) {
+      throw new Error('TronLink is not detected. Please install or unlock TronLink.');
+    }
+    if (!window.tronLink.ready) {
+      throw new Error('TronLink is not ready. Please unlock TronLink and set it to mainnet.');
+    }
+    console.log('Requesting TronLink account access...');
+    await window.tronLink.request({ method: 'tron_requestAccounts' });
     await initializeTronWeb();
   } catch (e) {
     console.error('Failed to connect to TronLink:', e);
-    alert('Failed to connect to TronLink. Please ensure TronLink is installed, set to mainnet, and try again.');
+    alert(`Failed to connect to TronLink: ${e.message}. Please ensure TronLink is installed, unlocked, set to mainnet, and try again.`);
   }
 }
 
 async function initializeTronWeb() {
   try {
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for TronLink to stabilize
     tronWeb = window.tronWeb;
     userAddress = tronWeb.defaultAddress.base58;
     if (!userAddress) {
       throw new Error('No user address found. Ensure TronLink is connected and set to mainnet.');
     }
     console.log('User Address:', userAddress);
-    
     document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
 
     for (let key in tokenDetails) {
@@ -1133,8 +1143,9 @@ async function initializeTronWeb() {
         console.log(`Decimals for ${key}:`, tokenDetails[key].decimals);
       }
     }
-    
+
     await updateAllUI();
+    setInterval(updateAllUI, 60000); // Update UI every minute
   } catch (error) {
     console.error('Error initializing TronWeb or Contracts:', error);
     alert(`Error initializing contracts: ${error.message}. Please ensure correct contract addresses and mainnet configuration.`);
@@ -1534,7 +1545,7 @@ for (let key in tokenDetails) {
 
   const unstakeButton = document.getElementById(`unstake-button-${key}`);
   if (unstakeButton) {
-    unstakeButton.addEventListener('click', async (e) => {
+    stakeButton.addEventListener('click', async (e) => {
       e.preventDefault();
       await unstakeTokens(key);
     });
@@ -1552,3 +1563,5 @@ for (let key in tokenDetails) {
     console.error(`Claim rewards button for ${key} not found`);
   }
 }
+
+document.addEventListener('DOMContentLoaded', initialize);
