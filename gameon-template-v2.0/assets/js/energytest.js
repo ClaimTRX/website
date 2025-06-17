@@ -15,44 +15,74 @@ const ENERGY_PRICE_SUN = 10; // Price per energy unit in SUN
 const SUN_PER_TRX = 1000000; // 1 TRX = 1,000,000 SUN
 const ENERGY_RENTAL_DURATION = 5; // Duration in minutes
 
-// Define contracts for StableX and CFT without hardcoded energy costs
+// Define contracts for StableX and CFT with energy costs
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
     stakingAddress: 'TMrDKEu6vSBSwstToiiooAiwB5xKNghEy8',
     decimals: 6,
-    displayName: 'CFT'
+    displayName: 'CFT',
+    energyCosts: {
+      stake: 170000,
+      unstake: 150000,
+      claimRewards: 100000
+    }
   },
   cftx: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
     stakingAddress: 'THLETrCqWHVJNURBQNKLBYJTLBGpUnDatp',
     decimals: 6,
-    displayName: 'STABLEX'
+    displayName: 'STABLEX',
+    energyCosts: {
+      stake: 180000,
+      unstake: 160000,
+      claimRewards: 110000
+    }
   },
   cftturu: {
     tokenAddress: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
     stakingAddress: 'TXgt8nXRDTbYxbhDbkZyqs9cgjoBikQa72',
     decimals: 8,
     rewardDecimals: 6,
-    displayName: 'CFT'
+    displayName: 'CFT',
+    energyCosts: {
+      stake: 175000,
+      unstake: 155000,
+      claimRewards: 105000
+    }
   },
   turu: {
     tokenAddress: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
     stakingAddress: 'TLQPUiSeCHZ92UcphkesN46XtPN55MkNcm',
     decimals: 8,
-    displayName: 'BBT'
+    displayName: 'BBT',
+    energyCosts: {
+      stake: 165000,
+      unstake: 145000,
+      claimRewards: 95000
+    }
   },
   king: {
     tokenAddress: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
     stakingAddress: 'TEppqmC7mb2wF4ExBYbQF6LraqD6qXW5Aj',
     decimals: 6,
-    displayName: 'CFT'
+    displayName: 'CFT',
+    energyCosts: {
+      stake: 170000,
+      unstake: 150000,
+      claimRewards: 100000
+    }
   },
   fym: {
     tokenAddress: 'TCTvRkt5kVndeGKWJmMUxEc2rovdrGNoK3',
     stakingAddress: 'TP4HhAWv2WbSMCH2CRhdSsiwBP6JzViouq',
     decimals: 6,
-    displayName: 'CFT'
+    displayName: 'CFT',
+    energyCosts: {
+      stake: 172000,
+      unstake: 152000,
+      claimRewards: 102000
+    }
   }
 };
 
@@ -847,75 +877,23 @@ function hideProcessingModal(modal) {
   }
 }
 
-// Check user's available energy and estimate required energy
-async function checkUserEnergy(address, token, action) {
+// Check user's available energy
+async function checkUserEnergy(address, token, action, extraEnergy = 0) {
   try {
-    console.log(`Checking energy for address: ${address}, token: ${token}, action: ${action}`);
+    console.log(`Checking energy for address: ${address}, token: ${token}, action: ${action}, extraEnergy: ${extraEnergy}`);
     const resources = await tronWeb.trx.getAccountResources(address);
     const energyLimit = resources.EnergyLimit || 0;
     const energyUsed = resources.EnergyUsed || 0;
     const availableEnergy = energyLimit - energyUsed;
-
-    let requiredEnergy;
-    const stakingContractAddress = tokenDetails[token].stakingAddress;
-    
-    // Estimate energy based on action
-    if (action === 'stake') {
-      // For stake, include both approve and stake transactions
-      const amountToStake = BigInt(1) * BigInt(10 ** tokenDetails[token].decimals); // Use minimal amount for estimation
-      const approveEstimate = await tronWeb.transactionBuilder.estimateEnergy(
-        tokenDetails[token].tokenAddress,
-        'approve(address,uint256)',
-        {},
-        [
-          { type: 'address', value: stakingContractAddress },
-          { type: 'uint256', value: maxUint256 }
-        ],
-        address
-      );
-      const stakeEstimate = await tronWeb.transactionBuilder.estimateEnergy(
-        stakingContractAddress,
-        'stake(uint256)',
-        {},
-        [{ type: 'uint256', value: amountToStake.toString() }],
-        address
-      );
-      requiredEnergy = (approveEstimate.energy_used || 65000) + (stakeEstimate.energy_used || 100000) + SAFETY_ENERGY;
-    } else if (action === 'unstake') {
-      const amountToUnstake = BigInt(1) * BigInt(10 ** tokenDetails[token].decimals); // Use minimal amount
-      const estimate = await tronWeb.transactionBuilder.estimateEnergy(
-        stakingContractAddress,
-        'withdraw(uint256)',
-        {},
-        [{ type: 'uint256', value: amountToUnstake.toString() }],
-        address
-      );
-      requiredEnergy = (estimate.energy_used || 150000) + SAFETY_ENERGY;
-    } else if (action === 'claimRewards') {
-      const estimate = await tronWeb.transactionBuilder.estimateEnergy(
-        stakingContractAddress,
-        'claimReward()',
-        {},
-        [],
-        address
-      );
-      requiredEnergy = (estimate.energy_used || 100000) + SAFETY_ENERGY;
-    } else {
-      throw new Error(`Unsupported action: ${action}`);
-    }
-
+    const baseRequiredEnergy = tokenDetails[token].energyCosts[action];
+    const requiredEnergy = baseRequiredEnergy + extraEnergy;
     const shortfall = Math.max(0, requiredEnergy - availableEnergy);
     console.log(`Energy for ${address}: Limit=${energyLimit}, Used=${energyUsed}, Available=${availableEnergy}, Required=${requiredEnergy}, Shortfall=${shortfall}`);
     return { availableEnergy, shortfall, requiredEnergy };
   } catch (error) {
     console.error(`Error checking energy for ${address}:`, error);
-    // Fallback to conservative defaults
-    const defaultEnergy = {
-      stake: 180000 + SAFETY_ENERGY,
-      unstake: 150000 + SAFETY_ENERGY,
-      claimRewards: 100000 + SAFETY_ENERGY
-    };
-    const requiredEnergy = defaultEnergy[action] || 150000 + SAFETY_ENERGY;
+    const baseRequiredEnergy = tokenDetails[token].energyCosts[action];
+    const requiredEnergy = baseRequiredEnergy + extraEnergy;
     return { availableEnergy: 0, shortfall: requiredEnergy, requiredEnergy };
   }
 }
@@ -1036,7 +1014,7 @@ async function pollDelegationStatus(requestId) {
 }
 
 // Show energy rental modal and return user decision
-function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy) {
+function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = '') {
   return new Promise((resolve, reject) => {
     const modalElement = document.getElementById('energy-rental-modal');
     if (!modalElement) {
@@ -1051,7 +1029,7 @@ function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy) {
 
     const elements = {
       'user-energy': userEnergy.toLocaleString('en-US'),
-      'required-energy': requiredEnergy.toLocaleString('en-US'),
+      'required-energy': requiredEnergy.toLocaleString('en-US') + message,
       'rental-energy': rentalEnergy.toLocaleString('en-US'),
       'rental-cost-trx': rentalCostTrx.toFixed(2),
       'rental-duration': ENERGY_RENTAL_DURATION
@@ -1106,7 +1084,21 @@ async function initialize() {
     return;
   }
   connectButton.addEventListener('click', connectWallet);
-  console.log('Waiting for manual wallet connection.');
+  console.log('Initializing page...');
+
+  // Attempt auto-connect if TronLink is available
+  const isTronLinkInstalled = await checkTronLinkInstalled();
+  if (isTronLinkInstalled && window.tronLink && window.tronLink.ready) {
+    console.log('TronLink detected and ready. Attempting auto-connect...');
+    try {
+      await initializeTronWeb();
+    } catch (error) {
+      console.error('Auto-connect failed:', error);
+      alert(`Auto-connect failed: ${error.message}. Please connect your wallet manually.`);
+    }
+  } else {
+    console.log('TronLink not detected or not ready. Waiting for manual wallet connection.');
+  }
 }
 
 async function checkTronLinkInstalled() {
@@ -1300,30 +1292,6 @@ async function stakeTokens(token, amount) {
       throw new Error('Invalid user address. Please reconnect wallet.');
     }
 
-    const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'stake');
-    if (shortfall > 0) {
-      const totalRequired = shortfall + SAFETY_ENERGY;
-      const hasEnoughEnergy = await checkDelegatorEnergy(totalRequired);
-      if (hasEnoughEnergy) {
-        const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy);
-        if (modalResult.rent) {
-          try {
-            await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
-            console.log('Energy rented successfully. Proceeding with staking...');
-            await delay(5000);
-          } catch (error) {
-            throw new Error(`Failed to rent energy: ${error.message}`);
-          }
-        } else {
-          console.log('User declined energy rental. Proceeding with available energy...');
-        }
-      } else {
-        console.log('Insufficient delegator energy. Proceeding with available energy...');
-      }
-    }
-
-    processingModal = showProcessingModal('(2/2)');
-
     const amountToStake = BigInt(amount) * BigInt(10 ** tokenDetails[token].decimals);
     const stakingContractAddress = tokenDetails[token].stakingAddress;
     const tokenContract = tokenContracts[token];
@@ -1346,8 +1314,51 @@ async function stakeTokens(token, amount) {
     const allowance = BigInt(allowanceRaw);
     console.log('Current Allowance:', allowance.toString());
 
-    if (allowance < amountToStake) {
-      console.log('Approval is too low. Requesting approval...');
+    let approvalRequired = allowance < amountToStake;
+    let energyCheckResult;
+
+    if (approvalRequired) {
+      console.log('Approval required. Checking energy for approval transaction...');
+      energyCheckResult = await checkUserEnergy(userAddress, token, 'stake', 30000); // Add 30,000 for approval
+    } else {
+      console.log('No approval needed. Checking energy for staking transaction...');
+      energyCheckResult = await checkUserEnergy(userAddress, token, 'stake');
+    }
+
+    let { availableEnergy, shortfall, requiredEnergy } = energyCheckResult;
+
+    if (shortfall > 0) {
+      const totalRequired = shortfall + SAFETY_ENERGY;
+      const hasEnoughEnergy = await checkDelegatorEnergy(totalRequired);
+      if (hasEnoughEnergy) {
+        const modalResult = await showEnergyRentalModal(
+          availableEnergy,
+          shortfall,
+          requiredEnergy,
+          approvalRequired ? ' (including 30,000 for token approval)' : ''
+        );
+        if (modalResult.rent) {
+          try {
+            processingModal = showProcessingModal('(1/2)');
+            await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
+            console.log('Energy rented successfully. Proceeding with transaction...');
+            await delay(5000);
+            hideProcessingModal(processingModal);
+          } catch (error) {
+            throw new Error(`Failed to rent energy: ${error.message}`);
+          }
+        } else {
+          console.log('User declined energy rental. Proceeding with available energy...');
+        }
+      } else {
+        console.log('Insufficient delegator energy. Proceeding with available energy...');
+      }
+    }
+
+    processingModal = showProcessingModal('(2/2)');
+
+    if (approvalRequired) {
+      console.log('Requesting approval...');
       const approvalTx = await tronWeb.transactionBuilder.triggerSmartContract(
         tokenDetails[token].tokenAddress,
         'approve(address,uint256)',
@@ -1370,6 +1381,7 @@ async function stakeTokens(token, amount) {
         throw new Error('Failed to broadcast approve transaction');
       }
       console.log('Approval transaction broadcasted:', broadcastApproval.txid);
+      await delay(5000); // Wait for approval to be processed
     }
 
     console.log('Sending stake transaction...');
