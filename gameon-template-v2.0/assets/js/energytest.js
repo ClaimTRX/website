@@ -1,5 +1,3 @@
-
-
 let tronWeb, userAddress;
 
 // Constants
@@ -256,16 +254,16 @@ async function fetchOpenOrders() {
         tableBody.innerHTML = "";
 
         data.orders.forEach(order => {
-            const payment = order.totalPayment.toFixed(6);
+            const payment = typeof order.total_payment === 'number' ? order.total_payment.toFixed(6) : "N/A";
             const row = document.createElement("tr");
             row.innerHTML = `
-                <td>${order.orderId}</td>
-                <td>${order.energyAmount.toLocaleString()}</td>
-                <td>${order.remainingEnergy.toLocaleString()}</td>
-                <td>${order.lockDuration} days</td>
+                <td>${order.order_id}</td>
+                <td>${order.energy_amount.toLocaleString()}</td>
+                <td>${order.remaining_energy.toLocaleString()}</td>
+                <td>${order.lock_duration} days</td>
                 <td>${order.currency}</td>
                 <td>${payment} ${order.currency}</td>
-                <td><a href="#" class="fulfill-btn" data-order-id="${order.orderId}" data-remaining="${order.remainingEnergy}" data-receiver="${order.receiverAddress}">Fulfill</a></td>
+                <td><a href="#" class="fulfill-btn" data-order-id="${order.order_id}" data-remaining="${order.remaining_energy}" data-receiver="${order.receiver_address}">Fulfill</a></td>
             `;
             tableBody.appendChild(row);
         });
@@ -420,12 +418,12 @@ async function fetchSellerFulfillments() {
             const row = document.createElement("tr");
             row.innerHTML = `
                 <td>${f.fulfillmentId}</td>
-                <td>${f.orderId}</td>
-                <td>${f.energyAmount.toLocaleString()}</td>
+                <td>${f.order_id}</td>
+                <td>${f.energy_amount.toLocaleString()}</td>
                 <td>${lockEnd}</td>
                 <td>${f.status}</td>
                 <td>
-                    ${canUndelegate ? `<a href="#" class="undelegate-btn" data-fulfillment-id="${f.fulfillmentId}" data-amount="${f.energyAmount}" data-receiver="${f.receiverAddress}">Undelegate</a>` : ''}
+                    ${canUndelegate ? `<a href="#" class="undelegate-btn" data-fulfillment-id="${f.fulfillmentId}" data-amount="${f.energy_amount}" data-receiver="${f.receiver_address}">Undelegate</a>` : ''}
                 </td>
             `;
             tableBody.appendChild(row);
