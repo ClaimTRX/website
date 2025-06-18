@@ -1,49 +1,14 @@
+
+
 let tronWeb, userAddress;
 
 // Constants
 const SERVER_URL = "https://api.cftecosystem.com"; // Your server URL
-const ESCROW_CONTRACT_ADDRESS = "TWzsvYAurZoKojdyrszU6aR94JEXQkL1jr"; // Replace with deployed contract address
+const ESCROW_ADDRESS = "TWzsvYAurZoKojdyrszU6aR94JEXQkL1jr"; // Replace with escrow address from .env
 const CFT_CONTRACT_ADDRESS = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK"; // Replace with CFT TRC-20 contract address
 const PRICE_PER_ENERGY = 10; // 10 SUN per energy unit
 const SUN_PER_TRX = 1e6; // 1 TRX = 1,000,000 SUN
 const CFT_PER_TRX = 1; // 1 TRX = 1 CFT
-
-// ABI for Escrow Contract (simplified)
-const ESCROW_ABI = [
-    {
-        "inputs": [
-            {"name": "orderId", "type": "uint256"},
-            {"name": "energyAmount", "type": "uint256"},
-            {"name": "lockDuration", "type": "uint256"},
-            {"name": "currency", "type": "string"},
-            {"name": "totalPayment", "type": "uint256"}
-        ],
-        "name": "createOrder",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {"name": "orderId", "type": "uint256"},
-            {"name": "energyAmount", "type": "uint256"},
-            {"name": "receiverAddress", "type": "address"}
-        ],
-        "name": "submitFulfillment",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {"name": "fulfillmentId", "type": "uint256"}
-        ],
-        "name": "releasePayment",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    }
-];
 
 // ABI for CFT TRC-20 Token
 const CFT_ABI = [
@@ -54,16 +19,6 @@ const CFT_ABI = [
             {"name": "_value", "type": "uint256"}
         ],
         "name": "transfer",
-        "outputs": [{"name": "success", "type": "bool"}],
-        "type": "function"
-    },
-    {
-        "constant": false,
-        "inputs": [
-            {"name": "_spender", "type": "address"},
-            {"name": "_value", "type": "uint256"}
-        ],
-        "name": "approve",
         "outputs": [{"name": "success", "type": "bool"}],
         "type": "function"
     }
@@ -139,10 +94,9 @@ function updateTotalPayment() {
         return;
     }
 
-    // Calculate payment: 10 SUN per energy unit
     const sunRequired = energyAmount * PRICE_PER_ENERGY;
-    const trxPayment = sunRequired / SUN_PER_TRX; // Convert SUN to TRX
-    const payment = currency === "TRX" ? trxPayment : trxPayment * CFT_PER_TRX; // CFT = TRX 1:1
+    const trxPayment = sunRequired / SUN_PER_TRX;
+    const payment = currency === "TRX" ? trxPayment : trxPayment * CFT_PER_TRX;
     const unit = currency === "TRX" ? "TRX" : "CFT";
 
     totalPaymentDisplay.textContent = `${payment.toFixed(6)} ${unit}`;
@@ -158,53 +112,43 @@ async function createOrder() {
     const energyAmount = parseInt(document.getElementById("energy-amount").value);
     const lockDuration = parseInt(document.getElementById("lock-duration").value);
     const currency = document.getElementById("payment-currency").value;
+    const receiverAddress = document.getElementById("receiver-address").value;
 
     if (isNaN(energyAmount) || energyAmount < 100000) {
         alert("Please enter a valid energy amount (minimum 100,000).");
         return;
     }
 
+    if (!tronWeb.isAddress(receiverAddress)) {
+        alert("Please enter a valid Tron wallet address for receiving energy.");
+        return;
+    }
+
     const sunRequired = energyAmount * PRICE_PER_ENERGY;
-    const totalPayment = sunRequired / SUN_PER_TRX; // Payment in TRX or CFT
-    const paymentInSun = totalPayment * SUN_PER_TRX; // Convert to SUN for contract
+    const totalPayment = sunRequired / SUN_PER_TRX;
+    const paymentInSun = totalPayment * SUN_PER_TRX;
 
     try {
         document.getElementById("order-status").style.display = "block";
         document.getElementById("order-message").textContent = "Creating order...";
 
-        // Generate order ID (timestamp-based)
         const orderId = Date.now();
+        let txId;
 
-        // Interact with escrow contract
-        const contract = await tronWeb.contract(ESCROW_ABI, ESCROW_CONTRACT_ADDRESS);
-
-        if (currency === "CFT") {
-            // Approve CFT transfer
+        if (currency === "TRX") {
+            const result = await tronWeb.trx.sendTransaction(ESCROW_ADDRESS, paymentInSun);
+            console.log("TRX payment sent:", result);
+            txId = result.txid;
+        } else {
             const cftContract = await tronWeb.contract(CFT_ABI, CFT_CONTRACT_ADDRESS);
-            const approveResult = await cftContract.approve(
-                ESCROW_CONTRACT_ADDRESS,
-                paymentInSun
-            ).send({
+            const result = await cftContract.transfer(ESCROW_ADDRESS, paymentInSun).send({
                 feeLimit: 100000000,
                 callValue: 0
             });
-            console.log("CFT approval sent:", approveResult);
+            console.log("CFT payment sent:", result);
+            txId = result;
         }
 
-        // Create order in escrow contract
-        const result = await contract.createOrder(
-            orderId,
-            energyAmount,
-            lockDuration * 24 * 60 * 60, // Convert days to seconds
-            currency,
-            paymentInSun
-        ).send({
-            feeLimit: 100000000,
-            callValue: currency === "TRX" ? paymentInSun : 0
-        });
-        console.log("Order creation sent:", result);
-
-        // Notify server
         const response = await fetch(`${SERVER_URL}/api/create-order`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -215,7 +159,8 @@ async function createOrder() {
                 lockDuration,
                 currency,
                 totalPayment,
-                txId: result
+                receiverAddress,
+                txId
             })
         });
 
@@ -255,19 +200,20 @@ async function fetchOpenOrders() {
                 <td>${order.lockDuration} days</td>
                 <td>${order.currency}</td>
                 <td>${payment} ${order.currency}</td>
-                <td><a href="#" class="fulfill-btn" data-order-id="${order.orderId}" data-remaining="${order.remainingEnergy}">Fulfill</a></td>
+                <td><a href="#" class="fulfill-btn" data-order-id="${order.orderId}" data-remaining="${order.remainingEnergy}" data-receiver="${order.receiverAddress}">Fulfill</a></td>
             `;
             tableBody.appendChild(row);
         });
 
-        // Add click listeners to fulfill buttons
         document.querySelectorAll(".fulfill-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 e.preventDefault();
                 const orderId = btn.getAttribute("data-order-id");
                 const remaining = parseInt(btn.getAttribute("data-remaining"));
+                const receiverAddress = btn.getAttribute("data-receiver");
                 document.getElementById("selected-order-id").textContent = orderId;
                 document.getElementById("delegate-amount").max = remaining;
+                document.getElementById("fulfillment-form").dataset.receiverAddress = receiverAddress;
                 document.getElementById("fulfillment-form").style.display = "block";
             });
         });
@@ -285,7 +231,7 @@ async function fulfillOrder() {
 
     const orderId = document.getElementById("selected-order-id").textContent;
     const energyAmount = parseInt(document.getElementById("delegate-amount").value);
-    const receiverAddress = userAddress; // Seller delegates to themselves for verification
+    const receiverAddress = document.getElementById("fulfillment-form").dataset.receiverAddress;
 
     if (isNaN(energyAmount) || energyAmount < 1000) {
         alert("Please enter a valid energy amount (minimum 1,000).");
@@ -296,10 +242,7 @@ async function fulfillOrder() {
         document.getElementById("fulfillment-status").style.display = "block";
         document.getElementById("fulfillment-message").textContent = "Delegating energy...";
 
-        // Calculate SUN required
         const sunRequired = energyAmount * PRICE_PER_ENERGY;
-
-        // Delegate energy
         const tx = await tronWeb.transactionBuilder.delegateResource(
             sunRequired,
             receiverAddress,
@@ -315,7 +258,6 @@ async function fulfillOrder() {
             throw new Error("Delegation failed");
         }
 
-        // Notify server
         const response = await fetch(`${SERVER_URL}/api/submit-fulfillment`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -338,7 +280,6 @@ async function fulfillOrder() {
         document.getElementById("fulfillment-hash").href = `https://tronscan.org/#/transaction/${result.txid}`;
         document.getElementById("fulfillment-hash").style.display = "block";
 
-        // Poll for fulfillment status
         pollFulfillmentStatus(data.fulfillmentId);
     } catch (error) {
         console.error("Error fulfilling order:", error);
@@ -404,19 +345,19 @@ async function fetchSellerFulfillments() {
                 <td>${lockEnd}</td>
                 <td>${f.status}</td>
                 <td>
-                    ${canUndelegate ? `<a href="#" class="undelegate-btn" data-fulfillment-id="${f.fulfillmentId}" data-amount="${f.energyAmount}">Undelegate</a>` : ''}
+                    ${canUndelegate ? `<a href="#" class="undelegate-btn" data-fulfillment-id="${f.fulfillmentId}" data-amount="${f.energyAmount}" data-receiver="${f.receiverAddress}">Undelegate</a>` : ''}
                 </td>
             `;
             tableBody.appendChild(row);
         });
 
-        // Add click listeners to undelegate buttons
         document.querySelectorAll(".undelegate-btn").forEach(btn => {
             btn.addEventListener("click", async (e) => {
                 e.preventDefault();
                 const fulfillmentId = btn.getAttribute("data-fulfillment-id");
                 const energyAmount = parseInt(btn.getAttribute("data-amount"));
-                await undelegateEnergy(fulfillmentId, energyAmount);
+                const receiverAddress = btn.getAttribute("data-receiver");
+                await undelegateEnergy(fulfillmentId, energyAmount, receiverAddress);
             });
         });
     } catch (error) {
@@ -425,12 +366,12 @@ async function fetchSellerFulfillments() {
 }
 
 // Undelegate energy
-async function undelegateEnergy(fulfillmentId, energyAmount) {
+async function undelegateEnergy(fulfillmentId, energyAmount, receiverAddress) {
     try {
         const sunRequired = energyAmount * PRICE_PER_ENERGY;
         const tx = await tronWeb.transactionBuilder.undelegateResource(
             sunRequired,
-            userAddress,
+            receiverAddress,
             "ENERGY",
             userAddress
         );
@@ -442,7 +383,6 @@ async function undelegateEnergy(fulfillmentId, energyAmount) {
             throw new Error("Undelegation failed");
         }
 
-        // Notify server
         await fetch(`${SERVER_URL}/api/undelegate-energy`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -469,6 +409,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const currencySelect = document.getElementById("payment-currency");
     if (currencySelect) currencySelect.addEventListener("change", updateTotalPayment);
+
+    const receiverAddressInput = document.getElementById("receiver-address");
+    if (receiverAddressInput) receiverAddressInput.addEventListener("input", updateTotalPayment);
 
     const createOrderButton = document.getElementById("create-order-button");
     if (createOrderButton) createOrderButton.addEventListener("click", createOrder);
