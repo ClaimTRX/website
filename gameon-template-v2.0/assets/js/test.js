@@ -713,6 +713,7 @@ async function connectWallet() {
         await initializeTronWeb();
     } catch (e) {
         console.error('Failed to connect to TronLink:', e);
+        alert('Failed to connect to TronLink. Please ensure TronLink is installed and unlocked.');
     }
 }
 
@@ -723,8 +724,13 @@ async function initializeTronWeb() {
 
     for (let type in stakingConfigs) {
         const config = stakingConfigs[type];
-        stakingContracts[type] = await tronWeb.contract(config.stakingContractAbi, config.stakingContractAddress);
-        tokenContracts[type] = await tronWeb.contract(config.tokenContractAbi, config.tokenContractAddress);
+        try {
+            stakingContracts[type] = await tronWeb.contract(config.stakingContractAbi, config.stakingContractAddress);
+            tokenContracts[type] = await tronWeb.contract(config.tokenContractAbi, config.tokenContractAddress);
+        } catch (e) {
+            console.error(`Failed to initialize contracts for ${type}:`, e);
+            alert(`Error loading ${type} contracts. Check contract addresses and network.`);
+        }
     }
 
     setInterval(() => updateAllUI(), 60000);
@@ -733,16 +739,20 @@ async function initializeTronWeb() {
 
 async function updateAllUI() {
     for (let type in stakingConfigs) {
-        await updateAvailableTokens(type);
-        await delay(400);
-        await updateStakedAmount(type);
-        await delay(400);
-        await updateEstimatedAPR(type);
-        await delay(400);
-        await updateClaimableRewards(type);
-        await delay(400);
-        await updateTotalClaimedRewards(type);
-        await delay(400);
+        try {
+            await updateAvailableTokens(type);
+            await delay(400);
+            await updateStakedAmount(type);
+            await delay(400);
+            await updateEstimatedAPR(type);
+            await delay(400);
+            await updateClaimableRewards(type);
+            await delay(400);
+            await updateTotalClaimedRewards(type);
+            await delay(400);
+        } catch (e) {
+            console.error(`Error updating UI for ${type}:`, e);
+        }
     }
 }
 
@@ -755,12 +765,8 @@ async function updateAvailableTokens(type) {
         const tokenContract = tokenContracts[type];
         const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
         const decimals = await tokenContract.methods.decimals().call();
-        if (!balanceRaw || !decimals) {
-            console.error(`Invalid balanceRaw or decimals for ${type}:`, balanceRaw, decimals);
-            document.getElementById(`available-tokens-${type}`).innerText = '0';
-            return;
-        }
-        const balance = Number(balanceRaw) / 10 ** Number(decimals);
+        // Handle 0n as valid balance
+        const balance = balanceRaw === 0n ? 0 : Number(balanceRaw) / 10 ** Number(decimals);
         document.getElementById(`available-tokens-${type}`).innerText = formatNumber(balance);
     } catch (e) {
         console.error(`Error updating available tokens for ${type}:`, e);
@@ -774,12 +780,8 @@ async function updateStakedAmount(type) {
         const stakedAmountRaw = await stakingContract.methods.viewStakedAmount(userAddress).call();
         const tokenContract = tokenContracts[type];
         const decimals = await tokenContract.methods.decimals().call();
-        if (!stakedAmountRaw || !decimals) {
-            console.error(`Invalid stakedAmountRaw or decimals for ${type}:`, stakedAmountRaw, decimals);
-            document.getElementById(`staked-amount-${type}`).innerText = '0';
-            return;
-        }
-        const stakedAmount = Number(stakedAmountRaw) / 10 ** Number(decimals);
+        // Handle 0n as valid staked amount
+        const stakedAmount = stakedAmountRaw === 0n ? 0 : Number(stakedAmountRaw) / 10 ** Number(decimals);
         document.getElementById(`staked-amount-${type}`).innerText = formatWholeNumber(stakedAmount);
     } catch (e) {
         console.error(`Error updating staked amount for ${type}:`, e);
@@ -793,34 +795,22 @@ async function updateEstimatedAPR(type) {
         const stakingContract = stakingContracts[type];
         const tokenContract = tokenContracts[type];
         const decimals = await tokenContract.methods.decimals().call();
-        if (!decimals) {
-            console.error(`Invalid decimals for ${type}:`, decimals);
-            document.getElementById(`estimated-apr-${type}`).innerText = 'N/A';
-            return;
+        if (decimals === undefined) {
+            throw new Error(`Invalid decimals for ${type}`);
         }
 
         if (config.aprCalculation === 'dailyRewardBased') {
             const dailyRewardRaw = await stakingContract.methods.viewDailyReward().call();
             const totalStakedRaw = await stakingContract.methods.viewTotalStaked().call();
-            if (!dailyRewardRaw || !totalStakedRaw) {
-                console.error(`Invalid dailyRewardRaw or totalStakedRaw for ${type}:`, dailyRewardRaw, totalStakedRaw);
-                document.getElementById(`estimated-apr-${type}`).innerText = 'N/A';
-                return;
-            }
-            const dailyReward = Number(dailyRewardRaw) / 10 ** Number(decimals);
-            const totalStaked = Number(totalStakedRaw) / 10 ** Number(decimals);
+            const dailyReward = dailyRewardRaw === 0n ? 0 : Number(dailyRewardRaw) / 10 ** Number(decimals);
+            const totalStaked = totalStakedRaw === 0n ? 0 : Number(totalStakedRaw) / 10 ** Number(decimals);
             const apr = totalStaked > 0 ? ((dailyReward / totalStaked) * 365 * 100).toFixed(2) + '%' : 'N/A';
             document.getElementById(`estimated-apr-${type}`).innerText = apr;
         } else if (config.aprCalculation === 'projectedRewardsBased') {
             const projectedRewardsRaw = await stakingContract.methods.viewProjectedRewardsForYear(userAddress).call();
             const stakedAmountRaw = await stakingContract.methods.viewStakedAmount(userAddress).call();
-            if (!projectedRewardsRaw || !stakedAmountRaw) {
-                console.error(`Invalid projectedRewardsRaw or stakedAmountRaw for ${type}:`, projectedRewardsRaw, stakedAmountRaw);
-                document.getElementById(`estimated-apr-${type}`).innerText = 'N/A';
-                return;
-            }
-            const projectedRewards = Number(tronWeb.fromSun(projectedRewardsRaw));
-            const stakedAmountCFT = Number(stakedAmountRaw) / 10 ** Number(decimals);
+            const projectedRewards = projectedRewardsRaw === 0n ? 0 : Number(tronWeb.fromSun(projectedRewardsRaw));
+            const stakedAmountCFT = stakedAmountRaw === 0n ? 0 : Number(stakedAmountRaw) / 10 ** Number(decimals);
             let apr;
             if (type === 'trx') {
                 const yearlyRewardsUSD = projectedRewards * config.priceTRX;
@@ -846,19 +836,9 @@ async function updateClaimableRewards(type) {
         let claimableRewards;
         if (type === 'cft') {
             const decimals = await tokenContracts[type].methods.decimals().call();
-            if (!claimableRewardsRaw || !decimals) {
-                console.error(`Invalid claimableRewardsRaw or decimals for ${type}:`, claimableRewardsRaw, decimals);
-                document.getElementById(`claimable-rewards-${type}`).innerText = `0 ${config.rewardUnit}`;
-                return;
-            }
-            claimableRewards = Number(claimableRewardsRaw) / 10 ** Number(decimals);
+            claimableRewards = claimableRewardsRaw === 0n ? 0 : Number(claimableRewardsRaw) / 10 ** Number(decimals);
         } else {
-            if (!claimableRewardsRaw) {
-                console.error(`Invalid claimableRewardsRaw for ${type}:`, claimableRewardsRaw);
-                document.getElementById(`claimable-rewards-${type}`).innerText = `0 ${config.rewardUnit}`;
-                return;
-            }
-            claimableRewards = Number(tronWeb.fromSun(claimableRewardsRaw));
+            claimableRewards = claimableRewardsRaw === 0n ? 0 : Number(tronWeb.fromSun(claimableRewardsRaw));
         }
         document.getElementById(`claimable-rewards-${type}`).innerText = formatNumber(claimableRewards) + ' ' + config.rewardUnit;
     } catch (e) {
@@ -875,19 +855,9 @@ async function updateTotalClaimedRewards(type) {
         let totalClaimed;
         if (type === 'cft') {
             const decimals = await tokenContracts[type].methods.decimals().call();
-            if (!totalClaimedRaw || !decimals) {
-                console.error(`Invalid totalClaimedRaw or decimals for ${type}:`, totalClaimedRaw, decimals);
-                document.getElementById(`total-claimed-rewards-${type}`).innerText = '0';
-                return;
-            }
-            totalClaimed = Number(totalClaimedRaw) / 10 ** Number(decimals);
+            totalClaimed = totalClaimedRaw === 0n ? 0 : Number(totalClaimedRaw) / 10 ** Number(decimals);
         } else {
-            if (!totalClaimedRaw) {
-                console.error(`Invalid totalClaimedRaw for ${type}:`, totalClaimedRaw);
-                document.getElementById(`total-claimed-rewards-${type}`).innerText = '0';
-                return;
-            }
-            totalClaimed = Number(tronWeb.fromSun(totalClaimedRaw));
+            totalClaimed = totalClaimedRaw === 0n ? 0 : Number(tronWeb.fromSun(totalClaimedRaw));
         }
         document.getElementById(`total-claimed-rewards-${type}`).innerText = formatNumber(totalClaimed);
     } catch (e) {
@@ -897,43 +867,74 @@ async function updateTotalClaimedRewards(type) {
 }
 
 async function stakeTokens(type) {
-    const amount = document.getElementById(`stake-amount-${type}`).value;
-    const tokenContract = tokenContracts[type];
-    const stakingContract = stakingContracts[type];
-    const decimals = await tokenContract.methods.decimals().call();
-    const amountToStake = BigInt(parseFloat(amount) * (10 ** decimals));
+    try {
+        const amount = document.getElementById(`stake-amount-${type}`).value;
+        if (!amount || parseFloat(amount) <= 0) {
+            alert('Please enter a valid amount to stake.');
+            return;
+        }
+        const tokenContract = tokenContracts[type];
+        const stakingContract = stakingContracts[type];
+        const decimals = await tokenContract.methods.decimals().call();
+        const amountToStake = BigInt(Math.floor(parseFloat(amount) * (10 ** Number(decimals))));
 
-    const allowance = await tokenContract.methods.allowance(userAddress, stakingConfigs[type].stakingContractAddress).call();
-    const allowanceBigInt = BigInt(allowance);
+        const allowance = await tokenContract.methods.allowance(userAddress, stakingConfigs[type].stakingContractAddress).call();
+        const allowanceBigInt = BigInt(allowance);
 
-    if (allowanceBigInt < amountToStake) {
-        await tokenContract.methods.approve(stakingConfigs[type].stakingContractAddress, maxUint256).send();
-        await delay(1000);
+        if (allowanceBigInt < amountToStake) {
+            await tokenContract.methods.approve(stakingConfigs[type].stakingContractAddress, maxUint256).send();
+            await delay(1000);
+        }
+
+        await stakingContract.methods.stake(amountToStake.toString()).send();
+        alert(`Successfully staked ${amount} ${type.toUpperCase()}`);
+        setTimeout(() => updateAllUI(), 3000);
+    } catch (e) {
+        console.error(`Error staking tokens for ${type}:`, e);
+        alert(`Failed to stake ${type.toUpperCase()}. Check console for details.`);
     }
-
-    await stakingContract.methods.stake(amountToStake.toString()).send();
-    setTimeout(() => updateAllUI(), 3000);
 }
 
 async function unstakeTokens(type) {
-    const amount = document.getElementById(`withdraw-amount-${type}`).value;
-    const tokenContract = tokenContracts[type];
-    const stakingContract = stakingContracts[type];
-    const decimals = await tokenContract.methods.decimals().call();
-    const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-        console.error('Invalid amount entered:', amount);
-        return;
+    try {
+        const amount = document.getElementById(`withdraw-amount-${type}`).value;
+        if (!amount || parseFloat(amount) <= 0) {
+            alert('Please enter a valid amount to withdraw.');
+            return;
+        }
+        const tokenContract = tokenContracts[type];
+        const stakingContract = stakingContracts[type];
+        const decimals = await tokenContract.methods.decimals().call();
+        const parsedAmount = parseFloat(amount);
+        const amountToUnstake = BigInt(Math.floor(parsedAmount * (10 ** Number(decimals))));
+
+        // Check staked balance
+        const stakedAmountRaw = await stakingContract.methods.viewStakedAmount(userAddress).call();
+        const stakedAmount = BigInt(stakedAmountRaw);
+        if (stakedAmount < amountToUnstake) {
+            alert(`Insufficient staked balance. You have ${Number(stakedAmount) / 10 ** Number(decimals)} ${type.toUpperCase()} staked.`);
+            return;
+        }
+
+        await stakingContract.methods.withdraw(amountToUnstake.toString()).send();
+        alert(`Successfully withdrew ${amount} ${type.toUpperCase()}`);
+        setTimeout(() => updateAllUI(), 3000);
+    } catch (e) {
+        console.error(`Error unstaking tokens for ${type}:`, e);
+        alert(`Failed to withdraw ${type.toUpperCase()}. Check console for details.`);
     }
-    const amountToUnstake = BigInt(Math.floor(parsedAmount * (10 ** Number(decimals))));
-    await stakingContract.methods.withdraw(amountToUnstake.toString()).send();
-    setTimeout(() => updateAllUI(), 3000);
 }
 
 async function claimRewards(type) {
-    const stakingContract = stakingContracts[type];
-    await stakingContract.methods.claimReward().send();
-    setTimeout(() => updateAllUI(), 3000);
+    try {
+        const stakingContract = stakingContracts[type];
+        await stakingContract.methods.claimReward().send();
+        alert(`Successfully claimed rewards for ${type.toUpperCase()}`);
+        setTimeout(() => updateAllUI(), 3000);
+    } catch (e) {
+        console.error(`Error claiming rewards for ${type}:`, e);
+        alert(`Failed to claim rewards for ${type.toUpperCase()}. Check console for details.`);
+    }
 }
 
 function formatNumber(num) {
