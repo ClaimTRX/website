@@ -1,7 +1,7 @@
 let tronWeb, userAddress;
 
 // Constants
-const SERVER_URL = "https://api.cftecosystem.com";
+const SERVER_URL = "https://bulk.cftecosystem.com";
 const ESCROW_ADDRESS = "TWzsvYAurZoKojdyrszU6aR94JEXQkL1jr"; // Default escrow (can be overridden by seller)
 const CFT_CONTRACT_ADDRESS = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK"; // Verify this contract
 const PRICE_PER_ENERGY = 10; // 10 SUN per energy unit
