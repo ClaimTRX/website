@@ -1,9 +1,11 @@
+
+
 let tronWeb, userAddress;
 
 // Constants
-const SERVER_URL = "https://api.cftecosystem.com"; // Your server URL
-const ESCROW_ADDRESS = "TWzsvYAurZoKojdyrszU6aR94JEXQkL1jr"; // Escrow address
-const CFT_CONTRACT_ADDRESS = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK"; // CFT TRC-20 contract address
+const SERVER_URL = "https://api.cftecosystem.com";
+const ESCROW_ADDRESS = "TWzsvYAurZoKojdyrszU6aR94JEXQkL1jr"; // Verify this address
+const CFT_CONTRACT_ADDRESS = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK"; // Verify this contract
 const PRICE_PER_ENERGY = 10; // 10 SUN per energy unit
 const SUN_PER_TRX = 1e6; // 1 TRX = 1,000,000 SUN
 const CFT_PER_TRX = 1; // 1 TRX = 1 CFT
@@ -26,17 +28,19 @@ const CFT_ABI = [
 async function checkTronLinkInstalled() {
     return new Promise((resolve, reject) => {
         let attempts = 0;
-        const maxAttempts = 10;
+        const maxAttempts = 20;
         const interval = setInterval(() => {
             attempts++;
-            if (window.tronWeb && window.tronWeb.ready && window.tronWeb.defaultAddress.base58) {
-                clearInterval(interval);
+            if (window.tronWeb && window.tronWeb.ready && window.tronWeb.defaultAddress.base58 && window.tronWeb.trx && window.tronWeb.contract) {
                 tronWeb = window.tronWeb;
                 userAddress = tronWeb.defaultAddress.base58;
+                console.log("TronLink initialized, address:", userAddress);
+                clearInterval(interval);
                 resolve(true);
             } else if (attempts >= maxAttempts) {
+                console.error("TronLink check failed after", maxAttempts, "attempts");
                 clearInterval(interval);
-                reject(new Error("TronLink not installed or not logged in"));
+                reject(new Error("TronLink not installed, not logged in, or not fully initialized"));
             }
         }, 1000);
     });
@@ -46,13 +50,13 @@ async function checkTronLinkInstalled() {
 async function autoConnectWallet() {
     try {
         await checkTronLinkInstalled();
-        console.log("Auto-connected wallet:", userAddress);
         updateWalletUI(true);
         fetchOpenOrders();
         fetchSellerFulfillments();
     } catch (error) {
         console.error("Auto-connect failed:", error.message);
         updateWalletUI(false);
+        alert("Please ensure TronLink is installed and logged in.");
     }
 }
 
@@ -104,6 +108,19 @@ function updateTotalPayment() {
     totalPaymentDisplay.textContent = `${payment.toFixed(6)} ${unit}`;
 }
 
+// Retry function for transactions and API calls
+async function withRetry(fn, maxRetries = 3, delay = 2000) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            return await fn();
+        } catch (error) {
+            console.warn(`Retry ${i + 1}/${maxRetries} failed:`, error.message);
+            if (i === maxRetries - 1) throw error;
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+}
+
 // Create energy order
 async function createOrder() {
     if (!userAddress) {
@@ -127,13 +144,14 @@ async function createOrder() {
     }
 
     if (!tronWeb.isAddress(ESCROW_ADDRESS)) {
+        console.error("Invalid escrow address:", ESCROW_ADDRESS);
         alert("Invalid escrow address configuration.");
         return;
     }
 
     const sunRequired = energyAmount * PRICE_PER_ENERGY;
     const totalPayment = sunRequired / SUN_PER_TRX;
-    const paymentInSun = totalPayment * SUN_PER_TRX;
+    const paymentInSun = Math.floor(totalPayment * SUN_PER_TRX);
 
     try {
         document.getElementById("order-status").style.display = "block";
@@ -142,8 +160,13 @@ async function createOrder() {
         const orderId = Date.now();
         let txId;
 
+        console.log(`Preparing transaction: ${totalPayment} ${currency} (${paymentInSun} SUN) to ${ESCROW_ADDRESS}`);
+
         if (currency === "TRX") {
-            const result = await tronWeb.trx.sendTransaction(ESCROW_ADDRESS, paymentInSun);
+            if (!tronWeb.trx || typeof tronWeb.trx.sendTransaction !== "function") {
+                throw new Error("TronWeb TRX module not initialized");
+            }
+            const result = await withRetry(() => tronWeb.trx.sendTransaction(ESCROW_ADDRESS, paymentInSun));
             console.log("TRX payment sent:", result);
             if (!result.result || !result.txid) {
                 throw new Error("TRX transaction failed");
@@ -151,13 +174,22 @@ async function createOrder() {
             txId = result.txid;
         } else {
             if (!tronWeb.isAddress(CFT_CONTRACT_ADDRESS)) {
+                console.error("Invalid CFT contract address:", CFT_CONTRACT_ADDRESS);
                 throw new Error("Invalid CFT contract address");
             }
-            const cftContract = await tronWeb.contract(CFT_ABI, CFT_CONTRACT_ADDRESS);
-            const result = await cftContract.transfer(ESCROW_ADDRESS, paymentInSun).send({
-                feeLimit: 100000000,
-                callValue: 0
+            const cftContract = await withRetry(async () => {
+                const contract = await tronWeb.contract(CFT_ABI, CFT_CONTRACT_ADDRESS);
+                if (!contract || !contract.transfer) {
+                    throw new Error("Failed to initialize CFT contract or transfer method missing");
+                }
+                return contract;
             });
+            const result = await withRetry(() =>
+                cftContract.transfer(ESCROW_ADDRESS, paymentInSun).send({
+                    feeLimit: 100000000,
+                    callValue: 0
+                })
+            );
             console.log("CFT payment sent:", result);
             if (!result) {
                 throw new Error("CFT transaction failed");
@@ -165,22 +197,33 @@ async function createOrder() {
             txId = result;
         }
 
-        const response = await fetch(`${SERVER_URL}/api/create-order`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Accept": "application/json" },
-            body: JSON.stringify({
-                orderId,
-                buyerAddress: userAddress,
-                energyAmount,
-                lockDuration,
-                currency,
-                totalPayment,
-                receiverAddress,
-                txId
-            })
-        });
+        console.log("Sending order to server:", { orderId, txId });
 
-        const data = await response.json();
+        const sendOrder = async () => {
+            const response = await fetch(`${SERVER_URL}/api/create-order`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                body: JSON.stringify({
+                    orderId,
+                    buyerAddress: userAddress,
+                    energyAmount,
+                    lockDuration,
+                    currency,
+                    totalPayment,
+                    receiverAddress,
+                    txId
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Server error: ${response.status} - ${errorText}`);
+            }
+
+            return await response.json();
+        };
+
+        const data = await withRetry(sendOrder, 5, 3000);
         if (!data.success) {
             throw new Error(data.message || "Failed to create order");
         }
@@ -197,6 +240,7 @@ async function createOrder() {
 // Fetch and display open orders
 async function fetchOpenOrders() {
     try {
+        console.log("Fetching open orders from:", `${SERVER_URL}/api/open-orders`);
         const response = await fetch(`${SERVER_URL}/api/open-orders`, {
             headers: { "Accept": "application/json" }
         });
@@ -291,6 +335,10 @@ async function fulfillOrder() {
             })
         });
 
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+
         const data = await response.json();
         if (!data.success) {
             throw new Error(data.message || "Failed to submit fulfillment");
@@ -351,6 +399,7 @@ async function fetchSellerFulfillments() {
     if (!userAddress) return;
 
     try {
+        console.log("Fetching fulfillments for:", userAddress);
         const response = await fetch(`${SERVER_URL}/api/seller-fulfillments?address=${userAddress}`, {
             headers: { "Accept": "application/json" }
         });
@@ -414,11 +463,15 @@ async function undelegateEnergy(fulfillmentId, energyAmount, receiverAddress) {
             throw new Error("Undelegation failed");
         }
 
-        await fetch(`${SERVER_URL}/api/undelegate-energy`, {
+        const response = await fetch(`${SERVER_URL}/api/undelegate-energy`, {
             method: "POST",
             headers: { "Content-Type": "application/json", "Accept": "application/json" },
             body: JSON.stringify({ fulfillmentId, txId: result.txid })
         });
+
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
 
         alert("Energy undelegated successfully!");
         fetchSellerFulfillments();
