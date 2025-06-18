@@ -2,14 +2,12 @@ let tronWeb, userAddress;
 
 // Constants
 const SERVER_URL = "https://api.cftecosystem.com";
-const ESCROW_ADDRESS = "TWzsvYAurZoKojdyrszU6aR94JEXQkL1jr"; // Verify this address
+const ESCROW_ADDRESS = "TWzsvYAurZoKojdyrszU6aR94JEXQkL1jr"; // Default escrow (can be overridden by seller)
 const CFT_CONTRACT_ADDRESS = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK"; // Verify this contract
-const PRICE_PER_ENERGY = 10; // 10 SUN per energy unit for pricing
+const PRICE_PER_ENERGY = 10; // 10 SUN per energy unit
 const SUN_PER_TRX = 1e6; // 1 TRX = 1,000,000 SUN
 const CFT_PER_TRX = 1; // 1 TRX = 1 CFT
-const OWNER_ADDRESS = "THNiVH2i5gqgTXR3PMYFaMKdygiXrzJPrk"; // Your wallet address
 const ENERGY_BUFFER = 100; // Buffer for energy calculation
-const LOCK_DURATION_DAYS = 7; // Default lock duration for delegation in days
 
 // ABI for CFT TRC-20 Token
 const CFT_ABI = [
@@ -24,82 +22,6 @@ const CFT_ABI = [
         "type": "function"
     }
 ];
-
-// Fetch total staked TRX for energy
-async function getTotalStakedTrxForEnergy() {
-    try {
-        console.log('Fetching total staked TRX for energy via TronGrid...');
-        const parameters = await tronWeb.trx.getChainParameters();
-        const totalEnergyWeightParam = parameters.find(p => p.key === 'getTotalEnergyWeight');
-        if (!totalEnergyWeightParam) {
-            throw new Error('Total energy weight parameter not found');
-        }
-        const totalEnergyWeight = totalEnergyWeightParam.value;
-        console.log(`Total staked TRX for energy: ${totalEnergyWeight} SUN`);
-        return totalEnergyWeight; // Returns value in SUN
-    } catch (e) {
-        console.error('Error fetching total staked TRX for energy:', e.message);
-        throw e;
-    }
-}
-
-// Calculate SUN required for desired energy
-async function calculateSunForEnergy(desiredEnergy) {
-    try {
-        console.log(`Calculating SUN for ${desiredEnergy} energy units...`);
-        const adjustedEnergy = desiredEnergy + ENERGY_BUFFER;
-
-        const resources = await tronWeb.trx.getAccountResources(OWNER_ADDRESS);
-        const energyLimit = resources.EnergyLimit || 0;
-        const energyUsed = resources.EnergyUsed || 0;
-        const availableEnergy = energyLimit - energyUsed;
-
-        if (availableEnergy < adjustedEnergy) {
-            throw new Error(`Insufficient available energy: ${availableEnergy} < ${adjustedEnergy}`);
-        }
-
-        const networkResources = await tronWeb.trx.getAccountResources('TZ4UXDV5ZhNW7fb2AMSbgfAEZ7hWsnYS2g'); // Known active address
-        const totalEnergyLimit = networkResources.TotalEnergyLimit;
-        const totalEnergyWeight = networkResources.TotalEnergyWeight;
-
-        if (!totalEnergyLimit || !totalEnergyWeight) {
-            throw new Error('Missing TotalEnergyLimit or TotalEnergyWeight in network resources');
-        }
-
-        const energyPerTRX = totalEnergyLimit / totalEnergyWeight;
-        console.log(`Total Energy Limit: ${totalEnergyLimit.toLocaleString()} Energy`);
-        console.log(`Total TRX Staked: ${totalEnergyWeight.toLocaleString()} TRX`);
-        console.log(`Energy per TRX: ${energyPerTRX.toFixed(4)} Energy/TRX`);
-
-        const trxRequired = adjustedEnergy / energyPerTRX;
-        let sunRequired = Math.ceil(trxRequired * SUN_PER_TRX);
-
-        const MIN_DELEGATION_SUN = 1000000; // Minimum 1 TRX
-        if (sunRequired < MIN_DELEGATION_SUN) {
-            console.log(`Calculated sunRequired (${sunRequired} SUN) is less than 1 TRX. Adjusting to minimum.`);
-            sunRequired = MIN_DELEGATION_SUN;
-        }
-
-        console.log(`Calculated ${sunRequired} SUN for ${adjustedEnergy} energy units (original: ${desiredEnergy})`);
-        return { sunRequired };
-    } catch (e) {
-        console.error('Error calculating SUN:', e.message);
-        throw e;
-    }
-}
-
-// Check delegated resource (Stake2.0)
-async function getDelegatedResource(fromAddress, toAddress) {
-    try {
-        console.log(`Fetching delegated resource from ${fromAddress} to ${toAddress}...`);
-        const result = await tronWeb.trx.getDelegatedResource(fromAddress, toAddress);
-        console.log("Delegated resource:", result);
-        return result;
-    } catch (e) {
-        console.error('Error fetching delegated resource:', e.message);
-        throw e;
-    }
-}
 
 // Check if TronLink is installed and ready
 async function checkTronLinkInstalled() {
@@ -183,6 +105,64 @@ function updateTotalPayment() {
     const unit = currency === "TRX" ? "TRX" : "CFT";
 
     totalPaymentDisplay.textContent = `${payment.toFixed(6)} ${unit}`;
+}
+
+// Get total staked TRX for energy
+async function getTotalStakedTrxForEnergy() {
+    try {
+        console.log('Fetching total staked TRX for energy via TronGrid...');
+        const parameters = await tronWeb.trx.getChainParameters();
+        const totalEnergyWeightParam = parameters.find(p => p.key === 'getTotalEnergyWeight');
+        if (!totalEnergyWeightParam) {
+            throw new Error('Total energy weight parameter not found');
+        }
+        const totalEnergyWeight = totalEnergyWeightParam.value;
+        console.log(`Total staked TRX for energy: ${totalEnergyWeight} SUN`);
+        return totalEnergyWeight; // Returns value in SUN
+    } catch (e) {
+        console.error('Error fetching total staked TRX for energy:', e.message);
+        throw e;
+    }
+}
+
+// Calculate SUN required for desired energy
+async function calculateSunForEnergy(desiredEnergy) {
+    try {
+        console.log(`Calculating SUN for ${desiredEnergy} energy units...`);
+        const adjustedEnergy = desiredEnergy + ENERGY_BUFFER;
+
+        // Fetch network resources from a known active address
+        const networkResources = await tronWeb.trx.getAccountResources('TZ4UXDV5ZhNW7fb2AMSbgfAEZ7hWsnYS2g');
+        const totalEnergyLimit = networkResources.TotalEnergyLimit;
+        const totalEnergyWeight = networkResources.TotalEnergyWeight;
+
+        if (!totalEnergyLimit || !totalEnergyWeight) {
+            throw new Error('Missing TotalEnergyLimit or TotalEnergyWeight in network resources');
+        }
+
+        // Calculate energy per TRX
+        const energyPerTRX = totalEnergyLimit / totalEnergyWeight;
+        console.log(`Total Energy Limit: ${totalEnergyLimit.toLocaleString()} Energy`);
+        console.log(`Total TRX Staked: ${totalEnergyWeight.toLocaleString()} TRX`);
+        console.log(`Energy per TRX: ${energyPerTRX.toFixed(4)} Energy/TRX`);
+
+        // Calculate TRX required for adjusted energy
+        const trxRequired = adjustedEnergy / energyPerTRX;
+        let sunRequired = Math.ceil(trxRequired * SUN_PER_TRX);
+
+        // Enforce minimum delegation of 1 TRX (1,000,000 SUN)
+        const MIN_DELEGATION_SUN = 1000000;
+        if (sunRequired < MIN_DELEGATION_SUN) {
+            console.log(`Calculated sunRequired (${sunRequired} SUN) is less than 1 TRX. Adjusting to minimum.`);
+            sunRequired = MIN_DELEGATION_SUN;
+        }
+
+        console.log(`Calculated ${sunRequired} SUN for ${adjustedEnergy} energy units (original: ${desiredEnergy})`);
+        return { sunRequired };
+    } catch (e) {
+        console.error('Error calculating SUN:', e.message);
+        throw e;
+    }
 }
 
 // Retry function for transactions and API calls
@@ -314,6 +294,58 @@ async function createOrder() {
     }
 }
 
+// Fetch and display open orders
+async function fetchOpenOrders() {
+    try {
+        console.log("Fetching open orders from:", `${SERVER_URL}/api/open-orders`);
+        const response = await fetch(`${SERVER_URL}/api/open-orders`, {
+            headers: { "Accept": "application/json" }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
+        }
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.message || "Failed to fetch orders");
+        }
+
+        const tableBody = document.getElementById("marketplace-table-body");
+        tableBody.innerHTML = "";
+
+        data.orders.forEach(order => {
+            const payment = typeof order.total_payment === 'number' ? order.total_payment.toFixed(6) : (order.total_payment || "0").toFixed(6);
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${order.order_id}</td>
+                <td>${order.energy_amount.toLocaleString()}</td>
+                <td>${order.remaining_energy.toLocaleString()}</td>
+                <td>${order.lock_duration} days</td>
+                <td>${order.currency}</td>
+                <td>${payment} ${order.currency}</td>
+                <td><a href="#" class="fulfill-btn" data-order-id="${order.order_id}" data-remaining="${order.remaining_energy}" data-receiver="${order.receiver_address}" data-lock-duration="${order.lock_duration}">Fulfill</a></td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        document.querySelectorAll(".fulfill-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                const orderId = btn.getAttribute("data-order-id");
+                const remaining = parseInt(btn.getAttribute("data-remaining"));
+                const receiverAddress = btn.getAttribute("data-receiver");
+                const lockDuration = parseInt(btn.getAttribute("data-lock-duration"));
+                document.getElementById("selected-order-id").textContent = orderId;
+                document.getElementById("delegate-amount").max = remaining;
+                document.getElementById("fulfillment-form").dataset.receiverAddress = receiverAddress;
+                document.getElementById("fulfillment-form").dataset.lockDuration = lockDuration;
+                document.getElementById("fulfillment-form").style.display = "block";
+            });
+        });
+    } catch (error) {
+        console.error("Error fetching open orders:", error);
+    }
+}
+
 // Fulfill an order
 async function fulfillOrder() {
     if (!userAddress) {
@@ -324,43 +356,51 @@ async function fulfillOrder() {
     const orderId = document.getElementById("selected-order-id").textContent;
     const energyAmount = parseInt(document.getElementById("delegate-amount").value);
     const receiverAddress = document.getElementById("fulfillment-form").dataset.receiverAddress;
+    const lockDuration = parseInt(document.getElementById("fulfillment-form").dataset.lockDuration);
+    const paymentAddressInput = document.getElementById("payment-address"); // Add this input to bulk-energy.html
+    const paymentAddress = paymentAddressInput ? paymentAddressInput.value : ESCROW_ADDRESS;
 
-    if (isNaN(energyAmount) || energyAmount < 1000) {
-        alert("Please enter a valid energy amount (minimum 1,000).");
+    if (isNaN(energyAmount) || energyAmount < 1000 || energyAmount > parseInt(document.getElementById("delegate-amount").max)) {
+        alert("Please enter a valid energy amount (minimum 1,000, maximum available).");
+        return;
+    }
+
+    if (!tronWeb.isAddress(receiverAddress)) {
+        alert("Invalid receiver address.");
+        return;
+    }
+
+    if (!tronWeb.isAddress(paymentAddress)) {
+        alert("Invalid payment address.");
         return;
     }
 
     try {
         document.getElementById("fulfillment-status").style.display = "block";
-        document.getElementById("fulfillment-message").textContent = "Calculating delegation amount...";
+        document.getElementById("fulfillment-message").textContent = "Calculating energy delegation...";
 
         const { sunRequired } = await calculateSunForEnergy(energyAmount);
-        const expireTime = Date.now() + (LOCK_DURATION_DAYS * 24 * 60 * 60 * 1000); // 7 days in milliseconds
-
         document.getElementById("fulfillment-message").textContent = "Delegating energy...";
+
+        const expireTime = new Date();
+        expireTime.setDate(expireTime.getDate() + lockDuration);
+        const expireTimeMs = expireTime.getTime();
 
         const tx = await tronWeb.transactionBuilder.delegateResource(
             sunRequired,
             receiverAddress,
             "ENERGY",
             userAddress,
-            true // Locked delegation
+            false,
+            { expire_time: expireTimeMs }
         );
-        const signed = await tronWeb.trx.sign(tx, { expiration: expireTime });
+        const signed = await tronWeb.trx.sign(tx);
         const result = await tronWeb.trx.broadcast(signed);
         console.log("Delegation sent:", result);
 
         if (!result.result || !result.txid) {
             throw new Error("Delegation failed");
         }
-
-        // Validate delegation
-        const delegation = await getDelegatedResource(userAddress, receiverAddress);
-        const energyDelegation = delegation.find(d => d.to === tronWeb.address.toHex(receiverAddress) && d.from === tronWeb.address.toHex(userAddress));
-        if (!energyDelegation || energyDelegation.frozen_balance_for_energy < sunRequired / SUN_PER_TRX) {
-            throw new Error("Delegation validation failed: Insufficient energy delegated");
-        }
-        console.log(`Delegated ${energyDelegation.frozen_balance_for_energy} TRX until ${new Date(energyDelegation.expire_time_for_energy)}`);
 
         const response = await fetch(`${SERVER_URL}/api/submit-fulfillment`, {
             method: "POST",
@@ -370,7 +410,9 @@ async function fulfillOrder() {
                 sellerAddress: userAddress,
                 energyAmount,
                 receiverAddress,
-                txId: result.txid
+                txId: result.txid,
+                paymentAddress,
+                lockDuration
             })
         });
 
@@ -431,56 +473,6 @@ async function pollFulfillmentStatus(fulfillmentId) {
             }
         }
     }, 2000);
-}
-
-// Fetch and display open orders
-async function fetchOpenOrders() {
-    try {
-        console.log("Fetching open orders from:", `${SERVER_URL}/api/open-orders`);
-        const response = await fetch(`${SERVER_URL}/api/open-orders`, {
-            headers: { "Accept": "application/json" }
-        });
-        if (!response.ok) {
-            throw new Error(`HTTP error: ${response.status}`);
-        }
-        const data = await response.json();
-        if (!data.success) {
-            throw new Error(data.message || "Failed to fetch orders");
-        }
-
-        const tableBody = document.getElementById("marketplace-table-body");
-        tableBody.innerHTML = "";
-
-        data.orders.forEach(order => {
-            const payment = typeof order.total_payment === 'number' ? order.total_payment.toFixed(6) : "N/A";
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${order.order_id}</td>
-                <td>${order.energy_amount.toLocaleString()}</td>
-                <td>${order.remaining_energy.toLocaleString()}</td>
-                <td>${order.lock_duration} days</td>
-                <td>${order.currency}</td>
-                <td>${payment} ${order.currency || 'N/A'}</td>
-                <td><a href="#" class="fulfill-btn" data-order-id="${order.order_id}" data-remaining="${order.remaining_energy}" data-receiver="${order.receiver_address}">Fulfill</a></td>
-            `;
-            tableBody.appendChild(row);
-        });
-
-        document.querySelectorAll(".fulfill-btn").forEach(btn => {
-            btn.addEventListener("click", (e) => {
-                e.preventDefault();
-                const orderId = btn.getAttribute("data-order-id");
-                const remaining = parseInt(btn.getAttribute("data-remaining"));
-                const receiverAddress = btn.getAttribute("data-receiver");
-                document.getElementById("selected-order-id").textContent = orderId;
-                document.getElementById("delegate-amount").max = remaining;
-                document.getElementById("fulfillment-form").dataset.receiverAddress = receiverAddress;
-                document.getElementById("fulfillment-form").style.display = "block";
-            });
-        });
-    } catch (error) {
-        console.error("Error fetching open orders:", error);
-    }
 }
 
 // Fetch and display seller fulfillments
