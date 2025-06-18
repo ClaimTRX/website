@@ -6,7 +6,7 @@ let tronWeb, userAddress;
 const SERVER_URL = "https://api.cftecosystem.com"; // Your server URL
 const ESCROW_ADDRESS = "TWzsvYAurZoKojdyrszU6aR94JEXQkL1jr"; // Replace with escrow address from .env
 const CFT_CONTRACT_ADDRESS = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK"; // Replace with CFT TRC-20 contract address
-const PRICE_PER_ENERGY = 10; // 10 SUN per energy unit
+const PRICE_PER_ENERGY = 60; // 10 SUN per energy unit
 const SUN_PER_TRX = 1e6; // 1 TRX = 1,000,000 SUN
 const CFT_PER_TRX = 1; // 1 TRX = 1 CFT
 
