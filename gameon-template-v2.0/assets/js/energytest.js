@@ -8,6 +8,9 @@ const PRICE_PER_ENERGY = 10; // 10 SUN per energy unit
 const SUN_PER_TRX = 1e6; // 1 TRX = 1,000,000 SUN
 const CFT_PER_TRX = 1; // 1 TRX = 1 CFT
 const ENERGY_BUFFER = 100; // Buffer for energy calculation
+const BLOCK_INTERVAL_SECONDS = 3; // Tron block time
+const MAX_LOCK_BLOCKS = 864000; // 30 days in blocks
+const DEFAULT_LOCK_BLOCKS = 86400; // 3 days in blocks
 
 // ABI for CFT TRC-20 Token
 const CFT_ABI = [
@@ -158,7 +161,7 @@ async function calculateSunForEnergy(desiredEnergy) {
         }
 
         console.log(`Calculated ${sunRequired} SUN for ${adjustedEnergy} energy units (original: ${desiredEnergy})`);
-        return { sunRequired };
+        return sunRequired;
     } catch (e) {
         console.error('Error calculating SUN:', e.message);
         throw e;
@@ -178,6 +181,11 @@ async function withRetry(fn, maxRetries = 3, delay = 2000) {
     }
 }
 
+// Convert days to block intervals
+function daysToBlocks(days) {
+    return Math.floor(days * (86400 / BLOCK_INTERVAL_SECONDS)); // Convert days to seconds, then to blocks
+}
+
 // Create energy order
 async function createOrder() {
     if (!userAddress) {
@@ -195,14 +203,13 @@ async function createOrder() {
         return;
     }
 
-    if (!tronWeb.isAddress(receiverAddress)) {
-        alert("Please enter a valid Tron wallet address for receiving energy.");
+    if (isNaN(lockDuration) || lockDuration <= 0) {
+        alert("Please enter a valid lock duration (minimum 1 day).");
         return;
     }
 
-    if (!tronWeb.isAddress(ESCROW_ADDRESS)) {
-        console.error("Invalid escrow address:", ESCROW_ADDRESS);
-        alert("Invalid escrow address configuration.");
+    if (!tronWeb.isAddress(receiverAddress)) {
+        alert("Please enter a valid Tron wallet address for receiving energy.");
         return;
     }
 
@@ -357,8 +364,8 @@ async function fulfillOrder() {
     const energyAmount = parseInt(document.getElementById("delegate-amount").value);
     const receiverAddress = document.getElementById("fulfillment-form").dataset.receiverAddress;
     const lockDuration = parseInt(document.getElementById("fulfillment-form").dataset.lockDuration);
-    const paymentAddressInput = document.getElementById("payment-address"); // Add this input to bulk-energy.html
-    const paymentAddress = paymentAddressInput ? paymentAddressInput.value : ESCROW_ADDRESS;
+    const paymentAddressInput = document.getElementById("payment-address");
+    const paymentAddress = paymentAddressInput ? paymentAddressInput.value.trim() : ESCROW_ADDRESS;
 
     if (isNaN(energyAmount) || energyAmount < 1000 || energyAmount > parseInt(document.getElementById("delegate-amount").max)) {
         alert("Please enter a valid energy amount (minimum 1,000, maximum available).");
@@ -371,28 +378,36 @@ async function fulfillOrder() {
     }
 
     if (!tronWeb.isAddress(paymentAddress)) {
-        alert("Invalid payment address.");
-        return;
+        alert("Invalid payment address. Using default escrow address.");
+        // Fallback to escrow address if invalid
+    }
+
+    // Convert lock duration to blocks (3 seconds per block)
+    let lockPeriodBlocks = daysToBlocks(lockDuration);
+    if (lockPeriodBlocks > MAX_LOCK_BLOCKS) {
+        console.warn(`Lock period ${lockPeriodBlocks} blocks exceeds maximum (${MAX_LOCK_BLOCKS} blocks). Adjusting to ${MAX_LOCK_BLOCKS} blocks.`);
+        lockPeriodBlocks = MAX_LOCK_BLOCKS;
+        alert(`Lock period adjusted to maximum ${MAX_LOCK_BLOCKS / (86400 / BLOCK_INTERVAL_SECONDS)} days.`);
+    } else if (lockPeriodBlocks <= 0) {
+        console.warn(`Lock period ${lockPeriodBlocks} blocks is invalid. Setting to default ${DEFAULT_LOCK_BLOCKS} blocks (3 days).`);
+        lockPeriodBlocks = DEFAULT_LOCK_BLOCKS;
+        alert(`Lock period set to default 3 days.`);
     }
 
     try {
         document.getElementById("fulfillment-status").style.display = "block";
         document.getElementById("fulfillment-message").textContent = "Calculating energy delegation...";
 
-        const { sunRequired } = await calculateSunForEnergy(energyAmount);
+        const sunRequired = await calculateSunForEnergy(energyAmount);
         document.getElementById("fulfillment-message").textContent = "Delegating energy...";
-
-        const expireTime = new Date();
-        expireTime.setDate(expireTime.getDate() + lockDuration);
-        const expireTimeMs = expireTime.getTime();
 
         const tx = await tronWeb.transactionBuilder.delegateResource(
             sunRequired,
             receiverAddress,
             "ENERGY",
             userAddress,
-            false,
-            { expire_time: expireTimeMs }
+            true, // lock = true
+            lockPeriodBlocks // Lock period in blocks
         );
         const signed = await tronWeb.trx.sign(tx);
         const result = await tronWeb.trx.broadcast(signed);
