@@ -191,6 +191,8 @@
                                                 <option value="TRX">TRX</option>
                                                 <option value="CFT">CFT</option>
                                             </select>
+                                            <span class="item-title mb-2">Receiver Address</span>
+                                            <input type="text" id="receiver-address" class="form-control form-control-sm mb-3" placeholder="Enter address to receive energy">
                                             <p>Total Payment: <span id="total-payment">Enter amount</span></p>
                                             <a href="#" class="btn input-btn btn-sm mt-2" id="create-order-button">Create Order</a>
                                             <div id="order-status" class="status-message" style="display: none;">
@@ -295,6 +297,28 @@
             </div>
         </section>
 
+        <!-- CTA Area -->
+        <section class="cta-area p-0">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 card">
+                        <div class="row align-items-center justify-content-center">
+                            <div class="col-12 col-md-5 text-center">
+                                <img src="assets/img/content/cftlogo300.png" alt="">
+                            </div>
+                            <div class="col-12 col-md-6 mt-4 mt-md-0">
+                                <h2 class="m-0">Apply for project staking</h2>
+                                <p>Earn weekly rewards from staked CFT to build your project</p>
+                                <p>Soon available for projects on any chain</p>
+                                <a class="btn btn-bordered active d-inline-block"><i class="icon-rocket me-2"></i>Coming Soon</a>
+                            </div>
+                        </div>
+                        <a class="cta-link" href="apply.html"></a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Footer -->
         <footer class="footer-area">
             <div class="container">
@@ -318,6 +342,39 @@
                 </div>
             </div>
         </footer>
+
+        <!-- Modal Search Area -->
+        <div id="search" class="modal fade p-0">
+            <div class="modal-dialog dialog-animated">
+                <div class="modal-content h-100">
+                    <div class="modal-header" data-bs-dismiss="modal">
+                        Search <i class="far fa-times-circle icon-close"></i>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-12 align-self-center">
+                                <div class="row">
+                                    <div class="col-12 pb-3">
+                                        <h2 class="search-title mt-0 mb-3">What are you looking for?</h2>
+                                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12 input-group mt-md-4">
+                                        <input type="text" placeholder="Enter your keywords">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12 input-group align-self-center">
+                                        <button class="btn btn-bordered-white mt-3">Search</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Modal Responsive Menu -->
         <div id="menu" class="modal fade p-0">
