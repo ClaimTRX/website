@@ -4,70 +4,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Details - CFT Ecosystem</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/apidata/tailwind.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100">
-    <div id="root"></div>
-    <script type="text/babel">
-        const App = () => {
-            const [projects, setProjects] = React.useState([]);
-            const [error, setError] = React.useState(null);
-
-            React.useEffect(() => {
-                fetch('http://api2.cftecosystem.com/energy/projects', {
+    <div id="root" class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">Project Details - CFT Ecosystem</h1>
+        <div id="error" class="text-red-500 hidden"></div>
+        <div class="overflow-x-auto">
+            <table id="projects" class="min-w-full bg-white border border-gray-200">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="py-2 px-4 border-b">Project Name</th>
+                        <th class="py-2 px-4 border-b">Credit Wallet</th>
+                        <th class="py-2 px-4 border-b">Telegram Chat ID</th>
+                        <th class="py-2 px-4 border-b">Low Credit Threshold (TRX)</th>
+                        <th class="py-2 px-4 border-b">Price (SUN/energy)</th>
+                        <th class="py-2 px-4 border-b">Balance (TRX)</th>
+                        <th class="py-2 px-4 border-b">Profit Balance (TRX)</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        async function loadProjects() {
+            const errorDiv = document.getElementById('error');
+            const tbody = document.getElementById('projects').querySelector('tbody');
+            try {
+                const res = await fetch('https://api2.cftecosystem.com/energy/projects', {
                     headers: { 'Api-Key': 'e0763265-70e2-4bf4-845e-f46a48cba27a' }
-                })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            setProjects(data.projects);
-                        } else {
-                            setError(data.message);
-                        }
-                    })
-                    .catch(err => setError('Failed to fetch projects'));
-            }, []);
-
-            return (
-                <div className="container mx-auto p-4">
-                    <h1 className="text-2xl font-bold mb-4">Project Details - CFT Ecosystem</h1>
-                    {error && <p className="text-red-500">{error}</p>}
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full bg-white border border-gray-200">
-                            <thead>
-                                <tr className="bg-gray-100">
-                                    <th className="py-2 px-4 border-b">Project Name</th>
-                                    <th className="py-2 px-4 border-b">Credit Wallet</th>
-                                    <th className="py-2 px-4 border-b">Telegram Chat ID</th>
-                                    <th className="py-2 px-4 border-b">Low Credit Threshold (TRX)</th>
-                                    <th className="py-2 px-4 border-b">Price (SUN/energy)</th>
-                                    <th className="py-2 px-4 border-b">Balance (TRX)</th>
-                                    <th className="py-2 px-4 border-b">Profit Balance (TRX)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {projects.map(project => (
-                                    <tr key={project.projectName} className="hover:bg-gray-50">
-                                        <td className="py-2 px-4 border-b">{project.projectName}</td>
-                                        <td className="py-2 px-4 border-b">{project.creditWallet}</td>
-                                        <td className="py-2 px-4 border-b">{project.telegramChatId}</td>
-                                        <td className="py-2 px-4 border-b">{project.lowCreditThreshold.toFixed(2)}</td>
-                                        <td className="py-2 px-4 border-b">{project.pricePerEnergy.toFixed(6)}</td>
-                                        <td className="py-2 px-4 border-b">{project.balance.toFixed(2)}</td>
-                                        <td className="py-2 px-4 border-b">{project.profitBalance.toFixed(2)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            );
-        };
-
-        ReactDOM.render(<App />, document.getElementById('root'));
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    errorDiv.textContent = data.message;
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+                tbody.innerHTML = data.projects.map(project => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-2 px-4 border-b">${project.projectName}</td>
+                        <td class="py-2 px-4 border-b">${project.creditWallet}</td>
+                        <td class="py-2 px-4 border-b">${project.telegramChatId}</td>
+                        <td class="py-2 px-4 border-b">${project.lowCreditThreshold.toFixed(2)}</td>
+                        <td class="py-2 px-4 border-b">${project.pricePerEnergy.toFixed(6)}</td>
+                        <td class="py-2 px-4 border-b">${project.balance.toFixed(2)}</td>
+                        <td class="py-2 px-4 border-b">${project.profitBalance.toFixed(2)}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                errorDiv.textContent = 'Failed to fetch projects';
+                errorDiv.classList.remove('hidden');
+            }
+        }
+        loadProjects();
     </script>
 </body>
 </html>
