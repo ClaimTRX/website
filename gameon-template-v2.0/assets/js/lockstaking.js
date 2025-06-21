@@ -29,7 +29,7 @@ const tokenDetails = {
   },
   cft_12m: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // Same CFT token address
-    stakingAddress: 'TN1bH7xdcqmM1gJXGJpTdgJAoV1xMMrMLW', // 12-month CFTStaking address (replace with actual address)
+    stakingAddress: 'TCJcLWuq7jk8iYNh1684sSf5bsbccSwMyE', // 12-month CFTStaking address (replace with actual address)
     decimals: 6,
     rewardDecimals: 6,
     displayName: 'CFT (12 Months)',
