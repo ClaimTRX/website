@@ -17,14 +17,23 @@ const ENERGY_PRICE_SUN = 10; // Price per energy unit in SUN
 const SUN_PER_TRX = 1000000; // 1 TRX = 1,000,000 SUN
 const ENERGY_RENTAL_DURATION = 5; // Duration in minutes
 
-// Define contract for CFT with correct rewardDecimals
+// Define contracts for CFT with 6-month and 12-month lock periods
 const tokenDetails = {
-  cft: {
+  cft_6m: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // CFT token address (mainnet)
-    stakingAddress: 'TKMpasP9p4zVQUQKazq7UVdbGpCVf49r8k', // CFTStaking address (mainnet)
+    stakingAddress: 'TKMpasP9p4zVQUQKazq7UVdbGpCVf49r8k', // 6-month CFTStaking address (mainnet)
     decimals: 6,
-    rewardDecimals: 6, // Match token decimals, as rewards are scaled by 10^6
-    displayName: 'CFT'
+    rewardDecimals: 6,
+    displayName: 'CFT (6 Months)',
+    lockDuration: '6 months'
+  },
+  cft_12m: {
+    tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // Same CFT token address
+    stakingAddress: 'TN1bH7xdcqmM1gJXGJpTdgJAoV1xMMrMLW', // 12-month CFTStaking address (replace with actual address)
+    decimals: 6,
+    rewardDecimals: 6,
+    displayName: 'CFT (12 Months)',
+    lockDuration: '12 months'
   }
 };
 
@@ -1040,20 +1049,24 @@ async function initializeTronWeb() {
     
     document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
 
+    // Initialize token contract only once for CFT
+    const cftTokenAddress = tokenDetails['cft_6m'].tokenAddress;
+    if (!isValidTronAddress(cftTokenAddress)) {
+      throw new Error(`Invalid token address for CFT: ${cftTokenAddress}.`);
+    }
+    tokenContracts['cft'] = await tronWeb.contract(tokenContractAbi, cftTokenAddress);
+    console.log('Token contract for CFT:', tokenContracts['cft']);
+
+    // Initialize staking contracts
     for (let key in tokenDetails) {
       let details = tokenDetails[key];
-      if (!isValidTronAddress(details.tokenAddress)) {
-        throw new Error(`Invalid token address for ${key}: ${details.tokenAddress}. Please update tokenDetails.cft.tokenAddress.`);
-      }
       if (!isValidTronAddress(details.stakingAddress)) {
-        throw new Error(`Invalid staking address for ${key}: ${details.stakingAddress}. Please update tokenDetails.cft.stakingAddress.`);
+        throw new Error(`Invalid staking address for ${key}: ${details.stakingAddress}.`);
       }
-      tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
       stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
-      console.log(`Token contract for ${key}:`, tokenContracts[key]);
       console.log(`Staking contract for ${key}:`, stakingContracts[key]);
       if (!details.decimals) {
-        tokenDetails[key].decimals = await tokenContracts[key].methods.decimals().call();
+        tokenDetails[key].decimals = await tokenContracts['cft'].methods.decimals().call();
         console.log(`Decimals for ${key}:`, tokenDetails[key].decimals);
       }
     }
@@ -1130,7 +1143,7 @@ async function updateTokenUI(token) {
       pendingReward,
       emergencyUnlock
     ] = await Promise.all([
-      tokenContracts[token].methods.balanceOf(userAddress).call().catch(error => {
+      tokenContracts['cft'].methods.balanceOf(userAddress).call().catch(error => {
         console.error(`Error fetching balance for ${token}:`, error);
         return '0';
       }),
@@ -1166,7 +1179,7 @@ async function updateTokenUI(token) {
 
     const decimals = tokenDetails[token].decimals;
     const rewardDecimals = tokenDetails[token].rewardDecimals || decimals;
-    const tokenName = tokenDetails[token].displayName || token.toUpperCase();
+    const tokenName = tokenDetails[token].displayName;
 
     // Convert lock end time to local date/time
     const lockEndTimestamp = Number(lockEndTime) * 1000; // Convert seconds to milliseconds
@@ -1308,10 +1321,10 @@ async function stakeTokens(token, amount) {
   let processingModal = null;
   try {
     if (!isValidTronAddress(tokenDetails[token].stakingAddress)) {
-      throw new Error(`Invalid staking address: ${tokenDetails[token].stakingAddress}. Please update tokenDetails.cft.stakingAddress.`);
+      throw new Error(`Invalid staking address: ${tokenDetails[token].stakingAddress}.`);
     }
     if (!isValidTronAddress(tokenDetails[token].tokenAddress)) {
-      throw new Error(`Invalid token address: ${tokenDetails[token].tokenAddress}. Please update tokenDetails.cft.tokenAddress.`);
+      throw new Error(`Invalid token address: ${tokenDetails[token].tokenAddress}.`);
     }
     if (!userAddress || !isValidTronAddress(userAddress)) {
       throw new Error('Invalid user address. Please reconnect wallet.');
@@ -1347,14 +1360,14 @@ async function stakeTokens(token, amount) {
     const amountToStake = BigInt(amount) * BigInt(10 ** tokenDetails[token].decimals);
     const stakingContractAddress = tokenDetails[token].stakingAddress;
     const tokenAddress = tokenDetails[token].tokenAddress;
-    const tokenContract = tokenContracts[token];
+    const tokenContract = tokenContracts['cft'];
     const stakingContract = stakingContracts[token];
 
     if (!tokenContract || !tokenContract.methods.allowance) {
-      throw new Error(`Token contract for ${token} not properly initialized. Check token address.`);
+      throw new Error(`Token contract for CFT not properly initialized.`);
     }
     if (!stakingContract || !stakingContract.methods.stake) {
-      throw new Error(`Staking contract for ${token} not properly initialized. Check staking address.`);
+      throw new Error(`Staking contract for ${token} not properly initialized.`);
     }
 
     // Check balance
