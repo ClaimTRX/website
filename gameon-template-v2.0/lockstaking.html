@@ -329,7 +329,7 @@
 							<div class="intro text-center mb-5">
 								<span class="intro-text">CFT Ecosystem</span>
 								<h1 class="mt-4">CFT Staking</h1>
-								<p>Grow your wealth with 30% APR over 6 months</p>
+								<p>Grow your wealth with 30% APR over 6 or 12 months</p>
 							</div>
 						</div>
 					</div>
@@ -343,18 +343,18 @@
 			<div id="gameon-accordion" class="container accordion">
 				<div class="row justify-content-center">
 					<div class="col-12 col-md-10">
-						<!-- CFT Staking -->
+						<!-- CFT Staking (6 Months) -->
 						<div class="single-accordion-item">
 							<div class="card-header bg-inherit border-0 p-0">
 								<h2 class="m-0">
-									<button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCFT">
+									<button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCFT6M">
 										<div class="row">
 											<div class="col-12 col-md-8">
 												<div class="media flex-column flex-md-row">
 													<img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="CFT Logo">
 													<div class="content media-body mt-4 mt-md-0 ms-md-4">
-														<h4 class="m-0">CFT Staking</h4>
-														<p>Stake up to 100,000 CFT for CFT rewards with a 6-month lock. All rewards compund and are all claimed when the 6 month period ends.</p>
+														<h4 class="m-0">CFT Staking (6 Months)</h4>
+														<p>Stake up to 100,000 CFT for CFT rewards with a 6-month lock. All rewards compound and are claimed when the 6-month period ends.</p>
 														<p>Each wallet can only stake once.❗️❗️</p>
 													</div>
 												</div>
@@ -363,41 +363,104 @@
 										<div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
 											<div class="col-4 single-item apr-apy-pair">
 												<div class="apr-apy-container">
-													<span class="apr-value" id="staking-apr-cft">30% APR</span>
+													<span class="apr-value" id="staking-apr-cft_6m">30% APR</span>
 													<span class="apy-value">(34.98% APY)</span>
 												</div>
 											</div>
-											<div class="col-4 single-item"><span id="total-balance-cft">0.000000 CFT</span><span>Total Balance</span></div>
-											<div class="col-4 single-item"><span id="remaining-lock-time-cft">Unlocked</span><span>Unlock Time</span></div>
+											<div class="col-4 single-item"><span id="total-balance-cft_6m">0.000000 CFT</span><span>Total Balance</span></div>
+											<div class="col-4 single-item"><span id="remaining-lock-time-cft_6m">Unlocked</span><span>Unlock Time</span></div>
 										</div>
 									</button>
 								</h2>
 							</div>
-							<div id="collapseCFT" class="collapse" data-bs-parent="#gameon-accordion">
+							<div id="collapseCFT6M" class="collapse" data-bs-parent="#gameon-accordion">
 								<div class="card-body">
 									<div class="row justify-content-center">
 										<!-- Deposit -->
-										<div class="col-12 col-md-6 single-staking-item input-box" id="deposit-section-cft">
+										<div class="col-12 col-md-6 single-staking-item input-box" id="deposit-section-cft_6m">
 											<span class="item-title mb-2">Deposit</span>
-											<p><span id="available-tokens-cft">0</span> CFT available in wallet</p>
-											<p><span id="remaining-stakeable-cft">400000</span> </p>
+											<p><span id="available-tokens-cft_6m">0</span> CFT available in wallet</p>
+											<p><span id="remaining-stakeable-cft_6m">400000</span> CFT remaining stakeable</p>
 											<div class="input-area d-flex flex-column">
-												<div class="input-text"><input type="number" placeholder="Enter CFT amount" id="stake-amount-cft" min="0" step="1"></div>
-												<button class="btn input-btn mt-2" id="stake-button-cft">Stake</button>
+												<div class="input-text"><input type="number" placeholder="Enter CFT amount" id="stake-amount-cft_6m" min="0" step="1"></div>
+												<button class="btn input-btn mt-2" id="stake-button-cft_6m">Stake</button>
 											</div>
-											<p id="no-tronlink-message-cft" class="no-tronlink-message" style="display: none;">Please install TronLink to stake.</p>
+											<p id="no-tronlink-message-cft_6m" class="no-tronlink-message" style="display: none;">Please install TronLink to stake.</p>
 										</div>
 										<!-- Withdraw -->
-										<div class="col-12 col-md-6 single-staking-item input-box" id="withdraw-section-cft" style="display: none;">
+										<div class="col-12 col-md-6 single-staking-item input-box" id="withdraw-section-cft_6m" style="display: none;">
 											<span class="item-title mb-2">Withdraw</span>
-											<p><span id="initial-stake-cft">0</span> CFT initial stake</p>
-											<p><span id="earned-rewards-cft">0</span> CFT earned rewards</p>
-											<div class="input-area d-flex flex-column" id="unstake-area-cft">
+											<p><span id="initial-stake-cft_6m">0</span> CFT initial stake</p>
+											<p><span id="earned-rewards-cft_6m">0</span> CFT earned rewards</p>
+											<div class="input-area d-flex flex-column" id="unstake-area-cft_6m">
 												<!-- Unstake button added dynamically -->
 											</div>
 										</div>
 									</div>
-									
+									<div class="row justify-content-center mt-4">
+										<div class="col-12 text-center leaderboard-button">
+											<a href="leaderboardlock.html" class="btn btn-bordered">
+												<i class="fa-solid fa-trophy me-2"></i> View Leaderboard
+											</a>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<!-- CFT Staking (12 Months) -->
+						<div class="single-accordion-item">
+							<div class="card-header bg-inherit border-0 p-0">
+								<h2 class="m-0">
+									<button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCFT12M">
+										<div class="row">
+											<div class="col-12 col-md-8">
+												<div class="media flex-column flex-md-row">
+													<img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="CFT Logo">
+													<div class="content media-body mt-4 mt-md-0 ms-md-4">
+														<h4 class="m-0">CFT Staking (12 Months)</h4>
+														<p>Stake up to 100,000 CFT for CFT rewards with a 12-month lock. All rewards compound and are claimed when the 12-month period ends.</p>
+														<p>Each wallet can only stake once.❗️❗️</p>
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+											<div class="col-4 single-item apr-apy-pair">
+												<div class="apr-apy-container">
+													<span class="apr-value" id="staking-apr-cft_12m">33% APR</span>
+													<span class="apy-value">(39.08% APY)</span>
+												</div>
+											</div>
+											<div class="col-4 single-item"><span id="total-balance-cft_12m">0.000000 CFT</span><span>Total Balance</span></div>
+											<div class="col-4 single-item"><span id="remaining-lock-time-cft_12m">Unlocked</span><span>Unlock Time</span></div>
+										</div>
+									</button>
+								</h2>
+							</div>
+							<div id="collapseCFT12M" class="collapse" data-bs-parent="#gameon-accordion">
+								<div class="card-body">
+									<div class="row justify-content-center">
+										<!-- Deposit -->
+										<div class="col-12 col-md-6 single-staking-item input-box" id="deposit-section-cft_12m">
+											<span class="item-title mb-2">Deposit</span>
+											<p><span id="available-tokens-cft_12m">0</span> CFT available in wallet</p>
+											<p><span id="remaining-stakeable-cft_12m">400000</span> CFT remaining stakeable</p>
+											<div class="input-area d-flex flex-column">
+												<div class="input-text"><input type="number" placeholder="Enter CFT amount" id="stake-amount-cft_12m" min="0" step="1"></div>
+												<button class="btn input-btn mt-2" id="stake-button-cft_12m">Stake</button>
+											</div>
+											<p id="no-tronlink-message-cft_12m" class="no-tronlink-message" style="display: none;">Please install TronLink to stake.</p>
+										</div>
+										<!-- Withdraw -->
+										<div class="col-12 col-md-6 single-staking-item input-box" id="withdraw-section-cft_12m" style="display: none;">
+											<span class="item-title mb-2">Withdraw</span>
+											<p><span id="initial-stake-cft_12m">0</span> CFT initial stake</p>
+											<p><span id="earned-rewards-cft_12m">0</span> CFT earned rewards</p>
+											<div class="input-area d-flex flex-column" id="unstake-area-cft_12m">
+												<!-- Unstake button added dynamically -->
+											</div>
+										</div>
+									</div>
 									<div class="row justify-content-center mt-4">
 										<div class="col-12 text-center leaderboard-button">
 											<a href="leaderboardlock.html" class="btn btn-bordered">
