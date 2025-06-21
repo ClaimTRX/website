@@ -21,7 +21,7 @@ const ENERGY_RENTAL_DURATION = 5; // Duration in minutes
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // CFT token address (mainnet)
-    stakingAddress: 'TP9AQZV9GhnJth2bhH1L2qVtUCJpewM8Ao', // CFTStaking address (mainnet)
+    stakingAddress: 'TKMpasP9p4zVQUQKazq7UVdbGpCVf49r8k', // CFTStaking address (mainnet)
     decimals: 6,
     rewardDecimals: 6, // Match token decimals, as rewards are scaled by 10^6
     displayName: 'CFT'
