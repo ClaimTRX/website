@@ -211,6 +211,24 @@ async function withRetry(fn, maxRetries = 3, delay = 2000) {
     }
 }
 
+// Wait for transaction confirmation
+async function waitForTxConfirmation(txHash, maxAttempts = 10, interval = 3000) {
+    for (let i = 0; i < maxAttempts; i++) {
+        try {
+            const receipt = await tronWeb.trx.getTransactionInfo(txHash);
+            if (receipt && receipt.receipt && receipt.receipt.result === 'SUCCESS') {
+                console.log("Transaction confirmed:", receipt);
+                return receipt;
+            }
+            console.warn(`Attempt ${i + 1}: Transaction not confirmed yet.`);
+        } catch (error) {
+            console.warn(`Attempt ${i + 1} error: ${error.message}`);
+        }
+        await new Promise(resolve => setTimeout(resolve, interval));
+    }
+    throw new Error("Transaction not confirmed after maximum attempts");
+}
+
 // Convert days to block intervals
 function daysToBlocks(days) {
     return Math.floor(days * (86400 / BLOCK_INTERVAL_SECONDS));
@@ -237,7 +255,6 @@ async function checkExistingDelegation(sellerAddress, receiverAddress) {
     }
 }
 
-// Create energy order
 // Create energy order
 async function createOrder() {
     if (!userAddress) {
@@ -309,30 +326,22 @@ async function createOrder() {
 
                 document.getElementById("order-message").textContent = "Sending CFT payment...";
 
-                const result = await withRetry(async () => {
-                    const txHash = await cftContract
-                        .transfer(ESCROW_ADDRESS, paymentInSun.toString())
-                        .send({
-                            feeLimit: 400_000_000,
-                            callValue: 0,
-                            from: userAddress,
-                            shouldPollResponse: true
-                        });
-
-                    if (
-                        !txHash ||
-                        typeof txHash !== "string" ||
-                        !/^([a-fA-F0-9]{64})$/.test(txHash)
-                    ) {
-                        console.error("Unexpected CFT transfer result:", txHash);
-                        throw new Error("CFT transfer failed: invalid or undefined transaction hash returned");
+                const txHash = await withRetry(async () => {
+                    const tx = await cftContract.transfer(ESCROW_ADDRESS, paymentInSun.toString()).send({
+                        feeLimit: 400_000_000,
+                        callValue: 0
+                    });
+                    if (!tx || typeof tx !== "string" || !/^([a-fA-F0-9]{64})$/.test(tx)) {
+                        console.error("Unexpected CFT transfer result:", tx);
+                        throw new Error("CFT transfer failed: invalid transaction hash");
                     }
-
-                    return txHash;
+                    console.log("CFT transaction hash:", tx);
+                    return tx;
                 }, 3, 5000);
 
-                console.log("CFT payment sent:", result);
-                txId = result;
+                // Wait for transaction confirmation
+                await waitForTxConfirmation(txHash);
+                txId = txHash;
             } catch (error) {
                 console.error("CFT transaction error:", error);
                 throw new Error(`CFT transaction failed: ${error.message}`);
@@ -378,7 +387,6 @@ async function createOrder() {
         document.getElementById("order-message").textContent = `Error: ${error.message}`;
     }
 }
-
 
 // Fetch and display open orders
 async function fetchOpenOrders() {
