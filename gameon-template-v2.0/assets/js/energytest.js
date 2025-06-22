@@ -238,6 +238,7 @@ async function checkExistingDelegation(sellerAddress, receiverAddress) {
 }
 
 // Create energy order
+// Create energy order
 async function createOrder() {
     if (!userAddress) {
         alert("Please connect your wallet first.");
@@ -307,20 +308,28 @@ async function createOrder() {
                 }
 
                 document.getElementById("order-message").textContent = "Sending CFT payment...";
+
                 const result = await withRetry(async () => {
-    const tx = await cftContract.transfer(ESCROW_ADDRESS, paymentInSun).send({
-        feeLimit: 400_000_000,
-        callValue: 0,
-        shouldPollResponse: true
-    });
+                    const txHash = await cftContract
+                        .transfer(ESCROW_ADDRESS, paymentInSun.toString())
+                        .send({
+                            feeLimit: 400_000_000,
+                            callValue: 0,
+                            from: userAddress,
+                            shouldPollResponse: true
+                        });
 
-    if (!tx || typeof tx !== "string" || !/^([a-fA-F0-9]{64})$/.test(tx)) {
-        console.error("Unexpected CFT transfer result:", tx);
-        throw new Error("CFT transfer failed: Invalid or undefined transaction ID returned");
-    }
+                    if (
+                        !txHash ||
+                        typeof txHash !== "string" ||
+                        !/^([a-fA-F0-9]{64})$/.test(txHash)
+                    ) {
+                        console.error("Unexpected CFT transfer result:", txHash);
+                        throw new Error("CFT transfer failed: invalid or undefined transaction hash returned");
+                    }
 
-    return tx;
-}, 3, 5000);
+                    return txHash;
+                }, 3, 5000);
 
                 console.log("CFT payment sent:", result);
                 txId = result;
@@ -369,6 +378,7 @@ async function createOrder() {
         document.getElementById("order-message").textContent = `Error: ${error.message}`;
     }
 }
+
 
 // Fetch and display open orders
 async function fetchOpenOrders() {
