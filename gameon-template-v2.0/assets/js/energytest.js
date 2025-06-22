@@ -13,7 +13,7 @@ const MAX_LOCK_BLOCKS = 864000;
 const DEFAULT_LOCK_BLOCKS = 86400;
 const ONE_HOUR_BLOCKS = 1200;
 
-// ABI for CFT TRC-20 Token
+// ABI for CFT TRC-20 Token (retained for potential future use)
 const CFT_ABI = [
     {
         "constant": false,
@@ -127,7 +127,6 @@ function updateWalletUI(isConnected) {
 // Calculate and update total payment
 function updateTotalPayment() {
     const energyAmount = parseInt(document.getElementById("energy-amount").value);
-    const currency = document.getElementById("payment-currency").value;
     const lockDuration = parseInt(document.getElementById("lock-duration").value);
     const totalPaymentDisplay = document.getElementById("total-payment");
 
@@ -137,11 +136,9 @@ function updateTotalPayment() {
     }
 
     const sunRequired = energyAmount * PRICE_PER_ENERGY * lockDuration;
-    const trxPayment = sunRequired / SUN_PER_TRX;
-    const payment = currency === "TRX" ? trxPayment : trxPayment * CFT_PER_TRX;
-    const unit = currency === "TRX" ? "TRX" : "CFT";
+    const payment = sunRequired / SUN_PER_TRX;
 
-    totalPaymentDisplay.textContent = `${payment.toFixed(6)} ${unit}`;
+    totalPaymentDisplay.textContent = `${payment.toFixed(6)} TRX`;
 }
 
 // Get total staked TRX for energy
@@ -264,7 +261,6 @@ async function createOrder() {
 
     const energyAmount = parseInt(document.getElementById("energy-amount").value);
     const lockDuration = parseInt(document.getElementById("lock-duration").value);
-    const currency = document.getElementById("payment-currency").value;
     const receiverAddress = document.getElementById("receiver-address").value;
 
     if (isNaN(energyAmount) || energyAmount < 100000) {
@@ -293,60 +289,20 @@ async function createOrder() {
         const orderId = Date.now();
         let txId;
 
-        console.log(`Preparing transaction: ${totalPayment} ${currency} (${paymentInSun} SUN) to ${ESCROW_ADDRESS}`);
+        console.log(`Preparing transaction: ${totalPayment} TRX (${paymentInSun} SUN) to ${ESCROW_ADDRESS}`);
 
-        if (currency === "TRX") {
-            if (!tronWeb.trx || typeof tronWeb.trx.sendTransaction !== "function") {
-                throw new Error("TronWeb TRX module not initialized");
-            }
-            const result = await withRetry(() => tronWeb.trx.sendTransaction(ESCROW_ADDRESS, paymentInSun));
-            console.log("TRX payment sent:", result);
-            if (!result.result || !result.txid) {
-                throw new Error("TRX transaction failed");
-            }
-            txId = result.txid;
-        } else {
-            if (!tronWeb.isAddress(CFT_CONTRACT_ADDRESS)) {
-                throw new Error("Invalid CFT contract address");
-            }
-            const cftContract = await withRetry(async () => {
-                const contract = await tronWeb.contract(CFT_ABI, CFT_CONTRACT_ADDRESS);
-                if (!contract || !contract.transfer || !contract.balanceOf) {
-                    throw new Error("Failed to initialize CFT contract: Missing required methods");
-                }
-                return contract;
-            }, 3, 2000);
-
-            try {
-                const balance = await cftContract.balanceOf(userAddress).call();
-                console.log(`CFT balance: ${balance / SUN_PER_TRX} CFT`);
-                if (balance < paymentInSun) {
-                    throw new Error(`Insufficient CFT balance: ${balance / SUN_PER_TRX} CFT available, ${totalPayment} CFT required`);
-                }
-
-                document.getElementById("order-message").textContent = "Sending CFT payment...";
-
-                const txHash = await withRetry(async () => {
-                    const tx = await cftContract.transfer(ESCROW_ADDRESS, paymentInSun.toString()).send({
-                        feeLimit: 400_000_000,
-                        callValue: 0
-                    });
-                    if (!tx || typeof tx !== "string" || !/^([a-fA-F0-9]{64})$/.test(tx)) {
-                        console.error("Unexpected CFT transfer result:", tx);
-                        throw new Error("CFT transfer failed: invalid transaction hash");
-                    }
-                    console.log("CFT transaction hash:", tx);
-                    return tx;
-                }, 3, 5000);
-
-                // Wait for transaction confirmation
-                await waitForTxConfirmation(txHash);
-                txId = txHash;
-            } catch (error) {
-                console.error("CFT transaction error:", error);
-                throw new Error(`CFT transaction failed: ${error.message}`);
-            }
+        if (!tronWeb.trx || typeof tronWeb.trx.sendTransaction !== "function") {
+            throw new Error("TronWeb TRX module not initialized");
         }
+        const result = await withRetry(() => tronWeb.trx.sendTransaction(ESCROW_ADDRESS, paymentInSun));
+        console.log("TRX payment sent:", result);
+        if (!result.result || !result.txid) {
+            throw new Error("TRX transaction failed");
+        }
+        txId = result.txid;
+
+        // Wait for transaction confirmation
+        await waitForTxConfirmation(txId);
 
         console.log("Sending order to server:", { orderId, txId });
 
@@ -359,7 +315,7 @@ async function createOrder() {
                     buyerAddress: userAddress,
                     energyAmount,
                     lockDuration,
-                    currency,
+                    currency: "TRX",
                     totalPayment,
                     receiverAddress,
                     txId
@@ -689,9 +645,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const energyAmountInput = document.getElementById("energy-amount");
     if (energyAmountInput) energyAmountInput.addEventListener("input", updateTotalPayment);
-
-    const currencySelect = document.getElementById("payment-currency");
-    if (currencySelect) currencySelect.addEventListener("change", updateTotalPayment);
 
     const receiverAddressInput = document.getElementById("receiver-address");
     if (receiverAddressInput) receiverAddressInput.addEventListener("input", updateTotalPayment);
