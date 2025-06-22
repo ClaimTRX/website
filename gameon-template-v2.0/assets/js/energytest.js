@@ -1,10 +1,10 @@
-    let tronWeb, userAddress;
+let tronWeb, userAddress;
 
      // Constants
      const SERVER_URL = "https://bulk.cftecosystem.com";
      const ESCROW_ADDRESS = "TWzsvYAurZoKojdyrszU6aR94JEXQkL1jr";
      const CFT_CONTRACT_ADDRESS = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK";
-     const PRICE_PER_ENERGY = 10;
+     const PRICE_PER_ENERGY = 10; // 10 SUN per energy unit per day
      const SUN_PER_TRX = 1e6;
      const CFT_PER_TRX = 1;
      const ENERGY_BUFFER = 100;
@@ -128,14 +128,15 @@
      function updateTotalPayment() {
          const energyAmount = parseInt(document.getElementById("energy-amount").value);
          const currency = document.getElementById("payment-currency").value;
+         const lockDuration = parseInt(document.getElementById("lock-duration").value);
          const totalPaymentDisplay = document.getElementById("total-payment");
 
-         if (isNaN(energyAmount) || energyAmount < 100000) {
-             totalPaymentDisplay.textContent = "Enter valid amount (min 100,000)";
+         if (isNaN(energyAmount) || energyAmount < 100000 || isNaN(lockDuration) || lockDuration <= 0) {
+             totalPaymentDisplay.textContent = "Enter valid amount (min 100,000) and lock duration";
              return;
          }
 
-         const sunRequired = energyAmount * PRICE_PER_ENERGY;
+         const sunRequired = energyAmount * PRICE_PER_ENERGY * lockDuration;
          const trxPayment = sunRequired / SUN_PER_TRX;
          const payment = currency === "TRX" ? trxPayment : trxPayment * CFT_PER_TRX;
          const unit = currency === "TRX" ? "TRX" : "CFT";
@@ -263,7 +264,7 @@
              return;
          }
 
-         const sunRequired = energyAmount * PRICE_PER_ENERGY;
+         const sunRequired = energyAmount * PRICE_PER_ENERGY * lockDuration;
          const totalPayment = sunRequired / SUN_PER_TRX;
          const paymentInSun = Math.floor(totalPayment * SUN_PER_TRX);
 
@@ -298,36 +299,42 @@
                      return contract;
                  });
 
-                 const balance = await cftContract.balanceOf(userAddress).call();
-                 if (balance < paymentInSun) {
-                     throw new Error(`Insufficient CFT balance: ${balance / SUN_PER_TRX} CFT available, ${totalPayment} CFT required`);
-                 }
-
-                 const allowance = await cftContract.allowance(userAddress, ESCROW_ADDRESS).call();
-                 if (allowance < paymentInSun) {
-                     document.getElementById("order-message").textContent = "Approving CFT spending...";
-                     const approvalResult = await cftContract.approve(ESCROW_ADDRESS, paymentInSun).send({
-                         feeLimit: 200000000,
-                         callValue: 0
-                     });
-                     console.log("CFT approval sent:", approvalResult);
-                     if (!approvalResult) {
-                         throw new Error("CFT approval failed");
+                 try {
+                     const balance = await cftContract.balanceOf(userAddress).call();
+                     console.log(`CFT balance: ${balance / SUN_PER_TRX} CFT`);
+                     if (balance < paymentInSun) {
+                         throw new Error(`Insufficient CFT balance: ${balance / SUN_PER_TRX} CFT available, ${totalPayment} CFT required`);
                      }
-                 }
 
-                 document.getElementById("order-message").textContent = "Sending CFT payment...";
-                 const result = await withRetry(() =>
-                     cftContract.transfer(ESCROW_ADDRESS, paymentInSun).send({
-                         feeLimit: 200000000,
-                         callValue: 0
-                     })
-                 );
-                 console.log("CFT payment sent:", result);
-                 if (!result) {
-                     throw new Error("CFT transaction failed");
+                     const allowance = await cftContract.allowance(userAddress, ESCROW_ADDRESS).call();
+                     console.log(`CFT allowance: ${allowance / SUN_PER_TRX} CFT`);
+                     if (allowance < paymentInSun) {
+                         document.getElementById("order-message").textContent = "Approving CFT spending...";
+                         const approvalResult = await cftContract.approve(ESCROW_ADDRESS, paymentInSun).send({
+                             feeLimit: 200000000,
+                             callValue: 0
+                         });
+                         console.log("CFT approval sent:", approvalResult);
+                         if (!approvalResult) {
+                             throw new Error("CFT approval failed");
+                         }
+                     }
+
+                     document.getElementById("order-message").textContent = "Sending CFT payment...";
+                     const result = await withRetry(async () => {
+                         const tx = await cftContract.transfer(ESCROW_ADDRESS, paymentInSun).send({
+                             feeLimit: 200000000,
+                             callValue: 0
+                         });
+                         if (!tx) throw new Error("CFT transfer transaction failed");
+                         return tx;
+                     });
+                     console.log("CFT payment sent:", result);
+                     txId = result;
+                 } catch (error) {
+                     console.error("CFT transaction error:", error);
+                     throw new Error(`CFT transaction failed: ${error.message}`);
                  }
-                 txId = result;
              }
 
              console.log("Sending order to server:", { orderId, txId });
@@ -677,6 +684,9 @@
 
          const receiverAddressInput = document.getElementById("receiver-address");
          if (receiverAddressInput) receiverAddressInput.addEventListener("input", updateTotalPayment);
+
+         const lockDurationInput = document.getElementById("lock-duration");
+         if (lockDurationInput) lockDurationInput.addEventListener("input", updateTotalPayment);
 
          const createOrderButton = document.getElementById("create-order-button");
          if (createOrderButton) createOrderButton.addEventListener("click", createOrder);
