@@ -162,7 +162,7 @@ async function getTotalStakedTrxForEnergy() {
 // Calculate SUN required for desired energy
 async function calculateSunForEnergy(desiredEnergy) {
     try {
-        console.log(`Calculating SUN for ${desiredEnergy} energy units...`);
+        console.log(`Calculating SUN for ${desiredEnergy} energy units...');
         const adjustedEnergy = desiredEnergy + ENERGY_BUFFER;
 
         const networkResources = await tronWeb.trx.getAccountResources('TZ4UXDV5ZhNW7fb2AMSbgfAEZ7hWsnYS2g');
@@ -209,18 +209,18 @@ async function withRetry(fn, maxRetries = 3, delay = 2000) {
 }
 
 // Wait for transaction confirmation
-async function waitForTxConfirmation(txHash, maxAttempts = 20, interval = 3000) {
+async function waitForTxConfirmation(txHash, maxAttempts = 30, interval = 3000) {
     for (let i = 0; i < maxAttempts; i++) {
         try {
-            const receipt = await tronWeb.trx.getTransactionInfo(txHash);
-            if (receipt && receipt.receipt) {
-                if (receipt.receipt.result === 'SUCCESS') {
-                    console.log("Transaction confirmed:", receipt);
-                    return receipt;
-                } else {
-                    console.error(`Transaction failed with result: ${receipt.receipt.result}`, receipt);
-                    throw new Error(`Transaction failed: ${receipt.receipt.result}`);
-                }
+            // Check transaction status with getTransaction
+            const tx = await tronWeb.trx.getTransaction(txHash);
+            console.log(`Transaction details for ${txHash}:`, JSON.stringify(tx));
+            if (tx && tx.ret && tx.ret[0] && tx.ret[0].contractRet === 'SUCCESS') {
+                console.log(`Transaction ${txHash} confirmed via getTransaction`);
+                // Verify receipt for additional confirmation
+                const receipt = await tronWeb.trx.getTransactionInfo(txHash);
+                console.log(`Receipt for ${txHash}:`, JSON.stringify(receipt));
+                return receipt || { id: txHash, confirmed: true };
             }
             console.warn(`Attempt ${i + 1}/${maxAttempts}: Transaction ${txHash} not confirmed yet.`);
         } catch (error) {
@@ -304,7 +304,7 @@ async function createOrder() {
             const tx = await tronWeb.trx.sendTransaction(ESCROW_ADDRESS, paymentInSun, {
                 feeLimit: 5000000 // 5 TRX for fees
             });
-            console.log("TRX transaction sent:", tx);
+            console.log("TRX transaction sent:", JSON.stringify(tx));
             if (!tx.result || !tx.txid) {
                 throw new Error("TRX transaction failed");
             }
@@ -316,7 +316,7 @@ async function createOrder() {
 
         // Wait for transaction confirmation
         const receipt = await waitForTxConfirmation(txId);
-        console.log(`TRX payment confirmed:`, receipt);
+        console.log(`TRX payment confirmed:`, JSON.stringify(receipt));
 
         console.log("Sending order to server:", { orderId, txId });
 
@@ -484,7 +484,7 @@ async function fulfillOrder() {
         );
         const signed = await tronWeb.trx.sign(tx);
         const result = await tronWeb.trx.broadcast(signed);
-        console.log("Delegation sent:", result);
+        console.log("Delegation sent:", JSON.stringify(result));
 
         if (!result.result || !result.txid) {
             throw new Error("Delegation failed");
@@ -626,7 +626,7 @@ async function undelegateEnergy(fulfillmentId, energyAmount, receiverAddress) {
         );
         const signed = await tronWeb.trx.sign(tx);
         const result = await tronWeb.trx.broadcast(signed);
-        console.log("Undelegation sent:", result);
+        console.log("Undelegation sent:", JSON.stringify(result));
 
         if (!result.result || !result.txid) {
             throw new Error("Undelegation failed");
