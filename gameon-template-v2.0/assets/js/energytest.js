@@ -454,9 +454,9 @@ if (existingDelegation && existingDelegation.expireTime > Date.now()) {
         return;
     }
     lockPeriodBlocks = Math.ceil(remainingMs / (BLOCK_INTERVAL_SECONDS * 1000)) + ONE_HOUR_BLOCKS;
-} else if (existingDelegation === null) {
-    console.warn("Unable to verify existing delegation. Proceeding with default lock duration.");
-    const confirmMessage = `Unable to verify if an active delegation exists to ${receiverAddress}. Proceed with a new delegation of ${energyAmount.toLocaleString()} energy for ${originalLockDuration} days?`;
+} else {
+    console.warn("No active delegation detected or unable to verify. Proceeding with default lock duration.");
+    const confirmMessage = `No active delegation detected to ${receiverAddress}, or verification failed. Proceed with a new delegation of ${energyAmount.toLocaleString()} energy for ${originalLockDuration} days?`;
     if (!window.confirm(confirmMessage)) {
         alert("Fulfillment cancelled.");
         return;
