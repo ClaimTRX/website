@@ -162,7 +162,8 @@ async function getTotalStakedTrxForEnergy() {
 // Calculate SUN required for desired energy
 async function calculateSunForEnergy(desiredEnergy) {
     try {
-        console.log(`Calculating SUN for ${desiredEnergy} energy units...');
+        console.log(`Calculating SUN for ${desiredEnergy} energy units...`);
+
         const adjustedEnergy = desiredEnergy + ENERGY_BUFFER;
 
         const networkResources = await tronWeb.trx.getAccountResources('TZ4UXDV5ZhNW7fb2AMSbgfAEZ7hWsnYS2g');
