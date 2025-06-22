@@ -237,7 +237,6 @@ function daysToBlocks(days) {
     return Math.floor(days * (86400 / BLOCK_INTERVAL_SECONDS));
 }
 
-// Check existing delegation
 async function checkExistingDelegation(sellerAddress, receiverAddress) {
     try {
         console.log(`Checking delegation from ${sellerAddress} to ${receiverAddress}`);
@@ -245,12 +244,15 @@ async function checkExistingDelegation(sellerAddress, receiverAddress) {
             headers: { "Accept": "application/json" }
         });
         if (!response.ok) {
-            throw new Error(`HTTP error: ${response.status}`);
+            console.warn(`Delegation check failed with status: ${response.status}`);
+            return null;
         }
         const data = await response.json();
         if (!data.success) {
-            throw new Error(data.message || "Failed to check delegation");
+            console.warn(`Delegation check unsuccessful: ${data.message || "Unknown error"}`);
+            return null;
         }
+        console.log(`Delegation check response:`, data.delegation);
         return data.delegation;
     } catch (error) {
         console.error("Error checking delegation:", error.message);
