@@ -2,16 +2,17 @@ let tronWeb, userAddress;
 
 // Constants
 const SERVER_URL = "https://bulk.cftecosystem.com";
-const ESCROW_ADDRESS = "TWzsvYAurZoKojdyrszU6aR94JEXQkL1jr"; // Default escrow
-const CFT_CONTRACT_ADDRESS = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK"; // Verify this contract
-const PRICE_PER_ENERGY = 10; // 10 SUN per energy unit
-const SUN_PER_TRX = 1e6; // 1 TRX = 1,000,000 SUN
-const CFT_PER_TRX = 1; // 1 TRX = 1 CFT
-const ENERGY_BUFFER = 100; // Buffer for energy calculation
-const BLOCK_INTERVAL_SECONDS = 3; // Tron block time
-const MAX_LOCK_BLOCKS = 864000; // 30 days in blocks
-const DEFAULT_LOCK_BLOCKS = 86400; // 3 days in blocks
-const ONE_HOUR_BLOCKS = 1200; // 1 hour in blocks (3600 seconds / 3)
+// const SERVER_URL = "http://144.126.225.176:3001"; // Temporary HTTP fallback (uncomment for testing only)
+const ESCROW_ADDRESS = "TWzsvYAurZoKojdyrszU6aR94JEXQkL1jr";
+const CFT_CONTRACT_ADDRESS = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK";
+const PRICE_PER_ENERGY = 10;
+const SUN_PER_TRX = 1e6;
+const CFT_PER_TRX = 1;
+const ENERGY_BUFFER = 100;
+const BLOCK_INTERVAL_SECONDS = 3;
+const MAX_LOCK_BLOCKS = 864000;
+const DEFAULT_LOCK_BLOCKS = 86400;
+const ONE_HOUR_BLOCKS = 1200;
 
 // ABI for CFT TRC-20 Token
 const CFT_ABI = [
@@ -79,10 +80,15 @@ async function checkTronLinkInstalled() {
 // Auto-connect wallet
 async function autoConnectWallet() {
     try {
-        await checkTronLinkInstalled();
-        updateWalletUI(true);
-        fetchOpenOrders();
-        fetchSellerFulfillments();
+        if (window.tronLink && window.tronLink.ready) {
+            await checkTronLinkInstalled();
+            updateWalletUI(true);
+            fetchOpenOrders();
+            fetchSellerFulfillments();
+        } else {
+            console.log("TronLink not ready, skipping auto-connect.");
+            updateWalletUI(false);
+        }
     } catch (error) {
         console.error("Auto-connect failed:", error.message);
         updateWalletUI(false);
@@ -149,7 +155,7 @@ async function getTotalStakedTrxForEnergy() {
         }
         const totalEnergyWeight = totalEnergyWeightParam.value;
         console.log(`Total staked TRX for energy: ${totalEnergyWeight} SUN`);
-        return totalEnergyWeight; // Returns value in SUN
+        return totalEnergyWeight;
     } catch (e) {
         console.error('Error fetching total staked TRX for energy:', e.message);
         throw e;
@@ -217,7 +223,7 @@ async function checkExistingDelegation(sellerAddress, receiverAddress) {
         const sellerHex = tronWeb.address.toHex(sellerAddress);
         const receiverHex = tronWeb.address.toHex(receiverAddress);
         const response = await fetch(`https://api.trongrid.io/v1/accounts/${sellerHex}/delegated-resource?to=${receiverHex}`, {
-            headers: { "TRON-PRO-API-KEY": "your-trongrid-api-key" } // Add your API key in .env
+            headers: { "TRON-PRO-API-KEY": "your-trongrid-api-key" } // Replace with your API key
         });
         if (!response.ok) {
             throw new Error(`HTTP error: ${response.status}`);
@@ -299,13 +305,11 @@ async function createOrder() {
                 return contract;
             });
 
-            // Check CFT balance
             const balance = await cftContract.balanceOf(userAddress).call();
             if (balance < paymentInSun) {
                 throw new Error(`Insufficient CFT balance: ${balance / SUN_PER_TRX} CFT available, ${totalPayment} CFT required`);
             }
 
-            // Check and set approval
             const allowance = await cftContract.allowance(userAddress, ESCROW_ADDRESS).call();
             if (allowance < paymentInSun) {
                 document.getElementById("order-message").textContent = "Approving CFT spending...";
@@ -455,7 +459,6 @@ async function fulfillOrder() {
         alert("Invalid payment address. Using default escrow address.");
     }
 
-    // Check for existing delegation
     let lockPeriodBlocks = daysToBlocks(originalLockDuration);
     const existingDelegation = await checkExistingDelegation(userAddress, receiverAddress);
     if (existingDelegation) {
@@ -467,7 +470,6 @@ async function fulfillOrder() {
                 alert("Fulfillment cancelled.");
                 return;
             }
-            // Adjust lock period to remaining time + 1 hour
             lockPeriodBlocks = Math.ceil(remainingMs / (BLOCK_INTERVAL_SECONDS * 1000)) + ONE_HOUR_BLOCKS;
         }
     }
@@ -482,7 +484,6 @@ async function fulfillOrder() {
         alert(`Lock period set to default 3 days.`);
     }
 
-    // Calculate adjusted lock duration for backend
     const adjustedLockDuration = Math.ceil(lockPeriodBlocks * BLOCK_INTERVAL_SECONDS / 86400);
 
     try {
