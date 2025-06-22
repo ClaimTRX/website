@@ -444,19 +444,24 @@ async function fulfillOrder() {
     }
 
     let lockPeriodBlocks = daysToBlocks(originalLockDuration);
-    const existingDelegation = await checkExistingDelegation(userAddress, receiverAddress);
-    if (existingDelegation) {
-        const remainingMs = existingDelegation.expireTime - Date.now();
-        const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
-        if (remainingDays > 0) {
-            const confirmMessage = `You already have ${existingDelegation.energy.toLocaleString()} energy staked to this address with ${remainingDays} days remaining. Do you want to stake ${energyAmount.toLocaleString()} more energy and lock for ${remainingDays} days?`;
-            if (!window.confirm(confirmMessage)) {
-                alert("Fulfillment cancelled.");
-                return;
-            }
-            lockPeriodBlocks = Math.ceil(remainingMs / (BLOCK_INTERVAL_SECONDS * 1000)) + ONE_HOUR_BLOCKS;
-        }
+const existingDelegation = await checkExistingDelegation(userAddress, receiverAddress);
+if (existingDelegation && existingDelegation.expireTime > Date.now()) {
+    const remainingMs = existingDelegation.expireTime - Date.now();
+    const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+    const confirmMessage = `You already have ${existingDelegation.energy.toLocaleString()} energy staked to this address with ${remainingDays} days remaining. Do you want to stake ${energyAmount.toLocaleString()} more energy and lock for ${remainingDays} days?`;
+    if (!window.confirm(confirmMessage)) {
+        alert("Fulfillment cancelled.");
+        return;
     }
+    lockPeriodBlocks = Math.ceil(remainingMs / (BLOCK_INTERVAL_SECONDS * 1000)) + ONE_HOUR_BLOCKS;
+} else if (existingDelegation === null) {
+    console.warn("Unable to verify existing delegation. Proceeding with default lock duration.");
+    const confirmMessage = `Unable to verify if an active delegation exists to ${receiverAddress}. Proceed with a new delegation of ${energyAmount.toLocaleString()} energy for ${originalLockDuration} days?`;
+    if (!window.confirm(confirmMessage)) {
+        alert("Fulfillment cancelled.");
+        return;
+    }
+}
 
     if (lockPeriodBlocks > MAX_LOCK_BLOCKS) {
         console.warn(`Lock period ${lockPeriodBlocks} blocks exceeds maximum. Adjusting to ${MAX_LOCK_BLOCKS} blocks.`);
