@@ -12,7 +12,6 @@ const BLOCK_INTERVAL_SECONDS = 3;
 const MAX_LOCK_BLOCKS = 864000;
 const DEFAULT_LOCK_BLOCKS = 86400;
 const ONE_HOUR_BLOCKS = 1200;
-const ENERGY_PER_TRX = 100; // Fixed ratio: ~100 energy per TRX
 
 // ABI for CFT TRC-20 Token (retained for potential future use)
 const CFT_ABI = [
@@ -142,7 +141,7 @@ function updateTotalPayment() {
     totalPaymentDisplay.textContent = `${payment.toFixed(6)} TRX`;
 }
 
-// Get total staked TRX for energy (retained for potential future use)
+// Get total staked TRX for energy
 async function getTotalStakedTrxForEnergy() {
     try {
         console.log('Fetching total staked TRX for energy via TronGrid...');
@@ -164,13 +163,26 @@ async function getTotalStakedTrxForEnergy() {
 async function calculateSunForEnergy(desiredEnergy) {
     try {
         console.log(`Calculating SUN for ${desiredEnergy} energy units...`);
+
         const adjustedEnergy = desiredEnergy + ENERGY_BUFFER;
 
-        // Use fixed energy-to-TRX ratio
-        const trxRequired = adjustedEnergy / ENERGY_PER_TRX;
+        const networkResources = await tronWeb.trx.getAccountResources('TZ4UXDV5ZhNW7fb2AMSbgfAEZ7hWsnYS2g');
+        const totalEnergyLimit = networkResources.TotalEnergyLimit;
+        const totalEnergyWeight = networkResources.TotalEnergyWeight;
+
+        if (!totalEnergyLimit || !totalEnergyWeight) {
+            throw new Error('Missing TotalEnergyLimit or TotalEnergyWeight');
+        }
+
+        const energyPerTRX = totalEnergyLimit / totalEnergyWeight;
+        console.log(`Total Energy Limit: ${totalEnergyLimit.toLocaleString()} Energy`);
+        console.log(`Total TRX Staked: ${totalEnergyWeight.toLocaleString()} TRX`);
+        console.log(`Energy per TRX: ${energyPerTRX.toFixed(4)} Energy/TRX`);
+
+        const trxRequired = adjustedEnergy / energyPerTRX;
         let sunRequired = Math.ceil(trxRequired * SUN_PER_TRX);
 
-        const MIN_DELEGATION_SUN = 1000000; // 1 TRX
+        const MIN_DELEGATION_SUN = 1000000;
         if (sunRequired < MIN_DELEGATION_SUN) {
             console.log(`Calculated sunRequired (${sunRequired} SUN) is less than 1 TRX. Adjusting to minimum.`);
             sunRequired = MIN_DELEGATION_SUN;
@@ -201,10 +213,12 @@ async function withRetry(fn, maxRetries = 3, delay = 2000) {
 async function waitForTxConfirmation(txHash, maxAttempts = 30, interval = 3000) {
     for (let i = 0; i < maxAttempts; i++) {
         try {
+            // Check transaction status with getTransaction
             const tx = await tronWeb.trx.getTransaction(txHash);
             console.log(`Transaction details for ${txHash}:`, JSON.stringify(tx));
             if (tx && tx.ret && tx.ret[0] && tx.ret[0].contractRet === 'SUCCESS') {
                 console.log(`Transaction ${txHash} confirmed via getTransaction`);
+                // Verify receipt for additional confirmation
                 const receipt = await tronWeb.trx.getTransactionInfo(txHash);
                 console.log(`Receipt for ${txHash}:`, JSON.stringify(receipt));
                 return receipt || { id: txHash, confirmed: true };
@@ -223,31 +237,21 @@ function daysToBlocks(days) {
     return Math.floor(days * (86400 / BLOCK_INTERVAL_SECONDS));
 }
 
-// Check existing delegation with retry
+// Check existing delegation
 async function checkExistingDelegation(sellerAddress, receiverAddress) {
-    console.log(`Checking delegation from ${sellerAddress} to ${receiverAddress}`);
-    const url = `${SERVER_URL}/api/check-delegation?sellerAddress=${sellerAddress}&receiverAddress=${receiverAddress}`;
-
-    const fetchDelegation = async () => {
-        const response = await fetch(url, {
+    try {
+        console.log(`Checking delegation from ${sellerAddress} to ${receiverAddress}`);
+        const response = await fetch(`${SERVER_URL}/api/check-delegation?sellerAddress=${sellerAddress}&receiverAddress=${receiverAddress}`, {
             headers: { "Accept": "application/json" }
         });
-        console.log(`GET ${url} ${response.status} (${response.statusText})`);
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP error: ${response.status} - ${errorText}`);
+            throw new Error(`HTTP error: ${response.status}`);
         }
         const data = await response.json();
         if (!data.success) {
             throw new Error(data.message || "Failed to check delegation");
         }
         return data.delegation;
-    };
-
-    try {
-        const delegation = await withRetry(fetchDelegation, 3, 2000);
-        console.log(`Delegation check result:`, JSON.stringify(delegation));
-        return delegation;
     } catch (error) {
         console.error("Error checking delegation:", error.message);
         return null;
