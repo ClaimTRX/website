@@ -2,7 +2,7 @@ let tronWeb, userAddress;
 
 // Constants
 const SERVER_URL = "https://bulk.cftecosystem.com";
-const ESCROW_ADDRESS = "TWzsvYAurZoKojdyrszU6aR94JEXQkL1jr"; // Default escrow (can be overridden by seller)
+const ESCROW_ADDRESS = "TWzsvYAurZoKojdyrszU6aR94JEXQkL1jr"; // Default escrow
 const CFT_CONTRACT_ADDRESS = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK"; // Verify this contract
 const PRICE_PER_ENERGY = 10; // 10 SUN per energy unit
 const SUN_PER_TRX = 1e6; // 1 TRX = 1,000,000 SUN
@@ -11,6 +11,7 @@ const ENERGY_BUFFER = 100; // Buffer for energy calculation
 const BLOCK_INTERVAL_SECONDS = 3; // Tron block time
 const MAX_LOCK_BLOCKS = 864000; // 30 days in blocks
 const DEFAULT_LOCK_BLOCKS = 86400; // 3 days in blocks
+const ONE_HOUR_BLOCKS = 1200; // 1 hour in blocks (3600 seconds / 3)
 
 // ABI for CFT TRC-20 Token
 const CFT_ABI = [
@@ -22,6 +23,33 @@ const CFT_ABI = [
         ],
         "name": "transfer",
         "outputs": [{"name": "success", "type": "bool"}],
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [{"name": "_owner", "type": "address"}],
+        "name": "balanceOf",
+        "outputs": [{"name": "balance", "type": "uint256"}],
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {"name": "_spender", "type": "address"},
+            {"name": "_value", "type": "uint256"}
+        ],
+        "name": "approve",
+        "outputs": [{"name": "success", "type": "bool"}],
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [
+            {"name": "_owner", "type": "address"},
+            {"name": "_spender", "type": "address"}
+        ],
+        "name": "allowance",
+        "outputs": [{"name": "remaining", "type": "uint256"}],
         "type": "function"
     }
 ];
@@ -134,26 +162,22 @@ async function calculateSunForEnergy(desiredEnergy) {
         console.log(`Calculating SUN for ${desiredEnergy} energy units...`);
         const adjustedEnergy = desiredEnergy + ENERGY_BUFFER;
 
-        // Fetch network resources from a known active address
         const networkResources = await tronWeb.trx.getAccountResources('TZ4UXDV5ZhNW7fb2AMSbgfAEZ7hWsnYS2g');
         const totalEnergyLimit = networkResources.TotalEnergyLimit;
         const totalEnergyWeight = networkResources.TotalEnergyWeight;
 
         if (!totalEnergyLimit || !totalEnergyWeight) {
-            throw new Error('Missing TotalEnergyLimit or TotalEnergyWeight in network resources');
+            throw new Error('Missing TotalEnergyLimit or TotalEnergyWeight');
         }
 
-        // Calculate energy per TRX
         const energyPerTRX = totalEnergyLimit / totalEnergyWeight;
         console.log(`Total Energy Limit: ${totalEnergyLimit.toLocaleString()} Energy`);
         console.log(`Total TRX Staked: ${totalEnergyWeight.toLocaleString()} TRX`);
         console.log(`Energy per TRX: ${energyPerTRX.toFixed(4)} Energy/TRX`);
 
-        // Calculate TRX required for adjusted energy
         const trxRequired = adjustedEnergy / energyPerTRX;
         let sunRequired = Math.ceil(trxRequired * SUN_PER_TRX);
 
-        // Enforce minimum delegation of 1 TRX (1,000,000 SUN)
         const MIN_DELEGATION_SUN = 1000000;
         if (sunRequired < MIN_DELEGATION_SUN) {
             console.log(`Calculated sunRequired (${sunRequired} SUN) is less than 1 TRX. Adjusting to minimum.`);
@@ -183,7 +207,34 @@ async function withRetry(fn, maxRetries = 3, delay = 2000) {
 
 // Convert days to block intervals
 function daysToBlocks(days) {
-    return Math.floor(days * (86400 / BLOCK_INTERVAL_SECONDS)); // Convert days to seconds, then to blocks
+    return Math.floor(days * (86400 / BLOCK_INTERVAL_SECONDS));
+}
+
+// Check existing delegation
+async function checkExistingDelegation(sellerAddress, receiverAddress) {
+    try {
+        console.log(`Checking delegation from ${sellerAddress} to ${receiverAddress}`);
+        const sellerHex = tronWeb.address.toHex(sellerAddress);
+        const receiverHex = tronWeb.address.toHex(receiverAddress);
+        const response = await fetch(`https://api.trongrid.io/v1/accounts/${sellerHex}/delegated-resource?to=${receiverHex}`, {
+            headers: { "TRON-PRO-API-KEY": "your-trongrid-api-key" } // Add your API key in .env
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
+        }
+        const data = await response.json();
+        const delegation = data.delegatedResource?.find(d => d.from === sellerHex && d.to === receiverHex);
+        if (!delegation || !delegation.frozen_balance_for_energy || !delegation.expire_time_for_energy) {
+            return null;
+        }
+        return {
+            energy: delegation.frozen_balance_for_energy / PRICE_PER_ENERGY,
+            expireTime: delegation.expire_time_for_energy
+        };
+    } catch (error) {
+        console.error("Error checking delegation:", error.message);
+        return null;
+    }
 }
 
 // Create energy order
@@ -238,19 +289,40 @@ async function createOrder() {
             txId = result.txid;
         } else {
             if (!tronWeb.isAddress(CFT_CONTRACT_ADDRESS)) {
-                console.error("Invalid CFT contract address:", CFT_CONTRACT_ADDRESS);
                 throw new Error("Invalid CFT contract address");
             }
             const cftContract = await withRetry(async () => {
                 const contract = await tronWeb.contract(CFT_ABI, CFT_CONTRACT_ADDRESS);
-                if (!contract || !contract.transfer) {
-                    throw new Error("Failed to initialize CFT contract or transfer method missing");
+                if (!contract || !contract.transfer || !contract.balanceOf || !contract.approve) {
+                    throw new Error("Failed to initialize CFT contract");
                 }
                 return contract;
             });
+
+            // Check CFT balance
+            const balance = await cftContract.balanceOf(userAddress).call();
+            if (balance < paymentInSun) {
+                throw new Error(`Insufficient CFT balance: ${balance / SUN_PER_TRX} CFT available, ${totalPayment} CFT required`);
+            }
+
+            // Check and set approval
+            const allowance = await cftContract.allowance(userAddress, ESCROW_ADDRESS).call();
+            if (allowance < paymentInSun) {
+                document.getElementById("order-message").textContent = "Approving CFT spending...";
+                const approvalResult = await cftContract.approve(ESCROW_ADDRESS, paymentInSun).send({
+                    feeLimit: 200000000,
+                    callValue: 0
+                });
+                console.log("CFT approval sent:", approvalResult);
+                if (!approvalResult) {
+                    throw new Error("CFT approval failed");
+                }
+            }
+
+            document.getElementById("order-message").textContent = "Sending CFT payment...";
             const result = await withRetry(() =>
                 cftContract.transfer(ESCROW_ADDRESS, paymentInSun).send({
-                    feeLimit: 100000000,
+                    feeLimit: 200000000,
                     callValue: 0
                 })
             );
@@ -363,9 +435,9 @@ async function fulfillOrder() {
     const orderId = document.getElementById("selected-order-id").textContent;
     const energyAmount = parseInt(document.getElementById("delegate-amount").value);
     const receiverAddress = document.getElementById("fulfillment-form").dataset.receiverAddress;
-    const lockDuration = parseInt(document.getElementById("fulfillment-form").dataset.lockDuration);
+    const originalLockDuration = parseInt(document.getElementById("fulfillment-form").dataset.lockDuration);
     const paymentAddressInput = document.getElementById("payment-address");
-    const paymentAddress = paymentAddressInput ? paymentAddressInput.value.trim() : ESCROW_ADDRESS;
+    let paymentAddress = paymentAddressInput ? paymentAddressInput.value.trim() : ESCROW_ADDRESS;
 
     if (isNaN(energyAmount) || energyAmount < 1000 || energyAmount > parseInt(document.getElementById("delegate-amount").max)) {
         alert("Please enter a valid energy amount (minimum 1,000, maximum available).");
@@ -378,21 +450,40 @@ async function fulfillOrder() {
     }
 
     if (!tronWeb.isAddress(paymentAddress)) {
+        console.warn("Invalid payment address provided. Falling back to escrow address.");
+        paymentAddress = ESCROW_ADDRESS;
         alert("Invalid payment address. Using default escrow address.");
-        // Fallback to escrow address if invalid
     }
 
-    // Convert lock duration to blocks (3 seconds per block)
-    let lockPeriodBlocks = daysToBlocks(lockDuration);
+    // Check for existing delegation
+    let lockPeriodBlocks = daysToBlocks(originalLockDuration);
+    const existingDelegation = await checkExistingDelegation(userAddress, receiverAddress);
+    if (existingDelegation) {
+        const remainingMs = existingDelegation.expireTime - Date.now();
+        const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+        if (remainingDays > 0) {
+            const confirmMessage = `You already have ${existingDelegation.energy.toLocaleString()} energy staked to this address with ${remainingDays} days remaining. Do you want to stake ${energyAmount.toLocaleString()} more energy and lock for ${remainingDays} days?`;
+            if (!window.confirm(confirmMessage)) {
+                alert("Fulfillment cancelled.");
+                return;
+            }
+            // Adjust lock period to remaining time + 1 hour
+            lockPeriodBlocks = Math.ceil(remainingMs / (BLOCK_INTERVAL_SECONDS * 1000)) + ONE_HOUR_BLOCKS;
+        }
+    }
+
     if (lockPeriodBlocks > MAX_LOCK_BLOCKS) {
-        console.warn(`Lock period ${lockPeriodBlocks} blocks exceeds maximum (${MAX_LOCK_BLOCKS} blocks). Adjusting to ${MAX_LOCK_BLOCKS} blocks.`);
+        console.warn(`Lock period ${lockPeriodBlocks} blocks exceeds maximum. Adjusting to ${MAX_LOCK_BLOCKS} blocks.`);
         lockPeriodBlocks = MAX_LOCK_BLOCKS;
         alert(`Lock period adjusted to maximum ${MAX_LOCK_BLOCKS / (86400 / BLOCK_INTERVAL_SECONDS)} days.`);
     } else if (lockPeriodBlocks <= 0) {
-        console.warn(`Lock period ${lockPeriodBlocks} blocks is invalid. Setting to default ${DEFAULT_LOCK_BLOCKS} blocks (3 days).`);
+        console.warn(`Lock period ${lockPeriodBlocks} blocks is invalid. Setting to default ${DEFAULT_LOCK_BLOCKS} blocks.`);
         lockPeriodBlocks = DEFAULT_LOCK_BLOCKS;
         alert(`Lock period set to default 3 days.`);
     }
+
+    // Calculate adjusted lock duration for backend
+    const adjustedLockDuration = Math.ceil(lockPeriodBlocks * BLOCK_INTERVAL_SECONDS / 86400);
 
     try {
         document.getElementById("fulfillment-status").style.display = "block";
@@ -406,8 +497,8 @@ async function fulfillOrder() {
             receiverAddress,
             "ENERGY",
             userAddress,
-            true, // lock = true
-            lockPeriodBlocks // Lock period in blocks
+            true,
+            lockPeriodBlocks
         );
         const signed = await tronWeb.trx.sign(tx);
         const result = await tronWeb.trx.broadcast(signed);
@@ -427,7 +518,7 @@ async function fulfillOrder() {
                 receiverAddress,
                 txId: result.txid,
                 paymentAddress,
-                lockDuration
+                lockDuration: adjustedLockDuration
             })
         });
 
@@ -478,7 +569,7 @@ async function pollFulfillmentStatus(fulfillmentId) {
                 document.getElementById("fulfillment-message").textContent = `Fulfillment failed: ${data.message}`;
             } else if (pollAttempts >= maxPollAttempts) {
                 clearInterval(interval);
-                document.getElementById("fulfillment-message").textContent = "Fulfillment timed out.";
+                document.getElementById("fulfillment-message").textContent = "Fulfillment timed out. Check payment status.";
             }
         } catch (error) {
             console.error("Error polling fulfillment status:", error);
