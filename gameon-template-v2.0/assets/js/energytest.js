@@ -209,21 +209,26 @@ async function withRetry(fn, maxRetries = 3, delay = 2000) {
 }
 
 // Wait for transaction confirmation
-async function waitForTxConfirmation(txHash, maxAttempts = 10, interval = 3000) {
+async function waitForTxConfirmation(txHash, maxAttempts = 20, interval = 3000) {
     for (let i = 0; i < maxAttempts; i++) {
         try {
             const receipt = await tronWeb.trx.getTransactionInfo(txHash);
-            if (receipt && receipt.receipt && receipt.receipt.result === 'SUCCESS') {
-                console.log("Transaction confirmed:", receipt);
-                return receipt;
+            if (receipt && receipt.receipt) {
+                if (receipt.receipt.result === 'SUCCESS') {
+                    console.log("Transaction confirmed:", receipt);
+                    return receipt;
+                } else {
+                    console.error(`Transaction failed with result: ${receipt.receipt.result}`, receipt);
+                    throw new Error(`Transaction failed: ${receipt.receipt.result}`);
+                }
             }
-            console.warn(`Attempt ${i + 1}: Transaction not confirmed yet.`);
+            console.warn(`Attempt ${i + 1}/${maxAttempts}: Transaction ${txHash} not confirmed yet.`);
         } catch (error) {
-            console.warn(`Attempt ${i + 1} error: ${error.message}`);
+            console.warn(`Attempt ${i + 1}/${maxAttempts} error for ${txHash}: ${error.message}`);
         }
         await new Promise(resolve => setTimeout(resolve, interval));
     }
-    throw new Error("Transaction not confirmed after maximum attempts");
+    throw new Error(`Transaction ${txHash} not confirmed after ${maxAttempts} attempts`);
 }
 
 // Convert days to block intervals
@@ -294,15 +299,24 @@ async function createOrder() {
         if (!tronWeb.trx || typeof tronWeb.trx.sendTransaction !== "function") {
             throw new Error("TronWeb TRX module not initialized");
         }
-        const result = await withRetry(() => tronWeb.trx.sendTransaction(ESCROW_ADDRESS, paymentInSun));
-        console.log("TRX payment sent:", result);
-        if (!result.result || !result.txid) {
-            throw new Error("TRX transaction failed");
-        }
+
+        const result = await withRetry(async () => {
+            const tx = await tronWeb.trx.sendTransaction(ESCROW_ADDRESS, paymentInSun, {
+                feeLimit: 5000000 // 5 TRX for fees
+            });
+            console.log("TRX transaction sent:", tx);
+            if (!tx.result || !tx.txid) {
+                throw new Error("TRX transaction failed");
+            }
+            return tx;
+        }, 3, 5000);
+
         txId = result.txid;
+        console.log(`TRX payment sent, txID: ${txId}`);
 
         // Wait for transaction confirmation
-        await waitForTxConfirmation(txId);
+        const receipt = await waitForTxConfirmation(txId);
+        console.log(`TRX payment confirmed:`, receipt);
 
         console.log("Sending order to server:", { orderId, txId });
 
