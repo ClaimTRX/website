@@ -308,17 +308,20 @@ async function createOrder() {
 
                 document.getElementById("order-message").textContent = "Sending CFT payment...";
                 const result = await withRetry(async () => {
-                    const tx = await cftContract.transfer(ESCROW_ADDRESS, paymentInSun).send({
-                        feeLimit: 400000000, // 400 TRX
-                        callValue: 0,
-                        shouldPollResponse: true
-                    });
-                    if (!tx) {
-                        throw new Error("CFT transfer transaction returned no result");
-                    }
-                    console.log("CFT transfer transaction:", tx);
-                    return tx;
-                }, 3, 5000);
+    const tx = await cftContract.transfer(ESCROW_ADDRESS, paymentInSun).send({
+        feeLimit: 400_000_000,
+        callValue: 0,
+        shouldPollResponse: true
+    });
+
+    if (!tx || typeof tx !== "string" || !/^([a-fA-F0-9]{64})$/.test(tx)) {
+        console.error("Unexpected CFT transfer result:", tx);
+        throw new Error("CFT transfer failed: Invalid or undefined transaction ID returned");
+    }
+
+    return tx;
+}, 3, 5000);
+
                 console.log("CFT payment sent:", result);
                 txId = result;
             } catch (error) {
