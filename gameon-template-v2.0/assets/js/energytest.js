@@ -3,7 +3,7 @@ let tronWeb, userAddress;
 // Constants
 const SERVER_URL = "https://bulk.cftecosystem.com";
 const ESCROW_ADDRESS = "TWzsvYAurZoKojdyrszU6aR94JEXQkL1jr";
-const CFT_CONTRACT_ADDRESS = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK"; // Verify this address
+const CFT_CONTRACT_ADDRESS = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK";
 const PRICE_PER_ENERGY = 10; // 10 SUN per energy unit per day
 const SUN_PER_TRX = 1e6;
 const CFT_PER_TRX = 1;
@@ -293,7 +293,7 @@ async function createOrder() {
             }
             const cftContract = await withRetry(async () => {
                 const contract = await tronWeb.contract(CFT_ABI, CFT_CONTRACT_ADDRESS);
-                if (!contract || !contract.transfer || !contract.balanceOf || !contract.approve || !contract.allowance) {
+                if (!contract || !contract.transfer || !contract.balanceOf) {
                     throw new Error("Failed to initialize CFT contract: Missing required methods");
                 }
                 return contract;
@@ -306,32 +306,10 @@ async function createOrder() {
                     throw new Error(`Insufficient CFT balance: ${balance / SUN_PER_TRX} CFT available, ${totalPayment} CFT required`);
                 }
 
-                const allowance = await cftContract.allowance(userAddress, ESCROW_ADDRESS).call();
-                console.log(`CFT allowance for ${ESCROW_ADDRESS}: ${allowance / SUN_PER_TRX} CFT`);
-                if (allowance < paymentInSun) {
-                    document.getElementById("order-message").textContent = "Approving CFT spending...";
-                    console.log(`Initiating approval of ${paymentInSun / SUN_PER_TRX} CFT for ${ESCROW_ADDRESS}`);
-                    const approvalResult = await withRetry(async () => {
-                        const tx = await cftContract.approve(ESCROW_ADDRESS, paymentInSun).send({
-                            feeLimit: 300000000, // 300 TRX
-                            callValue: 0,
-                            shouldPollResponse: true // Wait for confirmation
-                        });
-                        if (!tx) {
-                            throw new Error("CFT approval transaction returned no result");
-                        }
-                        console.log("CFT approval transaction:", tx);
-                        return tx;
-                    }, 3, 5000);
-                    console.log("CFT approval successful:", approvalResult);
-                } else {
-                    console.log("Sufficient CFT allowance, skipping approval");
-                }
-
                 document.getElementById("order-message").textContent = "Sending CFT payment...";
                 const result = await withRetry(async () => {
                     const tx = await cftContract.transfer(ESCROW_ADDRESS, paymentInSun).send({
-                        feeLimit: 300000000,
+                        feeLimit: 400000000, // 400 TRX
                         callValue: 0,
                         shouldPollResponse: true
                     });
