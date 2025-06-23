@@ -163,7 +163,6 @@ async function getTotalStakedTrxForEnergy() {
 async function calculateSunForEnergy(desiredEnergy) {
     try {
         console.log(`Calculating SUN for ${desiredEnergy} energy units...`);
-
         const adjustedEnergy = desiredEnergy + ENERGY_BUFFER;
 
         const networkResources = await tronWeb.trx.getAccountResources('TZ4UXDV5ZhNW7fb2AMSbgfAEZ7hWsnYS2g');
@@ -213,7 +212,6 @@ async function withRetry(fn, maxRetries = 3, delay = 2000) {
 async function waitForTxConfirmation(txHash, maxAttempts = 30, interval = 3000) {
     for (let i = 0; i < maxAttempts; i++) {
         try {
-            // Check transaction status with getTransaction
             const tx = await tronWeb.trx.getTransaction(txHash);
             console.log(`Transaction details for ${txHash}:`, JSON.stringify(tx));
             if (tx && tx.ret && tx.ret[0] && tx.ret[0].contractRet === 'SUCCESS') {
@@ -237,26 +235,36 @@ function daysToBlocks(days) {
     return Math.floor(days * (86400 / BLOCK_INTERVAL_SECONDS));
 }
 
+// Check existing delegation
 async function checkExistingDelegation(sellerAddress, receiverAddress) {
-    try {
-        console.log(`Checking delegation from ${sellerAddress} to ${receiverAddress}`);
-        const response = await fetch(`${SERVER_URL}/api/check-delegation?sellerAddress=${sellerAddress}&receiverAddress=${receiverAddress}`, {
-            headers: { "Accept": "application/json" }
-        });
-        if (!response.ok) {
-            console.warn(`Delegation check failed with status: ${response.status}`);
-            return null;
+    const maxRetries = 3;
+    let attempt = 0;
+    while (attempt < maxRetries) {
+        try {
+            console.log(`Checking delegation from ${sellerAddress} to ${receiverAddress} (attempt ${attempt + 1}/${maxRetries})`);
+            const response = await fetch(`${SERVER_URL}/api/check-delegation?sellerAddress=${sellerAddress}&receiverAddress=${receiverAddress}`, {
+                headers: { "Accept": "application/json" }
+            });
+            if (!response.ok) {
+                console.warn(`Delegation check failed with status: ${response.status}`);
+                throw new Error(`HTTP error: ${response.status}`);
+            }
+            const data = await response.json();
+            if (!data.success) {
+                console.warn(`Delegation check unsuccessful: ${data.message || "Unknown error"}`);
+                throw new Error(data.message || "Server returned unsuccessful response");
+            }
+            console.log(`Delegation check response:`, JSON.stringify(data.delegation));
+            return data.delegation;
+        } catch (error) {
+            console.error(`Error checking delegation (attempt ${attempt + 1}/${maxRetries}): ${error.message}`);
+            attempt++;
+            if (attempt >= maxRetries) {
+                console.warn("Max retries reached for delegation check. Returning null.");
+                return null;
+            }
+            await new Promise(resolve => setTimeout(resolve, 2000));
         }
-        const data = await response.json();
-        if (!data.success) {
-            console.warn(`Delegation check unsuccessful: ${data.message || "Unknown error"}`);
-            return null;
-        }
-        console.log(`Delegation check response:`, data.delegation);
-        return data.delegation;
-    } catch (error) {
-        console.error("Error checking delegation:", error.message);
-        return null;
     }
 }
 
@@ -381,15 +389,17 @@ async function fetchOpenOrders() {
 
         data.orders.forEach(order => {
             const payment = typeof order.total_payment === 'number' ? order.total_payment.toFixed(6) : (order.total_payment || "0").toFixed(6);
+            const remainingCft = ((order.remaining_energy / order.energy_amount) * order.total_payment * CFT_PER_TRX).toFixed(2);
             const row = document.createElement("tr");
             row.innerHTML = `
                 <td>${order.order_id}</td>
                 <td>${order.energy_amount.toLocaleString()}</td>
                 <td>${order.remaining_energy.toLocaleString()}</td>
+                <td>${remainingCft} CFT</td>
                 <td>${order.lock_duration} days</td>
                 <td>${order.currency}</td>
                 <td>${payment} ${order.currency}</td>
-                <td><a href="#" class="fulfill-btn" data-order-id="${order.order_id}" data-remaining="${order.remaining_energy}" data-receiver="${order.receiver_address}" data-lock-duration="${order.lock_duration}">Fulfill</a></td>
+                <td><a href="#" class="fulfill-btn" data-order-id="${order.order_id}" data-remaining="${order.remaining_energy}" data-receiver="${order.receiver_address}" data-lock-duration="${order.lock_duration}" data-total-payment="${order.total_payment}" data-energy-amount="${order.energy_amount}">Fulfill</a></td>
             `;
             tableBody.appendChild(row);
         });
@@ -401,16 +411,43 @@ async function fetchOpenOrders() {
                 const remaining = parseInt(btn.getAttribute("data-remaining"));
                 const receiverAddress = btn.getAttribute("data-receiver");
                 const lockDuration = parseInt(btn.getAttribute("data-lock-duration"));
+                const totalPayment = parseFloat(btn.getAttribute("data-total-payment"));
+                const energyAmount = parseInt(btn.getAttribute("data-energy-amount"));
                 document.getElementById("selected-order-id").textContent = orderId;
                 document.getElementById("delegate-amount").max = remaining;
                 document.getElementById("fulfillment-form").dataset.receiverAddress = receiverAddress;
                 document.getElementById("fulfillment-form").dataset.lockDuration = lockDuration;
+                document.getElementById("fulfillment-form").dataset.totalPayment = totalPayment;
+                document.getElementById("fulfillment-form").dataset.energyAmount = energyAmount;
                 document.getElementById("fulfillment-form").style.display = "block";
+                document.getElementById("estimated-earnings").textContent = "0.00 CFT"; // Reset earnings
             });
         });
     } catch (error) {
         console.error("Error fetching open orders:", error);
     }
+}
+
+// Add this new function at the end of energytest.js (e.g., after fetchSellerFulfillments)
+function updateEarnings() {
+    const delegateAmount = parseInt(document.getElementById("delegate-amount").value) || 0;
+    const orderId = document.getElementById("selected-order-id").textContent;
+    if (delegateAmount < 1000 || !orderId) return;
+
+    // Fetch order details to calculate earnings
+    fetch(`${SERVER_URL}/api/open-orders`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const order = data.orders.find(o => o.order_id === parseInt(orderId));
+                if (order) {
+                    const cftPerEnergy = (order.total_payment * CFT_PER_TRX) / order.energy_amount;
+                    const earnings = (delegateAmount * cftPerEnergy).toFixed(2);
+                    document.getElementById("estimated-earnings").textContent = `${earnings} CFT`;
+                }
+            }
+        })
+        .catch(error => console.error("Error calculating earnings:", error));
 }
 
 // Fulfill an order
@@ -444,24 +481,24 @@ async function fulfillOrder() {
     }
 
     let lockPeriodBlocks = daysToBlocks(originalLockDuration);
-const existingDelegation = await checkExistingDelegation(userAddress, receiverAddress);
-if (existingDelegation && existingDelegation.expireTime > Date.now()) {
-    const remainingMs = existingDelegation.expireTime - Date.now();
-    const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
-    const confirmMessage = `You already have ${existingDelegation.energy.toLocaleString()} energy staked to this address with ${remainingDays} days remaining. Do you want to stake ${energyAmount.toLocaleString()} more energy and lock for ${remainingDays} days?`;
-    if (!window.confirm(confirmMessage)) {
-        alert("Fulfillment cancelled.");
-        return;
+    const existingDelegation = await checkExistingDelegation(userAddress, receiverAddress);
+    if (existingDelegation && existingDelegation.expireTime > Date.now()) {
+        const remainingMs = existingDelegation.expireTime - Date.now();
+        const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+        const confirmMessage = `You already have ${existingDelegation.energy.toLocaleString()} energy staked to this address with ${remainingDays} days remaining. Do you want to stake ${energyAmount.toLocaleString()} more energy and lock for ${remainingDays} days?`;
+        if (!window.confirm(confirmMessage)) {
+            alert("Fulfillment cancelled.");
+            return;
+        }
+        lockPeriodBlocks = Math.ceil(remainingMs / (BLOCK_INTERVAL_SECONDS * 1000)) + ONE_HOUR_BLOCKS;
+    } else {
+        console.warn("No active delegation detected or unable to verify. Proceeding with default lock duration.");
+        const confirmMessage = `No active delegation detected to ${receiverAddress}, or verification failed. Proceed with a new delegation of ${energyAmount.toLocaleString()} energy for ${originalLockDuration} days?`;
+        if (!window.confirm(confirmMessage)) {
+            alert("Fulfillment cancelled.");
+            return;
+        }
     }
-    lockPeriodBlocks = Math.ceil(remainingMs / (BLOCK_INTERVAL_SECONDS * 1000)) + ONE_HOUR_BLOCKS;
-} else {
-    console.warn("No active delegation detected or unable to verify. Proceeding with default lock duration.");
-    const confirmMessage = `No active delegation detected to ${receiverAddress}, or verification failed. Proceed with a new delegation of ${energyAmount.toLocaleString()} energy for ${originalLockDuration} days?`;
-    if (!window.confirm(confirmMessage)) {
-        alert("Fulfillment cancelled.");
-        return;
-    }
-}
 
     if (lockPeriodBlocks > MAX_LOCK_BLOCKS) {
         console.warn(`Lock period ${lockPeriodBlocks} blocks exceeds maximum. Adjusting to ${MAX_LOCK_BLOCKS} blocks.`);
@@ -593,6 +630,16 @@ async function fetchSellerFulfillments() {
 
         data.fulfillments.forEach(f => {
             const lockEnd = new Date(f.lock_end).toLocaleString();
+            const orderResponse = await fetch(`${SERVER_URL}/api/open-orders`);
+            const orderData = await orderResponse.json();
+            let cftPaid = "0.00";
+            if (orderData.success) {
+                const order = orderData.orders.find(o => o.order_id === parseInt(f.order_id));
+                if (order) {
+                    const cftPerEnergy = (order.total_payment * CFT_PER_TRX) / order.energy_amount;
+                    cftPaid = (f.energy_amount * cftPerEnergy).toFixed(2);
+                }
+            }
             const canUndelegate = new Date() > new Date(f.lock_end) && f.status === "confirmed";
             const row = document.createElement("tr");
             row.innerHTML = `
@@ -601,21 +648,9 @@ async function fetchSellerFulfillments() {
                 <td>${f.energy_amount.toLocaleString()}</td>
                 <td>${lockEnd}</td>
                 <td>${f.status}</td>
-                <td>
-                    ${canUndelegate ? `<a href="#" class="undelegate-btn" data-fulfillment-id="${f.fulfillment_id}" data-amount="${f.energy_amount}" data-receiver="${f.receiver_address}">Undelegate</a>` : ''}
-                </td>
+                <td>${cftPaid} CFT</td>
             `;
             tableBody.appendChild(row);
-        });
-
-        document.querySelectorAll(".undelegate-btn").forEach(btn => {
-            btn.addEventListener("click", async (e) => {
-                e.preventDefault();
-                const fulfillmentId = btn.getAttribute("data-fulfillment-id");
-                const energyAmount = parseInt(btn.getAttribute("data-amount"));
-                const receiverAddress = btn.getAttribute("data-receiver");
-                await undelegateEnergy(fulfillmentId, energyAmount, receiverAddress);
-            });
         });
     } catch (error) {
         console.error("Error fetching seller fulfillments:", error);
