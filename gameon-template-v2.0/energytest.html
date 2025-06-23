@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html class="no-js" lang="en">
 
@@ -39,18 +40,59 @@
         select#payment-currency option:checked {
             color: #000 !important;
         }
-        .marketplace-table {
+        .marketplace-table, .dashboard-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
         }
-        .marketplace-table th, .marketplace-table td {
+        .marketplace-table th, .marketplace-table td,
+        .dashboard-table th, .dashboard-table td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
+            white-space: nowrap; /* Prevent text wrapping */
         }
-        .marketplace-table th {
+        .marketplace-table th, .dashboard-table th {
             background-color: #f2f2f2;
+        }
+        /* Responsive table styling */
+        @media (max-width: 768px) {
+            .marketplace-table, .dashboard-table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch; /* Smooth scrolling on mobile */
+            }
+            .marketplace-table thead, .dashboard-table thead {
+                display: none; /* Hide headers on small screens */
+            }
+            .marketplace-table tbody tr, .dashboard-table tbody tr {
+                display: block;
+                margin-bottom: 10px;
+                border: 1px solid #ddd;
+            }
+            .marketplace-table td, .dashboard-table td {
+                display: flex;
+                justify-content: space-between;
+                padding: 10px;
+                border: none;
+                border-bottom: 1px solid #ddd;
+            }
+            .marketplace-table td::before, .dashboard-table td::before {
+                content: attr(data-label);
+                font-weight: bold;
+                margin-right: 10px;
+                min-width: 100px;
+            }
+            #fulfillment-form {
+                padding: 10px;
+            }
+            #fulfillment-form input, #fulfillment-form p {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            #fulfillment-form .btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -184,7 +226,6 @@
                                             <span class="item-title mb-2">Payment Currency</span>
                                             <select id="payment-currency" class="form-select form-select-sm mb-3">
                                                 <option value="TRX">TRX</option>
-                                                
                                             </select>
                                             <span class="item-title mb-2">Receiver Address</span>
                                             <input type="text" id="receiver-address" class="form-control form-control-sm mb-3" placeholder="Enter address to receive energy">
@@ -226,7 +267,8 @@
                                             <tr>
                                                 <th>Order ID</th>
                                                 <th>Energy Amount</th>
-                                                <th>Remaining</th>
+                                                <th>Remaining Energy to be Sold</th>
+                                                <th>Remaining CFT to be Earned</th>
                                                 <th>Lock Duration</th>
                                                 <th>Currency</th>
                                                 <th>Total Payment</th>
@@ -239,7 +281,8 @@
                                         <h5>Fulfill Order</h5>
                                         <p>Order ID: <span id="selected-order-id"></span></p>
                                         <span class="item-title mb-2">Energy to Delegate</span>
-                                        <input type="number" id="delegate-amount" class="form-control form-control-sm mb-3" placeholder="Enter amount" min="1000">
+                                        <input type="number" id="delegate-amount" class="form-control form-control-sm mb-3" placeholder="Enter amount" min="1000" oninput="updateEarnings()">
+                                        <p>Estimated CFT Earnings: <span id="estimated-earnings">0.00 CFT</span></p>
                                         <span class="item-title mb-2">Payment Address</span>
                                         <input type="text" id="payment-address" class="form-control form-control-sm mb-3" placeholder="Enter your payment address">
                                         <a href="#" class="btn input-btn btn-sm mt-2" id="fulfill-order-button">Fulfill Order</a>
@@ -273,7 +316,7 @@
                             </div>
                             <div id="collapseDashboard" class="collapse" data-bs-parent="#bulk-energy-accordion">
                                 <div class="card-body">
-                                    <table class="marketplace-table">
+                                    <table class="dashboard-table">
                                         <thead>
                                             <tr>
                                                 <th>Fulfillment ID</th>
@@ -281,7 +324,7 @@
                                                 <th>Energy Delegated</th>
                                                 <th>Lock End</th>
                                                 <th>Status</th>
-                                                <th>Action</th>
+                                                <th>CFT Paid</th>
                                             </tr>
                                         </thead>
                                         <tbody id="dashboard-table-body"></tbody>
@@ -404,3 +447,4 @@
     <script src="assets/js/energytest.js"></script>
 </body>
 </html>
+```
