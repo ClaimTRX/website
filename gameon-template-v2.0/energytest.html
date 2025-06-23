@@ -296,43 +296,51 @@
     </div>
 </div>
 
-                        <!-- Seller Dashboard -->
                         <div class="single-accordion-item mt-4">
-                            <div class="card-header bg-inherit border-0 p-0">
-                                <h2 class="m-0">
-                                    <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDashboard">
-                                        <div class="row">
-                                            <div class="col-12 col-md-8">
-                                                <div class="media flex-column flex-md-row">
-                                                    <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
-                                                    <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                        <h4 class="m-0">Seller Dashboard</h4>
-                                                        <p>Manage your fulfillments</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </button>
-                                </h2>
-                            </div>
-                            <div id="collapseDashboard" class="collapse" data-bs-parent="#bulk-energy-accordion">
-                                <div class="card-body">
-                                    <table class="dashboard-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Fulfillment ID</th>
-                                                <th>Order ID</th>
-                                                <th>Energy Delegated</th>
-                                                <th>Lock End</th>
-                                                <th>Status</th>
-                                                <th>CFT Paid</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="dashboard-table-body"></tbody>
-                                    </table>
-                                </div>
+    <div class="card-header bg-inherit border-0 p-0">
+        <h2 class="m-0">
+            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDashboard">
+                <div class="row">
+                    <div class="col-12 col-md-8">
+                        <div class="media flex-column flex-md-row">
+                            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                <h4 class="m-0">Seller Dashboard</h4>
+                                <p>Manage your fulfillments</p>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </button>
+        </h2>
+    </div>
+    <div id="collapseDashboard" class="collapse" data-bs-parent="#bulk-energy-accordion">
+        <div class="card-body">
+            <table class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Fulfillment ID</th>
+                        <th>Order ID</th>
+                        <th>Energy Delegated</th>
+                        <th>Lock End</th>
+                        <th>Status</th>
+                        <th>CFT Paid</th>
+                    </tr>
+                </thead>
+                <tbody id="dashboard-table-body"></tbody>
+                <tfoot>
+                    <tr id="total-row" style="display: none;">
+                        <td colspan="2">Total</td>
+                        <td id="total-energy">0</td>
+                        <td></td>
+                        <td></td>
+                        <td id="total-cft">0.00 CFT</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
                     </div>
                 </div>
             </div>
