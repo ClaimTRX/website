@@ -82,8 +82,8 @@ async function autoConnectWallet() {
         if (window.tronLink && window.tronLink.ready) {
             await checkTronLinkInstalled();
             updateWalletUI(true);
-            fetchOpenOrders();
-            fetchSellerFulfillments();
+            await fetchOpenOrders();
+            await fetchSellerFulfillments();
         } else {
             console.log("TronLink not ready, skipping auto-connect.");
             updateWalletUI(false);
@@ -106,8 +106,8 @@ async function connectWallet() {
         await checkTronLinkInstalled();
         console.log("Wallet connected:", userAddress);
         updateWalletUI(true);
-        fetchOpenOrders();
-        fetchSellerFulfillments();
+        await fetchOpenOrders();
+        await fetchSellerFulfillments();
     } catch (error) {
         console.error("Wallet connection failed:", error.message);
         alert("Failed to connect wallet: " + error.message);
@@ -362,7 +362,7 @@ async function createOrder() {
 
         document.getElementById("order-message").textContent = "Order created successfully!";
         document.getElementById("order-id").textContent = orderId;
-        fetchOpenOrders();
+        await fetchOpenOrders();
     } catch (error) {
         console.error("Error creating order:", error);
         document.getElementById("order-message").textContent = `Error: ${error.message}`;
@@ -563,7 +563,7 @@ async function fulfillOrder() {
         document.getElementById("fulfillment-hash").href = `https://tronscan.org/#/transaction/${result.txid}`;
         document.getElementById("fulfillment-hash").style.display = "block";
 
-        pollFulfillmentStatus(data.fulfillmentId);
+        await pollFulfillmentStatus(data.fulfillmentId);
     } catch (error) {
         console.error("Error fulfilling order:", error);
         document.getElementById("fulfillment-message").textContent = `Error: ${error.message}`;
@@ -589,8 +589,8 @@ async function pollFulfillmentStatus(fulfillmentId) {
             if (data.status === "confirmed") {
                 clearInterval(interval);
                 document.getElementById("fulfillment-message").textContent = "Fulfillment confirmed! Payment released.";
-                fetchOpenOrders();
-                fetchSellerFulfillments();
+                await fetchOpenOrders();
+                await fetchSellerFulfillments();
             } else if (data.status === "failed") {
                 clearInterval(interval);
                 document.getElementById("fulfillment-message").textContent = `Fulfillment failed: ${data.message}`;
@@ -686,7 +686,7 @@ async function undelegateEnergy(fulfillmentId, energyAmount, receiverAddress) {
         }
 
         alert("Energy undelegated successfully!");
-        fetchSellerFulfillments();
+        await fetchSellerFulfillments();
     } catch (error) {
         console.error("Error undelegating energy:", error);
         alert(`Error undelegating energy: ${error.message}`);
@@ -695,27 +695,30 @@ async function undelegateEnergy(fulfillmentId, energyAmount, receiverAddress) {
 
 // Event listeners
 document.addEventListener("DOMContentLoaded", async () => {
-    await autoConnectWallet();
+    try {
+        await autoConnectWallet();
+        const connectButton = document.getElementById("connect-button");
+        if (connectButton) connectButton.addEventListener("click", connectWallet);
 
-    const connectButton = document.getElementById("connect-button");
-    if (connectButton) connectButton.addEventListener("click", connectWallet);
+        const energyAmountInput = document.getElementById("energy-amount");
+        if (energyAmountInput) energyAmountInput.addEventListener("input", updateTotalPayment);
 
-    const energyAmountInput = document.getElementById("energy-amount");
-    if (energyAmountInput) energyAmountInput.addEventListener("input", updateTotalPayment);
+        const receiverAddressInput = document.getElementById("receiver-address");
+        if (receiverAddressInput) receiverAddressInput.addEventListener("input", updateTotalPayment);
 
-    const receiverAddressInput = document.getElementById("receiver-address");
-    if (receiverAddressInput) receiverAddressInput.addEventListener("input", updateTotalPayment);
+        const lockDurationInput = document.getElementById("lock-duration");
+        if (lockDurationInput) lockDurationInput.addEventListener("input", updateTotalPayment);
 
-    const lockDurationInput = document.getElementById("lock-duration");
-    if (lockDurationInput) lockDurationInput.addEventListener("input", updateTotalPayment);
+        const createOrderButton = document.getElementById("create-order-button");
+        if (createOrderButton) createOrderButton.addEventListener("click", createOrder);
 
-    const createOrderButton = document.getElementById("create-order-button");
-    if (createOrderButton) createOrderButton.addEventListener("click", createOrder);
+        const fulfillOrderButton = document.getElementById("fulfill-order-button");
+        if (fulfillOrderButton) fulfillOrderButton.addEventListener("click", fulfillOrder);
 
-    const fulfillOrderButton = document.getElementById("fulfill-order-button");
-    if (fulfillOrderButton) fulfillOrderButton.addEventListener("click", fulfillOrder);
-
-    updateTotalPayment();
-    fetchOpenOrders();
-    fetchSellerFulfillments();
+        updateTotalPayment();
+        await fetchOpenOrders();
+        await fetchSellerFulfillments();
+    } catch (error) {
+        console.error("Error in DOMContentLoaded:", error);
+    }
 });
