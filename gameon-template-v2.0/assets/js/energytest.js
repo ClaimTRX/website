@@ -216,7 +216,6 @@ async function waitForTxConfirmation(txHash, maxAttempts = 30, interval = 3000) 
             console.log(`Transaction details for ${txHash}:`, JSON.stringify(tx));
             if (tx && tx.ret && tx.ret[0] && tx.ret[0].contractRet === 'SUCCESS') {
                 console.log(`Transaction ${txHash} confirmed via getTransaction`);
-                // Verify receipt for additional confirmation
                 const receipt = await tronWeb.trx.getTransactionInfo(txHash);
                 console.log(`Receipt for ${txHash}:`, JSON.stringify(receipt));
                 return receipt || { id: txHash, confirmed: true };
@@ -325,7 +324,6 @@ async function createOrder() {
         txId = result.txid;
         console.log(`TRX payment sent, txID: ${txId}`);
 
-        // Wait for transaction confirmation
         const receipt = await waitForTxConfirmation(txId);
         console.log(`TRX payment confirmed:`, JSON.stringify(receipt));
 
@@ -428,13 +426,12 @@ async function fetchOpenOrders() {
     }
 }
 
-// Add this new function at the end of energytest.js (e.g., after fetchSellerFulfillments)
+// Add this new function at the end of energytest.js
 function updateEarnings() {
     const delegateAmount = parseInt(document.getElementById("delegate-amount").value) || 0;
     const orderId = document.getElementById("selected-order-id").textContent;
     if (delegateAmount < 1000 || !orderId) return;
 
-    // Fetch order details to calculate earnings
     fetch(`${SERVER_URL}/api/open-orders`)
         .then(response => response.json())
         .then(data => {
