@@ -620,9 +620,16 @@ async function fetchSellerFulfillments() {
 
         const tableBody = document.getElementById("dashboard-table-body");
         tableBody.innerHTML = "";
+        let totalEnergy = 0;
+        let totalCft = 0;
 
         for (const f of data.fulfillments) {
-            const lockEnd = new Date(f.lock_end).toLocaleString();
+            if (f.status !== "confirmed") continue; // Show only confirmed orders
+
+            const lockEnd = new Date(f.lock_end);
+            const currentDate = new Date();
+            const status = lockEnd < currentDate ? "ended" : "confirmed";
+            const lockEndStr = lockEnd.toLocaleString();
             const orderResponse = await fetch(`${SERVER_URL}/api/open-orders`);
             const orderData = await orderResponse.json();
             let cftPaid = "0.00";
@@ -631,19 +638,30 @@ async function fetchSellerFulfillments() {
                 if (order) {
                     const cftPerEnergy = (order.total_payment * CFT_PER_TRX) / order.energy_amount;
                     cftPaid = (f.energy_amount * cftPerEnergy).toFixed(2);
+                    totalCft += parseFloat(cftPaid);
                 }
             }
-            const canUndelegate = new Date() > new Date(f.lock_end) && f.status === "confirmed";
+            totalEnergy += f.energy_amount;
+
             const row = document.createElement("tr");
             row.innerHTML = `
                 <td>${f.fulfillment_id}</td>
                 <td>${f.order_id}</td>
                 <td>${f.energy_amount.toLocaleString()}</td>
-                <td>${lockEnd}</td>
-                <td>${f.status}</td>
+                <td>${lockEndStr}</td>
+                <td>${status}</td>
                 <td>${cftPaid} CFT</td>
             `;
             tableBody.appendChild(row);
+        }
+
+        const totalRow = document.getElementById("total-row");
+        if (totalEnergy > 0) {
+            totalRow.querySelector("#total-energy").textContent = totalEnergy.toLocaleString();
+            totalRow.querySelector("#total-cft").textContent = `${totalCft.toFixed(2)} CFT`;
+            totalRow.style.display = "table-row";
+        } else {
+            totalRow.style.display = "none";
         }
     } catch (error) {
         console.error("Error fetching seller fulfillments:", error);
