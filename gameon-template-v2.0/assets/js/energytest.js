@@ -720,5 +720,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         await fetchSellerFulfillments();
     } catch (error) {
         console.error("Error in DOMContentLoaded:", error);
+        alert("An error occurred during initialization. Please try refreshing the page.");
     }
 });
