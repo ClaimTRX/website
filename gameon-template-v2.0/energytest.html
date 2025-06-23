@@ -19,82 +19,87 @@
     <link rel="stylesheet" href="assets/css/style.css">
 
     <!-- Custom Styles -->
-    <style>
-        select#energy-amount,
-        input#lock-duration,
-        select#payment-currency {
-            color: #000 !important;
-        }
-        select#energy-amount:focus,
-        input#lock-duration:focus,
-        select#payment-currency:focus {
-            color: #000 !important;
-        }
-        select#energy-amount option,
-        select#lock-duration option,
-        select#payment-currency option {
-            color: #000 !important;
-        }
-        select#energy-amount option:checked,
-        select#lock-duration option:checked,
-        select#payment-currency option:checked {
-            color: #000 !important;
-        }
+   <style>
+    select#energy-amount,
+    input#lock-duration,
+    select#payment-currency {
+        color: #000 !important;
+    }
+    select#energy-amount:focus,
+    input#lock-duration:focus,
+    select#payment-currency:focus {
+        color: #000 !important;
+    }
+    select#energy-amount option,
+    select#lock-duration option,
+    select#payment-currency option {
+        color: #000 !important;
+    }
+    select#energy-amount option:checked,
+    select#lock-duration option:checked,
+    select#payment-currency option:checked {
+        color: #000 !important;
+    }
+    .marketplace-table, .dashboard-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    .marketplace-table th, .marketplace-table td,
+    .dashboard-table th, .dashboard-table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+        white-space: nowrap;
+    }
+    .marketplace-table th, .dashboard-table th {
+        background-color: #f2f2f2;
+    }
+    /* Responsive table styling */
+    @media (max-width: 768px) {
         .marketplace-table, .dashboard-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+            display: block;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
-        .marketplace-table th, .marketplace-table td,
-        .dashboard-table th, .dashboard-table td {
+        .marketplace-table thead, .dashboard-table thead {
+            display: none;
+        }
+        .marketplace-table tbody tr, .dashboard-table tbody tr {
+            display: block;
+            margin-bottom: 10px;
             border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-            white-space: nowrap; /* Prevent text wrapping */
         }
-        .marketplace-table th, .dashboard-table th {
-            background-color: #f2f2f2;
+        .marketplace-table td, .dashboard-table td {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border: none;
+            border-bottom: 1px solid #ddd;
         }
-        /* Responsive table styling */
-        @media (max-width: 768px) {
-            .marketplace-table, .dashboard-table {
-                display: block;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch; /* Smooth scrolling on mobile */
-            }
-            .marketplace-table thead, .dashboard-table thead {
-                display: none; /* Hide headers on small screens */
-            }
-            .marketplace-table tbody tr, .dashboard-table tbody tr {
-                display: block;
-                margin-bottom: 10px;
-                border: 1px solid #ddd;
-            }
-            .marketplace-table td, .dashboard-table td {
-                display: flex;
-                justify-content: space-between;
-                padding: 10px;
-                border: none;
-                border-bottom: 1px solid #ddd;
-            }
-            .marketplace-table td::before, .dashboard-table td::before {
-                content: attr(data-label);
-                font-weight: bold;
-                margin-right: 10px;
-                min-width: 100px;
-            }
-            #fulfillment-form {
-                padding: 10px;
-            }
-            #fulfillment-form input, #fulfillment-form p {
-                width: 100%;
-                margin-bottom: 10px;
-            }
-            #fulfillment-form .btn {
-                width: 100%;
-            }
+        .marketplace-table td::before, .dashboard-table td::before {
+            content: attr(data-label);
+            font-weight: bold;
+            margin-right: 10px;
+            min-width: 120px;
         }
-    </style>
+        #fulfillment-form {
+            padding: 10px;
+        }
+        #fulfillment-form input, #fulfillment-form p {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        #fulfillment-form .btn {
+            width: 100%;
+        }
+    }
+    /* Ensure table fits within card */
+    .card-body {
+        padding: 10px;
+        overflow-x: auto;
+    }
+</style>
 </head>
 
 <body>
@@ -241,59 +246,55 @@
                             </div>
                         </div>
 
-                        <!-- Marketplace -->
                         <div class="single-accordion-item mt-4">
-                            <div class="card-header bg-inherit border-0 p-0">
-                                <h2 class="m-0">
-                                    <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMarketplace">
-                                        <div class="row">
-                                            <div class="col-12 col-md-8">
-                                                <div class="media flex-column flex-md-row">
-                                                    <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
-                                                    <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                        <h4 class="m-0">Energy Marketplace</h4>
-                                                        <p>Fulfill open energy orders</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </button>
-                                </h2>
-                            </div>
-                            <div id="collapseMarketplace" class="collapse" data-bs-parent="#bulk-energy-accordion">
-                                <div class="card-body">
-                                    <table class="marketplace-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Order ID</th>
-                                                <th>Energy Amount</th>
-                                                <th>Remaining Energy to be Sold</th>
-                                                <th>Remaining CFT to be Earned</th>
-                                                <th>Lock Duration</th>
-                                                <th>Currency</th>
-                                                <th>Total Payment</th>
-                                                <th>Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="marketplace-table-body"></tbody>
-                                    </table>
-                                    <div id="fulfillment-form" style="display: none; margin-top: 20px;">
-                                        <h5>Fulfill Order</h5>
-                                        <p>Order ID: <span id="selected-order-id"></span></p>
-                                        <span class="item-title mb-2">Energy to Delegate</span>
-                                        <input type="number" id="delegate-amount" class="form-control form-control-sm mb-3" placeholder="Enter amount" min="1000" oninput="updateEarnings()">
-                                        <p>Estimated CFT Earnings: <span id="estimated-earnings">0.00 CFT</span></p>
-                                        <span class="item-title mb-2">Payment Address</span>
-                                        <input type="text" id="payment-address" class="form-control form-control-sm mb-3" placeholder="Enter your payment address">
-                                        <a href="#" class="btn input-btn btn-sm mt-2" id="fulfill-order-button">Fulfill Order</a>
-                                        <div id="fulfillment-status" class="status-message" style="display: none;">
-                                            <p id="fulfillment-message"></p>
-                                            <p>Transaction Hash: <a id="fulfillment-hash" href="#" target="_blank" style="display: none;"></a></p>
-                                        </div>
-                                    </div>
-                                </div>
+    <div class="card-header bg-inherit border-0 p-0">
+        <h2 class="m-0">
+            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMarketplace">
+                <div class="row">
+                    <div class="col-12 col-md-8">
+                        <div class="media flex-column flex-md-row">
+                            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                <h4 class="m-0">Open Orders</h4>
+                                <p>Fulfill open energy orders</p>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </button>
+        </h2>
+    </div>
+    <div id="collapseMarketplace" class="collapse" data-bs-parent="#bulk-energy-accordion">
+        <div class="card-body">
+            <table class="marketplace-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Remaining Energy to be Sold</th>
+                        <th>Remaining CFT to be Earned</th>
+                        <th>Lock Duration</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="marketplace-table-body"></tbody>
+            </table>
+            <div id="fulfillment-form" style="display: none; margin-top: 20px;">
+                <h5>Fulfill Order</h5>
+                <p>Order ID: <span id="selected-order-id"></span></p>
+                <span class="item-title mb-2">Energy to Delegate</span>
+                <input type="number" id="delegate-amount" class="form-control form-control-sm mb-3" placeholder="Enter amount" min="1000" oninput="updateEarnings()">
+                <p>Estimated CFT Earnings: <span id="estimated-earnings">0.00 CFT</span></p>
+                <span class="item-title mb-2">Payment Address</span>
+                <input type="text" id="payment-address" class="form-control form-control-sm mb-3" placeholder="Enter your payment address">
+                <a href="#" class="btn input-btn btn-sm mt-2" id="fulfill-order-button">Fulfill Order</a>
+                <div id="fulfillment-status" class="status-message" style="display: none;">
+                    <p id="fulfillment-message"></p>
+                    <p>Transaction Hash: <a id="fulfillment-hash" href="#" target="_blank" style="display: none;"></a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
                         <!-- Seller Dashboard -->
                         <div class="single-accordion-item mt-4">
