@@ -625,7 +625,7 @@ async function fetchSellerFulfillments() {
         const tableBody = document.getElementById("dashboard-table-body");
         tableBody.innerHTML = "";
 
-        data.fulfillments.forEach(f => {
+        for (const f of data.fulfillments) {
             const lockEnd = new Date(f.lock_end).toLocaleString();
             const orderResponse = await fetch(`${SERVER_URL}/api/open-orders`);
             const orderData = await orderResponse.json();
@@ -648,7 +648,7 @@ async function fetchSellerFulfillments() {
                 <td>${cftPaid} CFT</td>
             `;
             tableBody.appendChild(row);
-        });
+        }
     } catch (error) {
         console.error("Error fetching seller fulfillments:", error);
     }
