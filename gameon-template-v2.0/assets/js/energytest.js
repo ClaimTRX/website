@@ -386,17 +386,13 @@ async function fetchOpenOrders() {
         tableBody.innerHTML = "";
 
         data.orders.forEach(order => {
-            const payment = typeof order.total_payment === 'number' ? order.total_payment.toFixed(6) : (order.total_payment || "0").toFixed(6);
             const remainingCft = ((order.remaining_energy / order.energy_amount) * order.total_payment * CFT_PER_TRX).toFixed(2);
             const row = document.createElement("tr");
             row.innerHTML = `
                 <td>${order.order_id}</td>
-                <td>${order.energy_amount.toLocaleString()}</td>
                 <td>${order.remaining_energy.toLocaleString()}</td>
                 <td>${remainingCft} CFT</td>
                 <td>${order.lock_duration} days</td>
-                <td>${order.currency}</td>
-                <td>${payment} ${order.currency}</td>
                 <td><a href="#" class="fulfill-btn" data-order-id="${order.order_id}" data-remaining="${order.remaining_energy}" data-receiver="${order.receiver_address}" data-lock-duration="${order.lock_duration}" data-total-payment="${order.total_payment}" data-energy-amount="${order.energy_amount}">Fulfill</a></td>
             `;
             tableBody.appendChild(row);
