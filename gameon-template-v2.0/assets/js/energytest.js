@@ -107,15 +107,20 @@ async function checkActiveDelegations() {
         });
         if (!response.ok) {
             console.warn(`Active delegations check failed with status: ${response.status}`);
+            window.activeDelegations = []; // Fallback to empty array
             return;
         }
         const data = await response.json();
         if (data.success) {
-            window.activeDelegations = data.delegations || []; // Store globally for reuse
+            window.activeDelegations = data.delegations || [];
             console.log("Active delegations:", window.activeDelegations);
+        } else {
+            window.activeDelegations = [];
+            console.warn("No delegations data or unsuccessful response:", data.message);
         }
     } catch (error) {
         console.error("Error checking active delegations:", error.message);
+        window.activeDelegations = []; // Fallback on error
     }
 }
 
@@ -412,7 +417,7 @@ async function fetchOpenOrders() {
         data.orders.forEach(order => {
             const fullCft = ((order.remaining_energy / order.energy_amount) * order.total_payment * CFT_PER_TRX).toFixed(2);
             let displayedCft = fullCft;
-            if (window.activeDelegations) {
+            if (window.activeDelegations && window.activeDelegations.length) {
                 const overlappingDelegation = window.activeDelegations.find(d => d.receiver_address === order.receiver_address);
                 if (overlappingDelegation && new Date(overlappingDelegation.expire_time) > new Date()) {
                     const remainingDays = (new Date(overlappingDelegation.expire_time) - new Date()) / (1000 * 60 * 60 * 24);
@@ -448,8 +453,21 @@ async function fetchOpenOrders() {
                 document.getElementById("fulfillment-form").dataset.totalPayment = totalPayment;
                 document.getElementById("fulfillment-form").dataset.energyAmount = energyAmount;
                 document.getElementById("fulfillment-form").dataset.buyerAddress = buyerAddress;
+
+                // Recalculate estimated earnings based on active delegations
+                let estimatedEarnings = (remaining / energyAmount) * totalPayment * CFT_PER_TRX;
+                if (window.activeDelegations && window.activeDelegations.length) {
+                    const overlappingDelegation = window.activeDelegations.find(d => d.receiver_address === receiverAddress);
+                    if (overlappingDelegation && new Date(overlappingDelegation.expire_time) > new Date()) {
+                        const remainingDays = (new Date(overlappingDelegation.expire_time) - new Date()) / (1000 * 60 * 60 * 24);
+                        const proratedFactor = remainingDays / lockDuration;
+                        estimatedEarnings = (estimatedEarnings * proratedFactor).toFixed(2);
+                    }
+                } else {
+                    estimatedEarnings = (estimatedEarnings * (remaining / energyAmount)).toFixed(2); // Default to full amount if no overlap
+                }
+                document.getElementById("estimated-earnings").textContent = `${estimatedEarnings} CFT`;
                 document.getElementById("fulfillment-form").style.display = "block";
-                document.getElementById("estimated-earnings").textContent = displayedCft; // Use prorated earnings
             });
         });
     } catch (error) {
@@ -753,17 +771,15 @@ async function fetchSellerFulfillments() {
 
     try {
         console.log("Fetching fulfillments for:", userAddress);
-        const [fulfillmentResponse, energyResponse] = await Promise.all([
-            fetch(`${SERVER_URL}/api/seller-fulfillments?address=${userAddress}`, { headers: { "Accept": "application/json" } }),
-            fetch(`${SERVER_URL}/api/available-energy?address=${userAddress}`, { headers: { "Accept": "application/json" } })
-        ]);
-        if (!fulfillmentResponse.ok || !energyResponse.ok) {
-            throw new Error(`HTTP error: ${fulfillmentResponse.status || energyResponse.status}`);
+        const response = await fetch(`${SERVER_URL}/api/seller-fulfillments?address=${userAddress}`, {
+            headers: { "Accept": "application/json" }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
         }
-        const fulfillmentData = await fulfillmentResponse.json();
-        const energyData = await energyResponse.json();
-        if (!fulfillmentData.success || !energyData.success) {
-            throw new Error(fulfillmentData.message || energyData.message || "Failed to fetch data");
+        const data = await response.json();
+        if (!data.success || !data.fulfillments) {
+            throw new Error(data.message || "No fulfillments data");
         }
 
         const tableBody = document.getElementById("dashboard-table-body");
@@ -771,9 +787,13 @@ async function fetchSellerFulfillments() {
         let totalEnergy = 0;
         let totalCft = 0;
 
-        document.getElementById("available-energy").textContent = energyData.available_energy.toLocaleString() || "0";
+        const energyResponse = await fetch(`${SERVER_URL}/api/available-energy?address=${userAddress}`, {
+            headers: { "Accept": "application/json" }
+        });
+        const energyData = await energyResponse.json();
+        document.getElementById("available-energy").textContent = energyData.success ? energyData.available_energy.toLocaleString() : "0";
 
-        for (const f of fulfillmentData.fulfillments) {
+        for (const f of data.fulfillments) {
             if (f.status !== "confirmed") continue;
 
             const lockEnd = new Date(f.lock_end);
