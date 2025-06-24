@@ -58,7 +58,7 @@ const CFT_ABI = [
 async function checkTronLinkInstalled() {
     return new Promise((resolve, reject) => {
         let attempts = 0;
-        const maxAttempts = 30; // Increased to 30 seconds
+        const maxAttempts = 20;
         const interval = setInterval(() => {
             attempts++;
             if (window.tronWeb && window.tronWeb.ready && window.tronWeb.defaultAddress.base58 && window.tronWeb.trx && window.tronWeb.contract) {
@@ -76,33 +76,24 @@ async function checkTronLinkInstalled() {
     });
 }
 
-// Auto-connect wallet with retry
-async function autoConnectWallet(maxRetries = 3, delay = 2000) {
-    for (let i = 0; i < maxRetries; i++) {
-        try {
-            if (window.tronLink && window.tronLink.ready) {
-                await checkTronLinkInstalled();
-                updateWalletUI(true);
-                document.getElementById("connection-status").textContent = "Connected to wallet: " + userAddress;
-                await checkActiveDelegations();
-                await fetchOpenOrders();
-                await fetchSellerFulfillments();
-                await fetchBuyerOrders();
-                return;
-            } else {
-                console.log(`Attempt ${i + 1}/${maxRetries}: TronLink not ready, retrying...`);
-                document.getElementById("connection-status").textContent = `Attempting to connect (Try ${i + 1}/${maxRetries})...`;
-            }
-        } catch (error) {
-            console.error(`Auto-connect attempt ${i + 1} failed:`, error.message);
-            document.getElementById("connection-status").textContent = `Connection failed: ${error.message}. Try ${i + 1}/${maxRetries}`;
-            if (i === maxRetries - 1) {
-                updateWalletUI(false);
-                document.getElementById("connection-status").textContent = "Auto-connect failed. Please click 'Connect Wallet' to try manually.";
-                return;
-            }
-            await new Promise(resolve => setTimeout(resolve, delay));
+// Auto-connect wallet
+async function autoConnectWallet() {
+    try {
+        if (window.tronLink && window.tronLink.ready) {
+            await checkTronLinkInstalled();
+            updateWalletUI(true);
+            await checkActiveDelegations(); // Check delegations on load
+            await fetchOpenOrders();
+            await fetchSellerFulfillments();
+            await fetchBuyerOrders();
+        } else {
+            console.log("TronLink not ready, skipping auto-connect.");
+            updateWalletUI(false);
         }
+    } catch (error) {
+        console.error("Auto-connect failed:", error.message);
+        updateWalletUI(false);
+        alert("Please ensure TronLink is installed and logged in.");
     }
 }
 
@@ -125,6 +116,7 @@ async function checkActiveDelegations() {
             }
         } else {
             console.warn(`Active delegations check failed with status: ${response.status}, falling back to /api/check-delegation`);
+            // Fallback to /api/check-delegation for each receiver address from open orders
             const ordersResponse = await fetch(`${SERVER_URL}/api/open-orders`, { headers: { "Accept": "application/json" } });
             if (ordersResponse.ok) {
                 const ordersData = await ordersResponse.json();
@@ -165,15 +157,11 @@ async function connectWallet() {
         await checkTronLinkInstalled();
         console.log("Wallet connected:", userAddress);
         updateWalletUI(true);
-        document.getElementById("connection-status").textContent = "Connected to wallet: " + userAddress;
-        await checkActiveDelegations();
         await fetchOpenOrders();
         await fetchSellerFulfillments();
-        await fetchBuyerOrders();
     } catch (error) {
         console.error("Wallet connection failed:", error.message);
         alert("Failed to connect wallet: " + error.message);
-        document.getElementById("connection-status").textContent = "Connection failed. Please try again.";
     }
 }
 
@@ -496,33 +484,27 @@ async function fetchOpenOrders() {
                 document.getElementById("fulfillment-form").dataset.proratedCft = proratedCft;
 
                 const delegateInput = document.getElementById("delegate-amount");
-                // Remove existing listener to prevent duplicates
-                delegateInput.removeEventListener("input", updateEarnings);
-                // Add the listener with the global updateEarnings function
-                delegateInput.addEventListener("input", updateEarnings);
+                delegateInput.removeEventListener("input", updateEarnings); // Remove existing listener to prevent duplicates
+                delegateInput.addEventListener("input", updateEarnings); // Add single listener
 
                 // Initial estimated earnings
-                updateEarnings();
+                const delegateAmount = parseInt(delegateInput.value) || remaining;
+                const estimatedEarnings = (delegateAmount / remaining) * proratedCft;
+                console.log(`Order ${orderId}: Initial estimated earnings ${estimatedEarnings.toFixed(4)} CFT (delegate: ${delegateAmount}, prorated CFT: ${proratedCft}, remaining: ${remaining})`);
+                document.getElementById("estimated-earnings").textContent = `${estimatedEarnings.toFixed(4)} CFT`;
                 document.getElementById("fulfillment-form").style.display = "block";
+
+                function updateEarnings() {
+                    const newDelegateAmount = parseInt(delegateInput.value) || 0;
+                    const newEstimatedEarnings = (newDelegateAmount / remaining) * proratedCft;
+                    console.log(`Order ${orderId}: Updated earnings to ${newEstimatedEarnings.toFixed(4)} CFT (new delegate: ${newDelegateAmount}, prorated CFT: ${proratedCft}, remaining: ${remaining})`);
+                    document.getElementById("estimated-earnings").textContent = `${newEstimatedEarnings.toFixed(4)} CFT`;
+                }
             });
         });
     } catch (error) {
         console.error("Error fetching open orders:", error);
     }
-}
-
-// Global updateEarnings function
-function updateEarnings() {
-    const delegateInput = document.getElementById("delegate-amount");
-    const orderId = document.getElementById("selected-order-id").textContent;
-    if (!delegateInput || !orderId) return;
-
-    const remaining = parseInt(delegateInput.max);
-    const proratedCft = parseFloat(document.getElementById("fulfillment-form").dataset.proratedCft) || 0;
-    const newDelegateAmount = parseInt(delegateInput.value) || 0;
-    const newEstimatedEarnings = (newDelegateAmount / remaining) * proratedCft;
-    console.log(`Global updateEarnings: Order ${orderId}: Updated earnings to ${newEstimatedEarnings.toFixed(4)} CFT (new delegate: ${newDelegateAmount}, prorated CFT: ${proratedCft}, remaining: ${remaining})`);
-    document.getElementById("estimated-earnings").textContent = `${newEstimatedEarnings.toFixed(4)} CFT`;
 }
 
 // Fulfill an order
@@ -826,62 +808,34 @@ async function fetchSellerFulfillments() {
         const energyData = await energyResponse.json();
         document.getElementById("available-energy").textContent = energyData.success ? energyData.available_energy.toLocaleString() : "0";
 
-        // Aggregate fulfillments by order_id
-        const fulfillmentsByOrder = {};
         for (const f of data.fulfillments) {
             if (f.status !== "confirmed") continue;
 
-            const orderId = f.order_id;
-            if (!fulfillmentsByOrder[orderId]) {
-                fulfillmentsByOrder[orderId] = {
-                    energy_amount: 0,
-                    lock_end: f.lock_end,
-                    cft_paid: 0,
-                    fulfillment_ids: []
-                };
-            }
-            fulfillmentsByOrder[orderId].energy_amount += f.energy_amount;
-            // Use actual cft_paid if available, otherwise estimate from order data if needed
-            fulfillmentsByOrder[orderId].cft_paid += parseFloat(f.cft_paid || "0.00"); // Rely on server-provided cft_paid
-            fulfillmentsByOrder[orderId].fulfillment_ids.push(f.fulfillment_id);
-            if (new Date(f.lock_end) > new Date(fulfillmentsByOrder[orderId].lock_end)) {
-                fulfillmentsByOrder[orderId].lock_end = f.lock_end; // Use latest lock end
-            }
-        }
-
-        // Validate and adjust lock_end based on latest delegation if possible
-        for (const orderId in fulfillmentsByOrder) {
-            const f = fulfillmentsByOrder[orderId];
-            const latestFulfillment = data.fulfillments.find(fil => fil.order_id === orderId && fil.status === "confirmed");
-            if (latestFulfillment) {
-                const delegationStart = new Date(latestFulfillment.created_at).getTime();
-                const lockPeriodDays = parseFloat(latestFulfillment.lock_duration) || 1.03184; // Default to 1.03184 days if not provided
-                const expectedLockEnd = new Date(delegationStart + lockPeriodDays * 24 * 60 * 60 * 1000);
-                if (new Date(f.lock_end) < expectedLockEnd) {
-                    f.lock_end = expectedLockEnd.toISOString();
-                    console.log(`Adjusted lock_end for Order ${orderId} to ${expectedLockEnd.toISOString()} based on delegation period`);
-                }
-            }
-        }
-
-        // Populate table with aggregated data
-        for (const orderId in fulfillmentsByOrder) {
-            const f = fulfillmentsByOrder[orderId];
             const lockEnd = new Date(f.lock_end);
             const currentDate = new Date();
             const status = lockEnd < currentDate ? "ended" : "confirmed";
             const lockEndStr = lockEnd.toLocaleString();
+            const orderResponse = await fetch(`${SERVER_URL}/api/open-orders`);
+            const orderData = await orderResponse.json();
+            let cftPaid = "0.00";
+            if (orderData.success) {
+                const order = orderData.orders.find(o => o.order_id === parseInt(f.order_id));
+                if (order) {
+                    const cftPerEnergy = (order.total_payment * CFT_PER_TRX) / order.energy_amount;
+                    cftPaid = (f.energy_amount * cftPerEnergy).toFixed(2);
+                    totalCft += parseFloat(cftPaid);
+                }
+            }
             totalEnergy += f.energy_amount;
-            totalCft += f.cft_paid;
 
             const row = document.createElement("tr");
             row.innerHTML = `
-                <td>${f.fulfillment_ids.join(", ")}</td>
-                <td>${orderId}</td>
+                <td>${f.fulfillment_id}</td>
+                <td>${f.order_id}</td>
                 <td>${f.energy_amount.toLocaleString()}</td>
                 <td>${lockEndStr}</td>
                 <td>${status}</td>
-                <td>${f.cft_paid.toFixed(2)} CFT</td>
+                <td>${cftPaid} CFT</td>
             `;
             tableBody.appendChild(row);
         }
@@ -898,3 +852,74 @@ async function fetchSellerFulfillments() {
         console.error("Error fetching seller fulfillments:", error);
     }
 }
+
+// Undelegate energy
+async function undelegateEnergy(fulfillmentId, energyAmount, receiverAddress) {
+    try {
+        const sunRequired = energyAmount * PRICE_PER_ENERGY;
+        const tx = await tronWeb.transactionBuilder.undelegateResource(
+            sunRequired,
+            receiverAddress,
+            "ENERGY",
+            userAddress
+        );
+        const signed = await tronWeb.trx.sign(tx);
+        const result = await tronWeb.trx.broadcast(signed);
+        console.log("Undelegation sent:", JSON.stringify(result));
+
+        if (!result.result || !result.txid) {
+            throw new Error("Undelegation failed");
+        }
+
+        const response = await fetch(`${SERVER_URL}/api/undelegate-energy`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({ fulfillmentId, txId: result.txid })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+
+        alert("Energy undelegated successfully!");
+        await fetchSellerFulfillments();
+    } catch (error) {
+        console.error("Error undelegating energy:", error);
+        alert(`Error undelegating energy: ${error.message}`);
+    }
+}
+
+// Event listeners
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        await autoConnectWallet();
+        const connectButton = document.getElementById("connect-button");
+        if (connectButton) connectButton.addEventListener("click", connectWallet);
+
+        const energyAmountInput = document.getElementById("energy-amount");
+        if (energyAmountInput) energyAmountInput.addEventListener("input", updateTotalPayment);
+
+        const receiverAddressInput = document.getElementById("receiver-address");
+        if (receiverAddressInput) receiverAddressInput.addEventListener("input", updateTotalPayment);
+
+        const lockDurationInput = document.getElementById("lock-duration");
+        if (lockDurationInput) lockDurationInput.addEventListener("input", updateTotalPayment);
+
+        const createOrderButton = document.getElementById("create-order-button");
+        if (createOrderButton) createOrderButton.addEventListener("click", createOrder);
+
+        const fulfillOrderButton = document.getElementById("fulfill-order-button");
+        if (fulfillOrderButton) fulfillOrderButton.addEventListener("click", fulfillOrder);
+
+        const cancelOrderButton = document.getElementById("cancel-order-button");
+        if (cancelOrderButton) cancelOrderButton.addEventListener("click", cancelOrder);
+
+        updateTotalPayment();
+        await fetchOpenOrders();
+        await fetchSellerFulfillments();
+        await fetchBuyerOrders();
+    } catch (error) {
+        console.error("Error in DOMContentLoaded:", error);
+        alert("An error occurred during initialization. Please try refreshing the page.");
+    }
+});
