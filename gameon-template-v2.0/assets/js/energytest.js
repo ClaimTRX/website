@@ -105,18 +105,40 @@ async function checkActiveDelegations() {
         const response = await fetch(`${SERVER_URL}/api/active-delegations?address=${userAddress}`, {
             headers: { "Accept": "application/json" }
         });
-        if (!response.ok) {
-            console.warn(`Active delegations check failed with status: ${response.status}`);
-            window.activeDelegations = []; // Fallback to empty array
-            return;
-        }
-        const data = await response.json();
-        if (data.success) {
-            window.activeDelegations = data.delegations || [];
-            console.log("Active delegations:", window.activeDelegations);
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                window.activeDelegations = data.delegations || [];
+                console.log("Active delegations from /api/active-delegations:", window.activeDelegations);
+            } else {
+                window.activeDelegations = [];
+                console.warn("No delegations data from /api/active-delegations:", data.message);
+            }
         } else {
-            window.activeDelegations = [];
-            console.warn("No delegations data or unsuccessful response:", data.message);
+            console.warn(`Active delegations check failed with status: ${response.status}, falling back to /api/check-delegation`);
+            // Fallback to /api/check-delegation for each receiver address from open orders
+            const ordersResponse = await fetch(`${SERVER_URL}/api/open-orders`, { headers: { "Accept": "application/json" } });
+            if (ordersResponse.ok) {
+                const ordersData = await ordersResponse.json();
+                if (ordersData.success) {
+                    const uniqueReceivers = [...new Set(ordersData.orders.map(order => order.receiver_address))];
+                    window.activeDelegations = await Promise.all(uniqueReceivers.map(async receiver => {
+                        const checkResponse = await fetch(`${SERVER_URL}/api/check-delegation?sellerAddress=${userAddress}&receiverAddress=${receiver}`, {
+                            headers: { "Accept": "application/json" }
+                        });
+                        if (checkResponse.ok) {
+                            const checkData = await checkResponse.json();
+                            return checkData.delegation ? {
+                                receiver_address: receiver,
+                                energy_amount: checkData.delegation.energy,
+                                expire_time: checkData.delegation.expireTime
+                            } : null;
+                        }
+                        return null;
+                    })).then(results => results.filter(d => d !== null));
+                    console.log("Active delegations from /api/check-delegation fallback:", window.activeDelegations);
+                }
+            }
         }
     } catch (error) {
         console.error("Error checking active delegations:", error.message);
@@ -423,6 +445,9 @@ async function fetchOpenOrders() {
                     const remainingDays = (new Date(overlappingDelegation.expire_time) - new Date()) / (1000 * 60 * 60 * 24);
                     const proratedFactor = remainingDays / order.lock_duration;
                     displayedCft = (parseFloat(fullCft) * proratedFactor).toFixed(2);
+                    console.log(`Order ${order.order_id}: Prorated CFT from ${fullCft} to ${displayedCft} due to delegation expiring in ${remainingDays} days`);
+                } else {
+                    console.log(`Order ${order.order_id}: No overlapping delegation, using full CFT ${fullCft}`);
                 }
             }
             const row = document.createElement("tr");
@@ -454,7 +479,7 @@ async function fetchOpenOrders() {
                 document.getElementById("fulfillment-form").dataset.energyAmount = energyAmount;
                 document.getElementById("fulfillment-form").dataset.buyerAddress = buyerAddress;
 
-                // Recalculate estimated earnings based on active delegations
+                // Recalculate estimated earnings with delegation check
                 let estimatedEarnings = (remaining / energyAmount) * totalPayment * CFT_PER_TRX;
                 if (window.activeDelegations && window.activeDelegations.length) {
                     const overlappingDelegation = window.activeDelegations.find(d => d.receiver_address === receiverAddress);
@@ -462,9 +487,12 @@ async function fetchOpenOrders() {
                         const remainingDays = (new Date(overlappingDelegation.expire_time) - new Date()) / (1000 * 60 * 60 * 24);
                         const proratedFactor = remainingDays / lockDuration;
                         estimatedEarnings = (estimatedEarnings * proratedFactor).toFixed(2);
+                        console.log(`Order ${orderId}: Estimated earnings prorated to ${estimatedEarnings} CFT for ${remainingDays} days`);
+                    } else {
+                        console.log(`Order ${orderId}: No overlapping delegation, using full earnings ${estimatedEarnings.toFixed(2)} CFT`);
                     }
                 } else {
-                    estimatedEarnings = (estimatedEarnings * (remaining / energyAmount)).toFixed(2); // Default to full amount if no overlap
+                    console.log(`Order ${orderId}: No active delegations, using full earnings ${estimatedEarnings.toFixed(2)} CFT`);
                 }
                 document.getElementById("estimated-earnings").textContent = `${estimatedEarnings} CFT`;
                 document.getElementById("fulfillment-form").style.display = "block";
