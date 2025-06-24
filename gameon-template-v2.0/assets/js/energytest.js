@@ -808,34 +808,46 @@ async function fetchSellerFulfillments() {
         const energyData = await energyResponse.json();
         document.getElementById("available-energy").textContent = energyData.success ? energyData.available_energy.toLocaleString() : "0";
 
+        // Aggregate fulfillments by order_id
+        const fulfillmentsByOrder = {};
         for (const f of data.fulfillments) {
             if (f.status !== "confirmed") continue;
 
+            const orderId = f.order_id;
+            if (!fulfillmentsByOrder[orderId]) {
+                fulfillmentsByOrder[orderId] = {
+                    energy_amount: 0,
+                    lock_end: f.lock_end,
+                    cft_paid: 0,
+                    fulfillment_ids: []
+                };
+            }
+            fulfillmentsByOrder[orderId].energy_amount += f.energy_amount;
+            fulfillmentsByOrder[orderId].cft_paid += parseFloat(f.payment_address === ESCROW_ADDRESS ? "0.00" : f.cft_paid || "0.00"); // Assume 0.00 if payment not from escrow
+            fulfillmentsByOrder[orderId].fulfillment_ids.push(f.fulfillment_id);
+            if (new Date(f.lock_end) > new Date(fulfillmentsByOrder[orderId].lock_end)) {
+                fulfillmentsByOrder[orderId].lock_end = f.lock_end; // Use latest lock end
+            }
+        }
+
+        // Populate table with aggregated data
+        for (const orderId in fulfillmentsByOrder) {
+            const f = fulfillmentsByOrder[orderId];
             const lockEnd = new Date(f.lock_end);
             const currentDate = new Date();
             const status = lockEnd < currentDate ? "ended" : "confirmed";
             const lockEndStr = lockEnd.toLocaleString();
-            const orderResponse = await fetch(`${SERVER_URL}/api/open-orders`);
-            const orderData = await orderResponse.json();
-            let cftPaid = "0.00";
-            if (orderData.success) {
-                const order = orderData.orders.find(o => o.order_id === parseInt(f.order_id));
-                if (order) {
-                    const cftPerEnergy = (order.total_payment * CFT_PER_TRX) / order.energy_amount;
-                    cftPaid = (f.energy_amount * cftPerEnergy).toFixed(2);
-                    totalCft += parseFloat(cftPaid);
-                }
-            }
             totalEnergy += f.energy_amount;
+            totalCft += f.cft_paid;
 
             const row = document.createElement("tr");
             row.innerHTML = `
-                <td>${f.fulfillment_id}</td>
-                <td>${f.order_id}</td>
+                <td>${f.fulfillment_ids.join(", ")}</td>
+                <td>${orderId}</td>
                 <td>${f.energy_amount.toLocaleString()}</td>
                 <td>${lockEndStr}</td>
                 <td>${status}</td>
-                <td>${cftPaid} CFT</td>
+                <td>${f.cft_paid.toFixed(2)} CFT</td>
             `;
             tableBody.appendChild(row);
         }
