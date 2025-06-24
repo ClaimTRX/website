@@ -509,6 +509,20 @@ async function fetchOpenOrders() {
     }
 }
 
+// Global updateEarnings function for DOMContentLoaded
+function updateEarnings() {
+    const delegateInput = document.getElementById("delegate-amount");
+    const orderId = document.getElementById("selected-order-id").textContent;
+    if (!delegateInput || !orderId) return;
+
+    const remaining = parseInt(delegateInput.max);
+    const proratedCft = parseFloat(document.getElementById("fulfillment-form").dataset.proratedCft) || 0;
+    const newDelegateAmount = parseInt(delegateInput.value) || 0;
+    const newEstimatedEarnings = (newDelegateAmount / remaining) * proratedCft;
+    console.log(`Global updateEarnings: Order ${orderId}: Updated earnings to ${newEstimatedEarnings.toFixed(4)} CFT (new delegate: ${newDelegateAmount}, prorated CFT: ${proratedCft}, remaining: ${remaining})`);
+    document.getElementById("estimated-earnings").textContent = `${newEstimatedEarnings.toFixed(4)} CFT`;
+}
+
 // Fulfill an order
 async function fulfillOrder() {
     if (!userAddress) {
