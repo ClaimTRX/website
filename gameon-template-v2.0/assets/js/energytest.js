@@ -439,13 +439,14 @@ async function fetchOpenOrders() {
         data.orders.forEach(order => {
             const fullCft = ((order.remaining_energy / order.energy_amount) * order.total_payment * CFT_PER_TRX).toFixed(2);
             let displayedCft = fullCft;
+            let proratedFactor = 1;
             if (window.activeDelegations && window.activeDelegations.length) {
                 const overlappingDelegation = window.activeDelegations.find(d => d.receiver_address === order.receiver_address);
                 if (overlappingDelegation && new Date(overlappingDelegation.expire_time) > new Date()) {
                     const remainingDays = (new Date(overlappingDelegation.expire_time) - new Date()) / (1000 * 60 * 60 * 24);
-                    const proratedFactor = remainingDays / order.lock_duration;
+                    proratedFactor = remainingDays / order.lock_duration;
                     displayedCft = (parseFloat(fullCft) * proratedFactor).toFixed(2);
-                    console.log(`Order ${order.order_id}: Prorated CFT from ${fullCft} to ${displayedCft} due to delegation expiring in ${remainingDays} days`);
+                    console.log(`Order ${order.order_id}: Prorated CFT from ${fullCft} to ${displayedCft} (factor: ${proratedFactor}, remaining days: ${remainingDays})`);
                 } else {
                     console.log(`Order ${order.order_id}: No overlapping delegation, using full CFT ${fullCft}`);
                 }
@@ -456,7 +457,7 @@ async function fetchOpenOrders() {
                 <td>${order.remaining_energy.toLocaleString()}</td>
                 <td>${displayedCft} CFT</td>
                 <td>${order.lock_duration} days</td>
-                <td><a href="#" class="sell-energy-btn" data-order-id="${order.order_id}" data-remaining="${order.remaining_energy}" data-receiver="${order.receiver_address}" data-lock-duration="${order.lock_duration}" data-total-payment="${order.total_payment}" data-energy-amount="${order.energy_amount}" data-buyer="${order.buyer_address}">Sell Energy</a></td>
+                <td><a href="#" class="sell-energy-btn" data-order-id="${order.order_id}" data-remaining="${order.remaining_energy}" data-receiver="${order.receiver_address}" data-lock-duration="${order.lock_duration}" data-total-payment="${order.total_payment}" data-energy-amount="${order.energy_amount}" data-buyer="${order.buyer_address}" data-prorated-factor="${proratedFactor}">Sell Energy</a></td>
             `;
             tableBody.appendChild(row);
         });
@@ -471,6 +472,8 @@ async function fetchOpenOrders() {
                 const totalPayment = parseFloat(btn.getAttribute("data-total-payment"));
                 const energyAmount = parseInt(btn.getAttribute("data-energy-amount"));
                 const buyerAddress = btn.getAttribute("data-buyer");
+                const proratedFactor = parseFloat(btn.getAttribute("data-prorated-factor")) || 1;
+
                 document.getElementById("selected-order-id").textContent = orderId;
                 document.getElementById("delegate-amount").max = remaining;
                 document.getElementById("fulfillment-form").dataset.receiverAddress = receiverAddress;
@@ -478,24 +481,22 @@ async function fetchOpenOrders() {
                 document.getElementById("fulfillment-form").dataset.totalPayment = totalPayment;
                 document.getElementById("fulfillment-form").dataset.energyAmount = energyAmount;
                 document.getElementById("fulfillment-form").dataset.buyerAddress = buyerAddress;
+                document.getElementById("fulfillment-form").dataset.proratedFactor = proratedFactor;
 
-                // Recalculate estimated earnings with delegation check
-                let estimatedEarnings = (remaining / energyAmount) * totalPayment * CFT_PER_TRX;
-                if (window.activeDelegations && window.activeDelegations.length) {
-                    const overlappingDelegation = window.activeDelegations.find(d => d.receiver_address === receiverAddress);
-                    if (overlappingDelegation && new Date(overlappingDelegation.expire_time) > new Date()) {
-                        const remainingDays = (new Date(overlappingDelegation.expire_time) - new Date()) / (1000 * 60 * 60 * 24);
-                        const proratedFactor = remainingDays / lockDuration;
-                        estimatedEarnings = (estimatedEarnings * proratedFactor).toFixed(2);
-                        console.log(`Order ${orderId}: Estimated earnings prorated to ${estimatedEarnings} CFT for ${remainingDays} days`);
-                    } else {
-                        console.log(`Order ${orderId}: No overlapping delegation, using full earnings ${estimatedEarnings.toFixed(2)} CFT`);
-                    }
-                } else {
-                    console.log(`Order ${orderId}: No active delegations, using full earnings ${estimatedEarnings.toFixed(2)} CFT`);
-                }
-                document.getElementById("estimated-earnings").textContent = `${estimatedEarnings} CFT`;
+                // Recalculate estimated earnings with prorated factor
+                const delegateAmount = parseInt(document.getElementById("delegate-amount").value) || remaining;
+                let estimatedEarnings = (delegateAmount / energyAmount) * totalPayment * CFT_PER_TRX * proratedFactor;
+                console.log(`Order ${orderId}: Calculated estimated earnings ${estimatedEarnings.toFixed(2)} CFT (delegate: ${delegateAmount}, factor: ${proratedFactor})`);
+                document.getElementById("estimated-earnings").textContent = `${estimatedEarnings.toFixed(2)} CFT`;
                 document.getElementById("fulfillment-form").style.display = "block";
+
+                // Update earnings on input change
+                document.getElementById("delegate-amount").addEventListener("input", () => {
+                    const newDelegateAmount = parseInt(document.getElementById("delegate-amount").value) || 0;
+                    estimatedEarnings = (newDelegateAmount / energyAmount) * totalPayment * CFT_PER_TRX * proratedFactor;
+                    console.log(`Order ${orderId}: Updated earnings to ${estimatedEarnings.toFixed(2)} CFT (new delegate: ${newDelegateAmount})`);
+                    document.getElementById("estimated-earnings").textContent = `${estimatedEarnings.toFixed(2)} CFT`;
+                });
             });
         });
     } catch (error) {
