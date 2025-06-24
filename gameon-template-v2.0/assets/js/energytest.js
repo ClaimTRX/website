@@ -574,7 +574,9 @@ async function fulfillOrder() {
     }
 
     const adjustedLockDuration = Math.ceil(lockPeriodBlocks * BLOCK_INTERVAL_SECONDS / 86400);
-    const proratedPayment = (totalPayment / originalLockDuration) * actualLockDurationDays;
+    // Calculate prorated payment with energy proportion
+    const energyProportion = energyAmount / parseInt(document.getElementById("fulfillment-form").dataset.energyAmount);
+    const proratedPayment = energyProportion * (totalPayment / originalLockDuration) * actualLockDurationDays;
 
     try {
         document.getElementById("fulfillment-status").style.display = "block";
