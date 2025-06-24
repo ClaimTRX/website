@@ -97,7 +97,7 @@ async function autoConnectWallet() {
     }
 }
 
-// Add this new helper function after checkTronLinkInstalled
+// Helper function to check active delegations
 async function checkActiveDelegations() {
     if (!userAddress) return;
     try {
@@ -507,27 +507,6 @@ async function fetchOpenOrders() {
     }
 }
 
-// Add this new function at the end of energytest.js
-function updateEarnings() {
-    const delegateAmount = parseInt(document.getElementById("delegate-amount").value) || 0;
-    const orderId = document.getElementById("selected-order-id").textContent;
-    if (delegateAmount < 1000 || !orderId) return;
-
-    fetch(`${SERVER_URL}/api/open-orders`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const order = data.orders.find(o => o.order_id === parseInt(orderId));
-                if (order) {
-                    const cftPerEnergy = (order.total_payment * CFT_PER_TRX) / order.energy_amount;
-                    const earnings = (delegateAmount * cftPerEnergy).toFixed(2);
-                    document.getElementById("estimated-earnings").textContent = `${earnings} CFT`;
-                }
-            }
-        })
-        .catch(error => console.error("Error calculating earnings:", error));
-}
-
 // Fulfill an order
 async function fulfillOrder() {
     if (!userAddress) {
@@ -657,6 +636,7 @@ async function fulfillOrder() {
     }
 }
 
+// Fetch and display buyer orders
 async function fetchBuyerOrders() {
     if (!userAddress) return;
 
@@ -711,6 +691,7 @@ async function fetchBuyerOrders() {
     }
 }
 
+// Cancel an order
 async function cancelOrder() {
     if (!userAddress) {
         alert("Please connect your wallet first.");
