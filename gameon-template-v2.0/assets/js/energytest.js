@@ -393,12 +393,12 @@ async function fetchOpenOrders() {
                 <td>${order.remaining_energy.toLocaleString()}</td>
                 <td>${remainingCft} CFT</td>
                 <td>${order.lock_duration} days</td>
-                <td><a href="#" class="fulfill-btn" data-order-id="${order.order_id}" data-remaining="${order.remaining_energy}" data-receiver="${order.receiver_address}" data-lock-duration="${order.lock_duration}" data-total-payment="${order.total_payment}" data-energy-amount="${order.energy_amount}">Fulfill</a></td>
+                <td><a href="#" class="sell-energy-btn" data-order-id="${order.order_id}" data-remaining="${order.remaining_energy}" data-receiver="${order.receiver_address}" data-lock-duration="${order.lock_duration}" data-total-payment="${order.total_payment}" data-energy-amount="${order.energy_amount}" data-buyer="${order.buyer_address}">Sell Energy</a></td>
             `;
             tableBody.appendChild(row);
         });
 
-        document.querySelectorAll(".fulfill-btn").forEach(btn => {
+        document.querySelectorAll(".sell-energy-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 e.preventDefault();
                 const orderId = btn.getAttribute("data-order-id");
@@ -407,12 +407,14 @@ async function fetchOpenOrders() {
                 const lockDuration = parseInt(btn.getAttribute("data-lock-duration"));
                 const totalPayment = parseFloat(btn.getAttribute("data-total-payment"));
                 const energyAmount = parseInt(btn.getAttribute("data-energy-amount"));
+                const buyerAddress = btn.getAttribute("data-buyer");
                 document.getElementById("selected-order-id").textContent = orderId;
                 document.getElementById("delegate-amount").max = remaining;
                 document.getElementById("fulfillment-form").dataset.receiverAddress = receiverAddress;
                 document.getElementById("fulfillment-form").dataset.lockDuration = lockDuration;
                 document.getElementById("fulfillment-form").dataset.totalPayment = totalPayment;
                 document.getElementById("fulfillment-form").dataset.energyAmount = energyAmount;
+                document.getElementById("fulfillment-form").dataset.buyerAddress = buyerAddress;
                 document.getElementById("fulfillment-form").style.display = "block";
                 document.getElementById("estimated-earnings").textContent = "0.00 CFT"; // Reset earnings
             });
@@ -454,6 +456,8 @@ async function fulfillOrder() {
     const energyAmount = parseInt(document.getElementById("delegate-amount").value);
     const receiverAddress = document.getElementById("fulfillment-form").dataset.receiverAddress;
     const originalLockDuration = parseInt(document.getElementById("fulfillment-form").dataset.lockDuration);
+    const totalPayment = parseFloat(document.getElementById("fulfillment-form").dataset.totalPayment);
+    const buyerAddress = document.getElementById("fulfillment-form").dataset.buyerAddress;
     const paymentAddressInput = document.getElementById("payment-address");
     let paymentAddress = paymentAddressInput ? paymentAddressInput.value.trim() : ESCROW_ADDRESS;
 
@@ -475,15 +479,17 @@ async function fulfillOrder() {
 
     let lockPeriodBlocks = daysToBlocks(originalLockDuration);
     const existingDelegation = await checkExistingDelegation(userAddress, receiverAddress);
+    let actualLockDurationDays = originalLockDuration;
     if (existingDelegation && existingDelegation.expireTime > Date.now()) {
         const remainingMs = existingDelegation.expireTime - Date.now();
-        const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
-        const confirmMessage = `You already have ${existingDelegation.energy.toLocaleString()} energy staked to this address with ${remainingDays} days remaining. Do you want to stake ${energyAmount.toLocaleString()} more energy and lock for ${remainingDays} days?`;
+        const remainingDays = remainingMs / (1000 * 60 * 60 * 24); // Exact days remaining
+        const confirmMessage = `You already have ${existingDelegation.energy.toLocaleString()} energy staked to this address with ${remainingDays.toFixed(2)} days remaining. Do you want to stake ${energyAmount.toLocaleString()} more energy and lock for ${remainingDays.toFixed(2)} days?`;
         if (!window.confirm(confirmMessage)) {
             alert("Fulfillment cancelled.");
             return;
         }
         lockPeriodBlocks = Math.ceil(remainingMs / (BLOCK_INTERVAL_SECONDS * 1000)) + ONE_HOUR_BLOCKS;
+        actualLockDurationDays = remainingDays; // Use remaining days for payment
     } else {
         console.warn("No active delegation detected or unable to verify. Proceeding with default lock duration.");
         const confirmMessage = `No active delegation detected to ${receiverAddress}, or verification failed. Proceed with a new delegation of ${energyAmount.toLocaleString()} energy for ${originalLockDuration} days?`;
@@ -496,14 +502,17 @@ async function fulfillOrder() {
     if (lockPeriodBlocks > MAX_LOCK_BLOCKS) {
         console.warn(`Lock period ${lockPeriodBlocks} blocks exceeds maximum. Adjusting to ${MAX_LOCK_BLOCKS} blocks.`);
         lockPeriodBlocks = MAX_LOCK_BLOCKS;
-        alert(`Lock period adjusted to maximum ${MAX_LOCK_BLOCKS / (86400 / BLOCK_INTERVAL_SECONDS)} days.`);
+        actualLockDurationDays = MAX_LOCK_BLOCKS / (86400 / BLOCK_INTERVAL_SECONDS) / 24; // Adjust days
+        alert(`Lock period adjusted to maximum ${actualLockDurationDays.toFixed(2)} days.`);
     } else if (lockPeriodBlocks <= 0) {
         console.warn(`Lock period ${lockPeriodBlocks} blocks is invalid. Setting to default ${DEFAULT_LOCK_BLOCKS} blocks.`);
         lockPeriodBlocks = DEFAULT_LOCK_BLOCKS;
-        alert(`Lock period set to default 3 days.`);
+        actualLockDurationDays = DEFAULT_LOCK_BLOCKS / (86400 / BLOCK_INTERVAL_SECONDS) / 24; // Adjust days
+        alert(`Lock period set to default ${actualLockDurationDays.toFixed(2)} days.`);
     }
 
     const adjustedLockDuration = Math.ceil(lockPeriodBlocks * BLOCK_INTERVAL_SECONDS / 86400);
+    const proratedPayment = (totalPayment / originalLockDuration) * actualLockDurationDays; // Prorate payment
 
     try {
         document.getElementById("fulfillment-status").style.display = "block";
@@ -538,7 +547,8 @@ async function fulfillOrder() {
                 receiverAddress,
                 txId: result.txid,
                 paymentAddress,
-                lockDuration: adjustedLockDuration
+                lockDuration: adjustedLockDuration,
+                proratedPayment: proratedPayment.toFixed(6)
             })
         });
 
@@ -560,6 +570,108 @@ async function fulfillOrder() {
     } catch (error) {
         console.error("Error fulfilling order:", error);
         document.getElementById("fulfillment-message").textContent = `Error: ${error.message}`;
+    }
+}
+
+async function fetchBuyerOrders() {
+    if (!userAddress) return;
+
+    try {
+        console.log("Fetching buyer orders for:", userAddress);
+        const response = await fetch(`${SERVER_URL}/api/buyer-orders?address=${userAddress}`, {
+            headers: { "Accept": "application/json" }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
+        }
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.message || "Failed to fetch orders");
+        }
+
+        const tableBody = document.getElementById("tracking-table-body");
+        tableBody.innerHTML = "";
+
+        data.orders.forEach(order => {
+            const lockEnd = new Date(order.lock_end);
+            const currentDate = new Date();
+            const status = lockEnd < currentDate ? "ended" : (order.remaining_energy > 0 ? "active" : "completed");
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${order.order_id}</td>
+                <td>${order.energy_amount.toLocaleString()}</td>
+                <td>${order.remaining_energy.toLocaleString()}</td>
+                <td>${order.lock_duration} days</td>
+                <td>${status}</td>
+                <td><a href="#" class="cancel-btn" data-order-id="${order.order_id}" data-energy-amount="${order.energy_amount}" data-remaining="${order.remaining_energy}" data-total-payment="${order.total_payment}" data-cft-paid="${order.cft_paid || 0}">Cancel</a></td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        document.querySelectorAll(".cancel-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                const orderId = btn.getAttribute("data-order-id");
+                const energyAmount = parseInt(btn.getAttribute("data-energy-amount"));
+                const remainingEnergy = parseInt(btn.getAttribute("data-remaining"));
+                const totalPayment = parseFloat(btn.getAttribute("data-total-payment"));
+                const cftPaid = parseFloat(btn.getAttribute("data-cft-paid"));
+                const refund = (totalPayment * (remainingEnergy / energyAmount)) - (cftPaid / CFT_PER_TRX); // Refund remaining TRX minus CFT paid
+                document.getElementById("selected-order-id-tracking").textContent = orderId;
+                document.getElementById("refund-amount").textContent = `${refund.toFixed(6)} TRX`;
+                document.getElementById("tracking-form").style.display = "block";
+            });
+        });
+    } catch (error) {
+        console.error("Error fetching buyer orders:", error);
+    }
+}
+
+async function cancelOrder() {
+    if (!userAddress) {
+        alert("Please connect your wallet first.");
+        return;
+    }
+
+    const orderId = document.getElementById("selected-order-id-tracking").textContent;
+    const refundAmount = parseFloat(document.getElementById("refund-amount").textContent);
+
+    try {
+        document.getElementById("cancel-status").style.display = "block";
+        document.getElementById("cancel-message").textContent = "Canceling order...";
+
+        const tx = await tronWeb.trx.sendTransaction(ESCROW_ADDRESS, Math.floor(refundAmount * SUN_PER_TRX), {
+            feeLimit: 5000000
+        });
+        console.log("Refund transaction sent:", JSON.stringify(tx));
+
+        if (!tx.result || !tx.txid) {
+            throw new Error("Refund transaction failed");
+        }
+
+        const response = await fetch(`${SERVER_URL}/api/cancel-order`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({ orderId, txId: tx.txid, refundAmount })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.message || "Failed to cancel order");
+        }
+
+        document.getElementById("cancel-message").textContent = "Order cancelled successfully! Refund processed.";
+        document.getElementById("cancel-hash").textContent = tx.txid;
+        document.getElementById("cancel-hash").href = `https://tronscan.org/#/transaction/${tx.txid}`;
+        document.getElementById("cancel-hash").style.display = "block";
+        await fetchBuyerOrders();
+    } catch (error) {
+        console.error("Error canceling order:", error);
+        document.getElementById("cancel-message").textContent = `Error: ${error.message}`;
     }
 }
 
@@ -607,15 +719,17 @@ async function fetchSellerFulfillments() {
 
     try {
         console.log("Fetching fulfillments for:", userAddress);
-        const response = await fetch(`${SERVER_URL}/api/seller-fulfillments?address=${userAddress}`, {
-            headers: { "Accept": "application/json" }
-        });
-        if (!response.ok) {
-            throw new Error(`HTTP error: ${response.status}`);
+        const [fulfillmentResponse, energyResponse] = await Promise.all([
+            fetch(`${SERVER_URL}/api/seller-fulfillments?address=${userAddress}`, { headers: { "Accept": "application/json" } }),
+            fetch(`${SERVER_URL}/api/available-energy?address=${userAddress}`, { headers: { "Accept": "application/json" } })
+        ]);
+        if (!fulfillmentResponse.ok || !energyResponse.ok) {
+            throw new Error(`HTTP error: ${fulfillmentResponse.status || energyResponse.status}`);
         }
-        const data = await response.json();
-        if (!data.success) {
-            throw new Error(data.message || "Failed to fetch fulfillments");
+        const fulfillmentData = await fulfillmentResponse.json();
+        const energyData = await energyResponse.json();
+        if (!fulfillmentData.success || !energyData.success) {
+            throw new Error(fulfillmentData.message || energyData.message || "Failed to fetch data");
         }
 
         const tableBody = document.getElementById("dashboard-table-body");
@@ -623,8 +737,10 @@ async function fetchSellerFulfillments() {
         let totalEnergy = 0;
         let totalCft = 0;
 
-        for (const f of data.fulfillments) {
-            if (f.status !== "confirmed") continue; // Show only confirmed orders
+        document.getElementById("available-energy").textContent = energyData.available_energy.toLocaleString() || "0";
+
+        for (const f of fulfillmentData.fulfillments) {
+            if (f.status !== "confirmed") continue;
 
             const lockEnd = new Date(f.lock_end);
             const currentDate = new Date();
@@ -726,9 +842,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         const fulfillOrderButton = document.getElementById("fulfill-order-button");
         if (fulfillOrderButton) fulfillOrderButton.addEventListener("click", fulfillOrder);
 
+        const cancelOrderButton = document.getElementById("cancel-order-button");
+        if (cancelOrderButton) cancelOrderButton.addEventListener("click", cancelOrder);
+
         updateTotalPayment();
         await fetchOpenOrders();
         await fetchSellerFulfillments();
+        await fetchBuyerOrders();
     } catch (error) {
         console.error("Error in DOMContentLoaded:", error);
         alert("An error occurred during initialization. Please try refreshing the page.");
