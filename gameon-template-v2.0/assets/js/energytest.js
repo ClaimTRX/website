@@ -58,7 +58,7 @@ const CFT_ABI = [
 async function checkTronLinkInstalled() {
     return new Promise((resolve, reject) => {
         let attempts = 0;
-        const maxAttempts = 20;
+        const maxAttempts = 30; // Increased to 30 seconds
         const interval = setInterval(() => {
             attempts++;
             if (window.tronWeb && window.tronWeb.ready && window.tronWeb.defaultAddress.base58 && window.tronWeb.trx && window.tronWeb.contract) {
@@ -76,24 +76,33 @@ async function checkTronLinkInstalled() {
     });
 }
 
-// Auto-connect wallet
-async function autoConnectWallet() {
-    try {
-        if (window.tronLink && window.tronLink.ready) {
-            await checkTronLinkInstalled();
-            updateWalletUI(true);
-            await checkActiveDelegations(); // Check delegations on load
-            await fetchOpenOrders();
-            await fetchSellerFulfillments();
-            await fetchBuyerOrders();
-        } else {
-            console.log("TronLink not ready, skipping auto-connect.");
-            updateWalletUI(false);
+// Auto-connect wallet with retry
+async function autoConnectWallet(maxRetries = 3, delay = 2000) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            if (window.tronLink && window.tronLink.ready) {
+                await checkTronLinkInstalled();
+                updateWalletUI(true);
+                document.getElementById("connection-status").textContent = "Connected to wallet: " + userAddress;
+                await checkActiveDelegations();
+                await fetchOpenOrders();
+                await fetchSellerFulfillments();
+                await fetchBuyerOrders();
+                return;
+            } else {
+                console.log(`Attempt ${i + 1}/${maxRetries}: TronLink not ready, retrying...`);
+                document.getElementById("connection-status").textContent = `Attempting to connect (Try ${i + 1}/${maxRetries})...`;
+            }
+        } catch (error) {
+            console.error(`Auto-connect attempt ${i + 1} failed:`, error.message);
+            document.getElementById("connection-status").textContent = `Connection failed: ${error.message}. Try ${i + 1}/${maxRetries}`;
+            if (i === maxRetries - 1) {
+                updateWalletUI(false);
+                document.getElementById("connection-status").textContent = "Auto-connect failed. Please click 'Connect Wallet' to try manually.";
+                return;
+            }
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
-    } catch (error) {
-        console.error("Auto-connect failed:", error.message);
-        updateWalletUI(false);
-        alert("Please ensure TronLink is installed and logged in.");
     }
 }
 
@@ -116,7 +125,6 @@ async function checkActiveDelegations() {
             }
         } else {
             console.warn(`Active delegations check failed with status: ${response.status}, falling back to /api/check-delegation`);
-            // Fallback to /api/check-delegation for each receiver address from open orders
             const ordersResponse = await fetch(`${SERVER_URL}/api/open-orders`, { headers: { "Accept": "application/json" } });
             if (ordersResponse.ok) {
                 const ordersData = await ordersResponse.json();
@@ -157,11 +165,15 @@ async function connectWallet() {
         await checkTronLinkInstalled();
         console.log("Wallet connected:", userAddress);
         updateWalletUI(true);
+        document.getElementById("connection-status").textContent = "Connected to wallet: " + userAddress;
+        await checkActiveDelegations();
         await fetchOpenOrders();
         await fetchSellerFulfillments();
+        await fetchBuyerOrders();
     } catch (error) {
         console.error("Wallet connection failed:", error.message);
         alert("Failed to connect wallet: " + error.message);
+        document.getElementById("connection-status").textContent = "Connection failed. Please try again.";
     }
 }
 
@@ -486,21 +498,11 @@ async function fetchOpenOrders() {
                 const delegateInput = document.getElementById("delegate-amount");
                 // Remove existing listener to prevent duplicates
                 delegateInput.removeEventListener("input", updateEarnings);
-                // Define updateEarnings function within the scope
-                function updateEarnings() {
-                    const newDelegateAmount = parseInt(delegateInput.value) || 0;
-                    const newEstimatedEarnings = (newDelegateAmount / remaining) * proratedCft;
-                    console.log(`Order ${orderId}: Updated earnings to ${newEstimatedEarnings.toFixed(4)} CFT (new delegate: ${newDelegateAmount}, prorated CFT: ${proratedCft}, remaining: ${remaining})`);
-                    document.getElementById("estimated-earnings").textContent = `${newEstimatedEarnings.toFixed(4)} CFT`;
-                }
-                // Add the listener
+                // Add the listener with the global updateEarnings function
                 delegateInput.addEventListener("input", updateEarnings);
 
                 // Initial estimated earnings
-                const delegateAmount = parseInt(delegateInput.value) || remaining;
-                const estimatedEarnings = (delegateAmount / remaining) * proratedCft;
-                console.log(`Order ${orderId}: Initial estimated earnings ${estimatedEarnings.toFixed(4)} CFT (delegate: ${delegateAmount}, prorated CFT: ${proratedCft}, remaining: ${remaining})`);
-                document.getElementById("estimated-earnings").textContent = `${estimatedEarnings.toFixed(4)} CFT`;
+                updateEarnings();
                 document.getElementById("fulfillment-form").style.display = "block";
             });
         });
@@ -509,7 +511,7 @@ async function fetchOpenOrders() {
     }
 }
 
-// Global updateEarnings function for DOMContentLoaded
+// Global updateEarnings function
 function updateEarnings() {
     const delegateInput = document.getElementById("delegate-amount");
     const orderId = document.getElementById("selected-order-id").textContent;
