@@ -443,10 +443,13 @@ async function fetchOpenOrders() {
             if (window.activeDelegations && window.activeDelegations.length) {
                 const overlappingDelegation = window.activeDelegations.find(d => d.receiver_address === order.receiver_address);
                 if (overlappingDelegation && new Date(overlappingDelegation.expire_time) > new Date()) {
-                    const remainingDays = (new Date(overlappingDelegation.expire_time) - new Date()) / (1000 * 60 * 60 * 24);
+                    const remainingMs = new Date(overlappingDelegation.expire_time) - new Date();
+                    let remainingDays = remainingMs / (1000 * 60 * 60 * 24);
+                    // Cap remainingDays to the order's lock duration to prevent over-proration
+                    remainingDays = Math.min(remainingDays, order.lock_duration);
                     proratedFactor = remainingDays / order.lock_duration;
                     displayedCft = (parseFloat(fullCft) * proratedFactor).toFixed(2);
-                    console.log(`Order ${order.order_id}: Prorated CFT from ${fullCft} to ${displayedCft} (factor: ${proratedFactor}, remaining days: ${remainingDays})`);
+                    console.log(`Order ${order.order_id}: Prorated CFT from ${fullCft} to ${displayedCft} (factor: ${proratedFactor}, remaining days: ${remainingDays}, expire_time: ${overlappingDelegation.expire_time})`);
                 } else {
                     console.log(`Order ${order.order_id}: No overlapping delegation, using full CFT ${fullCft}`);
                 }
@@ -772,7 +775,7 @@ async function pollFulfillmentStatus(fulfillmentId) {
             }
         } catch (error) {
             console.error("Error polling fulfillment status:", error);
-            if (pollAttempts >= maxPollAttempts) {
+            if (pollAttempts >= maxAttempts) {
                 clearInterval(interval);
                 document.getElementById("fulfillment-message").textContent = "Error polling fulfillment status.";
             }
