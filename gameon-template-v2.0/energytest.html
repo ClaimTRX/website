@@ -44,16 +44,29 @@
         width: 100%;
         border-collapse: collapse;
         margin-top: 20px;
+        background-color: var(--card-bg-color);
+        color: var(--white-color);
     }
     .marketplace-table th, .marketplace-table td,
     .dashboard-table th, .dashboard-table td {
-        border: 1px solid #ddd;
-        padding: 8px;
+        border: 1px solid var(--primary-l-color);
+        padding: 12px;
         text-align: left;
         white-space: nowrap;
+        font-size: 1rem;
     }
     .marketplace-table th, .dashboard-table th {
-        background-color: #f2f2f2;
+        background-color: var(--secondary-bg-color-2);
+        font-weight: 600;
+        color: var(--primary-t-color);
+    }
+    .marketplace-table td a, .dashboard-table td a {
+        color: var(--primary-color);
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+    .marketplace-table td a:hover, .dashboard-table td a:hover {
+        color: var(--secondary-color);
     }
     /* Responsive table styling */
     @media (max-width: 768px) {
@@ -68,36 +81,45 @@
         .marketplace-table tbody tr, .dashboard-table tbody tr {
             display: block;
             margin-bottom: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--primary-l-color);
+            background-color: var(--card-bg-color);
         }
         .marketplace-table td, .dashboard-table td {
             display: flex;
             justify-content: space-between;
-            padding: 10px;
+            padding: 12px;
             border: none;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--primary-l-color);
+            font-size: 0.9rem;
         }
         .marketplace-table td::before, .dashboard-table td::before {
             content: attr(data-label);
             font-weight: bold;
             margin-right: 10px;
             min-width: 120px;
+            color: var(--primary-t-color);
         }
-        #fulfillment-form {
+        #fulfillment-form, #tracking-form {
             padding: 10px;
         }
-        #fulfillment-form input, #fulfillment-form p {
+        #fulfillment-form input, #fulfillment-form p,
+        #tracking-form input, #tracking-form p {
             width: 100%;
             margin-bottom: 10px;
         }
-        #fulfillment-form .btn {
+        #fulfillment-form .btn, #tracking-form .btn {
             width: 100%;
         }
     }
     /* Ensure table fits within card */
     .card-body {
-        padding: 10px;
+        padding: 15px;
         overflow-x: auto;
+    }
+    /* Highlight total row */
+    #total-row {
+        font-weight: 600;
+        background-color: var(--secondary-bg-color-3);
     }
 </style>
 </head>
@@ -279,14 +301,14 @@
                 <tbody id="marketplace-table-body"></tbody>
             </table>
             <div id="fulfillment-form" style="display: none; margin-top: 20px;">
-                <h5>Fulfill Order</h5>
+                <h5>Sell Energy</h5>
                 <p>Order ID: <span id="selected-order-id"></span></p>
                 <span class="item-title mb-2">Energy to Delegate</span>
                 <input type="number" id="delegate-amount" class="form-control form-control-sm mb-3" placeholder="Enter amount" min="1000" oninput="updateEarnings()">
                 <p>Estimated CFT Earnings: <span id="estimated-earnings">0.00 CFT</span></p>
                 <span class="item-title mb-2">Payment Address</span>
                 <input type="text" id="payment-address" class="form-control form-control-sm mb-3" placeholder="Enter your payment address">
-                <a href="#" class="btn input-btn btn-sm mt-2" id="fulfill-order-button">Fulfill Order</a>
+                <a href="#" class="btn input-btn btn-sm mt-2" id="fulfill-order-button">Sell Energy</a>
                 <div id="fulfillment-status" class="status-message" style="display: none;">
                     <p id="fulfillment-message"></p>
                     <p>Transaction Hash: <a id="fulfillment-hash" href="#" target="_blank" style="display: none;"></a></p>
@@ -316,6 +338,10 @@
     </div>
     <div id="collapseDashboard" class="collapse" data-bs-parent="#bulk-energy-accordion">
         <div class="card-body">
+            <div class="available-energy mb-3">
+                <span class="item-title">Available Energy to Sell:</span>
+                <span id="available-energy">Loading...</span>
+            </div>
             <table class="dashboard-table">
                 <thead>
                     <tr>
@@ -338,6 +364,53 @@
                     </tr>
                 </tfoot>
             </table>
+        </div>
+    </div>
+</div>
+
+                        <div class="single-accordion-item mt-4">
+    <div class="card-header bg-inherit border-0 p-0">
+        <h2 class="m-0">
+            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTracking">
+                <div class="row">
+                    <div class="col-12 col-md-8">
+                        <div class="media flex-column flex-md-row">
+                            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                <h4 class="m-0">Order Tracking</h4>
+                                <p>Track your placed orders</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </button>
+        </h2>
+    </div>
+    <div id="collapseTracking" class="collapse" data-bs-parent="#bulk-energy-accordion">
+        <div class="card-body">
+            <table class="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Energy Amount</th>
+                        <th>Remaining Energy</th>
+                        <th>Lock Duration</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="tracking-table-body"></tbody>
+            </table>
+            <div id="tracking-form" style="display: none; margin-top: 20px;">
+                <h5>Cancel Order</h5>
+                <p>Order ID: <span id="selected-order-id-tracking"></span></p>
+                <p>Refund Amount: <span id="refund-amount">0.00 TRX</span></p>
+                <a href="#" class="btn input-btn btn-sm mt-2" id="cancel-order-button">Cancel Order</a>
+                <div id="cancel-status" class="status-message" style="display: none;">
+                    <p id="cancel-message"></p>
+                    <p>Transaction Hash: <a id="cancel-hash" href="#" target="_blank" style="display: none;"></a></p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
