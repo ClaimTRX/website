@@ -457,7 +457,7 @@ async function fetchOpenOrders() {
                 <td>${order.remaining_energy.toLocaleString()}</td>
                 <td>${displayedCft} CFT</td>
                 <td>${order.lock_duration} days</td>
-                <td><a href="#" class="sell-energy-btn" data-order-id="${order.order_id}" data-remaining="${order.remaining_energy}" data-receiver="${order.receiver_address}" data-lock-duration="${order.lock_duration}" data-total-payment="${order.total_payment}" data-energy-amount="${order.energy_amount}" data-buyer="${order.buyer_address}" data-prorated-factor="${proratedFactor}">Sell Energy</a></td>
+                <td><a href="#" class="sell-energy-btn" data-order-id="${order.order_id}" data-remaining="${order.remaining_energy}" data-receiver="${order.receiver_address}" data-lock-duration="${order.lock_duration}" data-total-payment="${order.total_payment}" data-energy-amount="${order.energy_amount}" data-buyer="${order.buyer_address}" data-prorated-cft="${displayedCft}">Sell Energy</a></td>
             `;
             tableBody.appendChild(row);
         });
@@ -472,7 +472,7 @@ async function fetchOpenOrders() {
                 const totalPayment = parseFloat(btn.getAttribute("data-total-payment"));
                 const energyAmount = parseInt(btn.getAttribute("data-energy-amount"));
                 const buyerAddress = btn.getAttribute("data-buyer");
-                const proratedFactor = parseFloat(btn.getAttribute("data-prorated-factor")) || 1;
+                const proratedCft = parseFloat(btn.getAttribute("data-prorated-cft")) || 0;
 
                 document.getElementById("selected-order-id").textContent = orderId;
                 document.getElementById("delegate-amount").max = remaining;
@@ -481,21 +481,21 @@ async function fetchOpenOrders() {
                 document.getElementById("fulfillment-form").dataset.totalPayment = totalPayment;
                 document.getElementById("fulfillment-form").dataset.energyAmount = energyAmount;
                 document.getElementById("fulfillment-form").dataset.buyerAddress = buyerAddress;
-                document.getElementById("fulfillment-form").dataset.proratedFactor = proratedFactor;
+                document.getElementById("fulfillment-form").dataset.proratedCft = proratedCft;
 
-                // Initial estimated earnings based on prorated factor
+                // Initial estimated earnings based on prorated CFT
                 const delegateAmount = parseInt(document.getElementById("delegate-amount").value) || remaining;
-                const estimatedEarnings = (delegateAmount / energyAmount) * totalPayment * CFT_PER_TRX * proratedFactor;
-                console.log(`Order ${orderId}: Initial estimated earnings ${estimatedEarnings.toFixed(2)} CFT (delegate: ${delegateAmount}, factor: ${proratedFactor})`);
-                document.getElementById("estimated-earnings").textContent = `${estimatedEarnings.toFixed(2)} CFT`;
+                const estimatedEarnings = (delegateAmount / remaining) * proratedCft;
+                console.log(`Order ${orderId}: Initial estimated earnings ${estimatedEarnings.toFixed(4)} CFT (delegate: ${delegateAmount}, prorated CFT: ${proratedCft})`);
+                document.getElementById("estimated-earnings").textContent = `${estimatedEarnings.toFixed(4)} CFT`;
                 document.getElementById("fulfillment-form").style.display = "block";
 
                 // Update earnings on input change
                 document.getElementById("delegate-amount").addEventListener("input", () => {
                     const newDelegateAmount = parseInt(document.getElementById("delegate-amount").value) || 0;
-                    const newEstimatedEarnings = (newDelegateAmount / energyAmount) * totalPayment * CFT_PER_TRX * proratedFactor;
-                    console.log(`Order ${orderId}: Updated earnings to ${newEstimatedEarnings.toFixed(2)} CFT (new delegate: ${newDelegateAmount}, factor: ${proratedFactor})`);
-                    document.getElementById("estimated-earnings").textContent = `${newEstimatedEarnings.toFixed(2)} CFT`;
+                    const newEstimatedEarnings = (newDelegateAmount / remaining) * proratedCft;
+                    console.log(`Order ${orderId}: Updated earnings to ${newEstimatedEarnings.toFixed(4)} CFT (new delegate: ${newDelegateAmount}, prorated CFT: ${proratedCft})`);
+                    document.getElementById("estimated-earnings").textContent = `${newEstimatedEarnings.toFixed(4)} CFT`;
                 });
             });
         });
