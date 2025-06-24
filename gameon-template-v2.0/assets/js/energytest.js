@@ -484,8 +484,17 @@ async function fetchOpenOrders() {
                 document.getElementById("fulfillment-form").dataset.proratedCft = proratedCft;
 
                 const delegateInput = document.getElementById("delegate-amount");
-                delegateInput.removeEventListener("input", updateEarnings); // Remove existing listener to prevent duplicates
-                delegateInput.addEventListener("input", updateEarnings); // Add single listener
+                // Remove existing listener to prevent duplicates
+                delegateInput.removeEventListener("input", updateEarnings);
+                // Define updateEarnings function within the scope
+                function updateEarnings() {
+                    const newDelegateAmount = parseInt(delegateInput.value) || 0;
+                    const newEstimatedEarnings = (newDelegateAmount / remaining) * proratedCft;
+                    console.log(`Order ${orderId}: Updated earnings to ${newEstimatedEarnings.toFixed(4)} CFT (new delegate: ${newDelegateAmount}, prorated CFT: ${proratedCft}, remaining: ${remaining})`);
+                    document.getElementById("estimated-earnings").textContent = `${newEstimatedEarnings.toFixed(4)} CFT`;
+                }
+                // Add the listener
+                delegateInput.addEventListener("input", updateEarnings);
 
                 // Initial estimated earnings
                 const delegateAmount = parseInt(delegateInput.value) || remaining;
@@ -493,13 +502,6 @@ async function fetchOpenOrders() {
                 console.log(`Order ${orderId}: Initial estimated earnings ${estimatedEarnings.toFixed(4)} CFT (delegate: ${delegateAmount}, prorated CFT: ${proratedCft}, remaining: ${remaining})`);
                 document.getElementById("estimated-earnings").textContent = `${estimatedEarnings.toFixed(4)} CFT`;
                 document.getElementById("fulfillment-form").style.display = "block";
-
-                function updateEarnings() {
-                    const newDelegateAmount = parseInt(delegateInput.value) || 0;
-                    const newEstimatedEarnings = (newDelegateAmount / remaining) * proratedCft;
-                    console.log(`Order ${orderId}: Updated earnings to ${newEstimatedEarnings.toFixed(4)} CFT (new delegate: ${newDelegateAmount}, prorated CFT: ${proratedCft}, remaining: ${remaining})`);
-                    document.getElementById("estimated-earnings").textContent = `${newEstimatedEarnings.toFixed(4)} CFT`;
-                }
             });
         });
     } catch (error) {
@@ -823,10 +825,26 @@ async function fetchSellerFulfillments() {
                 };
             }
             fulfillmentsByOrder[orderId].energy_amount += f.energy_amount;
-            fulfillmentsByOrder[orderId].cft_paid += parseFloat(f.payment_address === ESCROW_ADDRESS ? "0.00" : f.cft_paid || "0.00"); // Assume 0.00 if payment not from escrow
+            // Use actual cft_paid if available, otherwise estimate from order data if needed
+            fulfillmentsByOrder[orderId].cft_paid += parseFloat(f.cft_paid || "0.00"); // Rely on server-provided cft_paid
             fulfillmentsByOrder[orderId].fulfillment_ids.push(f.fulfillment_id);
             if (new Date(f.lock_end) > new Date(fulfillmentsByOrder[orderId].lock_end)) {
                 fulfillmentsByOrder[orderId].lock_end = f.lock_end; // Use latest lock end
+            }
+        }
+
+        // Validate and adjust lock_end based on latest delegation if possible
+        for (const orderId in fulfillmentsByOrder) {
+            const f = fulfillmentsByOrder[orderId];
+            const latestFulfillment = data.fulfillments.find(fil => fil.order_id === orderId && fil.status === "confirmed");
+            if (latestFulfillment) {
+                const delegationStart = new Date(latestFulfillment.created_at).getTime();
+                const lockPeriodDays = parseFloat(latestFulfillment.lock_duration) || 1.03184; // Default to 1.03184 days if not provided
+                const expectedLockEnd = new Date(delegationStart + lockPeriodDays * 24 * 60 * 60 * 1000);
+                if (new Date(f.lock_end) < expectedLockEnd) {
+                    f.lock_end = expectedLockEnd.toISOString();
+                    console.log(`Adjusted lock_end for Order ${orderId} to ${expectedLockEnd.toISOString()} based on delegation period`);
+                }
             }
         }
 
@@ -864,74 +882,3 @@ async function fetchSellerFulfillments() {
         console.error("Error fetching seller fulfillments:", error);
     }
 }
-
-// Undelegate energy
-async function undelegateEnergy(fulfillmentId, energyAmount, receiverAddress) {
-    try {
-        const sunRequired = energyAmount * PRICE_PER_ENERGY;
-        const tx = await tronWeb.transactionBuilder.undelegateResource(
-            sunRequired,
-            receiverAddress,
-            "ENERGY",
-            userAddress
-        );
-        const signed = await tronWeb.trx.sign(tx);
-        const result = await tronWeb.trx.broadcast(signed);
-        console.log("Undelegation sent:", JSON.stringify(result));
-
-        if (!result.result || !result.txid) {
-            throw new Error("Undelegation failed");
-        }
-
-        const response = await fetch(`${SERVER_URL}/api/undelegate-energy`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Accept": "application/json" },
-            body: JSON.stringify({ fulfillmentId, txId: result.txid })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
-        }
-
-        alert("Energy undelegated successfully!");
-        await fetchSellerFulfillments();
-    } catch (error) {
-        console.error("Error undelegating energy:", error);
-        alert(`Error undelegating energy: ${error.message}`);
-    }
-}
-
-// Event listeners
-document.addEventListener("DOMContentLoaded", async () => {
-    try {
-        await autoConnectWallet();
-        const connectButton = document.getElementById("connect-button");
-        if (connectButton) connectButton.addEventListener("click", connectWallet);
-
-        const energyAmountInput = document.getElementById("energy-amount");
-        if (energyAmountInput) energyAmountInput.addEventListener("input", updateTotalPayment);
-
-        const receiverAddressInput = document.getElementById("receiver-address");
-        if (receiverAddressInput) receiverAddressInput.addEventListener("input", updateTotalPayment);
-
-        const lockDurationInput = document.getElementById("lock-duration");
-        if (lockDurationInput) lockDurationInput.addEventListener("input", updateTotalPayment);
-
-        const createOrderButton = document.getElementById("create-order-button");
-        if (createOrderButton) createOrderButton.addEventListener("click", createOrder);
-
-        const fulfillOrderButton = document.getElementById("fulfill-order-button");
-        if (fulfillOrderButton) fulfillOrderButton.addEventListener("click", fulfillOrder);
-
-        const cancelOrderButton = document.getElementById("cancel-order-button");
-        if (cancelOrderButton) cancelOrderButton.addEventListener("click", cancelOrder);
-
-        updateTotalPayment();
-        await fetchOpenOrders();
-        await fetchSellerFulfillments();
-        await fetchBuyerOrders();
-    } catch (error) {
-        console.error("Error in DOMContentLoaded:", error);
-        alert("An error occurred during initialization. Please try refreshing the page.");
-    }
-});
