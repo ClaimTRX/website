@@ -82,8 +82,10 @@ async function autoConnectWallet() {
         if (window.tronLink && window.tronLink.ready) {
             await checkTronLinkInstalled();
             updateWalletUI(true);
+            await checkActiveDelegations(); // Check delegations on load
             await fetchOpenOrders();
             await fetchSellerFulfillments();
+            await fetchBuyerOrders();
         } else {
             console.log("TronLink not ready, skipping auto-connect.");
             updateWalletUI(false);
@@ -92,6 +94,28 @@ async function autoConnectWallet() {
         console.error("Auto-connect failed:", error.message);
         updateWalletUI(false);
         alert("Please ensure TronLink is installed and logged in.");
+    }
+}
+
+// Add this new helper function after checkTronLinkInstalled
+async function checkActiveDelegations() {
+    if (!userAddress) return;
+    try {
+        console.log("Checking active delegations for:", userAddress);
+        const response = await fetch(`${SERVER_URL}/api/active-delegations?address=${userAddress}`, {
+            headers: { "Accept": "application/json" }
+        });
+        if (!response.ok) {
+            console.warn(`Active delegations check failed with status: ${response.status}`);
+            return;
+        }
+        const data = await response.json();
+        if (data.success) {
+            window.activeDelegations = data.delegations || []; // Store globally for reuse
+            console.log("Active delegations:", window.activeDelegations);
+        }
+    } catch (error) {
+        console.error("Error checking active delegations:", error.message);
     }
 }
 
@@ -386,12 +410,21 @@ async function fetchOpenOrders() {
         tableBody.innerHTML = "";
 
         data.orders.forEach(order => {
-            const remainingCft = ((order.remaining_energy / order.energy_amount) * order.total_payment * CFT_PER_TRX).toFixed(2);
+            const fullCft = ((order.remaining_energy / order.energy_amount) * order.total_payment * CFT_PER_TRX).toFixed(2);
+            let displayedCft = fullCft;
+            if (window.activeDelegations) {
+                const overlappingDelegation = window.activeDelegations.find(d => d.receiver_address === order.receiver_address);
+                if (overlappingDelegation && new Date(overlappingDelegation.expire_time) > new Date()) {
+                    const remainingDays = (new Date(overlappingDelegation.expire_time) - new Date()) / (1000 * 60 * 60 * 24);
+                    const proratedFactor = remainingDays / order.lock_duration;
+                    displayedCft = (parseFloat(fullCft) * proratedFactor).toFixed(2);
+                }
+            }
             const row = document.createElement("tr");
             row.innerHTML = `
                 <td>${order.order_id}</td>
                 <td>${order.remaining_energy.toLocaleString()}</td>
-                <td>${remainingCft} CFT</td>
+                <td>${displayedCft} CFT</td>
                 <td>${order.lock_duration} days</td>
                 <td><a href="#" class="sell-energy-btn" data-order-id="${order.order_id}" data-remaining="${order.remaining_energy}" data-receiver="${order.receiver_address}" data-lock-duration="${order.lock_duration}" data-total-payment="${order.total_payment}" data-energy-amount="${order.energy_amount}" data-buyer="${order.buyer_address}">Sell Energy</a></td>
             `;
@@ -416,7 +449,7 @@ async function fetchOpenOrders() {
                 document.getElementById("fulfillment-form").dataset.energyAmount = energyAmount;
                 document.getElementById("fulfillment-form").dataset.buyerAddress = buyerAddress;
                 document.getElementById("fulfillment-form").style.display = "block";
-                document.getElementById("estimated-earnings").textContent = "0.00 CFT"; // Reset earnings
+                document.getElementById("estimated-earnings").textContent = displayedCft; // Use prorated earnings
             });
         });
     } catch (error) {
@@ -478,41 +511,41 @@ async function fulfillOrder() {
     }
 
     let lockPeriodBlocks = daysToBlocks(originalLockDuration);
-    const existingDelegation = await checkExistingDelegation(userAddress, receiverAddress);
     let actualLockDurationDays = originalLockDuration;
-    if (existingDelegation && existingDelegation.expireTime > Date.now()) {
-        const remainingMs = existingDelegation.expireTime - Date.now();
-        const remainingDays = remainingMs / (1000 * 60 * 60 * 24); // Exact days remaining
-        const confirmMessage = `You already have ${existingDelegation.energy.toLocaleString()} energy staked to this address with ${remainingDays.toFixed(2)} days remaining. Do you want to stake ${energyAmount.toLocaleString()} more energy and lock for ${remainingDays.toFixed(2)} days?`;
-        if (!window.confirm(confirmMessage)) {
-            alert("Fulfillment cancelled.");
-            return;
-        }
-        lockPeriodBlocks = Math.ceil(remainingMs / (BLOCK_INTERVAL_SECONDS * 1000)) + ONE_HOUR_BLOCKS;
-        actualLockDurationDays = remainingDays; // Use remaining days for payment
-    } else {
-        console.warn("No active delegation detected or unable to verify. Proceeding with default lock duration.");
-        const confirmMessage = `No active delegation detected to ${receiverAddress}, or verification failed. Proceed with a new delegation of ${energyAmount.toLocaleString()} energy for ${originalLockDuration} days?`;
-        if (!window.confirm(confirmMessage)) {
-            alert("Fulfillment cancelled.");
-            return;
+    if (window.activeDelegations) {
+        const overlappingDelegation = window.activeDelegations.find(d => d.receiver_address === receiverAddress);
+        if (overlappingDelegation && new Date(overlappingDelegation.expire_time) > new Date()) {
+            const remainingMs = new Date(overlappingDelegation.expire_time) - new Date();
+            actualLockDurationDays = remainingMs / (1000 * 60 * 60 * 24); // Exact days remaining
+            lockPeriodBlocks = Math.ceil(remainingMs / (BLOCK_INTERVAL_SECONDS * 1000)) + ONE_HOUR_BLOCKS;
+            const confirmMessage = `Existing delegation to ${receiverAddress} expires in ${actualLockDurationDays.toFixed(2)} days. Proceed with ${energyAmount.toLocaleString()} energy for ${actualLockDurationDays.toFixed(2)} days?`;
+            if (!window.confirm(confirmMessage)) {
+                alert("Fulfillment cancelled.");
+                return;
+            }
+        } else {
+            const confirmMessage = `No active delegation to ${receiverAddress}. Proceed with ${energyAmount.toLocaleString()} energy for ${originalLockDuration} days?`;
+            if (!window.confirm(confirmMessage)) {
+                alert("Fulfillment cancelled.");
+                return;
+            }
         }
     }
 
     if (lockPeriodBlocks > MAX_LOCK_BLOCKS) {
         console.warn(`Lock period ${lockPeriodBlocks} blocks exceeds maximum. Adjusting to ${MAX_LOCK_BLOCKS} blocks.`);
         lockPeriodBlocks = MAX_LOCK_BLOCKS;
-        actualLockDurationDays = MAX_LOCK_BLOCKS / (86400 / BLOCK_INTERVAL_SECONDS) / 24; // Adjust days
+        actualLockDurationDays = MAX_LOCK_BLOCKS / (86400 / BLOCK_INTERVAL_SECONDS) / 24;
         alert(`Lock period adjusted to maximum ${actualLockDurationDays.toFixed(2)} days.`);
     } else if (lockPeriodBlocks <= 0) {
         console.warn(`Lock period ${lockPeriodBlocks} blocks is invalid. Setting to default ${DEFAULT_LOCK_BLOCKS} blocks.`);
         lockPeriodBlocks = DEFAULT_LOCK_BLOCKS;
-        actualLockDurationDays = DEFAULT_LOCK_BLOCKS / (86400 / BLOCK_INTERVAL_SECONDS) / 24; // Adjust days
+        actualLockDurationDays = DEFAULT_LOCK_BLOCKS / (86400 / BLOCK_INTERVAL_SECONDS) / 24;
         alert(`Lock period set to default ${actualLockDurationDays.toFixed(2)} days.`);
     }
 
     const adjustedLockDuration = Math.ceil(lockPeriodBlocks * BLOCK_INTERVAL_SECONDS / 86400);
-    const proratedPayment = (totalPayment / originalLockDuration) * actualLockDurationDays; // Prorate payment
+    const proratedPayment = (totalPayment / originalLockDuration) * actualLockDurationDays;
 
     try {
         document.getElementById("fulfillment-status").style.display = "block";
@@ -548,7 +581,8 @@ async function fulfillOrder() {
                 txId: result.txid,
                 paymentAddress,
                 lockDuration: adjustedLockDuration,
-                proratedPayment: proratedPayment.toFixed(6)
+                proratedPayment: proratedPayment.toFixed(6),
+                buyerAddress
             })
         });
 
