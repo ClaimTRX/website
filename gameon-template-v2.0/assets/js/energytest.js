@@ -486,16 +486,26 @@ async function fetchOpenOrders() {
                 // Initial estimated earnings based on prorated CFT
                 const delegateAmount = parseInt(document.getElementById("delegate-amount").value) || remaining;
                 const estimatedEarnings = (delegateAmount / remaining) * proratedCft;
-                console.log(`Order ${orderId}: Initial estimated earnings ${estimatedEarnings.toFixed(4)} CFT (delegate: ${delegateAmount}, prorated CFT: ${proratedCft})`);
-                document.getElementById("estimated-earnings").textContent = `${estimatedEarnings.toFixed(4)} CFT`;
+                console.log(`Order ${orderId}: Initial estimated earnings ${estimatedEarnings.toFixed(4)} CFT (delegate: ${delegateAmount}, prorated CFT: ${proratedCft}, remaining: ${remaining})`);
+                if (estimatedEarnings > proratedCft) {
+                    console.warn(`Earnings ${estimatedEarnings.toFixed(4)} CFT exceeds prorated CFT ${proratedCft}, capping at ${proratedCft.toFixed(4)} CFT`);
+                    document.getElementById("estimated-earnings").textContent = `${proratedCft.toFixed(4)} CFT`;
+                } else {
+                    document.getElementById("estimated-earnings").textContent = `${estimatedEarnings.toFixed(4)} CFT`;
+                }
                 document.getElementById("fulfillment-form").style.display = "block";
 
                 // Update earnings on input change
                 document.getElementById("delegate-amount").addEventListener("input", () => {
                     const newDelegateAmount = parseInt(document.getElementById("delegate-amount").value) || 0;
                     const newEstimatedEarnings = (newDelegateAmount / remaining) * proratedCft;
-                    console.log(`Order ${orderId}: Updated earnings to ${newEstimatedEarnings.toFixed(4)} CFT (new delegate: ${newDelegateAmount}, prorated CFT: ${proratedCft})`);
-                    document.getElementById("estimated-earnings").textContent = `${newEstimatedEarnings.toFixed(4)} CFT`;
+                    console.log(`Order ${orderId}: Updated earnings to ${newEstimatedEarnings.toFixed(4)} CFT (new delegate: ${newDelegateAmount}, prorated CFT: ${proratedCft}, remaining: ${remaining})`);
+                    if (newEstimatedEarnings > proratedCft) {
+                        console.warn(`Earnings ${newEstimatedEarnings.toFixed(4)} CFT exceeds prorated CFT ${proratedCft}, capping at ${proratedCft.toFixed(4)} CFT`);
+                        document.getElementById("estimated-earnings").textContent = `${proratedCft.toFixed(4)} CFT`;
+                    } else {
+                        document.getElementById("estimated-earnings").textContent = `${newEstimatedEarnings.toFixed(4)} CFT`;
+                    }
                 });
             });
         });
