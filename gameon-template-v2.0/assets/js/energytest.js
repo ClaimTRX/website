@@ -438,6 +438,7 @@ async function fetchOpenOrders() {
 
         const currentBlock = await tronWeb.trx.getCurrentBlock();
         const currentBlockNumber = currentBlock.block_header.raw_data.number;
+        const currentTimeMs = Date.now();
 
         data.orders.forEach(order => {
             const fullCft = ((order.remaining_energy / order.energy_amount) * order.total_payment * CFT_PER_TRX).toFixed(2);
@@ -446,10 +447,12 @@ async function fetchOpenOrders() {
             if (window.activeDelegations && window.activeDelegations.length) {
                 const overlappingDelegations = window.activeDelegations.filter(d => d.receiver_address === order.receiver_address);
                 if (overlappingDelegations.length > 0) {
-                    // Find the most recent delegation by expire_time
-                    const latestDelegation = overlappingDelegations.reduce((latest, current) => 
-                        new Date(latest.expire_time) > new Date(current.expire_time) ? latest : current
-                    );
+                    // Find the delegation with the nearest future expire_time (most recent unstake time)
+                    const latestDelegation = overlappingDelegations.reduce((latest, current) => {
+                        const latestTime = new Date(latest.expire_time).getTime();
+                        const currentTime = new Date(current.expire_time).getTime();
+                        return (latestTime > currentTimeMs && latestTime - currentTimeMs < (new Date(latest.expire_time).getTime() - currentTimeMs)) ? latest : current;
+                    });
                     if (new Date(latestDelegation.expire_time) > new Date()) {
                         const remainingMs = new Date(latestDelegation.expire_time) - new Date();
                         const remainingBlocks = Math.max(0, Math.floor(remainingMs / (BLOCK_INTERVAL_SECONDS * 1000)));
@@ -648,8 +651,7 @@ async function fulfillOrder() {
         await pollFulfillmentStatus(data.fulfillmentId);
     } catch (error) {
         console.error("Error fulfilling order:", error);
-       document.getElementById("fulfillment-message").textContent = `Error: ${error.message}`;
-
+        document.getElementById("fulfillment-message").textContent = `Error: ${error.message}`;
     }
 }
 
