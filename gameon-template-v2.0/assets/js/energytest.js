@@ -115,7 +115,7 @@ async function checkActiveDelegations() {
                 console.warn("No delegations data from /api/active-delegations:", data.message);
             }
         } else {
-            console.warn(`Active delegations check failed with status: ${response.status}, falling back to /api/check-delegation`);
+            console.warn(`Active delegations check failed with status: ${response.status}, falling back to /api/check-delegation. Error: ${await response.text()}`);
             const ordersResponse = await fetch(`${SERVER_URL}/api/open-orders`, { headers: { "Accept": "application/json" } });
             if (ordersResponse.ok) {
                 const ordersData = await ordersResponse.json();
@@ -149,14 +149,24 @@ async function checkActiveDelegations() {
 async function connectWallet() {
     try {
         if (!window.tronLink) {
-            throw new Error("TronLink extension not detected. Please install it from the Chrome Web Store.");
+            throw new Error("TronLink extension not detected. Please install it from the Chrome Web Store: https://chrome.google.com/webstore/detail/tronlink/ibnejdfjmmkpcnlpebklmnkoeoihofec");
         }
         if (!window.tronLink.ready) {
             throw new Error("TronLink is not ready. Please log in to your wallet.");
         }
 
-        // Request account access
-        const accounts = await window.tronLink.request({ method: "tron_requestAccounts" });
+        // Retry account request up to 3 times
+        let accounts;
+        for (let i = 0; i < 3; i++) {
+            try {
+                accounts = await window.tronLink.request({ method: "tron_requestAccounts" });
+                if (accounts && accounts.length) break;
+            } catch (requestError) {
+                console.warn(`Attempt ${i + 1}/3 to request accounts failed: ${requestError.message}`);
+                if (i === 2) throw new Error("Failed to request accounts after 3 attempts.");
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+        }
         if (!accounts || !accounts.length) {
             throw new Error("No accounts returned from TronLink. Please ensure you are logged in.");
         }
@@ -459,10 +469,10 @@ async function fetchOpenOrders() {
                     const delegationExpireTimeMs = new Date(overlappingDelegation.expire_time).getTime();
                     remainingBlocks = Math.max(0, Math.floor((delegationExpireTimeMs - currentTimeMs) / (BLOCK_INTERVAL_SECONDS * 1000)));
                     if (remainingBlocks > 0) {
-                        const proratedFactor = Math.min(1, remainingBlocks / (daysToBlocks(order.lock_duration) || 1));
-                        displayedCft = (parseFloat(fullCft) * proratedFactor).toFixed(2);
+                        const proratedFactor = remainingBlocks / (daysToBlocks(order.lock_duration) || 1);
+                        displayedCft = (parseFloat(fullCft) * Math.min(1, proratedFactor)).toFixed(2);
                         const remainingDays = remainingBlocks * BLOCK_INTERVAL_SECONDS / (3600 * 24);
-                        console.log(`Order ${order.order_id}: Using existing delegation expire_time ${new Date(delegationExpireTimeMs).toISOString()}, Prorated CFT from ${fullCft} to ${displayedCft} (factor: ${proratedFactor}, remaining blocks: ${remainingBlocks}, remaining days: ${remainingDays.toFixed(2)}, current block: ${currentBlockNumber})`);
+                        console.log(`Order ${order.order_id}: Using existing delegation expire_time ${new Date(delegationExpireTimeMs).toISOString()}, Prorated CFT from ${fullCft} to ${displayedCft} (factor: ${proratedFactor.toFixed(4)}, remaining blocks: ${remainingBlocks}, remaining days: ${remainingDays.toFixed(2)}, current block: ${currentBlockNumber})`);
                     } else {
                         console.log(`Order ${order.order_id}: Delegation expired, using full CFT ${fullCft}`);
                     }
@@ -503,22 +513,23 @@ async function fetchOpenOrders() {
                 document.getElementById("fulfillment-form").dataset.proratedCft = proratedCft;
 
                 const delegateInput = document.getElementById("delegate-amount");
-                delegateInput.removeEventListener("input", updateEarnings); // Remove existing listener to prevent duplicates
-                delegateInput.addEventListener("input", updateEarnings); // Add single listener
 
-                // Initial estimated earnings
-                const delegateAmount = parseInt(delegateInput.value) || remaining;
-                const estimatedEarnings = (delegateAmount / remaining) * proratedCft;
-                console.log(`Order ${orderId}: Initial estimated earnings ${estimatedEarnings.toFixed(4)} CFT (delegate: ${delegateAmount}, prorated CFT: ${proratedCft}, remaining: ${remaining})`);
-                document.getElementById("estimated-earnings").textContent = `${estimatedEarnings.toFixed(4)} CFT`;
-                document.getElementById("fulfillment-form").style.display = "block";
-
+                // Define updateEarnings function globally
                 function updateEarnings() {
                     const newDelegateAmount = parseInt(delegateInput.value) || 0;
                     const newEstimatedEarnings = (newDelegateAmount / remaining) * proratedCft;
                     console.log(`Order ${orderId}: Updated earnings to ${newEstimatedEarnings.toFixed(4)} CFT (new delegate: ${newDelegateAmount}, prorated CFT: ${proratedCft}, remaining: ${remaining})`);
                     document.getElementById("estimated-earnings").textContent = `${newEstimatedEarnings.toFixed(4)} CFT`;
                 }
+
+                // Remove existing listener to prevent duplicates and add new one
+                delegateInput.removeEventListener("input", updateEarnings);
+                delegateInput.addEventListener("input", updateEarnings);
+
+                // Initial estimated earnings
+                const delegateAmount = parseInt(delegateInput.value) || remaining;
+                updateEarnings(); // Call the function directly for initial value
+                document.getElementById("fulfillment-form").style.display = "block";
             });
         });
     } catch (error) {
@@ -906,6 +917,14 @@ async function undelegateEnergy(fulfillmentId, energyAmount, receiverAddress) {
         console.error("Error undelegating energy:", error);
         alert(`Error undelegating energy: ${error.message}`);
     }
+}
+
+// Update earnings function (defined globally)
+function updateEarnings(delegateInput, remaining, proratedCft, orderId) {
+    const newDelegateAmount = parseInt(delegateInput.value) || 0;
+    const newEstimatedEarnings = (newDelegateAmount / remaining) * proratedCft;
+    console.log(`Order ${orderId}: Updated earnings to ${newEstimatedEarnings.toFixed(4)} CFT (new delegate: ${newDelegateAmount}, prorated CFT: ${proratedCft}, remaining: ${remaining})`);
+    document.getElementById("estimated-earnings").textContent = `${newEstimatedEarnings.toFixed(4)} CFT`;
 }
 
 // Event listeners
