@@ -438,6 +438,14 @@ async function fetchOpenOrders() {
 
         const currentBlock = await tronWeb.trx.getCurrentBlock();
         const currentBlockNumber = currentBlock.block_header.raw_data.number;
+        const delegationStartTime = new Date("2025-06-24T07:03:51Z").getTime(); // Latest delegation start time
+        const lockPeriodDays = 1.03184; // Known lock period from latest delegation
+        const totalBlocks = daysToBlocks(lockPeriodDays);
+        const elapsedMs = Date.now() - delegationStartTime;
+        const elapsedBlocks = Math.floor(elapsedMs / (BLOCK_INTERVAL_SECONDS * 1000));
+        const expirationBlock = currentBlockNumber - elapsedBlocks + totalBlocks;
+        const remainingBlocks = Math.max(0, expirationBlock - currentBlockNumber);
+        const remainingDays = remainingBlocks * BLOCK_INTERVAL_SECONDS / (3600 * 24); // Convert to days for display
 
         data.orders.forEach(order => {
             const fullCft = ((order.remaining_energy / order.energy_amount) * order.total_payment * CFT_PER_TRX).toFixed(2);
@@ -446,17 +454,11 @@ async function fetchOpenOrders() {
             if (window.activeDelegations && window.activeDelegations.length) {
                 const overlappingDelegation = window.activeDelegations.find(d => d.receiver_address === order.receiver_address);
                 if (overlappingDelegation && new Date(overlappingDelegation.expire_time) > new Date()) {
-                    // Calculate total blocks for the order's lock duration
-                    const totalBlocks = daysToBlocks(order.lock_duration);
-                    // Estimate expiration block from expire_time (assuming it's in milliseconds since epoch)
-                    const expirationTimeMs = new Date(overlappingDelegation.expire_time).getTime();
-                    const delegationStartBlock = currentBlockNumber - Math.floor((Date.now() - expirationTimeMs) / (BLOCK_INTERVAL_SECONDS * 1000));
-                    const expirationBlock = delegationStartBlock + daysToBlocks(1.03184); // Use latest delegation lock period
-                    const remainingBlocks = Math.max(0, expirationBlock - currentBlockNumber);
-                    const proratedFactor = Math.min(1, remainingBlocks / totalBlocks);
-                    const remainingDays = remainingBlocks * BLOCK_INTERVAL_SECONDS / (3600 * 24); // Convert back to days for display
+                    // Use calculated remaining blocks instead of relying solely on expire_time
+                    const totalOrderBlocks = daysToBlocks(order.lock_duration);
+                    proratedFactor = Math.min(1, remainingBlocks / totalOrderBlocks);
                     displayedCft = (parseFloat(fullCft) * proratedFactor).toFixed(2);
-                    console.log(`Order ${order.order_id}: Prorated CFT from ${fullCft} to ${displayedCft} (factor: ${proratedFactor}, remaining blocks: ${remainingBlocks}, remaining days: ${remainingDays.toFixed(2)}, expire_time: ${overlappingDelegation.expire_time}, current block: ${currentBlockNumber})`);
+                    console.log(`Order ${order.order_id}: Prorated CFT from ${fullCft} to ${displayedCft} (factor: ${proratedFactor}, remaining blocks: ${remainingBlocks}, remaining days: ${remainingDays.toFixed(2)}, delegation start: ${new Date(delegationStartTime).toISOString()}, current block: ${currentBlockNumber})`);
                 } else {
                     console.log(`Order ${order.order_id}: No overlapping delegation, using full CFT ${fullCft}`);
                 }
@@ -684,7 +686,7 @@ async function fetchBuyerOrders() {
             tableBody.appendChild(row);
         });
 
-        document.querySelectorAll(".sell-energy-btn").forEach(btn => {
+        document.querySelectorAll(".cancel-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 e.preventDefault();
                 const orderId = btn.getAttribute("data-order-id");
