@@ -436,6 +436,9 @@ async function fetchOpenOrders() {
         const tableBody = document.getElementById("marketplace-table-body");
         tableBody.innerHTML = "";
 
+        const currentBlock = await tronWeb.trx.getCurrentBlock();
+        const currentBlockNumber = currentBlock.block_header.raw_data.number;
+
         data.orders.forEach(order => {
             const fullCft = ((order.remaining_energy / order.energy_amount) * order.total_payment * CFT_PER_TRX).toFixed(2);
             let displayedCft = fullCft;
@@ -443,13 +446,17 @@ async function fetchOpenOrders() {
             if (window.activeDelegations && window.activeDelegations.length) {
                 const overlappingDelegation = window.activeDelegations.find(d => d.receiver_address === order.receiver_address);
                 if (overlappingDelegation && new Date(overlappingDelegation.expire_time) > new Date()) {
-                    const remainingMs = new Date(overlappingDelegation.expire_time) - new Date();
-                    let remainingDays = remainingMs / (1000 * 60 * 60 * 24);
-                    // Cap remainingDays to the order's lock duration to prevent over-proration
-                    remainingDays = Math.min(remainingDays, order.lock_duration);
-                    proratedFactor = remainingDays / order.lock_duration;
+                    // Calculate total blocks for the order's lock duration
+                    const totalBlocks = daysToBlocks(order.lock_duration);
+                    // Estimate expiration block from expire_time (assuming it's in milliseconds since epoch)
+                    const expirationTimeMs = new Date(overlappingDelegation.expire_time).getTime();
+                    const delegationStartBlock = currentBlockNumber - Math.floor((Date.now() - expirationTimeMs) / (BLOCK_INTERVAL_SECONDS * 1000));
+                    const expirationBlock = delegationStartBlock + daysToBlocks(1.03184); // Use latest delegation lock period
+                    const remainingBlocks = Math.max(0, expirationBlock - currentBlockNumber);
+                    const proratedFactor = Math.min(1, remainingBlocks / totalBlocks);
+                    const remainingDays = remainingBlocks * BLOCK_INTERVAL_SECONDS / (3600 * 24); // Convert back to days for display
                     displayedCft = (parseFloat(fullCft) * proratedFactor).toFixed(2);
-                    console.log(`Order ${order.order_id}: Prorated CFT from ${fullCft} to ${displayedCft} (factor: ${proratedFactor}, remaining days: ${remainingDays}, expire_time: ${overlappingDelegation.expire_time})`);
+                    console.log(`Order ${order.order_id}: Prorated CFT from ${fullCft} to ${displayedCft} (factor: ${proratedFactor}, remaining blocks: ${remainingBlocks}, remaining days: ${remainingDays.toFixed(2)}, expire_time: ${overlappingDelegation.expire_time}, current block: ${currentBlockNumber})`);
                 } else {
                     console.log(`Order ${order.order_id}: No overlapping delegation, using full CFT ${fullCft}`);
                 }
@@ -677,7 +684,7 @@ async function fetchBuyerOrders() {
             tableBody.appendChild(row);
         });
 
-        document.querySelectorAll(".cancel-btn").forEach(btn => {
+        document.querySelectorAll(".sell-energy-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 e.preventDefault();
                 const orderId = btn.getAttribute("data-order-id");
