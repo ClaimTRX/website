@@ -497,4 +497,18 @@ async function fetchOpenOrders() {
                 const delegateAmount = parseInt(delegateInput.value) || remaining;
                 const estimatedEarnings = (delegateAmount / remaining) * proratedCft;
                 console.log(`Order ${orderId}: Initial estimated earnings ${estimatedEarnings.toFixed(4)} CFT (delegate: ${delegateAmount}, prorated CFT: ${proratedCft}, remaining: ${remaining})`);
-                document.getElementById("estimated-earnings").textContent = `${
+                document.getElementById("estimated-earnings").textContent = `${estimatedEarnings.toFixed(4)} CFT`;
+                document.getElementById("fulfillment-form").style.display = "block";
+
+                function updateEarnings() {
+                    const newDelegateAmount = parseInt(delegateInput.value) || 0;
+                    const newEstimatedEarnings = (newDelegateAmount / remaining) * proratedCft;
+                    console.log(`Order ${order.order_id}: Updated earnings to ${newEstimatedEarnings.toFixed(4)} CFT (new delegate: ${newDelegateAmount}, prorated CFT: ${proratedCft}, remaining: ${remaining})`);
+                    document.getElementById("estimated-earnings").textContent = `${newEstimatedEarnings.toFixed(4)} CFT`;
+                }
+            });
+        });
+    } catch (error) {
+        console.error("Error fetching open orders:", error);
+    }
+}
