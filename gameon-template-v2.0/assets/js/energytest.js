@@ -438,27 +438,29 @@ async function fetchOpenOrders() {
 
         const currentBlock = await tronWeb.trx.getCurrentBlock();
         const currentBlockNumber = currentBlock.block_header.raw_data.number;
-        const delegationStartTime = new Date("2025-06-24T07:03:51Z").getTime(); // Latest delegation start time
-        const lockPeriodDays = 1.03184; // Known lock period from latest delegation
-        const totalBlocks = daysToBlocks(lockPeriodDays);
-        const elapsedMs = Date.now() - delegationStartTime;
-        const elapsedBlocks = Math.floor(elapsedMs / (BLOCK_INTERVAL_SECONDS * 1000));
-        const expirationBlock = currentBlockNumber - elapsedBlocks + totalBlocks;
-        const remainingBlocks = Math.max(0, expirationBlock - currentBlockNumber);
-        const remainingDays = remainingBlocks * BLOCK_INTERVAL_SECONDS / (3600 * 24); // Convert to days for display
 
         data.orders.forEach(order => {
             const fullCft = ((order.remaining_energy / order.energy_amount) * order.total_payment * CFT_PER_TRX).toFixed(2);
             let displayedCft = fullCft;
             let proratedFactor = 1;
             if (window.activeDelegations && window.activeDelegations.length) {
-                const overlappingDelegation = window.activeDelegations.find(d => d.receiver_address === order.receiver_address);
-                if (overlappingDelegation && new Date(overlappingDelegation.expire_time) > new Date()) {
-                    // Use calculated remaining blocks instead of relying solely on expire_time
-                    const totalOrderBlocks = daysToBlocks(order.lock_duration);
-                    proratedFactor = Math.min(1, remainingBlocks / totalOrderBlocks);
-                    displayedCft = (parseFloat(fullCft) * proratedFactor).toFixed(2);
-                    console.log(`Order ${order.order_id}: Prorated CFT from ${fullCft} to ${displayedCft} (factor: ${proratedFactor}, remaining blocks: ${remainingBlocks}, remaining days: ${remainingDays.toFixed(2)}, delegation start: ${new Date(delegationStartTime).toISOString()}, current block: ${currentBlockNumber})`);
+                const overlappingDelegations = window.activeDelegations.filter(d => d.receiver_address === order.receiver_address);
+                if (overlappingDelegations.length > 0) {
+                    // Find the most recent delegation by expire_time
+                    const latestDelegation = overlappingDelegations.reduce((latest, current) => 
+                        new Date(latest.expire_time) > new Date(current.expire_time) ? latest : current
+                    );
+                    if (new Date(latestDelegation.expire_time) > new Date()) {
+                        const remainingMs = new Date(latestDelegation.expire_time) - new Date();
+                        const remainingBlocks = Math.max(0, Math.floor(remainingMs / (BLOCK_INTERVAL_SECONDS * 1000)));
+                        const totalOrderBlocks = daysToBlocks(order.lock_duration);
+                        proratedFactor = Math.min(1, remainingBlocks / totalOrderBlocks);
+                        const remainingDays = remainingBlocks * BLOCK_INTERVAL_SECONDS / (3600 * 24); // Convert to days for display
+                        displayedCft = (parseFloat(fullCft) * proratedFactor).toFixed(2);
+                        console.log(`Order ${order.order_id}: Prorated CFT from ${fullCft} to ${displayedCft} (factor: ${proratedFactor}, remaining blocks: ${remainingBlocks}, remaining days: ${remainingDays.toFixed(2)}, latest expire_time: ${latestDelegation.expire_time}, current block: ${currentBlockNumber})`);
+                    } else {
+                        console.log(`Order ${order.order_id}: Latest delegation expired, using full CFT ${fullCft}`);
+                    }
                 } else {
                     console.log(`Order ${order.order_id}: No overlapping delegation, using full CFT ${fullCft}`);
                 }
@@ -646,7 +648,7 @@ async function fulfillOrder() {
         await pollFulfillmentStatus(data.fulfillmentId);
     } catch (error) {
         console.error("Error fulfilling order:", error);
-        document.getElementById("fulfillment-message").textContent = `Error: ${error.message}`;
+        document.getElementById("fulfillment-message").textContent = `Error: ${error.message}`);
     }
 }
 
