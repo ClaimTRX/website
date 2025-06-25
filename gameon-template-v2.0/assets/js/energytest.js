@@ -648,7 +648,8 @@ async function fulfillOrder() {
         await pollFulfillmentStatus(data.fulfillmentId);
     } catch (error) {
         console.error("Error fulfilling order:", error);
-        document.getElementById("fulfillment-message").textContent = `Error: ${error.message}`);
+       document.getElementById("fulfillment-message").textContent = `Error: ${error.message}`;
+
     }
 }
 
