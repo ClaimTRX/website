@@ -54,70 +54,62 @@ const CFT_ABI = [
     }
 ];
 
-// Check if TronLink is installed and ready
+// Check if TronLink is installed
 async function checkTronLinkInstalled() {
-    return new Promise((resolve, reject) => {
-        let attempts = 0;
-        const maxAttempts = 30; // Increased to 30 seconds
+    return new Promise((resolve) => {
         const interval = setInterval(() => {
-            attempts++;
-            console.log(`Checking TronLink initialization (attempt ${attempts}/${maxAttempts})`);
-            if (window.tronWeb && window.tronWeb.ready && window.tronWeb.defaultAddress.base58 && window.tronWeb.trx && window.tronWeb.contract) {
-                tronWeb = window.tronWeb;
-                userAddress = tronWeb.defaultAddress.base58;
-                console.log("TronLink initialized, address:", userAddress);
+            if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
                 clearInterval(interval);
                 resolve(true);
-            } else {
-                console.log("TronLink check details:", {
-                    tronWebExists: !!window.tronWeb,
-                    tronWebReady: window.tronWeb?.ready,
-                    defaultAddress: !!window.tronWeb?.defaultAddress?.base58,
-                    trxExists: !!window.tronWeb?.trx,
-                    contractExists: !!window.tronWeb?.contract
-                });
-                if (attempts >= maxAttempts) {
-                    console.error("TronLink check failed after", maxAttempts, "attempts");
-                    clearInterval(interval);
-                    reject(new Error("TronLink not installed, not logged in, or not fully initialized"));
-                }
             }
         }, 1000);
+        setTimeout(() => {
+            clearInterval(interval);
+            resolve(false);
+        }, 10000);
     });
 }
 
-// Auto-connect wallet
+// Auto-connect wallet if authorized
 async function autoConnectWallet() {
-    try {
-        let attempts = 0;
-        const maxAttempts = 5;
-        while (attempts < maxAttempts) {
-            console.log(`Auto-connect attempt ${attempts + 1}/${maxAttempts}`);
-            if (window.tronLink && window.tronLink.ready) {
-                console.log("TronLink detected as ready");
-                await checkTronLinkInstalled();
-                updateWalletUI(true);
-                await checkActiveDelegations();
-                await fetchOpenOrders();
-                await fetchSellerFulfillments();
-                await fetchBuyerOrders();
-                return;
+    if (window.tronWeb && window.tronLink) {
+        tronWeb = window.tronWeb;
+        userAddress = tronWeb.defaultAddress.base58;
+        if (userAddress && userAddress !== "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb") {
+            console.log("Auto-connected wallet:", userAddress);
+            updateWalletUI(true);
+            const receiverInput = document.getElementById("receiver-address");
+            if (receiverInput) {
+                receiverInput.value = userAddress;
             }
-            console.log("TronLink not ready, retrying...");
-            attempts++;
-            if (attempts < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-            }
+            fetchAvailableEnergy();
+        } else {
+            console.log("TronLink detected, but wallet not connected.");
         }
-        console.log("TronLink not ready after retries, skipping auto-connect.");
-        updateWalletUI(false);
-    } catch (error) {
-        console.error("Auto-connect failed:", error.message);
-        updateWalletUI(false);
-        alert("Please ensure TronLink is installed and logged in to proceed.");
     }
 }
 
+// Manually connect wallet
+async function connectWallet() {
+    if (!window.tronWeb || !window.tronLink) {
+        alert("TronLink not found. Please install TronLink and log in.");
+        return;
+    }
+    try {
+        await window.tronLink.request({ method: "tron_requestAccounts" });
+        tronWeb = window.tronWeb;
+        userAddress = tronWeb.defaultAddress.base58;
+        updateWalletUI(true);
+        console.log("Wallet connected:", userAddress);
+        const receiverInput = document.getElementById("receiver-address");
+        if (receiverInput) {
+            receiverInput.value = userAddress;
+        }
+        fetchAvailableEnergy();
+    } catch (e) {
+        console.error("Wallet connection failed:", e);
+    }
+}
 // Helper function to check active delegations
 async function checkActiveDelegations() {
     if (!userAddress) return;
@@ -166,45 +158,7 @@ async function checkActiveDelegations() {
     }
 }
 
-// Manually connect wallet
-async function connectWallet() {
-    try {
-        if (!window.tronLink) {
-            throw new Error("TronLink extension not detected. Please install it from the Chrome Web Store: https://chrome.google.com/webstore/detail/tronlink/ibnejdfjmmkpcnlpebklmnkoeoihofec");
-        }
 
-        let attempts = 0;
-        const maxAttempts = 5;
-        while (attempts < maxAttempts) {
-            console.log(`Connect wallet attempt ${attempts + 1}/${maxAttempts}`);
-            if (window.tronLink.ready) {
-                console.log("TronLink detected as ready");
-                // Request accounts
-                const accounts = await window.tronLink.request({ method: "tron_requestAccounts" });
-                if (!accounts || !accounts.length) {
-                    throw new Error("No accounts returned from TronLink. Please ensure you are logged in.");
-                }
-                await checkTronLinkInstalled();
-                console.log("Wallet connected successfully, address:", userAddress);
-                updateWalletUI(true);
-                await fetchOpenOrders();
-                await fetchSellerFulfillments();
-                await fetchBuyerOrders();
-                return;
-            }
-            console.log("TronLink not ready, retrying...");
-            attempts++;
-            if (attempts < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-            }
-        }
-        throw new Error("TronLink is not ready after retries. Please log in to your wallet.");
-    } catch (error) {
-        console.error("Wallet connection failed:", error.message);
-        alert("Failed to connect wallet: " + error.message + "\nPlease install or log in to TronLink.");
-        updateWalletUI(false);
-    }
-}
 
 // Update wallet UI
 function updateWalletUI(isConnected) {
