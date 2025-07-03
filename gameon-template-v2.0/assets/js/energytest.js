@@ -155,6 +155,8 @@ async function fetchAvailableEnergy() {
         document.getElementById("available-energy").textContent = "0 (Error)";
     }
 }
+
+
 async function checkActiveDelegations() {
     if (!userAddress) return;
     try {
@@ -173,18 +175,16 @@ async function checkActiveDelegations() {
             delegationCache = data.delegations || [];
             lastCacheTime = Date.now();
             window.activeDelegations = delegationCache;
-            logger.info(`Active delegations: ${data.message}`);
+            console.log(`Active delegations: ${data.message}`); // Replaced logger with console.log
             if (data.delegations.length === 0) {
                 document.getElementById("dashboard-table-body").innerHTML = "<tr><td colspan='6'>No delegations found</td></tr>";
             }
-            // Additional logic to process delegations
         } else {
             throw new Error(data.message || "Failed to fetch delegations");
         }
     } catch (error) {
-        console.error(`Active delegations check failed: ${error.message}`);
+        console.error(`Active delegations check failed: ${error.message}`); // Replaced logger with console.error
         document.getElementById("dashboard-table-body").innerHTML = "<tr><td colspan='6'>Error loading delegations</td></tr>";
-        // Fallback logic remains unchanged
     }
 }
 
