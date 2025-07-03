@@ -85,6 +85,7 @@ async function autoConnectWallet() {
                 await fetchOpenOrders();
                 await fetchSellerFulfillments();
                 await fetchBuyerOrders();
+                await fetchAvailableEnergy(); // Added to update energy display
             } else {
                 console.log("TronLink detected, but wallet not connected or invalid address.");
                 updateWalletUI(false);
@@ -127,51 +128,113 @@ async function connectWallet() {
         updateWalletUI(false);
     }
 }
+let delegationCache = null;
+let lastCacheTime = 0;
+const CACHE_DURATION = 60000; // 1 minute
+
+// Helper function to check available energy
+async function fetchAvailableEnergy() {
+    try {
+        console.log("Fetching available energy for:", userAddress);
+        const response = await fetch(`${SERVER_URL}/api/available-energy?address=${userAddress}`, {
+            headers: { "Accept": "application/json" }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.success) {
+            const availableEnergy = Number(data.available_energy) || 0;
+            console.log(`Available energy: ${availableEnergy}`);
+            document.getElementById("available-energy").textContent = availableEnergy.toLocaleString();
+        } else {
+            console.warn("Failed to fetch available energy:", data.message);
+            document.getElementById("available-energy").textContent = "0";
+        }
+    } catch (error) {
+        console.error("Error fetching available energy:", error.message);
+        document.getElementById("available-energy").textContent = "Error";
+    }
+}
+
 // Helper function to check active delegations
 async function checkActiveDelegations() {
     if (!userAddress) return;
+    
+    // Show loading indicator
+    const tableBody = document.getElementById("dashboard-table-body");
+    if (tableBody) {
+        tableBody.innerHTML = "<tr><td colspan='6'>Loading delegations...</td></tr>";
+    }
+
+    // Check cache
+    const now = Date.now();
+    if (delegationCache && now - lastCacheTime < CACHE_DURATION) {
+        console.log("Using cached delegation data:", delegationCache);
+        window.activeDelegations = delegationCache;
+        return;
+    }
+
     try {
         console.log("Checking active delegations for:", userAddress);
         const response = await fetch(`${SERVER_URL}/api/active-delegations?address=${userAddress}`, {
             headers: { "Accept": "application/json" }
         });
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                window.activeDelegations = data.delegations || [];
-                console.log("Active delegations from /api/active-delegations:", window.activeDelegations);
-            } else {
-                window.activeDelegations = [];
-                console.warn("No delegations data from /api/active-delegations:", data.message);
-            }
+        if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.success) {
+            delegationCache = data.delegations || [];
+            lastCacheTime = now;
+            window.activeDelegations = delegationCache;
+            console.log("Active delegations from /api/active-delegations:", window.activeDelegations);
         } else {
-            console.warn(`Active delegations check failed with status: ${response.status}, falling back to /api/check-delegation. Error: ${await response.text()}`);
-            const ordersResponse = await fetch(`${SERVER_URL}/api/open-orders`, { headers: { "Accept": "application/json" } });
-            if (ordersResponse.ok) {
-                const ordersData = await ordersResponse.json();
-                if (ordersData.success) {
-                    const uniqueReceivers = [...new Set(ordersData.orders.map(order => order.receiver_address))];
-                    window.activeDelegations = await Promise.all(uniqueReceivers.map(async receiver => {
-                        const checkResponse = await fetch(`${SERVER_URL}/api/check-delegation?sellerAddress=${userAddress}&receiverAddress=${receiver}`, {
-                            headers: { "Accept": "application/json" }
-                        });
-                        if (checkResponse.ok) {
-                            const checkData = await checkResponse.json();
-                            return checkData.delegation ? {
-                                receiver_address: receiver,
-                                energy_amount: checkData.delegation.energy,
-                                expire_time: checkData.delegation.expireTime
-                            } : null;
-                        }
-                        return null;
-                    })).then(results => results.filter(d => d !== null));
-                    console.log("Active delegations from /api/check-delegation fallback:", window.activeDelegations);
-                }
-            }
+            throw new Error(data.message || "Failed to fetch delegations");
         }
     } catch (error) {
-        console.error("Error checking active delegations:", error.message);
-        window.activeDelegations = []; // Fallback on error
+        console.warn(`Active delegations check failed with status: ${error.message}, falling back to /api/check-delegation`);
+        try {
+            const ordersResponse = await fetch(`${SERVER_URL}/api/open-orders`, {
+                headers: { "Accept": "application/json" }
+            });
+            if (!ordersResponse.ok) {
+                throw new Error(`HTTP error: ${ordersResponse.status}`);
+            }
+            const ordersData = await ordersResponse.json();
+            if (!ordersData.success) {
+                throw new Error(ordersData.message || "Failed to fetch orders");
+            }
+            // Limit to 3 receivers to reduce latency
+            const uniqueReceivers = [...new Set(ordersData.orders.map(order => order.receiver_address))].slice(0, 3);
+            window.activeDelegations = await Promise.all(uniqueReceivers.map(async receiver => {
+                try {
+                    const checkResponse = await fetch(`${SERVER_URL}/api/check-delegation?sellerAddress=${userAddress}&receiverAddress=${receiver}`, {
+                        headers: { "Accept": "application/json" }
+                    });
+                    if (!checkResponse.ok) {
+                        throw new Error(`HTTP error: ${checkResponse.status}`);
+                    }
+                    const checkData = await checkResponse.json();
+                    return checkData.delegation ? {
+                        receiver_address: receiver,
+                        energy_amount: checkData.delegation.energy,
+                        expire_time: checkData.delegation.expireTime
+                    } : null;
+                } catch (checkError) {
+                    console.warn(`Check delegation failed for ${receiver}: ${checkError.message}`);
+                    return null;
+                }
+            })).then(results => results.filter(d => d !== null));
+            delegationCache = window.activeDelegations;
+            lastCacheTime = now;
+            console.log("Active delegations from /api/check-delegation fallback:", window.activeDelegations);
+        } catch (fallbackError) {
+            console.error("Fallback failed:", fallbackError.message);
+            window.activeDelegations = [];
+            delegationCache = [];
+            lastCacheTime = now;
+        }
     }
 }
 
