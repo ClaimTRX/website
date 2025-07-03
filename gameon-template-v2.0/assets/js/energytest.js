@@ -455,41 +455,58 @@ async function fetchOpenOrders() {
         const tableBody = document.getElementById("marketplace-table-body");
         tableBody.innerHTML = "";
 
-        const currentBlock = await tronWeb.trx.getCurrentBlock();
-        const currentBlockNumber = currentBlock.block_header.raw_data.number;
-        const currentTimeMs = Date.now();
+        if (!tronWeb || !tronWeb.trx) {
+            console.warn("TronLink not initialized, skipping block fetch and delegation calculations");
+            // Display orders without block-dependent calculations
+            data.orders.forEach(order => {
+                const fullCft = ((order.remaining_energy / order.energy_amount) * order.total_payment * CFT_PER_TRX).toFixed(2);
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${order.order_id}</td>
+                    <td>${order.remaining_energy.toLocaleString()}</td>
+                    <td>${fullCft} CFT</td>
+                    <td>${order.lock_duration} days</td>
+                    <td><a href="#" class="sell-energy-btn" data-order-id="${order.order_id}" data-remaining="${order.remaining_energy}" data-receiver="${order.receiver_address}" data-lock-duration="${order.lock_duration}" data-total-payment="${order.total_payment}" data-energy-amount="${order.energy_amount}" data-buyer="${order.buyer_address}" data-prorated-cft="${fullCft}">Sell Energy</a></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        } else {
+            const currentBlock = await tronWeb.trx.getCurrentBlock();
+            const currentBlockNumber = currentBlock.block_header.raw_data.number;
+            const currentTimeMs = Date.now();
 
-        data.orders.forEach(order => {
-            const fullCft = ((order.remaining_energy / order.energy_amount) * order.total_payment * CFT_PER_TRX).toFixed(2);
-            let displayedCft = fullCft;
-            let remainingBlocks = 0;
-            if (window.activeDelegations && window.activeDelegations.length) {
-                const overlappingDelegation = window.activeDelegations.find(d => d.receiver_address === order.receiver_address);
-                if (overlappingDelegation && new Date(overlappingDelegation.expire_time) > new Date()) {
-                    const delegationExpireTimeMs = new Date(overlappingDelegation.expire_time).getTime();
-                    remainingBlocks = Math.max(0, Math.floor((delegationExpireTimeMs - currentTimeMs) / (BLOCK_INTERVAL_SECONDS * 1000)));
-                    if (remainingBlocks > 0) {
-                        const proratedFactor = remainingBlocks / (daysToBlocks(order.lock_duration) || 1);
-                        displayedCft = (parseFloat(fullCft) * Math.min(1, proratedFactor)).toFixed(2);
-                        const remainingDays = remainingBlocks * BLOCK_INTERVAL_SECONDS / (3600 * 24);
-                        console.log(`Order ${order.order_id}: Using existing delegation expire_time ${new Date(delegationExpireTimeMs).toISOString()}, Prorated CFT from ${fullCft} to ${displayedCft} (factor: ${proratedFactor.toFixed(4)}, remaining blocks: ${remainingBlocks}, remaining days: ${remainingDays.toFixed(2)}, current block: ${currentBlockNumber})`);
+            data.orders.forEach(order => {
+                const fullCft = ((order.remaining_energy / order.energy_amount) * order.total_payment * CFT_PER_TRX).toFixed(2);
+                let displayedCft = fullCft;
+                let remainingBlocks = 0;
+                if (window.activeDelegations && window.activeDelegations.length) {
+                    const overlappingDelegation = window.activeDelegations.find(d => d.receiver_address === order.receiver_address);
+                    if (overlappingDelegation && new Date(overlappingDelegation.expire_time) > new Date()) {
+                        const delegationExpireTimeMs = new Date(overlappingDelegation.expire_time).getTime();
+                        remainingBlocks = Math.max(0, Math.floor((delegationExpireTimeMs - currentTimeMs) / (BLOCK_INTERVAL_SECONDS * 1000)));
+                        if (remainingBlocks > 0) {
+                            const proratedFactor = remainingBlocks / (daysToBlocks(order.lock_duration) || 1);
+                            displayedCft = (parseFloat(fullCft) * Math.min(1, proratedFactor)).toFixed(2);
+                            const remainingDays = remainingBlocks * BLOCK_INTERVAL_SECONDS / (3600 * 24);
+                            console.log(`Order ${order.order_id}: Using existing delegation expire_time ${new Date(delegationExpireTimeMs).toISOString()}, Prorated CFT from ${fullCft} to ${displayedCft} (factor: ${proratedFactor.toFixed(4)}, remaining blocks: ${remainingBlocks}, remaining days: ${remainingDays.toFixed(2)}, current block: ${currentBlockNumber})`);
+                        } else {
+                            console.log(`Order ${order.order_id}: Delegation expired, using full CFT ${fullCft}`);
+                        }
                     } else {
-                        console.log(`Order ${order.order_id}: Delegation expired, using full CFT ${fullCft}`);
+                        console.log(`Order ${order.order_id}: No active delegation, using full CFT ${fullCft}`);
                     }
-                } else {
-                    console.log(`Order ${order.order_id}: No active delegation, using full CFT ${fullCft}`);
                 }
-            }
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${order.order_id}</td>
-                <td>${order.remaining_energy.toLocaleString()}</td>
-                <td>${displayedCft} CFT</td>
-                <td>${order.lock_duration} days</td>
-                <td><a href="#" class="sell-energy-btn" data-order-id="${order.order_id}" data-remaining="${order.remaining_energy}" data-receiver="${order.receiver_address}" data-lock-duration="${order.lock_duration}" data-total-payment="${order.total_payment}" data-energy-amount="${order.energy_amount}" data-buyer="${order.buyer_address}" data-prorated-cft="${displayedCft}">Sell Energy</a></td>
-            `;
-            tableBody.appendChild(row);
-        });
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${order.order_id}</td>
+                    <td>${order.remaining_energy.toLocaleString()}</td>
+                    <td>${displayedCft} CFT</td>
+                    <td>${order.lock_duration} days</td>
+                    <td><a href="#" class="sell-energy-btn" data-order-id="${order.order_id}" data-remaining="${order.remaining_energy}" data-receiver="${order.receiver_address}" data-lock-duration="${order.lock_duration}" data-total-payment="${order.total_payment}" data-energy-amount="${order.energy_amount}" data-buyer="${order.buyer_address}" data-prorated-cft="${displayedCft}">Sell Energy</a></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
 
         document.querySelectorAll(".sell-energy-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
@@ -514,7 +531,6 @@ async function fetchOpenOrders() {
 
                 const delegateInput = document.getElementById("delegate-amount");
 
-                // Define updateEarnings function globally
                 function updateEarnings() {
                     const newDelegateAmount = parseInt(delegateInput.value) || 0;
                     const newEstimatedEarnings = (newDelegateAmount / remaining) * proratedCft;
@@ -522,18 +538,17 @@ async function fetchOpenOrders() {
                     document.getElementById("estimated-earnings").textContent = `${newEstimatedEarnings.toFixed(4)} CFT`;
                 }
 
-                // Remove existing listener to prevent duplicates and add new one
                 delegateInput.removeEventListener("input", updateEarnings);
                 delegateInput.addEventListener("input", updateEarnings);
 
-                // Initial estimated earnings
                 const delegateAmount = parseInt(delegateInput.value) || remaining;
-                updateEarnings(); // Call the function directly for initial value
+                updateEarnings();
                 document.getElementById("fulfillment-form").style.display = "block";
             });
         });
     } catch (error) {
         console.error("Error fetching open orders:", error);
+        document.getElementById("marketplace-table-body").innerHTML = "<tr><td colspan='5'>Error loading orders. Please try again.</td></tr>";
     }
 }
 
@@ -953,9 +968,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (cancelOrderButton) cancelOrderButton.addEventListener("click", cancelOrder);
 
         updateTotalPayment();
-        await fetchOpenOrders();
-        await fetchSellerFulfillments();
-        await fetchBuyerOrders();
+        if (tronWeb && userAddress) {
+            await fetchOpenOrders();
+            await fetchSellerFulfillments();
+            await fetchBuyerOrders();
+        } else {
+            console.log("Skipping fetch operations: TronLink not initialized");
+        }
     } catch (error) {
         console.error("Error in DOMContentLoaded:", error);
         alert("An error occurred during initialization. Please try refreshing the page or check your TronLink installation.");
