@@ -148,11 +148,11 @@ async function fetchAvailableEnergy() {
             document.getElementById("available-energy").textContent = availableEnergy === 0 ? "0 (No staked TRX)" : availableEnergy.toLocaleString();
         } else {
             console.warn("Failed to fetch available energy:", data.message);
-            document.getElementById("available-energy").textContent = "0 (Error)";
+            document.getElementById("available-energy").textContent = data.message || "Error";
         }
     } catch (error) {
         console.error("Error fetching available energy:", error.message);
-        document.getElementById("available-energy").textContent = "0 (Error)";
+        document.getElementById("available-energy").textContent = "Cannot calculate energy requirements at the moment";
     }
 }
 
