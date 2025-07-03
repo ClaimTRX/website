@@ -59,55 +59,72 @@ async function checkTronLinkInstalled() {
     return new Promise((resolve) => {
         const interval = setInterval(() => {
             if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+                console.log("TronLink detected with address:", window.tronWeb.defaultAddress.base58);
                 clearInterval(interval);
                 resolve(true);
             }
         }, 1000);
         setTimeout(() => {
             clearInterval(interval);
+            console.error("TronLink check timed out after 10 seconds");
             resolve(false);
         }, 10000);
     });
 }
 
-// Auto-connect wallet if authorized
+// Auto-connect wallet
 async function autoConnectWallet() {
-    if (window.tronWeb && window.tronLink) {
-        tronWeb = window.tronWeb;
-        userAddress = tronWeb.defaultAddress.base58;
-        if (userAddress && userAddress !== "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb") {
-            console.log("Auto-connected wallet:", userAddress);
-            updateWalletUI(true);
-            const receiverInput = document.getElementById("receiver-address");
-            if (receiverInput) {
-                receiverInput.value = userAddress;
+    try {
+        if (window.tronWeb && window.tronLink) {
+            tronWeb = window.tronWeb;
+            userAddress = tronWeb.defaultAddress.base58;
+            if (userAddress && userAddress !== "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb") {
+                console.log("Auto-connected wallet:", userAddress);
+                updateWalletUI(true);
+                await checkActiveDelegations();
+                await fetchOpenOrders();
+                await fetchSellerFulfillments();
+                await fetchBuyerOrders();
+            } else {
+                console.log("TronLink detected, but wallet not connected or invalid address.");
+                updateWalletUI(false);
             }
-            fetchAvailableEnergy();
         } else {
-            console.log("TronLink detected, but wallet not connected.");
+            console.log("TronLink not detected, skipping auto-connect.");
+            updateWalletUI(false);
         }
+    } catch (error) {
+        console.error("Auto-connect failed:", error.message);
+        updateWalletUI(false);
+        alert("Please ensure TronLink is installed and logged in to proceed.");
     }
 }
 
 // Manually connect wallet
 async function connectWallet() {
     if (!window.tronWeb || !window.tronLink) {
+        console.error("TronLink not found. Please install TronLink and log in.");
         alert("TronLink not found. Please install TronLink and log in.");
         return;
     }
     try {
+        console.log("Requesting TronLink accounts...");
         await window.tronLink.request({ method: "tron_requestAccounts" });
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58;
-        updateWalletUI(true);
-        console.log("Wallet connected:", userAddress);
-        const receiverInput = document.getElementById("receiver-address");
-        if (receiverInput) {
-            receiverInput.value = userAddress;
+        if (!userAddress || userAddress === "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb") {
+            throw new Error("No valid accounts returned from TronLink. Please ensure you are logged in.");
         }
-        fetchAvailableEnergy();
-    } catch (e) {
-        console.error("Wallet connection failed:", e);
+        console.log("Wallet connected:", userAddress);
+        updateWalletUI(true);
+        await checkActiveDelegations();
+        await fetchOpenOrders();
+        await fetchSellerFulfillments();
+        await fetchBuyerOrders();
+    } catch (error) {
+        console.error("Wallet connection failed:", error.message);
+        alert("Failed to connect wallet: " + error.message + "\nPlease ensure TronLink is installed and logged in.");
+        updateWalletUI(false);
     }
 }
 // Helper function to check active delegations
