@@ -168,7 +168,7 @@
                             <table class="table table-bordered">
                                 <thead>
                                     <tr>
-                                        <th>Token</th>
+                                        <th>Token Address</th>
                                         <th>Amount</th>
                                         <th>Unlock Date</th>
                                     </tr>
@@ -260,23 +260,7 @@
             {
                 "anonymous": false,
                 "inputs": [
-                    {"indexed": true, "internalType": "address", "name": "admin", "type": "address"}
-                ],
-                "name": "AdminAdded",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {"indexed": true, "internalType": "address", "name": "admin", "type": "address"}
-                ],
-                "name": "AdminRemoved",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
+                    {"indexed": true, "internalType": "address", "name": "owner", "type": "address"},
                     {"indexed": true, "internalType": "address", "name": "token", "type": "address"},
                     {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}
                 ],
@@ -286,7 +270,7 @@
             {
                 "anonymous": false,
                 "inputs": [
-                    {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
+                    {"indexed": true, "internalType": "address", "name": "owner", "type": "address"},
                     {"indexed": true, "internalType": "address", "name": "token", "type": "address"},
                     {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"},
                     {"indexed": false, "internalType": "uint256", "name": "unlockTime", "type": "uint256"}
@@ -306,29 +290,12 @@
             {
                 "anonymous": false,
                 "inputs": [
-                    {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
-                    {"indexed": true, "internalType": "address", "name": "token", "type": "address"},
-                    {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}
-                ],
-                "name": "PendingWithdrawn",
-                "type": "event"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                    {"indexed": true, "internalType": "address", "name": "user", "type": "address"},
+                    {"indexed": true, "internalType": "address", "name": "owner", "type": "address"},
                     {"indexed": true, "internalType": "address", "name": "token", "type": "address"},
                     {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}
                 ],
                 "name": "Withdrawn",
                 "type": "event"
-            },
-            {
-                "inputs": [{"internalType": "address", "name": "newAdmin", "type": "address"}],
-                "name": "addAdmin",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
             },
             {
                 "inputs": [{"internalType": "address", "name": "token", "type": "address"}, {"internalType": "uint256", "name": "amount", "type": "uint256"}],
@@ -345,14 +312,14 @@
                 "type": "function"
             },
             {
-                "inputs": [{"internalType": "address", "name": "user", "type": "address"}, {"internalType": "address", "name": "token", "type": "address"}],
+                "inputs": [{"internalType": "address", "name": "token", "type": "address"}],
                 "name": "getUserBalance",
                 "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
                 "stateMutability": "view",
                 "type": "function"
             },
             {
-                "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
+                "inputs": [],
                 "name": "getUserLocks",
                 "outputs": [
                     {
@@ -371,13 +338,6 @@
                 "type": "function"
             },
             {
-                "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
-                "name": "isAdmin",
-                "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
                 "inputs": [{"internalType": "address", "name": "token", "type": "address"}, {"internalType": "uint256", "name": "amount", "type": "uint256"}],
                 "name": "lock",
                 "outputs": [],
@@ -389,13 +349,6 @@
                 "name": "owner",
                 "outputs": [{"internalType": "address", "name": "", "type": "address"}],
                 "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [{"internalType": "address", "name": "admin", "type": "address"}],
-                "name": "removeAdmin",
-                "outputs": [],
-                "stateMutability": "nonpayable",
                 "type": "function"
             },
             {
@@ -420,24 +373,10 @@
                 "type": "function"
             },
             {
-                "inputs": [{"internalType": "address", "name": "token", "type": "address"}, {"internalType": "uint256", "name": "amount", "type": "uint256"}],
-                "name": "withdrawPending",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
                 "stateMutability": "payable",
                 "type": "receive"
             }
         ];
-
-        // Token address to name mapping (extend as needed)
-        const tokenMap = {
-            'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t': 'USDT', // Example TRC20 USDT on Tron
-            'TTogsjMPyNCmzdoPy5y7VihG51wcmqVC8p': 'CFT', // Example TRC20 USDC
-            '0x0000000000000000000000000000000000000000': 'TRX' // Native TRX
-        };
 
         // Your admin address (replace with your actual wallet address)
         const adminAddress = 'TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA'; // e.g., 'TXYZ1234...'
@@ -445,7 +384,7 @@
         // Initialize TronWeb
         let tronWeb;
         let contract;
-        const contractAddress = 'TLeypkFTziX3PRTzeY12GZNrHiiP9811Sd'; // Replace with actual TokenLocker address
+        const contractAddress = 'THVSAAVcnZy2UNzQGV3sbLiZebwg52psvJ'; // Replace with actual TokenLocker address
 
         async function initTronWeb() {
             try {
@@ -463,18 +402,17 @@
 
         async function loadLockedTokens() {
             try {
-                const locks = await contract.getUserLocks(adminAddress).call();
+                const locks = await contract.getUserLocks().call(); // Use new getUserLocks()
                 const tbody = $('#locked-tokens-body');
                 tbody.empty();
                 if (locks.length > 0) {
                     for (const lock of locks) {
                         const tokenAddress = lock.token;
-                        const tokenName = tokenMap[tokenAddress] || `Unknown (${tokenAddress.slice(0, 6)}...)`;
                         const amount = tronWeb.fromSun(lock.amount); // Assuming 6 decimals (adjust for token)
                         const unlockDate = new Date(parseInt(lock.unlockTime) * 1000).toLocaleDateString();
                         tbody.append(`
                             <tr>
-                                <td>${tokenName}</td>
+                                <td>${tokenAddress}</td>
                                 <td>${amount}</td>
                                 <td>${unlockDate}</td>
                             </tr>
