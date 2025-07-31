@@ -247,8 +247,8 @@
     <script src="assets/js/vendor/shuffle.min.js"></script>
     <script src="assets/js/main.js"></script>
 
-    <!-- TronWeb (latest version) -->
-    <script src="https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.min.js"></script>
+    <!-- TronWeb (specific version known to work in browsers) -->
+    <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.2/dist/TronWeb.browser.min.js"></script>
     <script>
         // TokenLocker contract ABI
         const tokenLockerAbi = [
@@ -388,6 +388,12 @@
 
         async function initTronWeb() {
             try {
+                // Check if TronWeb is loaded and is a constructor
+                if (typeof TronWeb !== 'function') {
+                    console.error('TronWeb is not available or not a constructor');
+                    $('#locked-tokens-body').html('<tr><td colspan="3" class="text-center">TronWeb failed to load.</td></tr>');
+                    return;
+                }
                 // Use a public Tron node (e.g., Nile testnet for testing, mainnet for production)
                 tronWeb = new TronWeb({
                     fullHost: 'https://api.trongrid.io' // Use 'https://nile.trongrid.io' for testing
@@ -428,7 +434,11 @@
         }
 
         $(document).ready(function () {
-            initTronWeb();
+            // Ensure TronWeb is loaded before initializing
+            const tronWebScript = document.createElement('script');
+            tronWebScript.src = 'https://cdn.jsdelivr.net/npm/tronweb@5.3.2/dist/TronWeb.browser.min.js';
+            tronWebScript.onload = initTronWeb;
+            document.body.appendChild(tronWebScript);
         });
     </script>
 </body>
