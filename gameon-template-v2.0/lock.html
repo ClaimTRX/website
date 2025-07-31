@@ -16,6 +16,73 @@
 
     <!-- ***** All CSS Files ***** -->
     <link rel="stylesheet" href="assets/css/style.css">
+
+    <!-- Custom CSS for Futuristic Table -->
+    <style>
+        .futuristic-table {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5), 0 0 40px rgba(0, 255, 255, 0.2);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        .futuristic-table th,
+        .futuristic-table td {
+            border: none;
+            padding: 15px;
+            text-align: center;
+            color: #00ffff; /* Neon cyan text */
+            text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff, 0 0 15px #ff00ff; /* Glowing text effect */
+            font-family: 'Arial', sans-serif;
+            font-weight: bold;
+        }
+
+        .futuristic-table th {
+            background: linear-gradient(90deg, #00ffff, #ff00ff, #00ffff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .futuristic-table tr {
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+
+        .futuristic-table tr:hover {
+            transform: scale(1.05);
+            background: rgba(255, 0, 255, 0.1); /* Subtle purple hover */
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+        }
+
+        .futuristic-table tr:nth-child(even) {
+            background: rgba(0, 255, 255, 0.1); /* Alternating cyan background */
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 10px rgba(0, 255, 255, 0.5), 0 0 20px rgba(0, 255, 255, 0.2);
+            }
+            to {
+                box-shadow: 0 0 20px rgba(0, 255, 255, 0.8), 0 0 30px rgba(0, 255, 255, 0.4);
+            }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .futuristic-table th,
+            .futuristic-table td {
+                padding: 10px;
+                font-size: 14px;
+            }
+            .futuristic-table tr:hover {
+                transform: scale(1.02);
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -165,7 +232,7 @@
                 <div class="row items">
                     <div class="col-12">
                         <div id="locked-tokens-table" class="table-responsive">
-                            <table class="table table-bordered">
+                            <table class="futuristic-table table table-bordered">
                                 <thead>
                                     <tr>
                                         <th>Token Address</th>
@@ -247,7 +314,7 @@
     <script src="assets/js/vendor/shuffle.min.js"></script>
     <script src="assets/js/main.js"></script>
 
-    <!-- TronWeb (specific version known to work in browsers) -->
+    <!-- TronWeb (browser-specific build) -->
     <script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.2/dist/TronWeb.browser.min.js"></script>
     <script>
         // TokenLocker contract ABI
@@ -384,7 +451,7 @@
         // Initialize TronWeb
         let tronWeb;
         let contract;
-        const contractAddress = 'THVSAAVcnZy2UNzQGV3sbLiZebwg52psvJ'; // Replace with actual TokenLocker address
+        const contractAddress = 'TKbnMg79RzWpFecPBQYqX9Ye1KEn7mFy3r'; // Replace with actual TokenLocker address
 
         async function initTronWeb() {
             try {
