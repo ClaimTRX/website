@@ -1,532 +1,262 @@
-```html
-<!doctype html>
-<html class="no-js" lang="en">
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="description" content="">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CryptoLiberty DeFi NFTs - DeFi • Freedom • Wealth</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #0c0c0c;
+      color: #f0f0f0;
+      font-family: 'Poppins', sans-serif;
+      scroll-behavior: smooth;
+    }
 
-    <!-- Title -->
-    <title>CFT Ecosystem - Bulk Energy Orders</title>
+    .navbar {
+      background-color: rgba(17, 17, 17, 0.8);
+      backdrop-filter: blur(10px);
+    }
 
-    <!-- Favicon -->
-     <link rel="icon" href="assets/img/favicon.png">
+    .hero {
+      background: linear-gradient(to bottom, #000000, #001f3f);
+      text-align: center;
+      padding: 160px 20px;
+      position: relative;
+      overflow: hidden;
+    }
 
-    <!-- Style css -->
-    <link rel="stylesheet" href="assets/css/style.css">
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+      animation: pulse 5s infinite;
+      z-index: 0;
+    }
 
-    <!-- Custom Styles -->
-   <style>
-    select#energy-amount,
-    input#lock-duration,
-    select#payment-currency {
-        color: #000 !important;
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.1; transform: scale(1.05); }
     }
-    select#energy-amount:focus,
-    input#lock-duration:focus,
-    select#payment-currency:focus {
-        color: #000 !important;
+
+    .hero .container {
+      position: relative;
+      z-index: 1;
     }
-    select#energy-amount option,
-    select#lock-duration option,
-    select#payment-currency option {
-        color: #000 !important;
+
+    .hero img.logo {
+      width: 250px;
+      animation: fadeIn 2s ease-in-out;
     }
-    select#energy-amount option:checked,
-    select#lock-duration option:checked,
-    select#payment-currency option:checked {
-        color: #000 !important;
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    .marketplace-table, .dashboard-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-        background-color: var(--card-bg-color);
-        color: var(--white-color);
+
+    .hero h1 {
+      font-size: 3.5rem;
+      color: #c0c0c0;
+      text-shadow: 0 0 15px rgba(192, 192, 192, 0.7);
+      animation: fadeIn 2s ease-in-out 0.5s;
     }
-    .marketplace-table th, .marketplace-table td,
-    .dashboard-table th, .dashboard-table td {
-        border: 1px solid var(--primary-l-color);
-        padding: 12px;
-        text-align: left;
-        white-space: nowrap;
-        font-size: 1rem;
+
+    .hero p.lead {
+      color: #00bfff;
+      font-size: 1.5rem;
+      animation: fadeIn 2s ease-in-out 1s;
     }
-    .marketplace-table th, .dashboard-table th {
-        background-color: var(--secondary-bg-color-2);
-        font-weight: 600;
-        color: var(--primary-t-color);
+
+    .mint-btn {
+      background: linear-gradient(135deg, #00bfff, #008b8b);
+      color: white;
+      padding: 15px 40px;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 30px;
+      box-shadow: 0 0 12px rgba(0,191,255, 0.3);
+      transition: all 0.3s ease;
+      animation: fadeIn 2s ease-in-out 1.5s;
     }
-    .marketplace-table td a, .dashboard-table td a {
-        color: var(--primary-color);
-        text-decoration: none;
-        transition: color 0.3s ease;
+
+    .mint-btn:hover {
+      background: linear-gradient(135deg, #00ffff, #006666);
+      box-shadow: 0 0 25px rgba(0,255,255, 0.5);
+      transform: scale(1.05);
     }
-    .marketplace-table td a:hover, .dashboard-table td a:hover {
-        color: var(--secondary-color);
+
+    .section {
+      padding: 80px 20px;
     }
-    /* Responsive table styling */
-    @media (max-width: 768px) {
-        .marketplace-table, .dashboard-table {
-            display: block;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        .marketplace-table thead, .dashboard-table thead {
-            display: none;
-        }
-        .marketplace-table tbody tr, .dashboard-table tbody tr {
-            display: block;
-            margin-bottom: 10px;
-            border: 1px solid var(--primary-l-color);
-            background-color: var(--card-bg-color);
-        }
-        .marketplace-table td, .dashboard-table td {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px;
-            border: none;
-            border-bottom: 1px solid var(--primary-l-color);
-            font-size: 0.9rem;
-        }
-        .marketplace-table td::before, .dashboard-table td::before {
-            content: attr(data-label);
-            font-weight: bold;
-            margin-right: 10px;
-            min-width: 120px;
-            color: var(--primary-t-color);
-        }
-        #fulfillment-form, #tracking-form {
-            padding: 10px;
-        }
-        #fulfillment-form input, #fulfillment-form p,
-        #tracking-form input, #tracking-form p {
-            width: 100%;
-            margin-bottom: 10px;
-        }
-        #fulfillment-form .btn, #tracking-form .btn {
-            width: 100%;
-        }
+
+    .stats {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 30px;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 20px rgba(0,191,255,0.1);
     }
-    /* Ensure table fits within card */
-    .card-body {
-        padding: 15px;
-        overflow-x: auto;
+
+    .stats:hover {
+      transform: scale(1.05);
     }
-    /* Highlight total row */
-    #total-row {
-        font-weight: 600;
-        background-color: var(--secondary-bg-color-3);
+
+    ul.list-unstyled li {
+      background: rgba(255,255,255,0.03);
+      border-left: 4px solid #00bfff;
+      padding: 15px 20px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      transition: transform 0.3s ease;
     }
-</style>
+
+    ul.list-unstyled li:hover {
+      transform: translateX(5px);
+      background-color: rgba(0,191,255, 0.05);
+    }
+
+    .footer {
+      background-color: #111111;
+      text-align: center;
+      padding: 30px;
+    }
+
+    /* Animated Background Blobs */
+    .blob-wrap {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.3;
+      animation: pulse 10s ease-in-out infinite alternate;
+    }
+
+    .blob1 {
+      background: #00bfff;
+      width: 300px; height: 300px;
+      top: 10%; left: 20%;
+    }
+
+    .blob2 {
+      background: #008b8b;
+      width: 250px; height: 250px;
+      top: 50%; left: 70%;
+    }
+  </style>
 </head>
-
 <body>
-    <!-- Preloader -->
-    <div id="gameon-preloader" class="gameon-preloader">
-        <div class="preloader-animation">
-            <div class="spinner"></div>
-            <p class="fw-5 text-center text-uppercase">Loading</p>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+    <div class="container">
+      <a class="navbar-brand" href="#"><img src="logo.png" alt="CryptoLiberty Logo" style="width: 180px;"></a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navLinks">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navLinks">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+          <li class="nav-item"><a class="nav-link" href="#benefits">Benefits</a></li>
+          <li class="nav-item"><a class="nav-link" href="#preview">Preview</a></li>
+          <li class="nav-item"><a class="nav-link" href="[YOUR_TELEGRAM_LINK]" target="_blank">Telegram</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="blob-wrap">
+      <div class="blob blob1"></div>
+      <div class="blob blob2"></div>
+    </div>
+    <div class="container">
+      <img src="logo.png" alt="CryptoLiberty Logo" class="logo mb-4" />
+      <h1>CryptoLiberty DeFi NFTs</h1>
+      <p class="lead">DeFi • Freedom • Wealth</p>
+      <p>Revolutionary NFTs on Solana: Airdrops, Rewards, and Exclusive Benefits</p>
+      <a href="[YOUR_MINT_LINK]" class="btn mint-btn mt-3" target="_blank">Mint for 0.5 SOL</a>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="section">
+    <div class="container text-center" data-aos="fade-up">
+      <h2>About CryptoLiberty</h2>
+      <p>2000 unique DeFi NFTs on Solana. Holders get airdrops from our income-generating treasury (staked assets + WLFi tokens). Unlock freedom and wealth in DeFi.</p>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="section bg-dark">
+    <div class="container">
+      <h2 class="text-center mb-5" data-aos="fade-up">Project Stats</h2>
+      <div class="row g-4">
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+          <div class="stats text-center">
+            <h3>2000</h3>
+            <p>Total NFTs</p>
+          </div>
         </div>
-        <div class="loader-animation">
-            <div class="row h-100">
-                <div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
-                <div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
-                <div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
-                <div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
-            </div>
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+          <div class="stats text-center">
+            <h3>0.5 SOL</h3>
+            <p>Mint Price</p>
+          </div>
         </div>
-    </div>
-
-    <div class="main">
-        <!-- Header -->
-        <header id="header">
-            <nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
-                <div class="container header">
-                    <a class="navbar-brand" href="index.html">
-                        <img src="assets/img/logo/logo.png" alt="" />
-                    </a>
-                    <div class="ms-auto"></div>
-                    <ul class="navbar-nav items mx-auto">
-                        <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
-                        <li class="nav-item dropdown">
-                            <a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
-                            <ul class="dropdown-menu">
-                                <li class="nav-item"><a href="staking.html" class="nav-link">Staking</a></li>
-                                <li class="nav-item"><a href="sellcft.html" class="nav-link">Trading</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
-                            <ul class="dropdown-menu">
-                                <li class="nav-item"><a href="buystablex.html" class="nav-link">Buy StableX</a></li>
-                                <li class="nav-item"><a href="sellstablex.html" class="nav-link">Sell StableX</a></li>
-                                <li class="nav-item"><a href="stablexstaking.html" class="nav-link">Stake StableX</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a href="#" class="nav-link">CFT News <i class="icon-arrow-down"></i></a>
-                            <ul class="dropdown-menu">
-                                <li class="nav-item"><a href="blog.html" class="nav-link">News</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
-                            <ul class="dropdown-menu">
-                                <li class="nav-item"><a href="feb.html" class="nav-link">FEB</a></li>
-                                <li class="nav-item"><a href="energy.html" class="nav-link">Rent Energy</a></li>
-                                <li class="nav-item"><a href="bulk-energy.html" class="nav-link">Bulk Energy Orders</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item"><a href="swap.html" class="nav-link">Swap</a></li>
-                    </ul>
-                    <ul class="navbar-nav toggle">
-                        <li class="nav-item">
-                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
-                                <i class="icon-menu m-0"></i>
-                            </a>
-                        </li>
-                    </ul>
-                    <ul class="navbar-nav action">
-                        <li class="nav-item ms-2">
-                            <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
-                                <i class="icon-wallet me-md-2"></i> Wallet Connect
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
-        </header>
-
-        <!-- Hero Area -->
-        <section class="hero-section">
-            <div class="container">
-                <div class="row align-items-center justify-content-center">
-                    <div class="col-12 col-md-6 col-lg-9 text-center">
-                        <div class="hero-content">
-                            <div class="intro text-center mb-5">
-                                <span class="intro-text">CFT Ecosystem</span>
-                                <h1 class="mt-4">Bulk Energy Orders</h1>
-                                <p>Trade large energy quantities over extended periods</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Bulk Energy Area -->
-        <section class="staking-area">
-            <div id="bulk-energy-accordion" class="container accordion">
-                <div class="row justify-content-center">
-                    <div class="col-12 col-md-10">
-                        <!-- Order Creation -->
-                        <div class="single-accordion-item">
-                            <div class="card-header bg-inherit border-0 p-0">
-                                <h2 class="m-0">
-                                    <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOrder">
-                                        <div class="row">
-                                            <div class="col-12 col-md-8">
-                                                <div class="media flex-column flex-md-row">
-                                                    <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
-                                                    <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                        <h4 class="m-0">Create Bulk Energy Order</h4>
-                                                        <p>Post an order for sellers to fulfill</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </button>
-                                </h2>
-                            </div>
-                            <div id="collapseOrder" class="collapse" data-bs-parent="#bulk-energy-accordion">
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-12 col-md-6 single-staking-item input-box">
-                                            <span class="item-title mb-2">Energy Amount</span>
-                                            <input type="number" id="energy-amount" class="form-control form-control-sm mb-3" placeholder="e.g., 1000000" min="100000" step="1000">
-                                            <span class="item-title mb-2">Lock Duration (days)</span>
-                                            <input type="number" id="lock-duration" class="form-control form-control-sm mb-3" placeholder="e.g., 1" min="1">
-                                            <span class="item-title mb-2">Payment Currency</span>
-                                            <select id="payment-currency" class="form-select form-select-sm mb-3">
-                                                <option value="TRX">TRX</option>
-                                            </select>
-                                            <span class="item-title mb-2">Receiver Address</span>
-                                            <input type="text" id="receiver-address" class="form-control form-control-sm mb-3" placeholder="Enter address to receive energy">
-                                            <p>Total Payment: <span id="total-payment">Enter amount</span></p>
-                                            <a href="#" class="btn input-btn btn-sm mt-2" id="create-order-button">Create Order</a>
-                                            <div id="order-status" class="status-message" style="display: none;">
-                                                <p id="order-message"></p>
-                                                <p>Order ID: <span id="order-id"></span></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="single-accordion-item mt-4">
-    <div class="card-header bg-inherit border-0 p-0">
-        <h2 class="m-0">
-            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMarketplace">
-                <div class="row">
-                    <div class="col-12 col-md-8">
-                        <div class="media flex-column flex-md-row">
-                            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
-                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                <h4 class="m-0">Open Orders</h4>
-                                <p>Fulfill open energy orders</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </button>
-        </h2>
-    </div>
-    <div id="collapseMarketplace" class="collapse" data-bs-parent="#bulk-energy-accordion">
-        <div class="card-body">
-            <table class="marketplace-table">
-                <thead>
-                    <tr>
-                        <th>Order ID</th>
-                        <th>Remaining Energy to be Sold</th>
-                        <th>Remaining CFT to be Earned</th>
-                        <th>Lock Duration</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="marketplace-table-body"></tbody>
-            </table>
-            <div id="fulfillment-form" style="display: none; margin-top: 20px;">
-                <h5>Sell Energy</h5>
-                <p>Order ID: <span id="selected-order-id"></span></p>
-                <span class="item-title mb-2">Energy to Delegate</span>
-                <input type="number" id="delegate-amount" class="form-control form-control-sm mb-3" placeholder="Enter amount" min="1000" oninput="updateEarnings()">
-                <p>Estimated CFT Earnings: <span id="estimated-earnings">0.00 CFT</span></p>
-                <span class="item-title mb-2">Payment Address</span>
-                <input type="text" id="payment-address" class="form-control form-control-sm mb-3" placeholder="Enter your payment address">
-                <a href="#" class="btn input-btn btn-sm mt-2" id="fulfill-order-button">Sell Energy</a>
-                <div id="fulfillment-status" class="status-message" style="display: none;">
-                    <p id="fulfillment-message"></p>
-                    <p>Transaction Hash: <a id="fulfillment-hash" href="#" target="_blank" style="display: none;"></a></p>
-                </div>
-            </div>
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+          <div class="stats text-center">
+            <h3>Ongoing</h3>
+            <p>Airdrops & Rewards</p>
+          </div>
         </div>
+      </div>
     </div>
-</div>
+  </section>
 
-                        <div class="single-accordion-item mt-4">
-    <div class="card-header bg-inherit border-0 p-0">
-        <h2 class="m-0">
-            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDashboard">
-                <div class="row">
-                    <div class="col-12 col-md-8">
-                        <div class="media flex-column flex-md-row">
-                            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
-                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                <h4 class="m-0">Seller Dashboard</h4>
-                                <p>Manage your fulfillments</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </button>
-        </h2>
+  <!-- Benefits Section -->
+  <section id="benefits" class="section">
+    <div class="container" data-aos="fade-up">
+      <h2 class="text-center mb-4">Exclusive Benefits</h2>
+      <ul class="list-unstyled">
+        <li>Airdrops from staked treasury income.</li>
+        <li>WLFi token staking rewards redirected to holders.</li>
+        <li>Future perks as the project evolves.</li>
+      </ul>
     </div>
-    <div id="collapseDashboard" class="collapse" data-bs-parent="#bulk-energy-accordion">
-        <div class="card-body">
-            <div class="available-energy mb-3">
-                <span class="item-title">Available Energy to Sell:</span>
-                <span id="available-energy">Loading...</span>
-            </div>
-            <table class="dashboard-table">
-                <thead>
-                    <tr>
-                        <th>Fulfillment ID</th>
-                        <th>Order ID</th>
-                        <th>Energy Delegated</th>
-                        <th>Lock End</th>
-                        <th>Status</th>
-                        <th>CFT Paid</th>
-                    </tr>
-                </thead>
-                <tbody id="dashboard-table-body"></tbody>
-                <tfoot>
-                    <tr id="total-row" style="display: none;">
-                        <td colspan="2">Total</td>
-                        <td id="total-energy">0</td>
-                        <td></td>
-                        <td></td>
-                        <td id="total-cft">0.00 CFT</td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
+  </section>
+
+  <!-- NFT Preview Section -->
+  <section id="preview" class="section bg-dark">
+    <div class="container text-center" data-aos="zoom-in">
+      <h2 class="mb-4">NFT Preview</h2>
+      <img src="nft-image.png" alt="CryptoLiberty NFT" class="img-fluid" style="max-width: 400px; border-radius: 10px; transition: transform 0.3s;" />
+      <p class="mt-3">Own a piece of DeFi revolution.</p>
     </div>
-</div>
+  </section>
 
-                        <div class="single-accordion-item mt-4">
-    <div class="card-header bg-inherit border-0 p-0">
-        <h2 class="m-0">
-            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTracking">
-                <div class="row">
-                    <div class="col-12 col-md-8">
-                        <div class="media flex-column flex-md-row">
-                            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
-                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                <h4 class="m-0">Order Tracking</h4>
-                                <p>Track your placed orders</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </button>
-        </h2>
-    </div>
-    <div id="collapseTracking" class="collapse" data-bs-parent="#bulk-energy-accordion">
-        <div class="card-body">
-            <table class="dashboard-table">
-                <thead>
-                    <tr>
-                        <th>Order ID</th>
-                        <th>Energy Amount</th>
-                        <th>Remaining Energy</th>
-                        <th>Lock Duration</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="tracking-table-body"></tbody>
-            </table>
-            <div id="tracking-form" style="display: none; margin-top: 20px;">
-                <h5>Cancel Order</h5>
-                <p>Order ID: <span id="selected-order-id-tracking"></span></p>
-                <p>Refund Amount: <span id="refund-amount">0.00 TRX</span></p>
-                <a href="#" class="btn input-btn btn-sm mt-2" id="cancel-order-button">Cancel Order</a>
-                <div id="cancel-status" class="status-message" style="display: none;">
-                    <p id="cancel-message"></p>
-                    <p>Transaction Hash: <a id="cancel-hash" href="#" target="_blank" style="display: none;"></a></p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-                    </div>
-                </div>
-            </div>
-        </section>
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2025 CryptoLiberty DeFi. Join the Revolution.</p>
+    <a href="[YOUR_TELEGRAM_LINK]" class="text-white">Telegram</a>
+  </footer>
 
-        <!-- CTA Area -->
-        <section class="cta-area p-0">
-            <div class="container">
-                <div class="row">
-                    <div class="col-12 card">
-                        <div class="row align-items-center justify-content-center">
-                            <div class="col-12 col-md-5 text-center">
-                                <img src="assets/img/content/cftlogo300.png" alt="">
-                            </div>
-                            <div class="col-12 col-md-6 mt-4 mt-md-0">
-                                <h2 class="m-0">Apply for project staking</h2>
-                                <p>Earn weekly rewards from staked CFT to build your project</p>
-                                <p>Soon available for projects on any chain</p>
-                                <a class="btn btn-bordered active d-inline-block"><i class="icon-rocket me-2"></i>Coming Soon</a>
-                            </div>
-                        </div>
-                        <a class="cta-link" href="apply.html"></a>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Footer -->
-        <footer class="footer-area">
-            <div class="container">
-                <div class="row justify-content-center">
-                    <div class="col-12 col-md-8 text-center">
-                        <div class="footer-items">
-                            <a class="navbar-brand" href="index.html">
-                                <img src="assets/img/logo/logo.png" alt="">
-                            </a>
-                            <div class="social-icons d-flex justify-content-center my-4">
-                                <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
-                                <a class="reddit" href="https://www.reddit.com/" target="_blank"><i class="fab fa-reddit"></i></a>
-                                <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
-                            </div>
-                            <div class="copyright-area py-4">©2025 CFT Ecosystem, All Rights Reserved</div>
-                        </div>
-                        <div id="scroll-to-top" class="scroll-to-top">
-                            <a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </footer>
-
-        <!-- Modal Search Area -->
-        <div id="search" class="modal fade p-0">
-            <div class="modal-dialog dialog-animated">
-                <div class="modal-content h-100">
-                    <div class="modal-header" data-bs-dismiss="modal">
-                        Search <i class="far fa-times-circle icon-close"></i>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-12 align-self-center">
-                                <div class="row">
-                                    <div class="col-12 pb-3">
-                                        <h2 class="search-title mt-0 mb-3">What are you trying to find?</h2>
-                                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-12 input-group mt-md-4">
-                                        <input type="text" placeholder="Enter your keywords">
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-12 input-group align-self-center">
-                                        <button class="btn btn-bordered-white mt-3">Search</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal Responsive Menu -->
-        <div id="menu" class="modal fade p-0">
-            <div class="modal-dialog dialog-animated">
-                <div class="modal-content h-100">
-                    <div class="modal-header" data-bs-dismiss="modal">
-                        Menu <i class="far fa-times-circle icon-close"></i>
-                    </div>
-                    <div class="menu modal-body">
-                        <div class="row w-100">
-                            <div class="items p-0 col-12 text-center"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="assets/js/vendor/jquery.min.js"></script>
-    <script src="assets/js/vendor/popper.min.js"></script>
-    <script src="assets/js/vendor/bootstrap.min.js"></script>
-    <script src="assets/js/vendor/all.min.js"></script>
-    <script src="assets/js/vendor/gallery.min.js"></script>
-    <script src="assets/js/vendor/slider.min.js"></script>
-    <script src="assets/js/vendor/countdown.min.js"></script>
-    <script src="assets/js/vendor/shuffle.min.js"></script>
-    <script src="assets/js/main.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
-    <script src="assets/js/energytest.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script>AOS.init();</script>
 </body>
 </html>
-```
+
