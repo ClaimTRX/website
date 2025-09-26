@@ -17,7 +17,7 @@ const ENERGY_RENTAL_DURATION = 2;
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // Replace with actual TRC20 CFT address
-    stakingAddress: 'TFaJbojGqXvRvnDxMBW11dmUpWUwtWQ8YK', // Replace with actual staking contract address
+    stakingAddress: 'TFbHhLVmaiRgCNq3p9ojSTfKcuYetHaRBc', // Replace with actual staking contract address
     decimals: 6,
     displayName: 'CFT',
     rewardDisplayName: 'TRX',
