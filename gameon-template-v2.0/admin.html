@@ -120,6 +120,17 @@
             background: #ffcc00;
             color: #111;
         }
+        .single-accordion-item {
+            background: #222;
+            border-radius: 8px;
+            border: 1px solid #444;
+            margin-bottom: 20px;
+        }
+        .staking-btn {
+            background: none;
+            border: none;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -218,63 +229,83 @@
                             Access Denied: Only the admin wallet can access this page.
                         </div>
                         <div id="admin-panel" style="display: none;">
-                            <h3>CFT Staking Pool Management</h3>
-                            <div class="row staking-info align-items-center justify-content-center mt-4">
-                                <div class="col single-item"><span id="pool-size"></span><span>Pool Size (TRX)</span></div>
-                                <div class="col single-item"><span id="apy"></span><span>APY (%)</span></div>
-                                <div class="col single-item"><span id="next-payout"></span><span>Next Payout (TRX)</span></div>
-                            </div>
-                            <div class="row staking-info align-items-center justify-content-center mt-4">
-                                <div class="col single-item"><span id="total-claimed-rewards"></span><span>Total Claimed (TRX)</span></div>
-                                <div class="col single-item"><span id="total-unclaimed-rewards"></span><span>Total Unclaimed (TRX)</span></div>
-                                <div class="col single-item"><span id="contract-balance"></span><span>Contract Balance (TRX)</span></div>
-                            </div>
-                            <div id="balance-warning" class="alert alert-warning text-center" style="display: none;">
-                                Warning: Contract TRX balance is insufficient for pending rewards or upcoming payouts.
-                            </div>
-                            <div class="row mt-4">
-                                <div class="col-12 col-md-6 input-box">
-                                    <label for="pool-size-input">Set Pool Size (TRX)</label>
-                                    <input type="text" id="pool-size-input" placeholder="Enter TRX amount">
-                                    <button class="btn mt-2" id="set-pool-size-button">Set Pool Size</button>
+                            <div class="single-accordion-item">
+                                <div class="card-header bg-inherit border-0 p-0">
+                                    <h2 class="m-0">
+                                        <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-cft">
+                                            <div class="row">
+                                                <div class="col-12 col-md-8">
+                                                    <div class="media flex-column flex-md-row">
+                                                        <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                                                        <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                            <h4 class="m-0">CFT Staking Pool</h4>
+                                                            <p>Manage TRX rewards for CFT staking.</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                                <div class="col single-item"><span id="pool-size"></span><span>Pool Size (TRX)</span></div>
+                                                <div class="col single-item"><span id="apy"></span><span>APY (%)</span></div>
+                                                <div class="col single-item"><span id="next-payout"></span><span>Next Payout (TRX)</span></div>
+                                            </div>
+                                            <div class="row staking-info align-items-center justify-content-center mt-4">
+                                                <div class="col single-item"><span id="total-claimed-rewards"></span><span>Total Claimed (TRX)</span></div>
+                                                <div class="col single-item"><span id="total-unclaimed-rewards"></span><span>Total Unclaimed (TRX)</span></div>
+                                                <div class="col single-item"><span id="contract-balance"></span><span>Contract Balance (TRX)</span></div>
+                                            </div>
+                                        </button>
+                                    </h2>
                                 </div>
-                                <div class="col-12 col-md-6 input-box">
-                                    <label for="add-to-pool-input">Add to Pool (TRX)</label>
-                                    <input type="text" id="add-to-pool-input" placeholder="Enter TRX amount">
-                                    <button class="btn mt-2" id="add-to-pool-button">Add to Pool</button>
-                                </div>
-                            </div>
-                            <div class="row mt-4">
-                                <div class="col-12 col-md-6 input-box">
-                                    <label for="daily-payout-percentage">Daily Payout Percentage (e.g., 100 = 1%)</label>
-                                    <input type="text" id="daily-payout-percentage" placeholder="Enter percentage">
-                                    <button class="btn mt-2" id="set-daily-payout-button">Set Daily Payout</button>
-                                </div>
-                                <div class="col-12 col-md-6 input-box">
-                                    <label for="claim-timeout">Claim Timeout (days)</label>
-                                    <input type="text" id="claim-timeout" placeholder="Enter days">
-                                    <button class="btn mt-2" id="set-claim-timeout-button">Set Claim Timeout</button>
-                                </div>
-                            </div>
-                            <div class="row mt-4">
-                                <div class="col-12 col-md-6 input-box">
-                                    <label for="authorized-wallet">Authorized Wallet Address</label>
-                                    <input type="text" id="authorized-wallet" placeholder="Enter address">
-                                    <button class="btn mt-2" id="set-authorized-wallet-button">Set Authorized Wallet</button>
-                                </div>
-                                <div class="col-12 col-md-6 input-box">
-                                    <label for="withdraw-trx-amount">Withdraw TRX</label>
-                                    <input type="text" id="withdraw-trx-amount" placeholder="Enter TRX amount">
-                                    <input type="text" id="withdraw-trx-recipient" placeholder="Recipient address">
-                                    <button class="btn mt-2" id="withdraw-trx-button">Withdraw TRX</button>
-                                </div>
-                            </div>
-                            <div class="row mt-4">
-                                <div class="col-12 col-md-6 input-box">
-                                    <label for="withdraw-trc20-amount">Withdraw TRC20 (CFT)</label>
-                                    <input type="text" id="withdraw-trc20-amount" placeholder="Enter CFT amount">
-                                    <input type="text" id="withdraw-trc20-recipient" placeholder="Recipient address">
-                                    <button class="btn mt-2" id="withdraw-trc20-button">Withdraw TRC20</button>
+                                <div id="collapse-cft" class="collapse" data-bs-parent="#contracts-accordion">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-12 col-md-4 input-box">
+                                                <label for="pool-size-input">Set Pool Size (TRX)</label>
+                                                <input type="text" id="pool-size-input" placeholder="Enter TRX amount">
+                                                <button class="btn mt-2" id="set-pool-size-button">Set Pool Size</button>
+                                            </div>
+                                            <div class="col-12 col-md-4 input-box">
+                                                <label for="add-to-pool-input">Add to Pool (TRX)</label>
+                                                <input type="text" id="add-to-pool-input" placeholder="Enter TRX amount">
+                                                <button class="btn mt-2" id="add-to-pool-button">Add to Pool</button>
+                                            </div>
+                                            <div class="col-12 col-md-4 input-box">
+                                                <label for="daily-payout-percentage">Daily Payout Percentage (e.g., 100 = 1%)</label>
+                                                <input type="text" id="daily-payout-percentage" placeholder="Enter percentage">
+                                                <button class="btn mt-2" id="set-daily-payout-button">Set Daily Payout</button>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-4">
+                                            <div class="col-12 col-md-4 input-box">
+                                                <label for="claim-timeout">Claim Timeout (days)</label>
+                                                <input type="text" id="claim-timeout" placeholder="Enter days">
+                                                <button class="btn mt-2" id="set-claim-timeout-button">Set Claim Timeout</button>
+                                            </div>
+                                            <div class="col-12 col-md-4 input-box">
+                                                <label for="authorized-wallet">Authorized Wallet Address</label>
+                                                <input type="text" id="authorized-wallet" placeholder="Enter address">
+                                                <button class="btn mt-2" id="set-authorized-wallet-button">Set Authorized Wallet</button>
+                                            </div>
+                                            <div class="col-12 col-md-4 input-box">
+                                                <label for="withdraw-trx-amount">Withdraw TRX</label>
+                                                <input type="text" id="withdraw-trx-amount" placeholder="Enter TRX amount">
+                                                <input type="text" id="withdraw-trx-recipient" placeholder="Recipient address">
+                                                <button class="btn mt-2" id="withdraw-trx-button">Withdraw TRX</button>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-4">
+                                            <div class="col-12 col-md-4 input-box">
+                                                <label for="withdraw-trc20-amount">Withdraw TRC20 (CFT)</label>
+                                                <input type="text" id="withdraw-trc20-amount" placeholder="Enter CFT amount">
+                                                <input type="text" id="withdraw-trc20-recipient" placeholder="Recipient address">
+                                                <button class="btn mt-2" id="withdraw-trc20-button">Withdraw TRC20</button>
+                                            </div>
+                                        </div>
+                                        <div id="balance-warning" class="alert alert-warning text-center mt-4" style="display: none;">
+                                            Warning: Contract TRX balance is insufficient for pending rewards or upcoming payouts.
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -291,7 +322,7 @@
                     </div>
                     <div class="modal-body">
                         <p>Your wallet has <span id="user-energy">0</span> energy available, but <span id="required-energy">0</span> energy is required for this transaction.</p>
-                        <p>Rent <span id="rental-energy">0</span> energy for <span id="rental-duration">5</span> minutes at a cost of <span id="rental-cost-trx">0.00</span> TRX?</p>
+                        <p>Rent <span id="rental-energy">0</span> energy for <span id="rental-duration">2</span> minutes at a cost of <span id="rental-cost-trx">0.00</span> TRX?</p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
