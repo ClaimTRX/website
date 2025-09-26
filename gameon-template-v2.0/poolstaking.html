@@ -75,6 +75,10 @@
     .stat-tile{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
     .stat-tile .item-title{color:var(--muted);font-weight:700}
 
+    /* Extra: Next Claim box (full width under stats) */
+    .countdown-tile{margin-top:14px; background:var(--bg-2); border:1px solid var(--line); border-radius:var(--radius-3); padding:14px 18px; display:flex; align-items:center; justify-content:space-between}
+    .countdown-tile .item-title{color:var(--muted); font-weight:700}
+
     /* Skeleton */
     .skeleton{position:relative;overflow:hidden;min-width:80px;min-height:20px;background:#141a2b;border-radius:8px}
     .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);animation:shimmer 1.2s infinite}
@@ -267,6 +271,12 @@
         <div class="stat-tile"><span class="item-title">Unclaimed (All)</span><strong id="total-unclaimed">—</strong></div>
         <div class="stat-tile"><span class="item-title">Claimed (All)</span><strong id="total-claimed">—</strong></div>
       </div>
+
+      <!-- New: Next Claim box -->
+      <div class="countdown-tile" id="next-claim-box">
+        <span class="item-title">Next Claim</span>
+        <strong id="next-claim-timer">—</strong>
+      </div>
     </div>
   </section>
 
@@ -355,6 +365,40 @@
 
   <!-- App JS (unchanged) -->
   <script src="assets/js/poolstaking.js" type="module"></script>
+
+  <!-- Mirror the claim timer into the Next Claim box, showing days when >24h -->
+  <script>
+    (function(){
+      const src = document.getElementById('claim-timer');
+      const out = document.getElementById('next-claim-timer');
+      if(!src || !out) return;
+
+      function normalize(text){
+        if(!text) return '—';
+        // Expect formats like: "Available in 167h 46m 4s" or "Available now"
+        const hMatch = text.match(/(\d+)\s*h/i);
+        const mMatch = text.match(/(\d+)\s*m/i);
+        const sMatch = text.match(/(\d+)\s*s/i);
+        if(hMatch || mMatch || sMatch){
+          let h = parseInt(hMatch ? hMatch[1] : 0, 10);
+          let m = parseInt(mMatch ? mMatch[1] : 0, 10);
+          let s = parseInt(sMatch ? sMatch[1] : 0, 10);
+          const d = Math.floor(h / 24);
+          h = h % 24;
+          const parts = [];
+          if(d > 0) parts.push(d + 'd');
+          parts.push((h|0) + 'h', (m|0) + 'm', (s|0) + 's');
+          return parts.join(' ');
+        }
+        return text.trim();
+      }
+
+      const update = () => { out.textContent = normalize(src.textContent || '—'); };
+      update();
+      const obs = new MutationObserver(update);
+      obs.observe(src, {childList:true, subtree:true, characterData:true});
+    })();
+  </script>
 </body>
 </html>
 
