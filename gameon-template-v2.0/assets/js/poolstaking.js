@@ -1,21 +1,12 @@
-/*
-  CFT Ecosystem – Pool Staking (Refined + ROI + Pool Stats)
-  - Premium UI hooks (toasts, loaders, skeletons)
-  - Safer BigInt math & formatting helpers
-  - Energy rental flow + Tronscan links
-  - NEW: ROI, user total claimed, global pool stats (pool size, total claimed/unclaimed, daily %)
-*/
-
 let tronWeb, userAddress;
 const stakingContracts = {};
 const tokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
-
 // ===================== Config =====================
 const TRONGRID_API_KEYS = [
-  'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca', // Your first API key
-  '664292b1-47ad-47b7-88c1-db67bee6e732' // Replace with your second TronGrid API key
+  'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca', // First API key
+  '664292b1-47ad-47b7-88c1-db67bee6e732'  // Second API key
 ];
 const TRONGRID_API_URL = 'https://api.trongrid.io';
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
@@ -24,6 +15,29 @@ const SAFETY_ENERGY = 20000;
 const ENERGY_PRICE_SUN = 10;
 const SUN_PER_TRX = 1_000_000;
 const ENERGY_RENTAL_DURATION = 2;
+const tokenDetails = {
+  cft: {
+    tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
+    stakingAddress: 'TFQf7a3sYmcFgp62aTXhMiK95psKyptMoY',
+    decimals: 6,
+    displayName: 'CFT',
+    rewardDisplayName: 'TRX',
+    rewardDecimals: 6,
+    energyCosts: {
+      stake: 120000,
+      unstake: 75000,
+      claimRewards: 100000,
+      activateTokens: 50000,
+      setPoolSize: 60000,
+      addToPool: 70000,
+      setDailyPayout: 60000,
+      setClaimTimeout: 60000,
+      setAuthorizedWallet: 60000,
+      withdrawTRX: 80000,
+      withdrawTRC20: 90000
+    }
+  }
+};
 
 // ===================== TronGrid helper =====================
 async function tronGridApiCall(endpoint, params = {}, keyIndex = 0) {
@@ -36,22 +50,19 @@ async function tronGridApiCall(endpoint, params = {}, keyIndex = 0) {
       },
       body: JSON.stringify(params)
     });
-
     if (response.status === 403 && keyIndex < TRONGRID_API_KEYS.length - 1) {
-      // Rate limit hit, try the next API key
       console.warn(`Rate limit hit for API key ${keyIndex + 1}, trying next key...`);
       return await tronGridApiCall(endpoint, params, keyIndex + 1);
     }
-
     const data = await response.json();
     if (data.Error) throw new Error(data.Error);
     return data;
   } catch (e) {
     if (keyIndex < TRONGRID_API_KEYS.length - 1) {
-      // Retry with the next API key
       console.warn(`Error with API key ${keyIndex + 1}: ${e.message}, trying next key...`);
       return await tronGridApiCall(endpoint, params, keyIndex + 1);
     }
+    showToast({ title: 'API Error', body: 'All API keys are rate-limited. Please try again later.', variant: 'danger' });
     return { error: e.message };
   }
 }
@@ -124,7 +135,6 @@ const toWei = (amt, decimals = 6) => {
 const fmt = (n, max=6) => Number(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: max });
 const fmtPct = (n) => `${(Number(n) || 0).toFixed(2)}%`;
 const fmtTrx = (n) => `${fmt(n)} TRX`;
-
 function isValidTronAddress(address){
   return !!(address && typeof address === 'string' && address.startsWith('T') && address.length === 34 && /^[A-Za-z1-9]+$/.test(address));
 }
@@ -142,7 +152,6 @@ function showToast({ title='Notification', body='', variant='dark', autohide=tru
     <div class="toast-body">${body}</div>`;
   new bootstrap.Toast(el, { autohide, delay: 4500 }).show();
 }
-
 function withLoading(btn, label='Processing', fn){
   return async (...args)=>{
     if (!btn) return fn(...args);
@@ -152,20 +161,17 @@ function withLoading(btn, label='Processing', fn){
     finally { btn.disabled = false; btn.innerHTML = old; }
   };
 }
-
 function setStatus(text, ok=true){
   const chip = document.getElementById('status-chip');
   const txt = document.getElementById('status-text');
   if (chip && txt){ txt.textContent = text; chip.querySelector('.dot').style.background = ok ? '#00ff88' : '#ff4d4d'; }
 }
-
 function setSkeleton(id, on){
   const el = document.getElementById(id);
   if (!el) return;
   if (on){ el.classList.add('skeleton'); el.textContent = ''; el.style.minHeight = el.style.minHeight || '22px'; }
   else { el.classList.remove('skeleton'); }
 }
-
 function showProcessingModal(step=''){
   const modalElement = document.getElementById('transaction-processing-modal');
   if (!modalElement) throw new Error('Processing modal not found.');
@@ -193,7 +199,6 @@ async function checkUserEnergy(address, token, action, extraEnergy = 0){
     return { availableEnergy: 0, shortfall: requiredEnergy, requiredEnergy };
   }
 }
-
 async function checkDelegatorEnergy(requiredAmount){
   try{
     const response = await fetch(`${SERVER_URL}/api/available-energy`);
@@ -202,7 +207,6 @@ async function checkDelegatorEnergy(requiredAmount){
     return false;
   }catch{ return false; }
 }
-
 async function requestEnergyRental(rentalEnergy, rentalCostTrx){
   let processingModal = null;
   try{
@@ -222,16 +226,13 @@ async function requestEnergyRental(rentalEnergy, rentalCostTrx){
     return true;
   }catch(e){ hideProcessingModal(processingModal); throw e; }
 }
-
 function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message=''){
   return new Promise((resolve, reject)=>{
     const modalElement = document.getElementById('energy-rental-modal');
     if (!modalElement) return reject(new Error('Energy rental modal not found.'));
-
     const rentalEnergy = shortfall;
     const rentalCostSun = rentalEnergy * ENERGY_PRICE_SUN;
     const rentalCostTrx = rentalCostSun / SUN_PER_TRX;
-
     const map = {
       'user-energy': userEnergy.toLocaleString('en-US'),
       'required-energy': requiredEnergy.toLocaleString('en-US') + message,
@@ -243,18 +244,15 @@ function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message=''
       const el = document.getElementById(id); if (!el) return reject(new Error(`Modal element ${id} not found.`));
       el.textContent = val;
     }
-
     const modal = new bootstrap.Modal(modalElement, { backdrop:'static', keyboard:false });
     const confirmButton = document.getElementById('rent-energy-confirm');
     if (!confirmButton) return reject(new Error('Rent energy confirm button not found.'));
-
     const confirmHandler = () => { modal.hide(); resolve({ rent:true, rentalEnergy, rentalCostTrx }); confirmButton.removeEventListener('click', confirmHandler); };
     confirmButton.addEventListener('click', confirmHandler);
     modalElement.addEventListener('hidden.bs.modal', ()=> resolve({ rent:false }), { once:true });
     modal.show();
   });
 }
-
 async function pollDelegationStatus(requestId){
   const maxPoll = 30; let attempts = 0;
   return new Promise((resolve, reject)=>{
@@ -271,19 +269,6 @@ async function pollDelegationStatus(requestId){
   });
 }
 
-// ===================== TronGrid helper =====================
-async function tronGridApiCall(endpoint, params = {}){
-  try{
-    const response = await fetch(`${TRONGRID_API_URL}${endpoint}`,{
-      method:'POST', headers:{ 'Content-Type':'application/json', 'TRON-PRO-API-KEY': TRONGRID_API_KEY }, body: JSON.stringify(params)
-    });
-    if (response.status === 403) return { error: 'API key invalid or rate-limited' };
-    const data = await response.json();
-    if (data.Error) throw new Error(data.Error);
-    return data;
-  }catch(e){ return { error: e.message } }
-}
-
 // ===================== Core =====================
 async function initialize(){
   const connectButton = document.getElementById('connect-button');
@@ -291,7 +276,6 @@ async function initialize(){
   // Tooltips
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
   tooltipTriggerList.forEach(t => new bootstrap.Tooltip(t));
-
   // Quick-fill buttons
   document.querySelectorAll('[data-fill]')?.forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -302,14 +286,12 @@ async function initialize(){
       if (input) input.value = (available * pct).toFixed(6);
     });
   });
-
   // Auto connect if ready
   const isTronLinkInstalled = await checkTronLinkInstalled();
   if (isTronLinkInstalled && window.tronLink && window.tronLink.ready){
     try{ await initializeTronWeb(); }catch(e){ showToast({ title:'Auto-connect failed', body:e.message, variant:'danger' }); }
   }
 }
-
 function checkTronLinkInstalled(){
   return new Promise(resolve=>{
     let attempts = 0; const maxAttempts = 10;
@@ -320,7 +302,6 @@ function checkTronLinkInstalled(){
     }, 1000);
   });
 }
-
 async function connectWallet(){
   try{
     if (!window.tronLink) throw new Error('TronLink is not detected. Install or unlock TronLink.');
@@ -329,35 +310,26 @@ async function connectWallet(){
     await initializeTronWeb();
   }catch(e){ showToast({ title:'Wallet', body:e.message, variant:'danger' }); }
 }
-
 async function initializeTronWeb(){
   await new Promise(r=>setTimeout(r, 800));
   tronWeb = window.tronWeb; userAddress = tronWeb.defaultAddress.base58;
   if (!userAddress) throw new Error('No user address found. Ensure TronLink is connected to mainnet.');
   document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
-
   const key = 'cft'; const details = tokenDetails[key];
   if (!isValidTronAddress(details.tokenAddress)) throw new Error(`Invalid token address for ${key}`);
   if (!isValidTronAddress(details.stakingAddress)) throw new Error(`Invalid staking address for ${key}`);
-
   tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
   stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
-
   if (!details.decimals){ tokenDetails[key].decimals = await tokenContracts[key].methods.decimals().call(); }
-
   setStatus('Connected', true);
   await updateTokenUI(key, true);
-
   try{
     const owner = await stakingContracts[key].methods.owner().call();
     if (userAddress === owner){ const admin = document.getElementById('admin-section'); if (admin) admin.style.display = 'block'; }
   }catch{}
-
   setInterval(()=> updateTokenUI(key), 60000);
 }
-
 function delay(ms){ return new Promise(r=>setTimeout(r, ms)); }
-
 async function updateTokenUI(token, first=false){
   try{
     if (first){
@@ -365,7 +337,6 @@ async function updateTokenUI(token, first=false){
         .forEach(id=> setSkeleton(id, true));
       ['pool-size','daily-payout','total-unclaimed','total-claimed'].forEach(id=> setSkeleton(id, true));
     }
-
     const [balanceRaw, userData, apy, timeout, userTotalClaimedRaw, poolSizeRaw, dailyPctRaw, totalClaimedRaw, totalUnclaimedRaw, roiRaw] = await Promise.all([
       tokenContracts[token].methods.balanceOf(userAddress).call().catch(()=> '0'),
       stakingContracts[token].methods.users(userAddress).call().catch(()=> ({ stakedAmount:'0', pendingRewards:'0', isActive:false, lastClaimTimestamp:'0', totalClaimed:'0' })),
@@ -378,61 +349,49 @@ async function updateTokenUI(token, first=false){
       stakingContracts[token].methods.viewTotalUnclaimedRewards().call().catch(()=> '0'),
       stakingContracts[token].methods.calculateROI(userAddress).call().catch(()=> '0'),
     ]);
-
     const d = tokenDetails[token];
     const balanceUnits = toUnits(balanceRaw, d.decimals);
-    const stakedUnits  = toUnits(userData.stakedAmount, d.decimals);
-    const rewardUnits  = toUnits(userData.pendingRewards, d.rewardDecimals);
+    const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
+    const rewardUnits = toUnits(userData.pendingRewards, d.rewardDecimals);
     const userTotalClaimed = Number(userTotalClaimedRaw) / SUN_PER_TRX; // contract stores TRX in sun
     const poolSize = Number(poolSizeRaw) / SUN_PER_TRX;
     const totalClaimedAll = Number(totalClaimedRaw) / SUN_PER_TRX;
     const totalUnclaimedAll = Number(totalUnclaimedRaw) / SUN_PER_TRX;
     const roiPct = Number(roiRaw) / 1; // already percent
-
     const availEl = document.getElementById(`available-tokens-${token}`);
     if (availEl){ availEl.textContent = fmt(balanceUnits); availEl.dataset.raw = String(balanceUnits); setSkeleton(`available-tokens-${token}`, false); }
-
     await delay(100);
     const stakedEl = document.getElementById(`staked-amount-${token}`);
     if (stakedEl){ stakedEl.textContent = fmt(stakedUnits); setSkeleton(`staked-amount-${token}`, false); }
-
     await delay(100);
     const apyPct = Number(apy) / 100;
     const apyEl = document.getElementById(`projected-rewards-${token}`);
     if (apyEl){ apyEl.textContent = fmtPct(apyPct); setSkeleton(`projected-rewards-${token}`, false); }
-
     await delay(100);
     const claimableEl = document.getElementById(`claimable-rewards-${token}`);
     if (claimableEl){ claimableEl.textContent = `${fmt(rewardUnits)} ${d.rewardDisplayName}`; }
-
     const userClaimedEl = document.getElementById('user-total-claimed-cft');
     if (userClaimedEl){ userClaimedEl.textContent = fmtTrx(userTotalClaimed); setSkeleton('user-total-claimed-cft', false); }
-
     const roiEl = document.getElementById('roi-cft');
     if (roiEl){ roiEl.textContent = fmtPct(roiPct); setSkeleton('roi-cft', false); }
-
     // Pool stats
     const poolEl = document.getElementById('pool-size'); if (poolEl){ poolEl.textContent = fmtTrx(poolSize); setSkeleton('pool-size', false); }
     const dailyEl = document.getElementById('daily-payout'); if (dailyEl){ dailyEl.textContent = `${(Number(dailyPctRaw)/100).toFixed(2)}% / day`; setSkeleton('daily-payout', false); }
     const unclaimedEl = document.getElementById('total-unclaimed'); if (unclaimedEl){ unclaimedEl.textContent = fmtTrx(totalUnclaimedAll); setSkeleton('total-unclaimed', false); }
     const claimedEl = document.getElementById('total-claimed'); if (claimedEl){ claimedEl.textContent = fmtTrx(totalClaimedAll); setSkeleton('total-claimed', false); }
-
     // Activate visibility
     const activateButton = document.getElementById(`activate-tokens-${token}`) || document.getElementById(`activate-tokens-button-${token}`);
     if (activateButton){ activateButton.style.display = (userData.isActive || Number(userData.stakedAmount) === 0) ? 'none' : 'block'; }
-
     // Claim timer
     updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp));
-
   }catch(e){ showToast({ title:'UI Update Error', body:e.message, variant:'danger' }); }
 }
-
 function updateClaimTimer(timeoutSec, lastClaimTs) {
-  const timerEl = document.getElementById('next-claim-timer'); // Changed from 'claim-timer'
+  const timerEl = document.getElementById('next-claim-timer');
   const claimBtn = document.getElementById('claim-rewards-button-cft');
   if (!timerEl || !claimBtn) return;
   if (!timeoutSec) {
-    timerEl.textContent = '—'; // Match the placeholder style
+    timerEl.textContent = '—';
     claimBtn.disabled = false;
     return;
   }
@@ -471,27 +430,21 @@ async function stakeTokens(token, amount){
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!isValidTronAddress(tokenDetails[token].tokenAddress)) throw new Error('Invalid token address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
-
       const amountToStake = toWei(amount, tokenDetails[token].decimals);
       if (amountToStake === 0n) throw new Error('Enter a valid amount to stake.');
-
       const stakingContractAddress = tokenDetails[token].stakingAddress;
       const tokenContract = tokenContracts[token];
       const stakingContract = stakingContracts[token];
       if (!tokenContract?.methods?.allowance) throw new Error('Token contract not initialized');
       if (!stakingContract?.methods?.stake) throw new Error('Staking contract not initialized');
-
       const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
       if (BigInt(balanceRaw) < amountToStake) throw new Error('Insufficient balance to stake.');
-
       const allowanceRaw = await tokenContract.methods.allowance(userAddress, stakingContractAddress).call();
       const allowance = BigInt(allowanceRaw);
       const approvalRequired = allowance < amountToStake;
-
       let energyCheckResult = approvalRequired
         ? await checkUserEnergy(userAddress, token, 'stake', 30000)
         : await checkUserEnergy(userAddress, token, 'stake');
-
       let { availableEnergy, shortfall, requiredEnergy } = energyCheckResult;
       if (shortfall > 0){
         const totalRequired = shortfall + SAFETY_ENERGY;
@@ -504,7 +457,6 @@ async function stakeTokens(token, amount){
           }
         }
       }
-
       processingModal = showProcessingModal('(2/2)');
       if (approvalRequired){
         const approvalTx = await tronWeb.transactionBuilder.triggerSmartContract(
@@ -520,7 +472,6 @@ async function stakeTokens(token, amount){
         showToast({ title:'Approve submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastApproval.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
         await delay(5000);
       }
-
       const stakeTx = await tronWeb.transactionBuilder.triggerSmartContract(
         stakingContractAddress, 'stake(uint256)', {}, [ { type:'uint256', value: amountToStake.toString() } ], userAddress
       );
@@ -535,7 +486,6 @@ async function stakeTokens(token, amount){
   };
   return withLoading(stakeBtn, 'Staking...', run)();
 }
-
 async function unstakeTokens(token){
   let processingModal = null; const btn = document.getElementById(`unstake-button-${token}`);
   const run = async ()=>{
@@ -544,7 +494,6 @@ async function unstakeTokens(token){
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
       const unstakeAmount = document.getElementById(`withdraw-amount-${token}`).value;
       if (!unstakeAmount || isNaN(unstakeAmount) || Number(unstakeAmount) <= 0) throw new Error('Enter a valid amount to withdraw.');
-
       const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'unstake');
       if (shortfall > 0){
         const totalRequired = shortfall + SAFETY_ENERGY;
@@ -553,13 +502,11 @@ async function unstakeTokens(token){
           if (modalResult.rent){ processingModal = showProcessingModal('(1/2)'); await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx); await delay(5000); hideProcessingModal(processingModal); }
         }
       }
-
       processingModal = showProcessingModal('(2/2)');
       const amountToUnstake = toWei(unstakeAmount, tokenDetails[token].decimals);
       const stakingContract = stakingContracts[token];
       const userData = await stakingContract.methods.users(userAddress).call();
       if (BigInt(userData.stakedAmount) < amountToUnstake) throw new Error('Insufficient staked amount.');
-
       const withdrawTx = await tronWeb.transactionBuilder.triggerSmartContract(
         tokenDetails[token].stakingAddress, 'unstake(uint256)', {}, [ { type:'uint256', value: amountToUnstake.toString() } ], userAddress
       );
@@ -574,14 +521,12 @@ async function unstakeTokens(token){
   };
   return withLoading(btn, 'Withdrawing...', run)();
 }
-
 async function claimRewards(token){
   let processingModal = null; const btn = document.getElementById(`claim-rewards-button-${token}`);
   const run = async ()=>{
     try{
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
-
       const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'claimRewards');
       if (shortfall > 0){
         const totalRequired = shortfall + SAFETY_ENERGY;
@@ -590,12 +535,10 @@ async function claimRewards(token){
           if (modalResult.rent){ processingModal = showProcessingModal('(1/2)'); await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx); await delay(5000); hideProcessingModal(processingModal); }
         }
       }
-
       processingModal = showProcessingModal('(2/2)');
       const stakingContract = stakingContracts[token];
       const userData = await stakingContract.methods.users(userAddress).call();
       if (BigInt(userData.pendingRewards) === 0n) throw new Error('No rewards available to claim.');
-
       const claimTx = await tronWeb.transactionBuilder.triggerSmartContract(
         tokenDetails[token].stakingAddress, 'claimRewards()', {}, [], userAddress
       );
@@ -610,14 +553,12 @@ async function claimRewards(token){
   };
   return withLoading(btn, 'Claiming...', run)();
 }
-
 async function activateTokens(token){
   let processingModal = null; const btn = document.getElementById(`activate-tokens-button-${token}`);
   const run = async ()=>{
     try{
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
-
       const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'activateTokens');
       if (shortfall > 0){
         const totalRequired = shortfall + SAFETY_ENERGY;
@@ -626,12 +567,10 @@ async function activateTokens(token){
           if (modalResult.rent){ processingModal = showProcessingModal('(1/2)'); await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx); await delay(5000); hideProcessingModal(processingModal); }
         }
       }
-
       processingModal = showProcessingModal('(2/2)');
       const stakingContract = stakingContracts[token];
       const userData = await stakingContract.methods.users(userAddress).call();
       if (userData.isActive || BigInt(userData.stakedAmount) === 0n) throw new Error('No inactive tokens to activate.');
-
       const activateTx = await tronWeb.transactionBuilder.triggerSmartContract(
         tokenDetails[token].stakingAddress, 'activateTokens()', {}, [], userAddress
       );
@@ -650,18 +589,13 @@ async function activateTokens(token){
 // ===================== Events =====================
 document.addEventListener('DOMContentLoaded', () => {
   const key = 'cft';
-
   const stakeButton = document.getElementById(`stake-button-${key}`);
   if (stakeButton){ stakeButton.addEventListener('click', async (e)=>{ e.preventDefault(); const amount = document.getElementById(`stake-amount-${key}`).value; await stakeTokens(key, amount); }); }
-
   const unstakeButton = document.getElementById(`unstake-button-${key}`);
   if (unstakeButton){ unstakeButton.addEventListener('click', async (e)=>{ e.preventDefault(); await unstakeTokens(key); }); }
-
   const claimButton = document.getElementById(`claim-rewards-button-${key}`);
   if (claimButton){ claimButton.addEventListener('click', async (e)=>{ e.preventDefault(); await claimRewards(key); }); }
-
   const activateButton = document.getElementById(`activate-tokens-button-${key}`);
   if (activateButton){ activateButton.addEventListener('click', async (e)=>{ e.preventDefault(); await activateTokens(key); }); }
-
   initialize();
 });
