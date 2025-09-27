@@ -333,24 +333,24 @@ async function initializeTronWeb(){
   setInterval(()=> updateTokenUI(key), 60000);
 }
 function delay(ms){ return new Promise(r=>setTimeout(r, ms)); }
-async function updateTokenUI(token, first=false){
-  try{
-    if (first){
-      ['available-tokens-cft','staked-amount-cft','projected-rewards-cft','user-total-claimed-cft','roi-cft']
-        .forEach(id=> setSkeleton(id, true));
-      ['pool-size','daily-payout','total-unclaimed','total-claimed'].forEach(id=> setSkeleton(id, true));
+async function updateTokenUI(token, first = false) {
+  try {
+    if (first) {
+      ['available-tokens-cft', 'staked-amount-cft', 'projected-rewards-cft', 'user-total-claimed-cft', 'roi-cft']
+        .forEach(id => setSkeleton(id, true));
+      ['pool-size', 'daily-payout', 'total-unclaimed', 'total-claimed'].forEach(id => setSkeleton(id, true));
     }
     const [balanceRaw, userData, apy, timeout, userTotalClaimedRaw, poolSizeRaw, dailyPctRaw, totalClaimedRaw, totalUnclaimedRaw, roiRaw] = await Promise.all([
-      tokenContracts[token].methods.balanceOf(userAddress).call().catch(()=> '0'),
-      stakingContracts[token].methods.users(userAddress).call().catch(()=> ({ stakedAmount:'0', pendingRewards:'0', isActive:false, lastClaimTimestamp:'0', totalClaimed:'0' })),
-      stakingContracts[token].methods.calculateAPY(userAddress).call().catch(()=> '0'),
-      stakingContracts[token].methods.claimTimeout().call().catch(()=> '0'),
-      stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(()=> '0'),
-      stakingContracts[token].methods.poolSize().call().catch(()=> '0'),
-      stakingContracts[token].methods.dailyPayoutPercentage().call().catch(()=> '0'),
-      stakingContracts[token].methods.viewTotalClaimedRewards().call().catch(()=> '0'),
-      stakingContracts[token].methods.viewTotalUnclaimedRewards().call().catch(()=> '0'),
-      stakingContracts[token].methods.calculateROI(userAddress).call().catch(()=> '0'),
+      tokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0'),
+      stakingContracts[token].methods.users(userAddress).call().catch(() => ({ stakedAmount: '0', pendingRewards: '0', isActive: false, lastClaimTimestamp: '0', totalClaimed: '0' })),
+      stakingContracts[token].methods.calculateAPY(userAddress).call().catch(() => '0'),
+      stakingContracts[token].methods.claimTimeout().call().catch(() => '0'),
+      stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(() => '0'),
+      stakingContracts[token].methods.poolSize().call().catch(() => '0'),
+      stakingContracts[token].methods.dailyPayoutPercentage().call().catch(() => '0'),
+      stakingContracts[token].methods.viewTotalClaimedRewards().call().catch(() => '0'),
+      stakingContracts[token].methods.viewTotalUnclaimedRewards().call().catch(() => '0'),
+      stakingContracts[token].methods.calculateROI(userAddress).call().catch(() => '0'),
     ]);
     const d = tokenDetails[token];
     const balanceUnits = toUnits(balanceRaw, d.decimals);
@@ -361,33 +361,35 @@ async function updateTokenUI(token, first=false){
     const totalClaimedAll = Number(totalClaimedRaw) / SUN_PER_TRX;
     const totalUnclaimedAll = Number(totalUnclaimedRaw) / SUN_PER_TRX;
     const roiPct = Number(roiRaw) / 1; // already percent
+    const apyPct = Number(apy); // Remove division by 100, as contract returns actual APY
     const availEl = document.getElementById(`available-tokens-${token}`);
-    if (availEl){ availEl.textContent = fmt(balanceUnits); availEl.dataset.raw = String(balanceUnits); setSkeleton(`available-tokens-${token}`, false); }
+    if (availEl) { availEl.textContent = fmt(balanceUnits); availEl.dataset.raw = String(balanceUnits); setSkeleton(`available-tokens-${token}`, false); }
     await delay(100);
     const stakedEl = document.getElementById(`staked-amount-${token}`);
-    if (stakedEl){ stakedEl.textContent = fmt(stakedUnits); setSkeleton(`staked-amount-${token}`, false); }
+    if (stakedEl) { stakedEl.textContent = fmt(stakedUnits); setSkeleton(`staked-amount-${token}`, false); }
     await delay(100);
-    const apyPct = Number(apy) / 100;
     const apyEl = document.getElementById(`projected-rewards-${token}`);
-    if (apyEl){ apyEl.textContent = fmtPct(apyPct); setSkeleton(`projected-rewards-${token}`, false); }
+    if (apyEl) { apyEl.textContent = fmtPct(apyPct); setSkeleton(`projected-rewards-${token}`, false); }
     await delay(100);
     const claimableEl = document.getElementById(`claimable-rewards-${token}`);
-    if (claimableEl){ claimableEl.textContent = `${fmt(rewardUnits)} ${d.rewardDisplayName}`; }
+    if (claimableEl) { claimableEl.textContent = `${fmt(rewardUnits)} ${d.rewardDisplayName}`; }
     const userClaimedEl = document.getElementById('user-total-claimed-cft');
-    if (userClaimedEl){ userClaimedEl.textContent = fmtTrx(userTotalClaimed); setSkeleton('user-total-claimed-cft', false); }
+    if (userClaimedEl) { userClaimedEl.textContent = fmtTrx(userTotalClaimed); setSkeleton('user-total-claimed-cft', false); }
     const roiEl = document.getElementById('roi-cft');
-    if (roiEl){ roiEl.textContent = fmtPct(roiPct); setSkeleton('roi-cft', false); }
+    if (roiEl) { roiEl.textContent = fmtPct(roiPct); setSkeleton('roi-cft', false); }
     // Pool stats
-    const poolEl = document.getElementById('pool-size'); if (poolEl){ poolEl.textContent = fmtTrx(poolSize); setSkeleton('pool-size', false); }
-    const dailyEl = document.getElementById('daily-payout'); if (dailyEl){ dailyEl.textContent = `${(Number(dailyPctRaw)/100).toFixed(2)}% / day`; setSkeleton('daily-payout', false); }
-    const unclaimedEl = document.getElementById('total-unclaimed'); if (unclaimedEl){ unclaimedEl.textContent = fmtTrx(totalUnclaimedAll); setSkeleton('total-unclaimed', false); }
-    const claimedEl = document.getElementById('total-claimed'); if (claimedEl){ claimedEl.textContent = fmtTrx(totalClaimedAll); setSkeleton('total-claimed', false); }
+    const poolEl = document.getElementById('pool-size'); if (poolEl) { poolEl.textContent = fmtTrx(poolSize); setSkeleton('pool-size', false); }
+    const dailyEl = document.getElementById('daily-payout'); if (dailyEl) { dailyEl.textContent = `${(Number(dailyPctRaw)/100).toFixed(2)}% / day`; setSkeleton('daily-payout', false); }
+    const unclaimedEl = document.getElementById('total-unclaimed'); if (unclaimedEl) { unclaimedEl.textContent = fmtTrx(totalUnclaimedAll); setSkeleton('total-unclaimed', false); }
+    const claimedEl = document.getElementById('total-claimed'); if (claimedEl) { claimedEl.textContent = fmtTrx(totalClaimedAll); setSkeleton('total-claimed', false); }
     // Activate visibility
     const activateButton = document.getElementById(`activate-tokens-${token}`) || document.getElementById(`activate-tokens-button-${token}`);
-    if (activateButton){ activateButton.style.display = (userData.isActive || Number(userData.stakedAmount) === 0) ? 'none' : 'block'; }
+    if (activateButton) { activateButton.style.display = (userData.isActive || Number(userData.stakedAmount) === 0) ? 'none' : 'block'; }
     // Claim timer
     updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp));
-  }catch(e){ showToast({ title:'UI Update Error', body:e.message, variant:'danger' }); }
+  } catch (e) {
+    showToast({ title: 'UI Update Error', body: e.message, variant: 'danger' });
+  }
 }
 function updateClaimTimer(timeoutSec, lastClaimTs) {
   const timerEl = document.getElementById('next-claim-timer');
