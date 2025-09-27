@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html class="no-js" lang="en">
 <head>
@@ -25,15 +24,12 @@
       --glass:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
       --focus-ring:0 0 0 3px rgba(125,178,255,.35);
     }
-
     html,body{background:var(--bg-0);color:var(--txt);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
-
     /* Header spacing + bigger top line */
     .hero-section{padding:120px 0 28px;text-align:center}
     .intro-text{display:inline-block;font-size:1rem;letter-spacing:.16em;text-transform:uppercase;color:#c3d3ef;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:.42rem .95rem;border-radius:999px}
     .hero-section h1{font-weight:900;letter-spacing:.4px;margin-top:16px;font-size:3.25rem;line-height:1.1}
     .hero-section p{color:#b5c2d8}
-
     /* Luxe Card */
     .luxe-card{position:relative;border-radius:var(--radius-4);background:var(--glass);backdrop-filter: blur(10px);border:1px solid var(--line);box-shadow:var(--shadow-2);overflow:hidden}
     .staking-header{padding:32px}
@@ -43,16 +39,13 @@
     .chip{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:#cfe3ff;padding:.35rem .65rem;border-radius:999px;font-size:.85rem}
     .chip .dot{width:8px;height:8px;border-radius:999px;background:var(--success);box-shadow:0 0 0 2px rgba(0,224,149,.15)}
     .staking-sub{color:var(--muted)}
-
     /* KPI Row */
     .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:0 32px 24px}
     .kpi{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:16px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3)}
     .kpi span:first-child{font-weight:800;font-size:1.15rem}
     .kpi span:last-child{color:var(--muted);font-size:.88rem}
-
     /* Action Grid */
     .action-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;padding:0 32px 36px}
-
     /* Panel as grid to pin button row */
     .panel{
       position:relative;
@@ -67,37 +60,29 @@
     }
     .panel .item-title{color:var(--muted);font-weight:700;letter-spacing:.3px}
     .panel small{color:#9fb0cc}
-
     .form-control.luxe{background:#0c1121;border:1px solid var(--line);color:#eaf2ff;border-radius:14px;padding:12px 14px}
     .form-control.luxe:focus{outline:none;box-shadow:var(--focus-ring);border-color:rgba(125,178,255,.6)}
-
     /* Quick fills: one line */
     .quick-fills{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
     .quick-fills .btn{border-radius:999px;border:1px solid var(--line);color:#cfe3ff;background:transparent;font-weight:600;width:100%}
-
     /* Primary/ghost buttons unified height */
     .btn.primary,.btn.ghost{height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px}
     .btn.primary{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#0b0e17;border:0;font-weight:800}
     .btn.primary:hover{filter:brightness(1.05)}
     .btn.ghost{border:1px solid var(--line);color:#eaf2ff;background:transparent}
     .btn.ghost:hover{border-color:rgba(125,178,255,.55)}
-
     /* (No margin-top hack needed; grid handles baseline) */
-
     /* Pool Stats */
     .stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
     .stat-tile{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
     .stat-tile .item-title{color:var(--muted);font-weight:700}
-
     /* Claim-before box */
     .countdown-tile{margin-top:14px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
     .countdown-tile .item-title{color:var(--muted);font-weight:700}
-
     /* Skeleton */
     .skeleton{position:relative;overflow:hidden;min-width:80px;min-height:20px;background:#141a2b;border-radius:8px}
     .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);animation:shimmer 1.2s infinite}
     @keyframes shimmer{100%{transform:translateX(100%)}}
-
     /* Modals – tidy energy rental */
     .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt);border-radius:16px}
     .modal-header .btn-close{filter:invert(1)}
@@ -110,66 +95,62 @@
     .modal .btn-cancel{border:1px solid var(--line);color:#eaf2ff;background:transparent;border-radius:12px}
     #transaction-processing-modal .spinner{border:4px solid var(--accent-2);border-top-color:transparent;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto 15px}
     @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
-
     /* Keep Claim aligned: float Activate Tokens in header corner on desktop */
     @media (min-width: 992px){
       #activate-tokens-button-cft{position:absolute;top:18px;right:18px;height:32px;padding:0 12px;font-size:.85rem}
     }
-
     /* Advertisement Card Styling */
-.luxe-ad-card {
-  position: relative;
-  border-radius: var(--radius-4);
-  background: linear-gradient(135deg, rgba(98, 255, 207, 0.1), rgba(125, 178, 255, 0.1));
-  border: 2px solid var(--accent-3); /* Purple border to stand out */
-  box-shadow: var(--shadow-2), 0 0 20px rgba(125, 178, 255, 0.3); /* Glowing shadow */
-  overflow: hidden;
-  margin: 2rem 0;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.luxe-ad-card:hover {
-  transform: translateY(-5px); /* Slight lift on hover */
-  box-shadow: var(--shadow-2), 0 0 30px rgba(125, 178, 255, 0.5); /* Enhanced glow */
-}
-.luxe-ad-card .inner {
-  padding: 1.5rem;
-}
-.luxe-ad-card h2 {
-  font-weight: 800;
-  color: var(--accent-1); /* Bright accent color for title */
-  text-shadow: 0 0 5px rgba(98, 255, 207, 0.5);
-}
-.luxe-ad-card p {
-  color: var(--txt);
-  font-size: 1.1rem;
-}
-.luxe-ad-card .btn.primary {
-  background: linear-gradient(135deg, var(--accent-3), var(--accent-2)); /* Unique gradient for ad button */
-  font-weight: 700;
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-}
-.luxe-ad-card .btn.primary:hover {
-  filter: brightness(1.2);
-}
-
-/* Responsive adjustments */
-@media (max-width: 576px) {
-  .luxe-ad-card {
-    margin: 1.5rem 0;
-    border-radius: var(--radius-3);
-  }
-  .luxe-ad-card .inner {
-    padding: 1rem;
-  }
-  .luxe-ad-card h2 {
-    font-size: 1.8rem;
-  }
-  .luxe-ad-card p {
-    font-size: 1rem;
-  }
-}
-
+    .luxe-ad-card {
+      position: relative;
+      border-radius: var(--radius-4);
+      background: linear-gradient(135deg, rgba(98, 255, 207, 0.1), rgba(125, 178, 255, 0.1));
+      border: 2px solid var(--accent-3); /* Purple border to stand out */
+      box-shadow: var(--shadow-2), 0 0 20px rgba(125, 178, 255, 0.3); /* Glowing shadow */
+      overflow: hidden;
+      margin: 2rem 0;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .luxe-ad-card:hover {
+      transform: translateY(-5px); /* Slight lift on hover */
+      box-shadow: var(--shadow-2), 0 0 30px rgba(125, 178, 255, 0.5); /* Enhanced glow */
+    }
+    .luxe-ad-card .inner {
+      padding: 1.5rem;
+    }
+    .luxe-ad-card h2 {
+      font-weight: 800;
+      color: var(--accent-1); /* Bright accent color for title */
+      text-shadow: 0 0 5px rgba(98, 255, 207, 0.5);
+    }
+    .luxe-ad-card p {
+      color: var(--txt);
+      font-size: 1.1rem;
+    }
+    .luxe-ad-card .btn.primary {
+      background: linear-gradient(135deg, var(--accent-3), var(--accent-2)); /* Unique gradient for ad button */
+      font-weight: 700;
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+    }
+    .luxe-ad-card .btn.primary:hover {
+      filter: brightness(1.2);
+    }
+    /* Responsive adjustments */
+    @media (max-width: 576px) {
+      .luxe-ad-card {
+        margin: 1.5rem 0;
+        border-radius: var(--radius-3);
+      }
+      .luxe-ad-card .inner {
+        padding: 1rem;
+      }
+      .luxe-ad-card h2 {
+        font-size: 1.8rem;
+      }
+      .luxe-ad-card p {
+        font-size: 1rem;
+      }
+    }
     /* Responsive */
     @media (max-width: 992px){
       .kpis{grid-template-columns:repeat(2,1fr)}
@@ -187,7 +168,6 @@
       /* Let Activate Tokens fall back into normal flow on phones */
       #activate-tokens-button-cft{position:static;height:44px;width:100%;margin-top:8px}
     }
-
     /* Equal height panels on desktop to align primary buttons precisely */
     @media (min-width: 992px){
       .panel{min-height:260px}
@@ -229,7 +209,6 @@
       </div>
     </nav>
   </header>
-
   <!-- Hero -->
   <section class="hero-section">
     <div class="container text-center">
@@ -238,7 +217,6 @@
       <p class="mb-0">Grow your wealth through TRX rewards by staking CFT</p>
     </div>
   </section>
-
   <!-- Staking Card -->
   <section class="py-3">
     <div class="container">
@@ -256,7 +234,6 @@
             </div>
           </div>
         </div>
-
         <!-- KPI Row -->
         <div class="kpis">
           <div class="kpi"><span id="staked-amount-cft" class="skeleton"></span><span>Staked</span></div>
@@ -267,7 +244,6 @@
           <div class="kpi"><span id="roi-cft" class="skeleton"></span><span>Your ROI</span></div>
           <div class="kpi"><span id="user-total-claimed-cft" class="skeleton"></span><span>Your Total Claimed</span></div>
         </div>
-
         <!-- Action Grid (Deposit / Withdraw / Rewards) -->
         <div class="action-grid">
           <!-- Deposit -->
@@ -286,7 +262,6 @@
             </div>
             <a href="#" class="btn primary w-100" id="stake-button-cft">Stake</a>
           </div>
-
           <!-- Withdraw -->
           <div class="panel">
             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -299,67 +274,62 @@
             <div></div>
             <a href="#" class="btn primary w-100" id="unstake-button-cft">Withdraw</a>
           </div>
-
           <!-- Rewards -->
           <div class="panel">
             <div class="d-flex justify-content-between align-items-center mb-2">
               <span class="item-title">Pending Rewards</span>
-              
             </div>
             <div>
               <h4 class="m-0" id="claimable-rewards-cft">0 TRX</h4>
               <span class="mt-2 d-block" style="color:#9fb0cc" id="energy-hint">TRON energy fee required</span>
             </div>
+            <div></div>
             <div>
-              <a href="#" class="btn ghost w-100" id="activate-tokens-button-cft">Activate Tokens</a>
+              <a href="#" class="btn ghost w-100" id="activate-tokens-button-cft" style="display:none">Activate Tokens</a>
+              <a href="#" class="btn primary w-100" id="claim-rewards-button-cft"><i class="fa-solid fa-lock me-1"></i> Claim</a>
             </div>
-            <a href="#" class="btn primary w-100" id="claim-rewards-button-cft"><i class="fa-solid fa-lock me-1"></i> Claim</a>
           </div>
         </div>
       </div>
-
       <!-- Admin (hidden) -->
       <div id="admin-section" class="mt-4 p-3" style="display:none; background:var(--bg-2); border:1px solid var(--line); border-radius:16px">
         <h3>Admin Controls</h3>
       </div>
     </div>
   </section>
-
   <section class="py-2">
-  <div class="container">
-    <div class="stats-grid">
-      <div class="stat-tile"><span class="item-title">Pool Size</span><strong id="pool-size">—</strong></div>
-      <div class="stat-tile"><span class="item-title">Daily Payout</span><strong id="daily-payout">—</strong></div>
-      <div class="stat-tile"><span class="item-title">Total Next Payout</span><strong id="total-next-payout">—</strong></div>
-      <div class="stat-tile"><span class="item-title">Your Next Payout</span><strong id="your-next-payout">—</strong></div>
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat-tile"><span class="item-title">Pool Size</span><strong id="pool-size">—</strong></div>
+        <div class="stat-tile"><span class="item-title">Daily Payout</span><strong id="daily-payout">—</strong></div>
+        <div class="stat-tile"><span class="item-title">Total Next Payout</span><strong id="total-next-payout">—</strong></div>
+        <div class="stat-tile"><span class="item-title">Your Next Payout</span><strong id="your-next-payout">—</strong></div>
+      </div>
+      <!-- Claim before box -->
+      <div class="countdown-tile" id="next-claim-box">
+        <span class="item-title">Claim before</span>
+        <strong id="next-claim-timer">—</strong>
+      </div>
     </div>
-    <!-- Claim before box -->
-    <div class="countdown-tile" id="next-claim-box">
-      <span class="item-title">Claim before</span>
-      <strong id="next-claim-timer">—</strong>
-    </div>
-  </div>
-</section>
-
+  </section>
   <section class="py-3">
-  <div class="container">
-    <div class="cta luxe-ad-card">
-      <div class="row align-items-center g-0">
-        <div class="col-12 col-md-5 text-center p-3">
-          <img src="assets/img/content/guardian.png" alt="CFT Guardian" style="max-width:220px">
-        </div>
-        <div class="col-12 col-md-7 p-3">
-          <div class="inner">
-            <h2 class="m-0">CFT Guardian Minting is Now Live</h2>
-            <p class="mb-3">Earn daily SOL rewards by staking our Guardian NFTs</p>
-            <a class="btn primary" href="https://cftguardians.com/" aria-label="Mint CFT Guardians"><i class="icon-rocket me-2"></i>Mint Now</a>
+    <div class="container">
+      <div class="cta luxe-ad-card">
+        <div class="row align-items-center g-0">
+          <div class="col-12 col-md-5 text-center p-3">
+            <img src="assets/img/content/guardian.png" alt="CFT Guardian" style="max-width:220px">
+          </div>
+          <div class="col-12 col-md-7 p-3">
+            <div class="inner">
+              <h2 class="m-0">CFT Guardian Minting is Now Live</h2>
+              <p class="mb-3">Earn daily SOL rewards by staking our Guardian NFTs</p>
+              <a class="btn primary" href="https://cftguardians.com/" aria-label="Mint CFT Guardians"><i class="icon-rocket me-2"></i>Mint Now</a>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-</section>
-
+  </section>
   <!-- Energy Rental Modal -->
   <div class="modal fade" id="energy-rental-modal" tabindex="-1" aria-labelledby="energyRentalModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -379,7 +349,6 @@
       </div>
     </div>
   </div>
-
   <!-- Processing Modal -->
   <div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-labelledby="transactionProcessingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -389,12 +358,10 @@
       </div>
     </div>
   </div>
-
   <!-- Toasts -->
   <div id="toast-container" style="position:fixed;z-index:1100;bottom:16px;right:16px">
     <div id="app-toast" class="toast text-bg-dark" role="status" aria-live="polite" aria-atomic="true"></div>
   </div>
-
   <!-- Footer -->
   <footer class="footer-area py-5 mt-3">
     <div class="container text-center">
@@ -408,7 +375,6 @@
       <div id="scroll-to-top" class="scroll-to-top"><a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a></div>
     </div>
   </footer>
-
   <!-- Vendor JS -->
   <script src="assets/js/vendor/jquery.min.js"></script>
   <script src="assets/js/vendor/popper.min.js"></script>
@@ -420,12 +386,8 @@
   <script src="assets/js/vendor/shuffle.min.js"></script>
   <script src="assets/js/main.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
-
-  <!-- App JS (unchanged) -->
+  <!-- App JS -->
   <script src="assets/js/poolstaking.js" type="module"></script>
-
-  <!-- Mirror the claim timer into the Claim before box with days support -->
-  
 </body>
 </html>
 
