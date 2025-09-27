@@ -129,52 +129,80 @@ async function tronGridApiCall(endpoint, params = {}, keyIndex = 0) {
 }
 // ===================== Custom TronWeb Setup =====================
 async function initializeTronWeb() {
-  await new Promise(resolve => setTimeout(resolve, 800));
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|TronLink/i.test(navigator.userAgent);
+  const initDelay = isMobile ? 1500 : 800; // Longer delay on mobile for app readiness
+  await new Promise(resolve => setTimeout(resolve, initDelay));
   if (!window.tronLink || !window.tronWeb) throw new Error('TronLink is not detected. Install or unlock TronLink.');
   if (!window.tronLink.ready) throw new Error('TronLink is not ready. Unlock TronLink and select mainnet.');
   tronWeb = window.tronWeb;
-  const HttpProvider = window.TronWeb.providers.HttpProvider;
   let currentApiKeyIndex = 0;
-  const customHttpProvider = new Proxy(new HttpProvider(TRONGRID_API_URL), {
-    get(target, prop) {
-      if (prop === 'request') {
-        return async function (endpoint, params = {}, method = 'POST') {
-          try {
-            console.log(`TronWeb using API key ${currentApiKeyIndex + 1}: ${TRONGRID_API_KEYS[currentApiKeyIndex].slice(0, 8)}...`);
-            const response = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
-              method,
-              headers: {
-                'Content-Type': 'application/json',
-                'TRON-PRO-API-KEY': TRONGRID_API_KEYS[currentApiKeyIndex]
-              },
-              body: method === 'POST' ? JSON.stringify(params) : undefined
-            });
-            if ((response.status === 429 || response.status === 403) && currentApiKeyIndex < TRONGRID_API_KEYS.length - 1) {
-              console.warn(`TronWeb request failed with status ${response.status} for API key ${currentApiKeyIndex + 1}, switching to next key after 500ms...`);
-              currentApiKeyIndex = (currentApiKeyIndex + 1) % TRONGRID_API_KEYS.length;
-              await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
-              return customHttpProvider.request(endpoint, params, method);
-            }
-            const data = await response.json();
-            if (data.Error) throw new Error(data.Error);
-            return data;
-          } catch (e) {
-            if (currentApiKeyIndex < TRONGRID_API_KEYS.length - 1) {
-              console.warn(`TronWeb error with API key ${currentApiKeyIndex + 1}: ${e.message}, trying next key after 500ms...`);
-              currentApiKeyIndex = (currentApiKeyIndex + 1) % TRONGRID_API_KEYS.length;
-              await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
-              return customHttpProvider.request(endpoint, params, method);
-            }
-            throw e;
-          }
-        };
+  if (isMobile) {
+    // Mobile: Use injected tronWeb as-is, set API key header directly for rotation
+    console.log('Mobile TronLink detected: Using injected provider with header-based API key rotation.');
+    // Set initial API key
+    tronWeb.setHeader({ 'TRON-PRO-API-KEY': TRONGRID_API_KEYS[currentApiKeyIndex] });
+    // Override request for key rotation on errors (without Proxy to avoid conflicts)
+    const originalRequest = tronWeb.request;
+    tronWeb.request = async function(endpoint, params = {}, method = 'POST') {
+      try {
+        console.log(`Mobile TronWeb using API key ${currentApiKeyIndex + 1}: ${TRONGRID_API_KEYS[currentApiKeyIndex].slice(0, 8)}...`);
+        tronWeb.setHeader({ 'TRON-PRO-API-KEY': TRONGRID_API_KEYS[currentApiKeyIndex] }); // Ensure header is set
+        return await originalRequest.call(this, endpoint, params, method);
+      } catch (e) {
+        if ((e.message && (e.message.includes('429') || e.message.includes('403'))) && currentApiKeyIndex < TRONGRID_API_KEYS.length - 1) {
+          console.warn(`Mobile TronWeb error with API key ${currentApiKeyIndex + 1}: ${e.message}, trying next key after 500ms...`);
+          currentApiKeyIndex = (currentApiKeyIndex + 1) % TRONGRID_API_KEYS.length;
+          await new Promise(resolve => setTimeout(resolve, 500));
+          return await this.request(endpoint, params, method); // Retry
+        }
+        throw e;
       }
-      return target[prop];
-    }
-  });
-  tronWeb.setFullNode(customHttpProvider);
-  tronWeb.setSolidityNode(customHttpProvider);
-  tronWeb.setEventServer(customHttpProvider);
+    };
+  } else {
+    // Desktop: Use custom Proxy provider as before
+    console.log('Desktop TronLink detected: Using custom Proxy provider.');
+    const HttpProvider = window.TronWeb.providers.HttpProvider;
+    const customHttpProvider = new Proxy(new HttpProvider(TRONGRID_API_URL), {
+      get(target, prop) {
+        if (prop === 'request') {
+          return async function (endpoint, params = {}, method = 'POST') {
+            try {
+              console.log(`TronWeb using API key ${currentApiKeyIndex + 1}: ${TRONGRID_API_KEYS[currentApiKeyIndex].slice(0, 8)}...`);
+              const response = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
+                method,
+                headers: {
+                  'Content-Type': 'application/json',
+                  'TRON-PRO-API-KEY': TRONGRID_API_KEYS[currentApiKeyIndex]
+                },
+                body: method === 'POST' ? JSON.stringify(params) : undefined
+              });
+              if ((response.status === 429 || response.status === 403) && currentApiKeyIndex < TRONGRID_API_KEYS.length - 1) {
+                console.warn(`TronWeb request failed with status ${response.status} for API key ${currentApiKeyIndex + 1}, switching to next key after 500ms...`);
+                currentApiKeyIndex = (currentApiKeyIndex + 1) % TRONGRID_API_KEYS.length;
+                await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
+                return customHttpProvider.request(endpoint, params, method);
+              }
+              const data = await response.json();
+              if (data.Error) throw new Error(data.Error);
+              return data;
+            } catch (e) {
+              if (currentApiKeyIndex < TRONGRID_API_KEYS.length - 1) {
+                console.warn(`TronWeb error with API key ${currentApiKeyIndex + 1}: ${e.message}, trying next key after 500ms...`);
+                currentApiKeyIndex = (currentApiKeyIndex + 1) % TRONGRID_API_KEYS.length;
+                await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
+                return customHttpProvider.request(endpoint, params, method);
+              }
+              throw e;
+            }
+          };
+        }
+        return target[prop];
+      }
+    });
+    tronWeb.setFullNode(customHttpProvider);
+    tronWeb.setSolidityNode(customHttpProvider);
+    tronWeb.setEventServer(customHttpProvider);
+  }
   userAddress = tronWeb.defaultAddress.base58;
   if (!userAddress) throw new Error('No user address found. Ensure TronLink is connected to mainnet.');
   document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
