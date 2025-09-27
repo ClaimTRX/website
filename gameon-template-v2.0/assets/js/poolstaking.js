@@ -9,11 +9,10 @@ let tronWeb, userAddress;
 const stakingContracts = {};
 const tokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
-
 // ===================== Config =====================
 const TRONGRID_API_KEYS = [
-  'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca', // First API key
-  '664292b1-47ad-47b7-88c1-db67bee6e732'  // Second API key
+  'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca',
+  '664292b1-47ad-47b7-88c1-db67bee6e732'
 ];
 const TRONGRID_API_URL = 'https://api.trongrid.io';
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
@@ -22,11 +21,11 @@ const SAFETY_ENERGY = 20000;
 const ENERGY_PRICE_SUN = 10;
 const SUN_PER_TRX = 1_000_000;
 const ENERGY_RENTAL_DURATION = 2;
-const API_CALL_DELAY = 100; // Delay between API calls in ms
+const API_CALL_DELAY = 100;
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-    stakingAddress: 'TFQf7a3sYmcFgp62aTXhMiK95psKyptMoY',
+    stakingAddress: 'TAVtu4UZxxckmMgPQvf1Cd2jRESkSxasrW',
     decimals: 6,
     displayName: 'CFT',
     rewardDisplayName: 'TRX',
@@ -46,11 +45,60 @@ const tokenDetails = {
     }
   }
 };
-
+// ===================== Advertisement Rotation =====================
+const advertisements = [
+  {
+    title: "CFT Guardian Minting is Now Live",
+    description: "Earn daily SOL rewards by staking our Guardian NFTs",
+    image: "assets/img/content/guardian.png",
+    link: "https://cftguardians.com/",
+    linkText: "Mint Now",
+    icon: "icon-rocket"
+  },
+  {
+    title: "Join CFT Swap Now",
+    description: "Swap CFT for other tokens with low fees",
+    image: "assets/img/content/swap.png",
+    link: "https://cftswap.com/",
+    linkText: "Swap Now",
+    icon: "icon-swap"
+  },
+  {
+    title: "Stake StableX for High Returns",
+    description: "Earn up to 15% APY with StableX staking",
+    image: "assets/img/content/stablex.png",
+    link: "https://stablex.cftecosystem.com/",
+    linkText: "Stake Now",
+    icon: "icon-stake"
+  }
+];
+function rotateAdvertisements() {
+  const adContainer = document.querySelector('.luxe-ad-card .row');
+  if (!adContainer) return;
+  let currentAdIndex = 0;
+  const updateAd = () => {
+    const ad = advertisements[currentAdIndex];
+    adContainer.innerHTML = `
+      <div class="col-12 col-md-5 text-center p-3">
+        <img src="${ad.image}" alt="${ad.title}" style="max-width:220px">
+      </div>
+      <div class="col-12 col-md-7 p-3">
+        <div class="inner">
+          <h2 class="m-0">${ad.title}</h2>
+          <p class="mb-3">${ad.description}</p>
+          <a class="btn primary" href="${ad.link}" aria-label="${ad.linkText}"><i class="${ad.icon} me-2"></i>${ad.linkText}</a>
+        </div>
+      </div>
+    `;
+    currentAdIndex = (currentAdIndex + 1) % advertisements.length;
+  };
+  updateAd();
+  setInterval(updateAd, 60000); // Rotate every 60 seconds
+}
 // ===================== TronGrid helper =====================
 async function tronGridApiCall(endpoint, params = {}, keyIndex = 0) {
   try {
-    console.log(`Using API key ${keyIndex + 1}: ${TRONGRID_API_KEYS[keyIndex]}`); // Log API key usage
+    console.log(`Using API key ${keyIndex + 1}: ${TRONGRID_API_KEYS[keyIndex]}`);
     const response = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
       method: 'POST',
       headers: {
@@ -77,21 +125,14 @@ async function tronGridApiCall(endpoint, params = {}, keyIndex = 0) {
     return { error: e.message };
   }
 }
-
-// ===================== Custom TronWeb Setup =====================
 // ===================== Custom TronWeb Setup =====================
 async function initializeTronWeb() {
   await new Promise(resolve => setTimeout(resolve, 800));
   if (!window.tronLink || !window.tronWeb) throw new Error('TronLink is not detected. Install or unlock TronLink.');
   if (!window.tronLink.ready) throw new Error('TronLink is not ready. Unlock TronLink and select mainnet.');
-
-  // Use the injected window.tronWeb from TronLink
   tronWeb = window.tronWeb;
-
-  // Override the default HTTP provider with a custom one for API key fallback
   const HttpProvider = window.TronWeb.providers.HttpProvider;
   let currentApiKeyIndex = 0;
-
   const customHttpProvider = new Proxy(new HttpProvider(TRONGRID_API_URL), {
     get(target, prop) {
       if (prop === 'request') {
@@ -129,12 +170,9 @@ async function initializeTronWeb() {
       return target[prop];
     }
   });
-
-  // Set the custom provider for TronWeb
   tronWeb.setFullNode(customHttpProvider);
   tronWeb.setSolidityNode(customHttpProvider);
   tronWeb.setEventServer(customHttpProvider);
-
   userAddress = tronWeb.defaultAddress.base58;
   if (!userAddress) throw new Error('No user address found. Ensure TronLink is connected to mainnet.');
   document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
@@ -151,9 +189,9 @@ async function initializeTronWeb() {
     const owner = await stakingContracts[key].methods.owner().call();
     if (userAddress === owner) { const admin = document.getElementById('admin-section'); if (admin) admin.style.display = 'block'; }
   } catch {}
-  setInterval(() => updateTokenUI(key), 120000); // Update every 2 minutes
+  setInterval(() => updateTokenUI(key), 120000);
+  rotateAdvertisements(); // Start ad rotation
 }
-
 // ===================== Energy helpers =====================
 async function checkUserEnergy(address, token, action, extraEnergy = 0) {
   try {
@@ -172,7 +210,6 @@ async function checkUserEnergy(address, token, action, extraEnergy = 0) {
     return { availableEnergy: 0, shortfall: requiredEnergy, requiredEnergy };
   }
 }
-
 async function checkDelegatorEnergy(requiredAmount) {
   try {
     const response = await fetch(`${SERVER_URL}/api/available-energy`);
@@ -183,7 +220,6 @@ async function checkDelegatorEnergy(requiredAmount) {
     return false;
   }
 }
-
 async function requestEnergyRental(rentalEnergy, rentalCostTrx) {
   let processingModal = null;
   try {
@@ -214,7 +250,6 @@ async function requestEnergyRental(rentalEnergy, rentalCostTrx) {
     throw e;
   }
 }
-
 function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = '') {
   return new Promise((resolve, reject) => {
     const modalElement = document.getElementById('energy-rental-modal');
@@ -247,7 +282,6 @@ function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = 
     modal.show();
   });
 }
-
 async function pollDelegationStatus(requestId) {
   const maxPoll = 30;
   let attempts = 0;
@@ -276,7 +310,6 @@ async function pollDelegationStatus(requestId) {
     }, 2000);
   });
 }
-
 // ===================== ABIs =====================
 const stakingContractAbi = [
   {"inputs":[{"internalType":"address","name":"_trc20Token","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
@@ -292,6 +325,9 @@ const stakingContractAbi = [
   {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"}],"name":"TokensActivated","type":"event"},
   {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"TRXWithdrawn","type":"event"},
   {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"TRC20Withdrawn","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newTotal","type":"uint256"}],"name":"TotalClaimedRewardsUpdated","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newTotal","type":"uint256"}],"name":"TotalUnclaimedRewardsUpdated","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"}],"name":"StakerRemoved","type":"event"},
   {"inputs":[],"name":"trc20Token","outputs":[{"internalType":"contract ITRC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"authorizedWallet","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
@@ -299,6 +335,9 @@ const stakingContractAbi = [
   {"inputs":[],"name":"dailyPayoutPercentage","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"claimTimeout","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"lastDistribution","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"totalClaimedRewards","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"totalUnclaimedRewards","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"totalStaked","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"users","outputs":[{"internalType":"uint256","name":"stakedAmount","type":"uint256"},{"internalType":"bool","name":"isActive","type":"bool"},{"internalType":"uint256","name":"pendingRewards","type":"uint256"},{"internalType":"uint256","name":"lastClaimTimestamp","type":"uint256"},{"internalType":"uint256","name":"totalClaimed","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"stake","outputs":[],"stateMutability":"nonpayable","type":"function"},
   {"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"unstake","outputs":[],"stateMutability":"nonpayable","type":"function"},
@@ -309,7 +348,8 @@ const stakingContractAbi = [
   {"inputs":[{"internalType":"address","name":"_user","type":"address"}],"name":"viewUserTotalClaimed","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"viewTotalClaimedRewards","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"viewTotalUnclaimedRewards","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"setPoolSize","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[],"name":"getTotalStaked","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"uint256","name":"_newSize","type":"uint256"}],"name":"setPoolSize","outputs":[],"stateMutability":"nonpayable","type":"function"},
   {"inputs":[],"name":"addToPool","outputs":[],"stateMutability":"payable","type":"function"},
   {"inputs":[{"internalType":"uint256","name":"_percentage","type":"uint256"}],"name":"setDailyPayoutPercentage","outputs":[],"stateMutability":"nonpayable","type":"function"},
   {"inputs":[{"internalType":"uint256","name":"_timeout","type":"uint256"}],"name":"setClaimTimeout","outputs":[],"stateMutability":"nonpayable","type":"function"},
@@ -327,7 +367,6 @@ const tokenContractAbi = [
   {"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"}
 ];
-
 // ===================== Utils =====================
 const TEN = 10n;
 const toUnits = (raw, decimals = 6) => {
@@ -347,7 +386,6 @@ const fmtTrx = (n) => `${fmt(n)} TRX`;
 function isValidTronAddress(address){
   return !!(address && typeof address === 'string' && address.startsWith('T') && address.length === 34 && /^[A-Za-z1-9]+$/.test(address));
 }
-
 // ===================== UI helpers =====================
 function showToast({ title='Notification', body='', variant='dark', autohide=true }){
   const el = document.getElementById('app-toast');
@@ -392,15 +430,12 @@ function showProcessingModal(step=''){
 }
 function hideProcessingModal(modal){ if (modal) modal.hide(); }
 function delay(ms){ return new Promise(r=>setTimeout(r, ms)); }
-
 // ===================== Core =====================
 async function initialize(){
   const connectButton = document.getElementById('connect-button');
   if (connectButton){ connectButton.addEventListener('click', connectWallet); }
-  // Tooltips
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
   tooltipTriggerList.forEach(t => new bootstrap.Tooltip(t));
-  // Quick-fill buttons
   document.querySelectorAll('[data-fill]')?.forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const pct = Number(btn.dataset.fill || '0');
@@ -410,7 +445,6 @@ async function initialize(){
       if (input) input.value = (available * pct).toFixed(6);
     });
   });
-  // Auto connect if ready
   const isTronLinkInstalled = await checkTronLinkInstalled();
   if (isTronLinkInstalled && window.tronLink && window.tronLink.ready){
     try{ await initializeTronWeb(); }catch(e){ showToast({ title:'Auto-connect failed', body:e.message, variant:'danger' }); }
@@ -434,7 +468,6 @@ async function connectWallet(){
     await initializeTronWeb();
   }catch(e){ showToast({ title:'Wallet', body:e.message, variant:'danger' }); }
 }
-
 async function updateTokenUI(token, first = false) {
   const cacheKey = `tokenUI_${token}_${userAddress}`;
   if (!first) {
@@ -442,7 +475,6 @@ async function updateTokenUI(token, first = false) {
     if (cached) {
       const { data, timestamp } = JSON.parse(cached);
       if (Date.now() - timestamp < 120000) {
-        // Update UI with cached data
         const { balanceUnits, stakedUnits, rewardUnits, userTotalClaimed, poolSize, totalNextPayout, yourNextPayout, roiPct, apyPct, dailyPctRaw } = data;
         const availEl = document.getElementById(`available-tokens-${token}`);
         if (availEl) { availEl.textContent = fmt(balanceUnits); availEl.dataset.raw = String(balanceUnits); setSkeleton(`available-tokens-${token}`, false); }
@@ -470,14 +502,16 @@ async function updateTokenUI(token, first = false) {
         .forEach(id => setSkeleton(id, true));
       ['pool-size', 'daily-payout', 'total-next-payout', 'your-next-payout'].forEach(id => setSkeleton(id, true));
     }
-    const [balanceRaw, userData, apy, timeout, userTotalClaimedRaw, poolSizeRaw, dailyPctRaw] = await Promise.all([
+    const [balanceRaw, userData, apy, roi, timeout, userTotalClaimedRaw, poolSizeRaw, dailyPctRaw, totalStakedRaw] = await Promise.all([
       tokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0'),
       stakingContracts[token].methods.users(userAddress).call().catch(() => ({ stakedAmount: '0', pendingRewards: '0', isActive: false, lastClaimTimestamp: '0', totalClaimed: '0' })),
       stakingContracts[token].methods.calculateAPY(userAddress).call().catch(() => '0'),
+      stakingContracts[token].methods.calculateROI(userAddress).call().catch(() => '0'),
       stakingContracts[token].methods.claimTimeout().call().catch(() => '0'),
       stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(() => '0'),
       stakingContracts[token].methods.poolSize().call().catch(() => '0'),
-      stakingContracts[token].methods.dailyPayoutPercentage().call().catch(() => '0')
+      stakingContracts[token].methods.dailyPayoutPercentage().call().catch(() => '0'),
+      stakingContracts[token].methods.getTotalStaked().call().catch(() => '0')
     ]);
     const d = tokenDetails[token];
     const balanceUnits = toUnits(balanceRaw, d.decimals);
@@ -485,12 +519,12 @@ async function updateTokenUI(token, first = false) {
     const rewardUnits = toUnits(userData.pendingRewards, d.rewardDecimals);
     const userTotalClaimed = Number(userTotalClaimedRaw) / SUN_PER_TRX;
     const poolSize = Number(poolSizeRaw) / SUN_PER_TRX;
-    const dailyPayoutPct = Number(dailyPctRaw) / 100; // e.g., 1% = 1.00
-    const totalNextPayout = poolSize * dailyPayoutPct / 100; // Total daily payout in TRX
-    const yourNextPayout = stakedUnits > 0 && poolSize > 0 ? (stakedUnits / poolSize) * totalNextPayout : 0; // User's share
-    const roiPct = Number(apy) / 1; // Assuming calculateROI returns actual percentage
-    const apyPct = Number(apy); // Fixed: no division by 100
-    // Cache results, ensuring all values are serializable
+    const totalStaked = toUnits(totalStakedRaw, d.decimals);
+    const dailyPayoutPct = Number(dailyPctRaw) / 100;
+    const totalNextPayout = poolSize * dailyPayoutPct / 100;
+    const yourNextPayout = stakedUnits > 0 && totalStaked > 0 ? (stakedUnits / totalStaked) * totalNextPayout : 0;
+    const roiPct = Number(roi);
+    const apyPct = Number(apy);
     const cacheData = {
       data: {
         balanceUnits: Number(balanceUnits),
@@ -522,15 +556,21 @@ async function updateTokenUI(token, first = false) {
     if (userClaimedEl) { userClaimedEl.textContent = fmtTrx(userTotalClaimed); setSkeleton('user-total-claimed-cft', false); }
     const roiEl = document.getElementById('roi-cft');
     if (roiEl) { roiEl.textContent = fmtPct(roiPct); setSkeleton('roi-cft', false); }
-    // Pool stats
     const poolEl = document.getElementById('pool-size'); if (poolEl) { poolEl.textContent = fmtTrx(poolSize); setSkeleton('pool-size', false); }
     const dailyEl = document.getElementById('daily-payout'); if (dailyEl) { dailyEl.textContent = `${dailyPayoutPct.toFixed(2)}% / day`; setSkeleton('daily-payout', false); }
     const totalNextPayoutEl = document.getElementById('total-next-payout'); if (totalNextPayoutEl) { totalNextPayoutEl.textContent = fmtTrx(totalNextPayout); setSkeleton('total-next-payout', false); }
     const yourNextPayoutEl = document.getElementById('your-next-payout'); if (yourNextPayoutEl) { yourNextPayoutEl.textContent = fmtTrx(yourNextPayout); setSkeleton('your-next-payout', false); }
-    // Activate visibility
-    const activateButton = document.getElementById(`activate-tokens-${token}`) || document.getElementById(`activate-tokens-button-${token}`);
-    if (activateButton) { activateButton.style.display = (userData.isActive || Number(userData.stakedAmount) === 0) ? 'none' : 'block'; }
-    // Claim timer
+    const activateButton = document.getElementById(`activate-tokens-button-${token}`);
+    const claimButton = document.getElementById(`claim-rewards-button-${token}`);
+    if (activateButton && claimButton) {
+      if (!userData.isActive && Number(userData.stakedAmount) > 0) {
+        activateButton.style.display = 'block';
+        claimButton.style.display = 'none';
+      } else {
+        activateButton.style.display = 'none';
+        claimButton.style.display = 'block';
+      }
+    }
     updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp));
   } catch (e) {
     showToast({ title: 'UI Update Error', body: e.message, variant: 'danger' });
@@ -571,7 +611,6 @@ function updateClaimTimer(timeoutSec, lastClaimTs) {
     }
   }, 1000);
 }
-
 // ===================== Actions =====================
 async function stakeTokens(token, amount){
   let processingModal = null; const stakeBtn = document.getElementById(`stake-button-${token}`);
@@ -720,7 +759,7 @@ async function activateTokens(token){
       processingModal = showProcessingModal('(2/2)');
       const stakingContract = stakingContracts[token];
       const userData = await stakingContract.methods.users(userAddress).call();
-      if (userData.isActive || BigInt(userData.stakedAmount) === 0n) throw new Error('No inactive tokens to activate.');
+      if (userData.isActive || BigInt(userData.stakedAmount) == 0n) throw new Error('No inactive tokens to activate.');
       const activateTx = await tronWeb.transactionBuilder.triggerSmartContract(
         tokenDetails[token].stakingAddress, 'activateTokens()', {}, [], userAddress
       );
@@ -735,7 +774,6 @@ async function activateTokens(token){
   };
   return withLoading(btn, 'Activating...', run)();
 }
-
 // ===================== Events =====================
 document.addEventListener('DOMContentLoaded', () => {
   const key = 'cft';
