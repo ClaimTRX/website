@@ -79,13 +79,17 @@ async function tronGridApiCall(endpoint, params = {}, keyIndex = 0) {
 }
 
 // ===================== Custom TronWeb Setup =====================
+// ===================== Custom TronWeb Setup =====================
 async function initializeTronWeb() {
   await new Promise(resolve => setTimeout(resolve, 800));
   if (!window.tronLink || !window.tronWeb) throw new Error('TronLink is not detected. Install or unlock TronLink.');
   if (!window.tronLink.ready) throw new Error('TronLink is not ready. Unlock TronLink and select mainnet.');
 
-  // Configure TronWeb with custom HTTP client for API key fallback
-  const HttpProvider = TronWeb.providers.HttpProvider;
+  // Use the injected window.tronWeb from TronLink
+  tronWeb = window.tronWeb;
+
+  // Override the default HTTP provider with a custom one for API key fallback
+  const HttpProvider = window.TronWeb.providers.HttpProvider;
   let currentApiKeyIndex = 0;
 
   const customHttpProvider = new Proxy(new HttpProvider(TRONGRID_API_URL), {
@@ -126,11 +130,10 @@ async function initializeTronWeb() {
     }
   });
 
-  tronWeb = new TronWeb({
-    fullNode: customHttpProvider,
-    solidityNode: customHttpProvider,
-    eventServer: customHttpProvider
-  });
+  // Set the custom provider for TronWeb
+  tronWeb.setFullNode(customHttpProvider);
+  tronWeb.setSolidityNode(customHttpProvider);
+  tronWeb.setEventServer(customHttpProvider);
 
   userAddress = tronWeb.defaultAddress.base58;
   if (!userAddress) throw new Error('No user address found. Ensure TronLink is connected to mainnet.');
