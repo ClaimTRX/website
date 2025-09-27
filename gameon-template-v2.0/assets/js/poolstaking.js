@@ -134,43 +134,7 @@ async function initializeTronWeb() {
   tronWeb = window.tronWeb;
   const HttpProvider = window.TronWeb.providers.HttpProvider;
   let currentApiKeyIndex = 0;
-  const customHttpProvider = new Proxy(new HttpProvider(TRONGRID_API_URL), {
-    get(target, prop) {
-      if (prop === 'request') {
-        return async function (endpoint, params = {}, method = 'POST') {
-          try {
-            console.log(`TronWeb using API key ${currentApiKeyIndex + 1}: ${TRONGRID_API_KEYS[currentApiKeyIndex]}`);
-            const response = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
-              method,
-              headers: {
-                'Content-Type': 'application/json',
-                'TRON-PRO-API-KEY': TRONGRID_API_KEYS[currentApiKeyIndex]
-              },
-              body: method === 'POST' ? JSON.stringify(params) : undefined
-            });
-            if ((response.status === 403 || response.status === 429) && currentApiKeyIndex < TRONGRID_API_KEYS.length - 1) {
-              console.warn(`TronWeb request failed with status ${response.status} for API key ${currentApiKeyIndex + 1}, switching to next key...`);
-              currentApiKeyIndex = (currentApiKeyIndex + 1) % TRONGRID_API_KEYS.length;
-              await new Promise(resolve => setTimeout(resolve, API_CALL_DELAY));
-              return customHttpProvider.request(endpoint, params, method);
-            }
-            const data = await response.json();
-            if (data.Error) throw new Error(data.Error);
-            return data;
-          } catch (e) {
-            if (currentApiKeyIndex < TRONGRID_API_KEYS.length - 1) {
-              console.warn(`TronWeb error with API key ${currentApiKeyIndex + 1}: ${e.message}, trying next key...`);
-              currentApiKeyIndex = (currentApiKeyIndex + 1) % TRONGRID_API_KEYS.length;
-              await new Promise(resolve => setTimeout(resolve, API_CALL_DELAY));
-              return customHttpProvider.request(endpoint, params, method);
-            }
-            throw e;
-          }
-        };
-      }
-      return target[prop];
-    }
-  });
+  const customHttpProvider = new Proxy(new HttpProvider(TRONGRID_API_URL), { /* ... existing code ... */ });
   tronWeb.setFullNode(customHttpProvider);
   tronWeb.setSolidityNode(customHttpProvider);
   tronWeb.setEventServer(customHttpProvider);
@@ -183,6 +147,11 @@ async function initializeTronWeb() {
   if (!isValidTronAddress(details.stakingAddress)) throw new Error(`Invalid staking address for ${key}`);
   tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
   stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
+  // Add debugging
+  console.log('Staking contract methods:', Object.keys(stakingContracts[key].methods));
+  if (!stakingContracts[key].methods.getTotalStaked) {
+    throw new Error('getTotalStaked method not found in staking contract. Check ABI or contract address.');
+  }
   if (!details.decimals) { tokenDetails[key].decimals = await tokenContracts[key].methods.decimals().call(); }
   setStatus('Connected', true);
   await updateTokenUI(key, true);
@@ -506,7 +475,7 @@ async function updateTokenUI(token, first = false) {
       stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(() => '0'),
       stakingContracts[token].methods.poolSize().call().catch(() => '0'),
       stakingContracts[token].methods.dailyPayoutPercentage().call().catch(() => '0'),
-      stakingContracts[token].methods.getTotalStaked().call().catch(() => '0'),
+      stakingContracts[token].methods.getTotalStaked ? stakingContracts[token].methods.getTotalStaked().call().catch(() => '0') : Promise.resolve('0'),
       stakingContracts[token].methods.getStakersList().call().catch(() => [])
     ]);
     const d = tokenDetails[token];
@@ -545,10 +514,10 @@ async function updateTokenUI(token, first = false) {
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
     const updateElement = (id, value, skeletonId) => {
       const el = document.getElementById(id);
-      if (el) { 
-        el.textContent = value; 
+      if (el) {
+        el.textContent = value;
         if (id === `available-tokens-${token}`) el.dataset.raw = String(cacheData.data.balanceUnits);
-        if (skeletonId) setSkeleton(skeletonId, false); 
+        if (skeletonId) setSkeleton(skeletonId, false);
       }
     };
     updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
@@ -574,6 +543,7 @@ async function updateTokenUI(token, first = false) {
     }
     updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp));
   } catch (e) {
+    console.error('UI Update Error:', e);
     showToast({ title: 'UI Update Error', body: e.message, variant: 'danger' });
     ['available-tokens-cft', 'staked-amount-cft', 'projected-rewards-cft', 'user-total-claimed-cft', 'roi-cft', 'pool-size', 'daily-payout', 'total-next-payout', 'your-next-payout']
       .forEach(id => setSkeleton(id, false));
