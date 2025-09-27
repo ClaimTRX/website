@@ -427,34 +427,7 @@
   <script src="assets/js/poolstaking.js" type="module"></script>
 
   <!-- Mirror the claim timer into the Claim before box with days support -->
-  <script>
-    (function(){
-      const src = document.getElementById('claim-timer');
-      const out = document.getElementById('next-claim-timer');
-      if(!src || !out) return;
-
-      function normalize(text){
-        if(!text) return '—';
-        // Accept e.g., "Available in 167h 24m 48s"
-        const h = (text.match(/(\d+)\s*h/i)||[])[1] || 0;
-        const m = (text.match(/(\d+)\s*m/i)||[])[1] || 0;
-        const s = (text.match(/(\d+)\s*s/i)||[])[1] || 0;
-        if (h||m||s){
-          let hours = parseInt(h,10), mins = parseInt(m,10), secs = parseInt(s,10);
-          const days = Math.floor(hours/24); hours = hours%24;
-          const parts = [];
-          if(days>0) parts.push(days+'d');
-          parts.push(hours+'h', mins+'m', secs+'s');
-          return parts.join(' ');
-        }
-        return text.trim();
-      }
-
-      const update = () => { out.textContent = normalize(src.textContent || '—'); };
-      update();
-      new MutationObserver(update).observe(src, {childList:true, subtree:true, characterData:true});
-    })();
-  </script>
+  
 </body>
 </html>
 
