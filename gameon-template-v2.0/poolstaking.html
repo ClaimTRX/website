@@ -116,6 +116,60 @@
       #activate-tokens-button-cft{position:absolute;top:18px;right:18px;height:32px;padding:0 12px;font-size:.85rem}
     }
 
+    /* Advertisement Card Styling */
+.luxe-ad-card {
+  position: relative;
+  border-radius: var(--radius-4);
+  background: linear-gradient(135deg, rgba(98, 255, 207, 0.1), rgba(125, 178, 255, 0.1));
+  border: 2px solid var(--accent-3); /* Purple border to stand out */
+  box-shadow: var(--shadow-2), 0 0 20px rgba(125, 178, 255, 0.3); /* Glowing shadow */
+  overflow: hidden;
+  margin: 2rem 0;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.luxe-ad-card:hover {
+  transform: translateY(-5px); /* Slight lift on hover */
+  box-shadow: var(--shadow-2), 0 0 30px rgba(125, 178, 255, 0.5); /* Enhanced glow */
+}
+.luxe-ad-card .inner {
+  padding: 1.5rem;
+}
+.luxe-ad-card h2 {
+  font-weight: 800;
+  color: var(--accent-1); /* Bright accent color for title */
+  text-shadow: 0 0 5px rgba(98, 255, 207, 0.5);
+}
+.luxe-ad-card p {
+  color: var(--txt);
+  font-size: 1.1rem;
+}
+.luxe-ad-card .btn.primary {
+  background: linear-gradient(135deg, var(--accent-3), var(--accent-2)); /* Unique gradient for ad button */
+  font-weight: 700;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+}
+.luxe-ad-card .btn.primary:hover {
+  filter: brightness(1.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .luxe-ad-card {
+    margin: 1.5rem 0;
+    border-radius: var(--radius-3);
+  }
+  .luxe-ad-card .inner {
+    padding: 1rem;
+  }
+  .luxe-ad-card h2 {
+    font-size: 1.8rem;
+  }
+  .luxe-ad-card p {
+    font-size: 1rem;
+  }
+}
+
     /* Responsive */
     @media (max-width: 992px){
       .kpis{grid-template-columns:repeat(2,1fr)}
@@ -291,16 +345,16 @@
 
   <section class="py-3">
   <div class="container">
-    <div class="cta">
+    <div class="cta luxe-ad-card">
       <div class="row align-items-center g-0">
         <div class="col-12 col-md-5 text-center p-3">
-          <img src="assets/img/content/guardian.png" alt="" style="max-width:220px">
+          <img src="assets/img/content/guardian.png" alt="CFT Guardian" style="max-width:220px">
         </div>
-        <div class="col-12 col-md-7">
+        <div class="col-12 col-md-7 p-3">
           <div class="inner">
-            <h2 class="m-0">CFT Guardian minting is now live</h2>
-            <p class="mb-1">Earn daily SOL rewards staking our Guardian NFTs</p>
-            <a class="btn ghost" href="https://cftguardians.com/" aria-label="Mint CFT Guardians"><i class="icon-rocket me-2"></i>Mint Now</a>
+            <h2 class="m-0">CFT Guardian Minting is Now Live</h2>
+            <p class="mb-3">Earn daily SOL rewards by staking our Guardian NFTs</p>
+            <a class="btn primary" href="https://cftguardians.com/" aria-label="Mint CFT Guardians"><i class="icon-rocket me-2"></i>Mint Now</a>
           </div>
         </div>
       </div>
