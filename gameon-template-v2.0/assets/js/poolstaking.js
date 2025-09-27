@@ -427,30 +427,39 @@ async function updateTokenUI(token, first=false){
   }catch(e){ showToast({ title:'UI Update Error', body:e.message, variant:'danger' }); }
 }
 
-function updateClaimTimer(timeoutSec, lastClaimTs){
-  const timerEl = document.getElementById('claim-timer');
+function updateClaimTimer(timeoutSec, lastClaimTs) {
+  const timerEl = document.getElementById('next-claim-timer'); // Changed from 'claim-timer'
   const claimBtn = document.getElementById('claim-rewards-button-cft');
   if (!timerEl || !claimBtn) return;
-  if (!timeoutSec){ timerEl.textContent = ''; claimBtn.disabled = false; return; }
-
-  const now = Math.floor(Date.now()/1000);
+  if (!timeoutSec) {
+    timerEl.textContent = '—'; // Match the placeholder style
+    claimBtn.disabled = false;
+    return;
+  }
+  const now = Math.floor(Date.now() / 1000);
   const next = (lastClaimTs || 0) + timeoutSec;
   const remaining = Math.max(0, next - now);
-
-  if (remaining === 0){ timerEl.textContent = 'Claim available'; claimBtn.disabled = false; return; }
+  if (remaining === 0) {
+    timerEl.textContent = 'Claim available';
+    claimBtn.disabled = false;
+    return;
+  }
   claimBtn.disabled = true;
-
-  const format = (s)=>{
-    const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
-    return `${h>0? h+ 'h ': ''}${m}m ${sec}s`;
+  const format = (s) => {
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    return `${h > 0 ? h + 'h ' : ''}${m}m ${sec}s`;
   };
-
   timerEl.textContent = `Available in ${format(remaining)}`;
-  const id = setInterval(()=>{
-    const now2 = Math.floor(Date.now()/1000);
+  const id = setInterval(() => {
+    const now2 = Math.floor(Date.now() / 1000);
     const rem = Math.max(0, next - now2);
-    if (rem === 0){ clearInterval(id); timerEl.textContent = 'Claim available'; claimBtn.disabled = false; }
-    else { timerEl.textContent = `Available in ${format(rem)}`; }
+    if (rem === 0) {
+      clearInterval(id);
+      timerEl.textContent = 'Claim available';
+      claimBtn.disabled = false;
+    } else {
+      timerEl.textContent = `Available in ${format(rem)}`;
+    }
   }, 1000);
 }
 
