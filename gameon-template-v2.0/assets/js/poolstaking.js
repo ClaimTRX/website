@@ -15,6 +15,7 @@ const SAFETY_ENERGY = 20000;
 const ENERGY_PRICE_SUN = 10;
 const SUN_PER_TRX = 1_000_000;
 const ENERGY_RENTAL_DURATION = 2;
+const API_CALL_DELAY = 100; // Delay between API calls in ms
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
@@ -50,8 +51,9 @@ async function tronGridApiCall(endpoint, params = {}, keyIndex = 0) {
       },
       body: JSON.stringify(params)
     });
-    if (response.status === 403 && keyIndex < TRONGRID_API_KEYS.length - 1) {
-      console.warn(`Rate limit hit for API key ${keyIndex + 1}, trying next key...`);
+    if ((response.status === 403 || response.status === 429) && keyIndex < TRONGRID_API_KEYS.length - 1) {
+      console.warn(`Rate limit or forbidden error for API key ${keyIndex + 1} (status ${response.status}), trying next key...`);
+      await new Promise(resolve => setTimeout(resolve, API_CALL_DELAY)); // Throttle retry
       return await tronGridApiCall(endpoint, params, keyIndex + 1);
     }
     const data = await response.json();
@@ -60,9 +62,10 @@ async function tronGridApiCall(endpoint, params = {}, keyIndex = 0) {
   } catch (e) {
     if (keyIndex < TRONGRID_API_KEYS.length - 1) {
       console.warn(`Error with API key ${keyIndex + 1}: ${e.message}, trying next key...`);
+      await new Promise(resolve => setTimeout(resolve, API_CALL_DELAY)); // Throttle retry
       return await tronGridApiCall(endpoint, params, keyIndex + 1);
     }
-    showToast({ title: 'API Error', body: 'All API keys are rate-limited. Please try again later.', variant: 'danger' });
+    showToast({ title: 'API Error', body: 'All API keys are rate-limited or failed. Please try again later.', variant: 'danger' });
     return { error: e.message };
   }
 }
