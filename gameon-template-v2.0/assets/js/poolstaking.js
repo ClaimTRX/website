@@ -490,9 +490,20 @@ async function updateTokenUI(token, first = false) {
     const yourNextPayout = stakedUnits > 0 && poolSize > 0 ? (stakedUnits / poolSize) * totalNextPayout : 0; // User's share
     const roiPct = Number(apy) / 1; // Assuming calculateROI returns actual percentage
     const apyPct = Number(apy); // Fixed: no division by 100
-    // Cache results
+    // Cache results, ensuring all values are serializable
     const cacheData = {
-      data: { balanceUnits, stakedUnits, rewardUnits, userTotalClaimed, poolSize, totalNextPayout, yourNextPayout, roiPct, apyPct, dailyPctRaw },
+      data: {
+        balanceUnits: Number(balanceUnits),
+        stakedUnits: Number(stakedUnits),
+        rewardUnits: Number(rewardUnits),
+        userTotalClaimed: Number(userTotalClaimed),
+        poolSize: Number(poolSize),
+        totalNextPayout: Number(totalNextPayout),
+        yourNextPayout: Number(yourNextPayout),
+        roiPct: Number(roiPct),
+        apyPct: Number(apyPct),
+        dailyPctRaw: Number(dailyPctRaw)
+      },
       timestamp: Date.now()
     };
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
