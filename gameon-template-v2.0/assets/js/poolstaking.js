@@ -11,39 +11,50 @@ const stakingContracts = {};
 const tokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
+
 // ===================== Config =====================
-const TRONGRID_API_KEY = 'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca'; // Consider proxying via SERVER_URL for production
+const TRONGRID_API_KEYS = [
+  'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca', // Your first API key
+  '664292b1-47ad-47b7-88c1-db67bee6e732' // Replace with your second TronGrid API key
+];
 const TRONGRID_API_URL = 'https://api.trongrid.io';
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
 const SAFETY_ENERGY = 20000;
-const ENERGY_PRICE_SUN = 10; // SUN per energy unit
+const ENERGY_PRICE_SUN = 10;
 const SUN_PER_TRX = 1_000_000;
-const ENERGY_RENTAL_DURATION = 2; // minutes
+const ENERGY_RENTAL_DURATION = 2;
 
-const tokenDetails = {
-  cft: {
-    tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-    stakingAddress: 'TFQf7a3sYmcFgp62aTXhMiK95psKyptMoY',
-    decimals: 6,
-    displayName: 'CFT',
-    rewardDisplayName: 'TRX',
-    rewardDecimals: 6,
-    energyCosts: {
-      stake: 120000,
-      unstake: 75000,
-      claimRewards: 100000,
-      activateTokens: 50000,
-      setPoolSize: 60000,
-      addToPool: 70000,
-      setDailyPayout: 60000,
-      setClaimTimeout: 60000,
-      setAuthorizedWallet: 60000,
-      withdrawTRX: 80000,
-      withdrawTRC20: 90000
+// ===================== TronGrid helper =====================
+async function tronGridApiCall(endpoint, params = {}, keyIndex = 0) {
+  try {
+    const response = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'TRON-PRO-API-KEY': TRONGRID_API_KEYS[keyIndex]
+      },
+      body: JSON.stringify(params)
+    });
+
+    if (response.status === 403 && keyIndex < TRONGRID_API_KEYS.length - 1) {
+      // Rate limit hit, try the next API key
+      console.warn(`Rate limit hit for API key ${keyIndex + 1}, trying next key...`);
+      return await tronGridApiCall(endpoint, params, keyIndex + 1);
     }
+
+    const data = await response.json();
+    if (data.Error) throw new Error(data.Error);
+    return data;
+  } catch (e) {
+    if (keyIndex < TRONGRID_API_KEYS.length - 1) {
+      // Retry with the next API key
+      console.warn(`Error with API key ${keyIndex + 1}: ${e.message}, trying next key...`);
+      return await tronGridApiCall(endpoint, params, keyIndex + 1);
+    }
+    return { error: e.message };
   }
-};
+}
 
 // ===================== ABIs =====================
 const stakingContractAbi = [
