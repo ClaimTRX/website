@@ -20,7 +20,7 @@ const CACHE_TIMEOUT_MS = 60000; // Increased from 30000 (30s) to 60000 (60s)
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-    stakingAddress: 'TSpEjxMxBRWYyak7TcaJtJUtGtJ5DgTdvu', // Update to new contract address after deployment
+    stakingAddress: 'TT4EiaDtRyx4iFobpSRXzYjPfkp8jLzC87', // Update to new contract address after deployment
     decimals: 6,
     displayName: 'CFT',
     rewardDisplayName: 'TRX',
