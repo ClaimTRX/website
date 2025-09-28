@@ -1,10 +1,4 @@
-/*
-  CFT Ecosystem – Pool Staking (Refined + ROI + Pool Stats)
-  - Premium UI hooks (toasts, loaders, skeletons)
-  - Safer BigInt math & formatting helpers
-  - Energy rental flow + Tronscan links
-  - NEW: ROI, user total claimed, global pool stats (pool size, total claimed/unclaimed, daily %)
-*/
+
 let tronWeb, userAddress;
 const stakingContracts = {};
 const tokenContracts = {};
@@ -15,7 +9,7 @@ const TRONGRID_API_KEYS = [
   '664292b1-47ad-47b7-88c1-db67bee6e732'
 ];
 const TRONGRID_API_URL = 'https://api.trongrid.io';
-const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
+const PAYMENT_ADDRESS = 'TT4EiaDtRyx4iFobpSRXzYjPfkp8jLzC87';
 const SERVER_URL = 'https://api.cftecosystem.com';
 const SAFETY_ENERGY = 20000;
 const ENERGY_PRICE_SUN = 10;
@@ -26,7 +20,7 @@ const CACHE_TIMEOUT_MS = 60000; // Increased from 30000 (30s) to 60000 (60s)
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-    stakingAddress: 'TSpEjxMxBRWYyak7TcaJtJUtGtJ5DgTdvu',
+    stakingAddress: 'TSpEjxMxBRWYyak7TcaJtJUtGtJ5DgTdvu', // Update to new contract address after deployment
     decimals: 6,
     displayName: 'CFT',
     rewardDisplayName: 'TRX',
@@ -110,7 +104,7 @@ async function tronGridApiCall(endpoint, params = {}, keyIndex = 0) {
     });
     if ((response.status === 429 || response.status === 403) && keyIndex < TRONGRID_API_KEYS.length - 1) {
       console.warn(`Rate limit or forbidden error for API key ${keyIndex + 1} (status ${response.status}), retrying with next key after 500ms...`);
-      await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
+      await new Promise(resolve => setTimeout(resolve, 500));
       return await tronGridApiCall(endpoint, params, keyIndex + 1);
     }
     const data = await response.json();
@@ -119,7 +113,7 @@ async function tronGridApiCall(endpoint, params = {}, keyIndex = 0) {
   } catch (e) {
     if (keyIndex < TRONGRID_API_KEYS.length - 1) {
       console.warn(`Error with API key ${keyIndex + 1}: ${e.message}, retrying with next key after 500ms...`);
-      await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
+      await new Promise(resolve => setTimeout(resolve, 500));
       return await tronGridApiCall(endpoint, params, keyIndex + 1);
     }
     showToast({ title: 'API Error', body: 'All API keys are rate-limited or failed. Please try again later.', variant: 'danger' });
@@ -130,36 +124,32 @@ async function tronGridApiCall(endpoint, params = {}, keyIndex = 0) {
 // ===================== Custom TronWeb Setup =====================
 async function initializeTronWeb() {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|TronLink/i.test(navigator.userAgent);
-  const initDelay = isMobile ? 1500 : 800; // Longer delay on mobile for app readiness
+  const initDelay = isMobile ? 1500 : 800;
   await new Promise(resolve => setTimeout(resolve, initDelay));
   if (!window.tronLink || !window.tronWeb) throw new Error('TronLink is not detected. Install or unlock TronLink.');
   if (!window.tronLink.ready) throw new Error('TronLink is not ready. Unlock TronLink and select mainnet.');
   tronWeb = window.tronWeb;
   let currentApiKeyIndex = 0;
   if (isMobile) {
-    // Mobile: Use injected tronWeb as-is, set API key header directly for rotation
     console.log('Mobile TronLink detected: Using injected provider with header-based API key rotation.');
-    // Set initial API key
     tronWeb.setHeader({ 'TRON-PRO-API-KEY': TRONGRID_API_KEYS[currentApiKeyIndex] });
-    // Override request for key rotation on errors (without Proxy to avoid conflicts)
     const originalRequest = tronWeb.request;
     tronWeb.request = async function(endpoint, params = {}, method = 'POST') {
       try {
         console.log(`Mobile TronWeb using API key ${currentApiKeyIndex + 1}: ${TRONGRID_API_KEYS[currentApiKeyIndex].slice(0, 8)}...`);
-        tronWeb.setHeader({ 'TRON-PRO-API-KEY': TRONGRID_API_KEYS[currentApiKeyIndex] }); // Ensure header is set
+        tronWeb.setHeader({ 'TRON-PRO-API-KEY': TRONGRID_API_KEYS[currentApiKeyIndex] });
         return await originalRequest.call(this, endpoint, params, method);
       } catch (e) {
         if ((e.message && (e.message.includes('429') || e.message.includes('403'))) && currentApiKeyIndex < TRONGRID_API_KEYS.length - 1) {
           console.warn(`Mobile TronWeb error with API key ${currentApiKeyIndex + 1}: ${e.message}, trying next key after 500ms...`);
           currentApiKeyIndex = (currentApiKeyIndex + 1) % TRONGRID_API_KEYS.length;
           await new Promise(resolve => setTimeout(resolve, 500));
-          return await this.request(endpoint, params, method); // Retry
+          return await this.request(endpoint, params, method);
         }
         throw e;
       }
     };
   } else {
-    // Desktop: Use custom Proxy provider as before
     console.log('Desktop TronLink detected: Using custom Proxy provider.');
     const HttpProvider = window.TronWeb.providers.HttpProvider;
     const customHttpProvider = new Proxy(new HttpProvider(TRONGRID_API_URL), {
@@ -179,7 +169,7 @@ async function initializeTronWeb() {
               if ((response.status === 429 || response.status === 403) && currentApiKeyIndex < TRONGRID_API_KEYS.length - 1) {
                 console.warn(`TronWeb request failed with status ${response.status} for API key ${currentApiKeyIndex + 1}, switching to next key after 500ms...`);
                 currentApiKeyIndex = (currentApiKeyIndex + 1) % TRONGRID_API_KEYS.length;
-                await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
+                await new Promise(resolve => setTimeout(resolve, 500));
                 return customHttpProvider.request(endpoint, params, method);
               }
               const data = await response.json();
@@ -189,7 +179,7 @@ async function initializeTronWeb() {
               if (currentApiKeyIndex < TRONGRID_API_KEYS.length - 1) {
                 console.warn(`TronWeb error with API key ${currentApiKeyIndex + 1}: ${e.message}, trying next key after 500ms...`);
                 currentApiKeyIndex = (currentApiKeyIndex + 1) % TRONGRID_API_KEYS.length;
-                await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
+                await new Promise(resolve => setTimeout(resolve, 500));
                 return customHttpProvider.request(endpoint, params, method);
               }
               throw e;
@@ -212,9 +202,7 @@ async function initializeTronWeb() {
   if (!isValidTronAddress(details.stakingAddress)) throw new Error(`Invalid staking address for ${key}`);
   tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
   stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
-  // Add debugging
   console.log('Staking contract methods:', Object.keys(stakingContracts[key].methods));
-  // Check for either getTotalStaked or totalStaked
   if (!stakingContracts[key].methods.getTotalStaked && !stakingContracts[key].methods.totalStaked) {
     throw new Error('Neither getTotalStaked nor totalStaked method found in staking contract. Check ABI or contract address.');
   }
@@ -238,7 +226,6 @@ async function checkUserEnergy(address, token, action, extraEnergy = 0) {
     const availableEnergy = energyLimit - energyUsed;
     const baseRequiredEnergy = tokenDetails[token].energyCosts[action];
     const requiredEnergy = baseRequiredEnergy + extraEnergy;
-    const shortfall = Math.max(0, requiredEnergy - availableEnergy);
     return { availableEnergy, shortfall, requiredEnergy };
   } catch {
     const baseRequiredEnergy = tokenDetails[token].energyCosts[action];
@@ -374,6 +361,7 @@ const stakingContractAbi = [
   {"inputs":[],"name":"totalClaimedRewards","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"totalUnclaimedRewards","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"totalStaked","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[],"name":"totalActiveStaked","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"users","outputs":[{"internalType":"uint256","name":"stakedAmount","type":"uint256"},{"internalType":"bool","name":"isActive","type":"bool"},{"internalType":"uint256","name":"pendingRewards","type":"uint256"},{"internalType":"uint256","name":"lastClaimTimestamp","type":"uint256"},{"internalType":"uint256","name":"totalClaimed","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[{"internalType":"address","name":"_staker","type":"address"}],"name":"getStakerInfo","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"getStakersList","outputs":[{"internalType":"address[]","name":"","type":"address[]"}],"stateMutability":"view","type":"function"},
@@ -516,7 +504,7 @@ async function updateTokenUI(token, first = false) {
         const claimableEl = document.getElementById(`claimable-rewards-${token}`);
         if (claimableEl) { claimableEl.textContent = `${fmt(rewardUnits)} ${tokenDetails[token].rewardDisplayName}`; }
         const userClaimedEl = document.getElementById('user-total-claimed-cft');
-        if (userClaimedEl) { userClaimedEl.textContent = fmtTrx(userTotalClaimed); setSkeleton('user-total-claimed-cft', false); }
+        if (userClaimedEl) { userTotalClaimed.textContent = fmtTrx(userTotalClaimed); setSkeleton('user-total-claimed-cft', false); }
         const roiEl = document.getElementById('roi-cft');
         if (roiEl) { roiEl.textContent = fmtPct(roiPct); setSkeleton('roi-cft', false); }
         const poolEl = document.getElementById('pool-size'); if (poolEl) { poolEl.textContent = fmtTrx(poolSize); setSkeleton('pool-size', false); }
@@ -532,7 +520,6 @@ async function updateTokenUI(token, first = false) {
       ['available-tokens-cft', 'staked-amount-cft', 'projected-rewards-cft', 'user-total-claimed-cft', 'roi-cft', 'pool-size', 'daily-payout', 'total-next-payout', 'your-next-payout']
         .forEach(id => setSkeleton(id, true));
     }
-    // Fetch data sequentially with delays to avoid rate limits
     const balanceRaw = await tokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0');
     await delay(API_CALL_DELAY);
     const userData = await stakingContracts[token].methods.users(userAddress).call().catch(() => ({
@@ -557,6 +544,8 @@ async function updateTokenUI(token, first = false) {
     await delay(API_CALL_DELAY);
     const totalStakedRaw = await (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().catch(() => '0');
     await delay(API_CALL_DELAY);
+    const totalActiveStakedRaw = await stakingContracts[token].methods.totalActiveStaked().call().catch(() => '0');
+    await delay(API_CALL_DELAY);
     const stakersList = await stakingContracts[token].methods.getStakersList().call().catch(() => []);
     await delay(API_CALL_DELAY);
     const d = tokenDetails[token];
@@ -566,16 +555,10 @@ async function updateTokenUI(token, first = false) {
     const userTotalClaimed = Number(userTotalClaimedRaw) / SUN_PER_TRX;
     const poolSize = Number(poolSizeRaw) / SUN_PER_TRX;
     const totalStaked = toUnits(totalStakedRaw, d.decimals);
+    const totalActiveStaked = toUnits(totalActiveStakedRaw, d.decimals);
     const dailyPayoutPct = Number(dailyPctRaw) / 100;
     const totalNextPayout = poolSize * dailyPayoutPct / 100;
-    const activeStakers = await Promise.all(stakersList.map(async (staker) => {
-      const stakerInfo = await stakingContracts[token].methods.users(staker).call().catch(() => ({ isActive: false, stakedAmount: '0' }));
-      await delay(API_CALL_DELAY); // Add delay for each stakerInfo call
-      return stakerInfo.isActive && BigInt(stakerInfo.stakedAmount) > 0 ? staker : null;
-    }));
-    const activeStakersCount = activeStakers.filter(staker => staker !== null).length;
-    const isUserOnlyActiveStaker = activeStakersCount === 1 && activeStakers.includes(userAddress) && userData.isActive;
-    const yourNextPayout = stakedUnits > 0 && totalStaked > 0 ? (isUserOnlyActiveStaker ? totalNextPayout : (stakedUnits / totalStaked) * totalNextPayout) : 0;
+    const yourNextPayout = stakedUnits > 0 && totalActiveStaked > 0 && userData.isActive ? (stakedUnits / totalActiveStaked) * totalNextPayout : 0;
     const roiPct = Number(roi);
     const apyPct = Number(apy);
     const cacheData = {
@@ -623,7 +606,7 @@ async function updateTokenUI(token, first = false) {
         claimButton.style.display = 'block';
       }
     }
-    updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp));
+    updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp), userData.isActive);
   } catch (e) {
     console.error('UI Update Error:', e);
     showToast({ title: 'UI Update Error', body: e.message, variant: 'danger' });
@@ -631,10 +614,15 @@ async function updateTokenUI(token, first = false) {
       .forEach(id => setSkeleton(id, false));
   }
 }
-function updateClaimTimer(timeoutSec, lastClaimTs) {
+function updateClaimTimer(timeoutSec, lastClaimTs, isActive) {
   const timerEl = document.getElementById('next-claim-timer');
   const claimBtn = document.getElementById('claim-rewards-button-cft');
   if (!timerEl || !claimBtn) return;
+  if (!isActive) {
+    timerEl.textContent = 'Inactive';
+    claimBtn.disabled = true;
+    return;
+  }
   if (!timeoutSec) {
     timerEl.textContent = '—';
     claimBtn.disabled = false;
