@@ -327,27 +327,29 @@ async function pollDelegationStatus(requestId) {
           headers: { 'Content-Type': 'application/json' }
         });
         if (!response.ok) {
+          console.error(`HTTP error on attempt ${pollAttempts} for request ${requestId}: Status ${response.status}`);
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
         const data = await response.json();
-        console.log(`Delegation status for ${requestId}:`, data);
+        console.log(`Delegation status for ${requestId}:`, JSON.stringify(data));
         if (data.status === 'delegated') {
           clearInterval(interval);
           console.log(`Energy delegated successfully for request ${requestId}`);
           resolve(true);
         } else if (data.status === 'failed' || data.status === 'expired') {
           clearInterval(interval);
-          console.error(`Delegation failed for request ${requestId}: ${data.message}`);
-          reject(new Error(`Delegation failed: ${data.message}`));
+          console.error(`Delegation failed for request ${requestId}: ${data.message || 'No message provided'}`);
+          reject(new Error(`Delegation failed: ${data.message || 'Unknown error'}`));
         } else if (pollAttempts >= maxPollAttempts) {
           clearInterval(interval);
-          console.error(`Delegation timed out for request ${requestId}`);
+          console.error(`Delegation timed out for request ${requestId} after ${maxPollAttempts} attempts`);
           reject(new Error('Delegation timed out after 60 seconds.'));
         }
       } catch (error) {
-        console.error(`Error polling delegation status for request ${requestId}:`, error);
+        console.error(`Error polling delegation status for request ${requestId} on attempt ${pollAttempts}:`, error);
         if (pollAttempts >= maxPollAttempts) {
           clearInterval(interval);
+          console.error(`Polling failed after ${maxPollAttempts} attempts for request ${requestId}`);
           reject(new Error(`Error polling delegation status: ${error.message}`));
         }
       }
@@ -389,6 +391,10 @@ function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = 
       reject(new Error('Rent energy confirm button not found in modal.'));
       return;
     }
+    // Remove aria-hidden when modal is shown to prevent accessibility issues
+    modalElement.addEventListener('shown.bs.modal', () => {
+      modalElement.removeAttribute('aria-hidden');
+    }, { once: true });
     const confirmHandler = () => {
       modal.hide();
       resolve({ rent: true, rentalEnergy, rentalCostTrx });
@@ -526,6 +532,10 @@ function showProcessingModal(step=''){
   const titleElement = document.getElementById('transactionProcessingModalLabel');
   if (titleElement) titleElement.textContent = `Processing Transaction ${step}`;
   const modal = new bootstrap.Modal(modalElement, { backdrop:'static', keyboard:false });
+  // Remove aria-hidden when modal is shown to prevent accessibility issues
+  modalElement.addEventListener('shown.bs.modal', () => {
+    modalElement.removeAttribute('aria-hidden');
+  }, { once: true });
   modal.show();
   return modal;
 }
