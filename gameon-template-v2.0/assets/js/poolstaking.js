@@ -15,7 +15,7 @@ const TRONGRID_API_KEYS = [
   '664292b1-47ad-47b7-88c1-db67bee6e732'
 ];
 const TRONGRID_API_URL = 'https://api.trongrid.io';
-const PAYMENT_ADDRESS = 'TT4EiaDtRyx4iFobpSRXzYjPfkp8jLzC87';
+const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
 const SAFETY_ENERGY = 20000;
 const ENERGY_PRICE_SUN = 10;
