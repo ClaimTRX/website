@@ -40,7 +40,7 @@ const tokenDetails = {
       stake: 120000,
       unstake: 75000,
       claimRewards: 100000,
-      activateTokens: 50000,
+      activateTokens: 100000,
       setPoolSize: 60000,
       addToPool: 70000,
       setDailyPayout: 60000,
