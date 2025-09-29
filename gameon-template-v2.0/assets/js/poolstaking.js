@@ -744,7 +744,6 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive) {
   const timerEl = document.getElementById('next-claim-timer');
   const claimBtn = document.getElementById('claim-rewards-button-cft');
   if (!timerEl || !claimBtn) return;
-
   if (timerEl._claimInterval) {
     clearInterval(timerEl._claimInterval);
     timerEl._claimInterval = null;
@@ -756,10 +755,9 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive) {
   }
   if (!timeoutSec) {
     timerEl.textContent = '—';
-    claimBtn.disabled = false;
+    claimBtn.disabled = true; // No timeout means no active timer, disable claim
     return;
   }
-
   const next = (lastClaimTs || 0) + timeoutSec;
   const format = (s) => {
     const d = Math.floor(s / 86400);
@@ -774,10 +772,12 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive) {
     if (rem === 0) {
       clearInterval(timerEl._claimInterval);
       timerEl._claimInterval = null;
-      timerEl.textContent = 'Claim available';
-      claimBtn.disabled = false;
+      timerEl.textContent = 'Expired';
+      timerEl.classList.add('inactive'); // Add inactive class for red styling
+      claimBtn.disabled = true;
     } else {
-      timerEl.textContent = `Available in ${format(rem)}`;
+      timerEl.textContent = `${format(rem)}`;
+      timerEl.classList.remove('inactive');
       claimBtn.disabled = true;
     }
   };
