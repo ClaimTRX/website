@@ -89,19 +89,12 @@ const advertisements = [
     linkText: "Mint Now",
     icon: "icon-rocket"
   },
+  
   {
-    title: "Join CFT Swap Now",
-    description: "Swap CFT for other tokens with low fees",
-    image: "assets/img/content/swap.png",
-    link: "https://cftswap.com/",
-    linkText: "Swap Now",
-    icon: "icon-swap"
-  },
-  {
-    title: "Stake StableX for High Returns",
-    description: "Earn up to 15% APY with StableX staking",
+    title: "Stake StableX",
+    description: "Earn both CFT and StableX with StableX staking",
     image: "assets/img/content/stablex.png",
-    link: "https://stablex.cftecosystem.com/",
+    link: "https://www.cftecosystem.com/buystablex",
     linkText: "Stake Now",
     icon: "icon-stake"
   }
