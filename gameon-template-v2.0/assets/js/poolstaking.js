@@ -1,971 +1,382 @@
-/* poolstaking.js — energy flow aligned with staking.js + throttle + pacing
-   - Same server flow as staking.js (GET /available-energy → pay → POST /request-energy → poll /delegation-status)
-   - Payment sends integer SUN (no float rounding issues)
-   - Payment address set to the same as staking.js so backend recognizes the tx
-   - Global 200ms throttle + round-robin API key rotation
-   - 200ms delays between sequential on-chain contract calls to avoid bursts
-*/
-let tronWeb, userAddress;
-const stakingContracts = {};
-const tokenContracts = {};
-const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
-/* ===================== Config ===================== */
-const TRONGRID_API_KEYS = [
-  'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca',
-  '664292b1-47ad-47b7-88c1-db67bee6e732'
-];
-const TRONGRID_API_URL = 'https://api.trongrid.io';
-/** IMPORTANT: Match staking.js so backend confirms and delegates */
-const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
-const SERVER_URL = 'https://api.cftecosystem.com';
-const SAFETY_ENERGY = 20000; // extra buffer delegated
-const ENERGY_PRICE_SUN = 10; // price per energy unit (in SUN)
-const SUN_PER_TRX = 1_000_000; // 1 TRX = 1,000,000 SUN
-const ENERGY_RENTAL_DURATION = 2; // minutes
-const CACHE_TIMEOUT_MS = 60_000;
-/** Strict throttle gap between ANY outbound request to TronGrid */
-const THROTTLE_GAP_MS = 200;
-/** Delay between sequential contract calls */
-const CONTRACT_CALL_DELAY_MS = 200;
-/* ===================== Token Config ===================== */
-const tokenDetails = {
-  cft: {
-    tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-    stakingAddress: 'TT4EiaDtRyx4iFobpSRXzYjPfkp8jLzC87',
-    decimals: 6,
-    displayName: 'CFT',
-    rewardDisplayName: 'TRX',
-    rewardDecimals: 6,
-    energyCosts: {
-      stake: 120000,
-      unstake: 75000,
-      claimRewards: 100000,
-      activateTokens: 100000,
-      setPoolSize: 60000,
-      addToPool: 70000,
-      setDailyPayout: 60000,
-      setClaimTimeout: 60000,
-      setAuthorizedWallet: 60000,
-      withdrawTRX: 80000,
-      withdrawTRC20: 90000
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="description" content="CFT Ecosystem Staking">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>CFT Ecosystem - Staking</title>
+  <link rel="icon" href="assets/img/favicon.png">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    /* =============================
+       LUXE DESIGN SYSTEM – v2
+       ============================= */
+    :root{
+      --bg-0:#07090f; --bg-1:#0b0e17; --bg-2:#0f1321; --surface:#12172a; --line:#212b46;
+      --muted:#9aa7bd; --txt:#e9eef7;
+      --accent-1:#62ffcf; --accent-2:#7db2ff; --accent-3:#b37cff;
+      --success:#00e095; --danger:#ff5b73; --warning:#ffd166;
+      --radius-2:12px; --radius-3:18px; --radius-4:28px;
+      --shadow-1:0 10px 30px rgba(0,0,0,.55); --shadow-2:0 12px 40px rgba(0,0,0,.6);
+      --glass:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      --focus-ring:0 0 0 3px rgba(125,178,255,.35);
     }
-  }
-};
-/* ===================== Helpers: throttle, rotation, delay ===================== */
-const throttle = (() => {
-  let queue = Promise.resolve();
-  let last = 0;
-  const gap = THROTTLE_GAP_MS;
-  return async function run(fn) {
-    const exec = async () => {
-      const now = Date.now();
-      const wait = Math.max(0, gap - (now - last));
-      if (wait) await new Promise(r => setTimeout(r, wait));
-      last = Date.now();
-      return await fn();
-    };
-    queue = queue.then(exec, exec);
-    return queue;
-  };
-})();
-const apiKeyRotator = (() => {
-  let idx = 0;
-  return function next() {
-    const key = TRONGRID_API_KEYS[idx];
-    idx = (idx + 1) % TRONGRID_API_KEYS.length;
-    return key;
-  };
-})();
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-/* ===================== Ad Rotator (unchanged) ===================== */
-const advertisements = [
-  {
-    title: "CFT Guardian Minting is Now Live",
-    description: "Earn daily SOL rewards by staking our Guardian NFTs",
-    image: "assets/img/content/guardian.png",
-    link: "https://cftguardians.com/",
-    linkText: "Mint Now",
-    icon: "icon-rocket"
-  },
-  
-  {
-    title: "Stake StableX",
-    description: "Earn both CFT and StableX with StableX staking",
-    image: "assets/img/content/stablex.png",
-    link: "https://www.cftecosystem.com/buystablex",
-    linkText: "Stake Now",
-    icon: "icon-stake"
-  }
-];
-function rotateAdvertisements() {
-  const adContainer = document.querySelector('.luxe-ad-card .row');
-  if (!adContainer) return;
-  let currentAdIndex = 0;
-  const updateAd = () => {
-    const ad = advertisements[currentAdIndex];
-    adContainer.innerHTML = `
-      <div class="col-12 col-md-5 text-center p-3">
-        <img src="${ad.image}" alt="${ad.title}" style="max-width:220px" loading="lazy">
+    html,body{background:var(--bg-0);color:var(--txt);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    /* Header */
+    header#header{padding:1.5rem 0}
+    .navbar-brand img{height:48px}
+    .navbar-nav.items .nav-link{font-size:1.1rem;padding:.75rem 1rem}
+    .navbar-nav.action .btn{font-size:1rem;padding:.5rem 1.25rem;height:50px}
+    .navbar-nav.toggle .nav-link{font-size:1.5rem;padding:.5rem}
+    /* Mobile menu modal */
+    #menu .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt)}
+    #menu .modal-header{border-bottom:1px solid var(--line);padding:1rem}
+    #menu .modal-body{padding:1rem}
+    #menu .items .nav-item{margin:.5rem 0}
+    #menu .items .nav-link{color:var(--txt);font-size:1.1rem;padding:.5rem 1rem}
+    #menu .items .dropdown-menu{background:var(--bg-2);border:1px solid var(--line);padding:.5rem}
+    #menu .items .dropdown-menu .nav-link{color:var(--muted);font-size:1rem}
+    #menu .items .dropdown-menu .nav-link:hover{color:var(--accent-1)}
+    /* Hero */
+    .hero-section{padding:120px 0 28px;text-align:center}
+    .intro-text{display:inline-block;font-size:1rem;letter-spacing:.16em;text-transform:uppercase;color:#c3d3ef;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:.42rem .95rem;border-radius:999px}
+    .hero-section h1{font-weight:900;letter-spacing:.4px;margin-top:16px;font-size:3.25rem;line-height:1.1}
+    .hero-section p{color:#b5c2d8}
+    /* Luxe Card */
+    .luxe-card{position:relative;border-radius:var(--radius-4);background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);box-shadow:var(--shadow-2);overflow:hidden}
+    .staking-header{padding:32px}
+    .staking-title{display:flex;gap:16px;align-items:center}
+    .staking-title img{width:56px;height:56px}
+    .staking-title h4{margin:0;font-weight:800}
+    .chip{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:#cfe3ff;padding:.35rem .65rem;border-radius:999px;font-size:.85rem}
+    .chip .dot{width:8px;height:8px;border-radius:999px;background:var(--success);box-shadow:0 0 0 2px rgba(0,224,149,.15)}
+    .staking-sub{color:var(--muted)}
+    /* KPI Row */
+    .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:0 32px 24px}
+    .kpi{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:16px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3)}
+    .kpi span:first-child{font-weight:800;font-size:1.15rem}
+    .kpi span:last-child{color:var(--muted);font-size:.88rem}
+    /* Action Grid */
+    .action-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:18px;
+      padding:0 32px 36px;
+      justify-items:stretch;
+      align-items:stretch;
+    }
+    /* Panel */
+    .panel{position:relative;display:grid;grid-template-rows:auto auto 1fr auto;gap:12px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:18px 18px 20px;box-shadow:var(--shadow-1)}
+    .panel .item-title{color:var(--muted);font-weight:700;letter-spacing:.3px}
+    .panel small{color:#9fb0cc}
+    .form-control.luxe{background:#0c1121;border:1px solid var(--line);color:#eaf2ff;border-radius:14px;padding:12px 14px}
+    .form-control.luxe:focus{outline:none;box-shadow:var(--focus-ring);border-color:rgba(125,178,255,.6)}
+    /* Quick fills */
+    .quick-fills{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .quick-fills .btn{border-radius:999px;border:1px solid var(--line);color:#cfe3ff;background:transparent;font-weight:600;width:100%}
+    /* Buttons */
+    .btn.primary,.btn.ghost{height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px}
+    .btn.primary{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#0b0e17;border:0;font-weight:800}
+    .btn.primary:hover{filter:brightness(1.05)}
+    .btn.ghost{border:1px solid var(--line);color:#eaf2ff;background:transparent}
+    .btn.ghost:hover{border-color:rgba(125,178,255,.55)}
+    /* Claim/Activate default hidden to avoid wrong state flash; JS will show correct one */
+    #activate-tokens-button-cft,#claim-rewards-button-cft{width:100%;height:48px;font-size:1rem;display:none}
+    /* Pool Stats */
+    .stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+    .stat-tile{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+    .stat-tile .item-title{color:var(--muted);font-weight:700}
+    /* Claim-before box */
+    .countdown-tile{margin-top:14px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+    .countdown-tile .item-title{color:var(--muted);font-weight:700}
+    .countdown-tile .inactive{color:var(--danger);font-weight:600}
+    /* Skeleton */
+    .skeleton{position:relative;overflow:hidden;min-width:80px;min-height:20px;background:#141a2b;border-radius:8px}
+    .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);animation:shimmer 1.2s infinite}
+    @keyframes shimmer{100%{transform:translateX(100%)}}
+    /* Modals */
+    .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt);border-radius:16px}
+    .modal-header .btn-close{filter:invert(1)}
+    #energy-rental-modal .modal-body{padding-top:10px}
+    #energy-rental-modal .modal-body p{margin-bottom:10px;color:#cfe3ff}
+    #user-energy,#required-energy,#rental-energy,#rental-duration,#rental-cost-trx{display:inline-block;padding:.15rem .5rem;border-radius:10px;background:rgba(125,178,255,.12);border:1px solid rgba(125,178,255,.25);color:#ffffff}
+    .modal .btn-rent{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));border:0;color:#0b0e17;border-radius:12px;font-weight:800}
+    .modal .btn-cancel{border:1px solid var(--line);color:#eaf2ff;background:transparent;border-radius:12px}
+    #transaction-processing-modal .spinner{border:4px solid var(--accent-2);border-top-color:transparent;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto 15px}
+    @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+    /* Ad card */
+    .luxe-ad-card{position:relative;border-radius:var(--radius-4);background:linear-gradient(135deg,rgba(98,255,207,.1),rgba(125,178,255,.1));border:2px solid var(--accent-3);box-shadow:var(--shadow-2),0 0 20px rgba(125,178,255,.3);overflow:hidden;margin:2rem 0;transition:transform .3s ease,box-shadow .3s ease}
+    .luxe-ad-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-2),0 0 30px rgba(125,178,255,.5)}
+    .luxe-ad-card .inner{padding:1.5rem}
+    .luxe-ad-card h2{font-weight:800;color:var(--accent-1);text-shadow:0 0 5px rgba(98,255,207,.5)}
+    .luxe-ad-card p{color:var(--txt);font-size:1.1rem}
+    .luxe-ad-card .btn.primary{background:linear-gradient(135deg,var(--accent-3),var(--accent-2));font-weight:700;padding:.75rem 1.5rem;border-radius:12px}
+    .luxe-ad-card .btn.primary:hover{filter:brightness(1.2)}
+    /* Responsive */
+    @media (max-width:992px){
+      .kpis{grid-template-columns:repeat(2,1fr)}
+      .action-grid{grid-template-columns:1fr; justify-items:center; padding:0 20px 28px}
+      .action-grid .panel{width:100%; max-width:480px; margin:0 auto}
+      .stats-grid{grid-template-columns:repeat(2,1fr)}
+    }
+    @media (max-width:576px){
+      .kpis{grid-template-columns:1fr}
+      .stats-grid{grid-template-columns:1fr}
+      .hero-section{padding-top:96px}
+      .hero-section h1{font-size:2.4rem}
+      .action-grid{padding:0 12px 24px}
+      .panel{padding:14px}
+      .btn.primary,.btn.ghost{width:100%}
+    }
+    @media (min-width:992px){.panel{min-height:260px}}
+  `
+
+</style>
+</head>
+<body>
+  <!-- Header -->
+  <header id="header" class="pt-2">
+    <nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
+      <div class="container">
+        <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt=""/></a>
+        <div class="ms-auto"></div>
+        <ul class="navbar-nav items mx-auto">
+          <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
+            <ul class="dropdown-menu">
+              <li class="nav-item"><a href="staking.html" class="nav-link">Staking</a></li>
+              <li class="nav-item"><a href="lockstaking.html" class="nav-link">Locked Staking</a></li>
+              <li class="nav-item"><a href="sellcft.html" class="nav-link">Trading</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
+            <ul class="dropdown-menu">
+              <li class="nav-item"><a href="buystablex.html" class="nav-link">Buy StableX</a></li>
+              <li class="nav-item"><a href="sellstablex.html" class="nav-link">Sell StableX</a></li>
+              <li class="nav-item"><a href="stablexstaking.html" class="nav-link">Stake StableX</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link">CFT News<i class="icon-arrow-down"></i></a>
+            <ul class="dropdown-menu">
+              <li class="nav-item"><a href="blog.html" class="nav-link">News</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
+            <ul class="dropdown-menu">
+              <li class="nav-item"><a href="feb.html" class="nav-link">FEB</a></li>
+              <li class="nav-item"><a href="energy.html" class="nav-link">Rent Energy</a></li>
+            </ul>
+          </li>
+          <li class="nav-item"><a href="swap.html" class="nav-link">Swap</a></li>
+        </ul>
+        <ul class="navbar-nav toggle">
+          <li class="nav-item">
+            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
+              <i class="icon-menu m-0"></i>
+            </a>
+          </li>
+        </ul>
+        <ul class="navbar-nav action">
+          <li class="nav-item ms-2">
+            <button id="connect-button" class="btn btn-outline"><i class="icon-wallet me-md-2"></i> Wallet Connect</button>
+          </li>
+        </ul>
       </div>
-      <div class="col-12 col-md-7 p-3">
-        <div class="inner">
-          <h2 class="m-0">${ad.title}</h2>
-          <p class="mb-3">${ad.description}</p>
-          <a class="btn primary" href="${ad.link}" aria-label="${ad.linkText}"><i class="${ad.icon} me-2"></i>${ad.linkText}</a>
+    </nav>
+  </header>
+  <!-- Hero -->
+  <section class="hero-section">
+    <div class="container text-center">
+      <span class="intro-text">CFT Ecosystem</span>
+      <h1 class="display-5">CFT Staking</h1>
+      <p class="mb-0">Grow your wealth through TRX rewards by staking CFT</p>
+    </div>
+  </section>
+  <!-- Staking Card -->
+  <section class="py-3">
+    <div class="container">
+      <div class="luxe-card">
+        <!-- Header -->
+        <div class="staking-header">
+          <div class="staking-title">
+            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h4 class="staking-title-text m-0">CFT Staking</h4>
+                <span class="chip" id="status-chip"><span class="dot"></span><span id="status-text">Ready</span></span>
+              </div>
+              <p class="staking-sub mb-0 mt-2">Stake CFT for TRX rewards.</p>
+            </div>
+          </div>
+        </div>
+        <!-- KPI Row -->
+        <div class="kpis">
+          <div class="kpi"><span id="staked-amount-cft" class="skeleton"></span><span>Staked</span></div>
+          <div class="kpi">
+            <span id="projected-rewards-cft" class="skeleton" data-bs-toggle="tooltip" data-bs-title="Estimated annual percentage yield based on current pool parameters. Subject to change."></span>
+            <span>Your est. APY</span>
+          </div>
+          <div class="kpi"><span id="roi-cft" class="skeleton"></span><span>Your ROI</span></div>
+          <div class="kpi"><span id="user-total-claimed-cft" class="skeleton"></span><span>Your Total Claimed</span></div>
+        </div>
+        <!-- Action Grid -->
+        <div class="action-grid">
+          <!-- Deposit -->
+          <div class="panel">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="item-title">Deposit</span>
+              <small>Available: <span id="available-tokens-cft" class="skeleton" style="display:inline-block;min-width:80px;min-height:16px"></span> CFT</small>
+            </div>
+            <div><input type="number" inputmode="decimal" min="0" step="0.000001" placeholder="0.0" id="stake-amount-cft" class="form-control luxe"></div>
+            <div class="quick-fills">
+              <button class="btn btn-sm" data-fill="0.25">25%</button>
+              <button class="btn btn-sm" data-fill="0.5">50%</button>
+              <button class="btn btn-sm" data-fill="1">MAX</button>
+            </div>
+            <a href="#" class="btn primary w-100" id="stake-button-cft">Stake</a>
+          </div>
+          <!-- Withdraw -->
+          <div class="panel">
+            <div class="d-flex justify-content-between align-items-center mb-2"><span class="item-title">Withdraw</span><small>&nbsp;</small></div>
+            <div><input type="number" inputmode="decimal" min="0" step="0.000001" placeholder="0.0" id="withdraw-amount-cft" class="form-control luxe"></div>
+            <div></div>
+            <a href="#" class="btn primary w-100" id="unstake-button-cft">Withdraw</a>
+          </div>
+          <!-- Rewards -->
+          <div class="panel">
+            <div class="d-flex justify-content-between align-items-center mb-2"><span class="item-title">Pending Rewards</span></div>
+            <div>
+              <h4 class="m-0" id="claimable-rewards-cft">0 TRX</h4>
+              <span class="mt-2 d-block" style="color:#9fb0cc" id="energy-hint">TRON energy fee required</span>
+            </div>
+            <div></div>
+            <div>
+              <!-- Start hidden; JS will show the correct one immediately -->
+              <a href="#" class="btn ghost w-100" id="activate-tokens-button-cft" style="display:none">Activate Tokens</a>
+              <a href="#" class="btn primary w-100" id="claim-rewards-button-cft" style="display:none"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+            </div>
+          </div>
         </div>
       </div>
-    `;
-    currentAdIndex = (currentAdIndex + 1) % advertisements.length;
-  };
-  updateAd();
-  setInterval(updateAd, 60000);
-}
-/* ===================== TronGrid helper (throttled + key-rotating) ===================== */
-async function tronGridApiCall(endpoint, params = {}) {
-  const needsHex = endpoint.startsWith('/wallet/');
-  let body = params;
-  if (needsHex && params && params.address) {
-    try {
-      const hex = tronWeb?.address?.toHex ? tronWeb.address.toHex(params.address) : params.address;
-      body = { ...params, address: hex };
-    } catch {
-      body = params;
-    }
-  }
-  return throttle(async () => {
-    const key = apiKeyRotator();
-    const res = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'TRON-PRO-API-KEY': key
-      },
-      body: JSON.stringify(body)
-    });
-    if (res.status === 429) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`TronGrid 429 Too Many Requests. ${text || ''}`.trim());
-    }
-    if (res.status === 403) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`TronGrid 403 Forbidden. ${text || ''}`.trim());
-    }
-    const data = await res.json().catch(() => ({}));
-    if (data.Error) throw new Error(data.Error);
-    return data;
-  });
-}
-/* ===================== TronWeb Setup (wrap requests) ===================== */
-async function initializeTronWeb() {
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|TronLink/i.test(navigator.userAgent);
-  const initDelay = isMobile ? 1500 : 800;
-  await delay(initDelay);
-  if (!window.tronLink || !window.tronWeb) throw new Error('TronLink is not detected. Install or unlock TronLink.');
-  if (!window.tronLink.ready) throw new Error('TronLink is not ready. Unlock TronLink and select mainnet.');
-  tronWeb = window.tronWeb;
-  if (isMobile) {
-    const originalRequest = tronWeb.request;
-    tronWeb.request = async function(endpoint, params = {}, method = 'POST') {
-      return throttle(async () => {
-        const key = apiKeyRotator();
-        tronWeb.setHeader({ 'TRON-PRO-API-KEY': key });
-        return originalRequest.call(this, endpoint, params, method);
-      });
-    };
-  } else {
-    const HttpProvider = window.TronWeb.providers.HttpProvider;
-    const provider = new HttpProvider(TRONGRID_API_URL);
-    const customHttpProvider = new Proxy(provider, {
-      get(target, prop) {
-        if (prop === 'request') {
-          return async function(endpoint, params = {}, method = 'POST') {
-            return throttle(async () => {
-              const key = apiKeyRotator();
-              const res = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
-                method,
-                headers: {
-                  'Content-Type': 'application/json',
-                  'TRON-PRO-API-KEY': key
-                },
-                body: method === 'POST' ? JSON.stringify(params) : undefined
-              });
-              if (res.status === 429) throw new Error('TronGrid 429 Too Many Requests.');
-              if (res.status === 403) throw new Error('TronGrid 403 Forbidden.');
-              const data = await res.json().catch(() => ({}));
-              if (data.Error) throw new Error(data.Error);
-              return data;
-            });
-          };
-        }
-        return target[prop];
-      }
-    });
-    tronWeb.setFullNode(customHttpProvider);
-    tronWeb.setSolidityNode(customHttpProvider);
-    tronWeb.setEventServer(customHttpProvider);
-  }
-  userAddress = tronWeb.defaultAddress.base58;
-  if (!userAddress) throw new Error('No user address found. Ensure TronLink is connected to mainnet.');
-  const cb = document.getElementById('connect-button');
-  if (cb) cb.innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
-  // init contracts
-  const key = 'cft';
-  const details = tokenDetails[key];
-  if (!isValidTronAddress(details.tokenAddress)) throw new Error(`Invalid token address for ${key}`);
-  if (!isValidTronAddress(details.stakingAddress)) throw new Error(`Invalid staking address for ${key}`);
-  tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
-  await delay(CONTRACT_CALL_DELAY_MS);
-  stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
-  // sanity for ABI variants
-  if (!stakingContracts[key].methods.getTotalStaked && !stakingContracts[key].methods.totalStaked) {
-    throw new Error('Neither getTotalStaked nor totalStaked found. Check ABI or address.');
-  }
-  setStatus('Connected', true);
-  await updateTokenUI(key, true);
-  // show admin if owner
-  try {
-    const owner = await stakingContracts[key].methods.owner().call();
-    if (userAddress === owner) {
-      const admin = document.getElementById('admin-section');
-      if (admin) admin.style.display = 'block';
-    }
-  } catch {}
-  setInterval(() => updateTokenUI(key), 60000);
-  rotateAdvertisements();
-}
-/* ===================== Energy helpers (aligned with staking.js) ===================== */
-async function checkUserEnergy(address, token, action, extraEnergy = 0) {
-  try {
-    const resources = await tronWeb.trx.getAccountResources(address);
-    const energyLimit = resources.EnergyLimit || 0;
-    const energyUsed = resources.EnergyUsed || 0;
-    const availableEnergy = energyLimit - energyUsed;
-    const baseRequiredEnergy = tokenDetails[token].energyCosts[action];
-    const requiredEnergy = baseRequiredEnergy + extraEnergy;
-    const shortfall = Math.max(0, requiredEnergy - availableEnergy);
-    return { availableEnergy, shortfall, requiredEnergy };
-  } catch (error) {
-    const baseRequiredEnergy = tokenDetails[token].energyCosts[action];
-    const requiredEnergy = baseRequiredEnergy + extraEnergy;
-    return { availableEnergy: 0, shortfall: requiredEnergy, requiredEnergy };
-  }
-}
-async function checkDelegatorEnergy(requiredAmount) {
-  try {
-    // match staking.js: simple GET, no special headers
-    const response = await fetch(`${SERVER_URL}/api/available-energy`, { method: 'GET' });
-    const data = await response.json();
-    if (data.success) {
-      const availableEnergy = Number(data.availableEnergy);
-      return availableEnergy >= requiredAmount;
-    }
-    throw new Error('Failed to fetch delegator energy');
-  } catch {
-    return false;
-  }
-}
-async function requestEnergyRental(rentalEnergy, rentalCostTrx) {
-  let processingModal = null;
-  try {
-    processingModal = showProcessingModal('(1/2)');
-    if (!userAddress) {
-      throw new Error('Please connect your wallet first.');
-    }
-    // Calculate in integer SUN to avoid float rounding issues
-    const rentalCostSun = Math.round(rentalEnergy * ENERGY_PRICE_SUN); // integer SUN
-    // Send payment in SUN
-    const paymentRes = await tronWeb.trx.sendTransaction(PAYMENT_ADDRESS, rentalCostSun);
-    if (!paymentRes?.result) {
-      throw new Error('Transaction was rejected or failed.');
-    }
-    // Notify backend (keep TRX price for display/records)
-    const totalEnergy = rentalEnergy + SAFETY_ENERGY;
-    const response = await fetch(`${SERVER_URL}/api/request-energy`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        energyAmount: totalEnergy,
-        receiverAddress: userAddress,
-        trxPrice: rentalCostSun / SUN_PER_TRX, // TRX value for server logs (float)
-        userAddress,
-        paymentTxId: paymentRes.txid,
-        delegationDuration: ENERGY_RENTAL_DURATION
-      })
-    });
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error(`Server error: ${data.message || 'Unknown'}`);
-    }
-    // Poll for delegation confirmation (same as staking.js)
-    const delegated = await pollDelegationStatus(data.requestId);
-    hideProcessingModal(processingModal);
-    return delegated;
-  } catch (error) {
-    hideProcessingModal(processingModal);
-    throw error;
-  }
-}
-async function pollDelegationStatus(requestId) {
-  const maxPollAttempts = 30; // ~60s (2s interval)
-  let pollAttempts = 0;
-  return new Promise((resolve, reject) => {
-    const interval = setInterval(async () => {
-      pollAttempts++;
-      try {
-        const response = await fetch(`${SERVER_URL}/api/delegation-status?requestId=${requestId}`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-        const data = await response.json();
-        if (data.status === 'delegated') {
-          clearInterval(interval);
-          resolve(true);
-        } else if (data.status === 'failed' || data.status === 'expired') {
-          clearInterval(interval);
-          reject(new Error(`Delegation failed: ${data.message || 'Unknown error'}`));
-        } else if (pollAttempts >= maxPollAttempts) {
-          clearInterval(interval);
-          reject(new Error('Delegation timed out after 60 seconds.'));
-        }
-      } catch (err) {
-        if (pollAttempts >= maxPollAttempts) {
-          clearInterval(interval);
-          reject(new Error(`Error polling delegation status: ${err.message}`));
-        }
-      }
-    }, 2000);
-  });
-}
-function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = '') {
-  return new Promise((resolve, reject) => {
-    const modalElement = document.getElementById('energy-rental-modal');
-    if (!modalElement) return reject(new Error('Energy rental modal not found.'));
-    const rentalEnergy = shortfall;
-    const rentalCostSun = rentalEnergy * ENERGY_PRICE_SUN; // integer SUN
-    const rentalCostTrx = rentalCostSun / SUN_PER_TRX; // display only
-    const map = {
-      'user-energy': userEnergy.toLocaleString('en-US'),
-      'required-energy': requiredEnergy.toLocaleString('en-US') + message,
-      'rental-energy': rentalEnergy.toLocaleString('en-US'),
-      'rental-cost-trx': rentalCostTrx.toFixed(2),
-      'rental-duration': ENERGY_RENTAL_DURATION
-    };
-    for (const [id, value] of Object.entries(map)) {
-      const el = document.getElementById(id);
-      if (!el) return reject(new Error(`Modal element ${id} not found.`));
-      el.textContent = value;
-    }
-    const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
-    // a11y: remove aria-hidden when shown
-    modalElement.addEventListener('shown.bs.modal', () => modalElement.removeAttribute('aria-hidden'), { once: true });
-    const confirmButton = document.getElementById('rent-energy-confirm');
-    if (!confirmButton) return reject(new Error('Rent energy confirm button not found.'));
-    const confirmHandler = () => {
-      modal.hide();
-      resolve({ rent: true, rentalEnergy, rentalCostTrx });
-      confirmButton.removeEventListener('click', confirmHandler);
-    };
-    confirmButton.addEventListener('click', confirmHandler);
-    const cancelHandler = () => {
-      modal.hide();
-      resolve({ rent: false });
-    };
-    modalElement.addEventListener('hidden.bs.modal', cancelHandler, { once: true });
-    try { modal.show(); } catch { reject(new Error('Failed to show energy rental modal.')); }
-  });
-}
-/* ===================== ABIs (unchanged) ===================== */
-const stakingContractAbi = [
-  {"inputs":[{"internalType":"address","name":"_trc20Token","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Staked","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Unstaked","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"totalRewards","type":"uint256"}],"name":"RewardsDistributed","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"RewardsClaimed","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newSize","type":"uint256"}],"name":"PoolSizeUpdated","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newPercentage","type":"uint256"}],"name":"DailyPayoutPercentageUpdated","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newTimeout","type":"uint256"}],"name":"ClaimTimeoutUpdated","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"newWallet","type":"address"}],"name":"AuthorizedWalletUpdated","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"}],"name":"RewardsForfeited","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"}],"name":"TokensActivated","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"TRXWithdrawn","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"TRC20Withdrawn","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newTotal","type":"uint256"}],"name":"TotalClaimedRewardsUpdated","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newTotal","type":"uint256"}],"name":"TotalUnclaimedRewardsUpdated","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"}],"name":"StakerRemoved","type":"event"},
-  {"inputs":[],"name":"trc20Token","outputs":[{"internalType":"contract ITRC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"authorizedWallet","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"poolSize","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"dailyPayoutPercentage","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"claimTimeout","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"lastDistribution","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"totalClaimedRewards","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"totalUnclaimedRewards","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"totalStaked","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"totalActiveStaked","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"users","outputs":[{"internalType":"uint256","name":"stakedAmount","type":"uint256"},{"internalType":"bool","name":"isActive","type":"bool"},{"internalType":"uint256","name":"pendingRewards","type":"uint256"},{"internalType":"uint256","name":"lastClaimTimestamp","type":"uint256"},{"internalType":"uint256","name":"totalClaimed","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"_staker","type":"address"}],"name":"getStakerInfo","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"getStakersList","outputs":[{"internalType":"address[]","name":"","type":"address[]"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"stake","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"unstake","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[],"name":"claimRewards","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[],"name":"distributeRewards","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"_user","type":"address"}],"name":"calculateAPY","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"_user","type":"address"}],"name":"calculateROI","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"_user","type":"address"}],"name":"viewUserTotalClaimed","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"viewTotalClaimedRewards","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"viewTotalUnclaimedRewards","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_newSize","type":"uint256"}],"name":"setPoolSize","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[],"name":"addToPool","outputs":[],"stateMutability":"payable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_percentage","type":"uint256"}],"name":"setDailyPayoutPercentage","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_timeout","type":"uint256"}],"name":"setClaimTimeout","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"_wallet","type":"address"}],"name":"setAuthorizedWallet","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[],"name":"activateTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"},{"internalType":"address","name":"_to","type":"address"}],"name":"withdrawTRX","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"},{"internalType":"address","name":"_to","type":"address"}],"name":"withdrawTRC20","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"stakersList","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-  {"stateMutability":"payable","type":"receive"}
-];
-const tokenContractAbi = [
-  {"inputs":[{"internalType":"address","name":"_to","type":"address"},{"internalType":"uint256","name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"_spender","type":"address"},{"internalType":"uint256","name":"_value","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"_from","type":"address"},{"internalType":"address","name":"_to","type":"address"},{"internalType":"uint256","name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"}
-];
-/* ===================== Utils ===================== */
-const TEN = 10n;
-const toUnits = (raw, decimals = 6) => {
-  try { return Number(BigInt(raw) / (TEN ** BigInt(decimals))); }
-  catch { return 0; }
-};
-const fmt = (n, max=6) => Number(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: max });
-const fmtPct = (n) => `${(Number(n) || 0).toFixed(2)}%`;
-const fmtTrx = (n) => `${fmt(n)} TRX`;
-function isValidTronAddress(address){
-  return !!(address && typeof address === 'string' && address.startsWith('T') && address.length === 34 && /^[A-Za-z1-9]+$/.test(address));
-}
-function toWei(amt, decimals = 6) {
-  const n = Number(amt || 0);
-  if (!isFinite(n) || n <= 0) return 0n;
-  const base = BigInt(Math.round(n * 1e6));
-  const pow = BigInt(Math.max(0, decimals - 6));
-  return base * (TEN ** pow);
-}
-/* ===================== UI helpers ===================== */
-function showToast({ title='Notification', body='', variant='dark', autohide=true }){
-  const el = document.getElementById('app-toast');
-  if (!el) return;
-  el.className = `toast text-bg-${variant}`;
-  el.innerHTML = `
-    <div class="toast-header">
-      <strong class="me-auto">${title}</strong>
-      <button type="button" class="btn-close ms-2 mb-1" data-bs-dismiss="toast" aria-label="Close"></button>
     </div>
-    <div class="toast-body">${body}</div>`;
-  new bootstrap.Toast(el, { autohide, delay: 4500 }).show();
-}
-function withLoading(btn, label='Processing', fn){
-  return async (...args)=>{
-    if (!btn) return fn(...args);
-    btn.disabled = true; const old = btn.innerHTML;
-    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>${label}`;
-    try { return await fn(...args); }
-    finally { btn.disabled = false; btn.innerHTML = old; }
-  };
-}
-function setStatus(text, ok=true){
-  const chip = document.getElementById('status-chip');
-  const txt = document.getElementById('status-text');
-  if (chip && txt){ txt.textContent = text; chip.querySelector('.dot').style.background = ok ? '#00ff88' : '#ff4d4d'; }
-}
-function setSkeleton(id, on){
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (on){ el.classList.add('skeleton'); el.textContent = ''; el.style.minHeight = el.style.minHeight || '22px'; }
-  else { el.classList.remove('skeleton'); }
-}
-function showProcessingModal(step=''){
-  const modalElement = document.getElementById('transaction-processing-modal');
-  if (!modalElement) throw new Error('Processing modal not found.');
-  const titleElement = document.getElementById('transactionProcessingModalLabel');
-  if (titleElement) titleElement.textContent = `Processing Transaction ${step}`;
-  const modal = new bootstrap.Modal(modalElement, { backdrop:'static', keyboard:false });
-  // a11y
-  modalElement.addEventListener('shown.bs.modal', () => modalElement.removeAttribute('aria-hidden'), { once: true });
-  modal.show();
-  return modal;
-}
-function hideProcessingModal(modal){ if (modal) modal.hide(); }
-/* ===================== Core ===================== */
-async function initialize(){
-  const connectButton = document.getElementById('connect-button');
-  if (connectButton){ connectButton.addEventListener('click', connectWallet); }
-  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-  tooltipTriggerList.forEach(t => new bootstrap.Tooltip(t));
-  document.querySelectorAll('[data-fill]')?.forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const pct = Number(btn.dataset.fill || '0');
-      const availEl = document.getElementById('available-tokens-cft');
-      const input = document.getElementById('stake-amount-cft');
-      const available = Number((availEl?.dataset.raw) || availEl?.textContent?.replace(/[^0-9.]/g,'') || '0');
-      if (input) input.value = (available * pct).toFixed(6);
-    });
-  });
-  const isTronLinkInstalled = await checkTronLinkInstalled();
-  if (isTronLinkInstalled && window.tronLink && window.tronLink.ready){
-    try{ await initializeTronWeb(); }catch(e){ showToast({ title:'Auto-connect failed', body:e.message, variant:'danger' }); }
-  }
-}
-function checkTronLinkInstalled(){
-  return new Promise(resolve=>{
-    let attempts = 0; const maxAttempts = 5;
-    const interval = setInterval(()=>{
-      attempts++;
-      if (window.tronWeb && window.tronWeb.defaultAddress.base58){ clearInterval(interval); resolve(true); }
-      else if (attempts >= maxAttempts){ clearInterval(interval); resolve(false); }
-    }, 500);
-  });
-}
-async function connectWallet(){
-  try{
-    if (!window.tronLink) throw new Error('TronLink is not detected. Install or unlock TronLink.');
-    if (!window.tronLink.ready) throw new Error('TronLink is not ready. Unlock TronLink and select mainnet.');
-    await window.tronLink.request({ method:'tron_requestAccounts' });
-    await initializeTronWeb();
-  }catch(e){ showToast({ title:'Wallet', body:e.message, variant:'danger' }); }
-}
-/* ===================== UI (pacing between calls) ===================== */
-async function updateTokenUI(token, first = false) {
-  const cacheKey = `tokenUI_${token}_${userAddress}`;
-  if (!first) {
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      const { data, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp < CACHE_TIMEOUT_MS) {
-        const {
-          balanceUnits, stakedUnits, rewardUnits, userTotalClaimed,
-          poolSize, totalNextPayout, yourNextPayout, roiPct, apyPct, dailyPctRaw
-        } = data;
-        const availEl = document.getElementById(`available-tokens-${token}`);
-        if (availEl) { availEl.textContent = fmt(balanceUnits); availEl.dataset.raw = String(balanceUnits); setSkeleton(`available-tokens-${token}`, false); }
-        const stakedEl = document.getElementById(`staked-amount-${token}`);
-        if (stakedEl) { stakedEl.textContent = fmt(stakedUnits); setSkeleton(`staked-amount-${token}`, false); }
-        const apyEl = document.getElementById(`projected-rewards-${token}`);
-        if (apyEl) { apyEl.textContent = fmtPct(apyPct); setSkeleton(`projected-rewards-${token}`, false); }
-        const claimableEl = document.getElementById(`claimable-rewards-${token}`);
-        if (claimableEl) { claimableEl.textContent = `${fmt(rewardUnits)} ${tokenDetails[token].rewardDisplayName}`; }
-        const userClaimedEl = document.getElementById('user-total-claimed-cft');
-        if (userClaimedEl) { userClaimedEl.textContent = fmtTrx(userTotalClaimed); setSkeleton('user-total-claimed-cft', false); }
-        const roiEl = document.getElementById('roi-cft');
-        if (roiEl) { roiEl.textContent = fmtPct(roiPct); setSkeleton('roi-cft', false); }
-        const poolEl = document.getElementById('pool-size'); if (poolEl) { poolEl.textContent = fmtTrx(poolSize); setSkeleton('pool-size', false); }
-        const dailyEl = document.getElementById('daily-payout'); if (dailyEl) { dailyEl.textContent = `${(Number(dailyPctRaw)/100).toFixed(2)}% / day`; setSkeleton('daily-payout', false); }
-        const totalNextPayoutEl = document.getElementById('total-next-payout'); if (totalNextPayoutEl) { totalNextPayoutEl.textContent = fmtTrx(totalNextPayout); setSkeleton('total-next-payout', false); }
-        const yourNextPayoutEl = document.getElementById('your-next-payout'); if (yourNextPayoutEl) { yourNextPayoutEl.textContent = fmtTrx(yourNextPayout); setSkeleton('your-next-payout', false); }
-        return;
-      }
-    }
-  }
-  try {
-    if (first) {
-      ['available-tokens-cft', 'staked-amount-cft', 'projected-rewards-cft', 'user-total-claimed-cft', 'roi-cft', 'pool-size', 'daily-payout', 'total-next-payout', 'your-next-payout']
-        .forEach(id => setSkeleton(id, true));
-    }
-    const d = tokenDetails[token];
-    // Pace contract calls with 200ms delay to avoid bursts (still covered by throttle)
-    const balanceRaw = await tokenContracts[token].methods.balanceOf(userAddress).call().catch(()=>'0');
-    await delay(CONTRACT_CALL_DELAY_MS);
-    const userData = await stakingContracts[token].methods.users(userAddress).call().catch(()=>({ stakedAmount:'0', pendingRewards:'0', isActive:false, lastClaimTimestamp:'0', totalClaimed:'0' }));
-    await delay(CONTRACT_CALL_DELAY_MS);
-    const [apy, roi, timeout, userTotalClaimedRaw] = await Promise.all([
-      stakingContracts[token].methods.calculateAPY(userAddress).call().catch(()=>'0'),
-      stakingContracts[token].methods.calculateROI(userAddress).call().catch(()=>'0'),
-      stakingContracts[token].methods.claimTimeout().call().catch(()=>'0'),
-      stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(()=>'0')
-    ]);
-    await delay(CONTRACT_CALL_DELAY_MS);
-    const [poolSizeRaw, dailyPctRaw, totalStakedRaw, totalActiveStakedRaw] = await Promise.all([
-      stakingContracts[token].methods.poolSize().call().catch(()=>'0'),
-      stakingContracts[token].methods.dailyPayoutPercentage().call().catch(()=>'0'),
-      (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().catch(()=>'0'),
-      stakingContracts[token].methods.totalActiveStaked().call().catch(()=>'0')
-    ]);
-    const balanceUnits = toUnits(balanceRaw, d.decimals);
-    const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
-    const rewardUnits = toUnits(userData.pendingRewards, d.rewardDecimals);
-    const userTotalClaimed = Number(userTotalClaimedRaw) / SUN_PER_TRX;
-    const poolSize = Number(poolSizeRaw) / SUN_PER_TRX;
-    const totalStaked = toUnits(totalStakedRaw, d.decimals);
-    const totalActiveStaked = toUnits(totalActiveStakedRaw, d.decimals);
-    const dailyPayoutPct = Number(dailyPctRaw) / 100;
-    const totalNextPayout = poolSize * dailyPayoutPct / 100;
-    let yourNextPayout = stakedUnits > 0 && totalActiveStaked > 0 && userData.isActive ? (stakedUnits / totalActiveStaked) * totalNextPayout : 0;
-    const roiPct = Number(roi);
-    let apyPct = Number(apy);
-    // Check if timer has expired
-    const now = Math.floor(Date.now() / 1000);
-    const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + Number(timeout);
-    const isExpired = timeout && nextClaim <= now;
-    if (isExpired) {
-      apyPct = 0; // Set APY to 0 when expired
-      yourNextPayout = 0; // Set Your Next Payout to 0 when expired
-    }
-    const cacheData = {
-      data: {
-        balanceUnits: Number(balanceUnits),
-        stakedUnits: Number(stakedUnits),
-        rewardUnits: isExpired ? 0 : Number(rewardUnits), // Set rewards to 0 when expired
-        userTotalClaimed: Number(userTotalClaimed),
-        poolSize: Number(poolSize),
-        totalNextPayout: Number(totalNextPayout),
-        yourNextPayout: Number(yourNextPayout),
-        roiPct: Number(roiPct),
-        apyPct: Number(apyPct),
-        dailyPctRaw: Number(dailyPctRaw)
-      },
-      timestamp: Date.now()
-    };
-    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-    const updateElement = (id, value, skeletonId) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.textContent = value;
-        if (id === `available-tokens-${token}`) el.dataset.raw = String(cacheData.data.balanceUnits);
-        if (skeletonId) setSkeleton(skeletonId, false);
-      }
-    };
-    updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
-    updateElement(`staked-amount-${token}`, fmt(stakedUnits), `staked-amount-${token}`);
-    updateElement(`projected-rewards-${token}`, fmtPct(apyPct), `projected-rewards-${token}`);
-    updateElement(`claimable-rewards-${token}`, `${fmt(isExpired ? 0 : rewardUnits)} ${d.rewardDisplayName}`);
-    updateElement('user-total-claimed-cft', fmtTrx(userTotalClaimed), 'user-total-claimed-cft');
-    updateElement('roi-cft', fmtPct(roiPct), 'roi-cft');
-    updateElement('pool-size', fmtTrx(poolSize), 'pool-size');
-    updateElement('daily-payout', `${dailyPayoutPct.toFixed(2)}% / day`, 'daily-payout');
-    updateElement('total-next-payout', fmtTrx(totalNextPayout), 'total-next-payout');
-    updateElement('your-next-payout', fmtTrx(yourNextPayout), 'your-next-payout');
-    const activateButton = document.getElementById(`activate-tokens-button-${token}`);
-    const claimButton = document.getElementById(`claim-rewards-button-${token}`);
-    if (activateButton && claimButton) {
-      if (isExpired || (!userData.isActive && Number(userData.stakedAmount) > 0)) {
-        activateButton.style.display = 'block';
-        claimButton.style.display = 'none';
-      } else {
-        activateButton.style.display = 'none';
-        claimButton.style.display = 'block';
-      }
-    }
-    updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp), userData.isActive);
-  } catch (e) {
-    console.error('UI Update Error:', e);
-    showToast({ title: 'UI Update Error', body: e.message, variant: 'danger' });
-    ['available-tokens-cft', 'staked-amount-cft', 'projected-rewards-cft', 'user-total-claimed-cft', 'roi-cft', 'pool-size', 'daily-payout', 'total-next-payout', 'your-next-payout']
-      .forEach(id => setSkeleton(id, false));
-  }
-}
-function updateClaimTimer(timeoutSec, lastClaimTs, isActive) {
-  const timerEl = document.getElementById('next-claim-timer');
-  const claimBtn = document.getElementById('claim-rewards-button-cft');
-  const activateBtn = document.getElementById('activate-tokens-button-cft');
-  if (!timerEl || !claimBtn || !activateBtn) return;
-  if (timerEl._claimInterval) {
-    clearInterval(timerEl._claimInterval);
-    timerEl._claimInterval = null;
-  }
-  if (!isActive) {
-    timerEl.textContent = 'Inactive';
-    claimBtn.disabled = true;
-    claimBtn.style.display = 'none';
-    activateBtn.style.display = 'block';
-    return;
-  }
-  if (!timeoutSec) {
-    timerEl.textContent = '—';
-    claimBtn.disabled = true;
-    claimBtn.style.display = 'none';
-    activateBtn.style.display = 'block';
-    return;
-  }
-  const next = (lastClaimTs || 0) + timeoutSec;
-  const format = (s) => {
-    const d = Math.floor(s / 86400);
-    const h = Math.floor((s % 86400) / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const sec = s % 60;
-    return `${d ? d + 'd ' : ''}${(h || d) ? h + 'h ' : ''}${m}m ${sec}s`;
-  };
-  const tick = () => {
-    const now = Math.floor(Date.now() / 1000);
-    const rem = Math.max(0, next - now);
-    if (rem === 0) {
-      clearInterval(timerEl._claimInterval);
-      timerEl._claimInterval = null;
-      timerEl.textContent = 'Expired';
-      timerEl.classList.add('inactive');
-      claimBtn.disabled = true;
-      claimBtn.style.display = 'none';
-      activateBtn.style.display = 'block';
-      // Update UI elements for expired state
-      const apyEl = document.getElementById('projected-rewards-cft');
-      if (apyEl) apyEl.textContent = '0.00%';
-      const claimableEl = document.getElementById('claimable-rewards-cft');
-      if (claimableEl) claimableEl.textContent = '0 TRX';
-      const yourNextPayoutEl = document.getElementById('your-next-payout');
-      if (yourNextPayoutEl) yourNextPayoutEl.textContent = '0 TRX';
-    } else {
-      timerEl.textContent = `${format(rem)}`;
-      timerEl.classList.remove('inactive');
-      claimBtn.disabled = true;
-      claimBtn.style.display = 'block';
-      activateBtn.style.display = 'none';
-    }
-  };
-  tick();
-  timerEl._claimInterval = setInterval(tick, 1000);
-}
-/* ===================== Actions (stake/unstake/claim/activate) ===================== */
-async function stakeTokens(token, amount){
-  let processingModal = null;
-  const stakeBtn = document.getElementById(`stake-button-${token}`);
-  const run = async ()=>{
-    try{
-      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
-      if (!isValidTronAddress(tokenDetails[token].tokenAddress)) throw new Error('Invalid token address');
-      if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
-      const amountToStake = toWei(amount, tokenDetails[token].decimals);
-      if (amountToStake === 0n) throw new Error('Enter a valid amount to stake.');
-      const stakingContractAddress = tokenDetails[token].stakingAddress;
-      const tokenContract = tokenContracts[token];
-      const stakingContract = stakingContracts[token];
-      if (!tokenContract?.methods?.allowance) throw new Error('Token contract not initialized');
-      if (!stakingContract?.methods?.stake) throw new Error('Staking contract not initialized');
-      const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
-      await delay(CONTRACT_CALL_DELAY_MS);
-      if (BigInt(balanceRaw) < amountToStake) throw new Error('Insufficient balance to stake.');
-      const allowanceRaw = await tokenContract.methods.allowance(userAddress, stakingContractAddress).call();
-      await delay(CONTRACT_CALL_DELAY_MS);
-      const allowance = BigInt(allowanceRaw);
-      const approvalRequired = allowance < amountToStake;
-      let energyCheckResult = approvalRequired
-        ? await checkUserEnergy(userAddress, token, 'stake', 30000) // +30k for approve
-        : await checkUserEnergy(userAddress, token, 'stake');
-      let { availableEnergy, shortfall, requiredEnergy } = energyCheckResult;
-      if (shortfall > 0){
-        const totalRequired = shortfall + SAFETY_ENERGY;
-        if (await checkDelegatorEnergy(totalRequired)){
-          const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy, approvalRequired ? ' (incl. ~30,000 for approval)' : '');
-          if (modalResult.rent){
-            processingModal = showProcessingModal('(1/2)');
-            await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
-            await delay(5000);
-            hideProcessingModal(processingModal);
-          }
-        }
-      }
-      processingModal = showProcessingModal('(2/2)');
-      if (approvalRequired){
-        const approvalTx = await tronWeb.transactionBuilder.triggerSmartContract(
-          tokenDetails[token].tokenAddress,
-          'approve(address,uint256)', {},
-          [ { type:'address', value: stakingContractAddress }, { type:'uint256', value: maxUint256 } ],
-          userAddress
-        );
-        if (!approvalTx.result || !approvalTx.transaction) throw new Error('Failed to create approve transaction');
-        const signedApprovalTx = await tronWeb.trx.sign(approvalTx.transaction);
-        const broadcastApproval = await tronWeb.trx.sendRawTransaction(signedApprovalTx);
-        if (!broadcastApproval.result) throw new Error('Failed to broadcast approve transaction');
-        showToast({ title:'Approve submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastApproval.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
-        await delay(5000); // give the network a moment
-      }
-      const stakeTx = await tronWeb.transactionBuilder.triggerSmartContract(
-        stakingContractAddress, 'stake(uint256)', {}, [ { type:'uint256', value: amountToStake.toString() } ], userAddress
-      );
-      if (!stakeTx.result || !stakeTx.transaction) throw new Error('Failed to create stake transaction');
-      const signedStakeTx = await tronWeb.trx.sign(stakeTx.transaction);
-      const broadcastStake = await tronWeb.trx.sendRawTransaction(signedStakeTx);
-      if (!broadcastStake.result) throw new Error('Failed to broadcast stake transaction');
-      showToast({ title:'Stake submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastStake.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
-      hideProcessingModal(processingModal);
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await updateTokenUI(token, true);
-    }catch(e){
-      hideProcessingModal(processingModal);
-      showToast({ title:'Stake error', body:e.message, variant:'danger' });
-    }
-  };
-  return withLoading(stakeBtn, 'Staking...', run)();
-}
-async function unstakeTokens(token){
-  let processingModal = null;
-  const btn = document.getElementById(`unstake-button-${token}`);
-  const run = async ()=>{
-    try{
-      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
-      if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
-      const unstakeAmount = document.getElementById(`withdraw-amount-${token}`).value;
-      if (!unstakeAmount || isNaN(unstakeAmount) || Number(unstakeAmount) <= 0) throw new Error('Enter a valid amount to withdraw.');
-      const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'unstake');
-      if (shortfall > 0){
-        const totalRequired = shortfall + SAFETY_ENERGY;
-        if (await checkDelegatorEnergy(totalRequired)){
-          const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy);
-          if (modalResult.rent){
-            processingModal = showProcessingModal('(1/2)');
-            await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
-            await delay(5000);
-            hideProcessingModal(processingModal);
-          }
-        }
-      }
-      processingModal = showProcessingModal('(2/2)');
-      const amountToUnstake = toWei(unstakeAmount, tokenDetails[token].decimals);
-      const stakingContract = stakingContracts[token];
-      const userData = await stakingContract.methods.users(userAddress).call();
-      await delay(CONTRACT_CALL_DELAY_MS);
-      if (BigInt(userData.stakedAmount) < amountToUnstake) throw new Error('Insufficient staked amount.');
-      const withdrawTx = await tronWeb.transactionBuilder.triggerSmartContract(
-        tokenDetails[token].stakingAddress, 'unstake(uint256)', {}, [ { type:'uint256', value: amountToUnstake.toString() } ], userAddress
-      );
-      if (!withdrawTx.result || !withdrawTx.transaction) throw new Error('Failed to create unstake transaction');
-      const signedWithdrawTx = await tronWeb.trx.sign(withdrawTx.transaction);
-      const broadcastWithdraw = await tronWeb.trx.sendRawTransaction(signedWithdrawTx);
-      if (!broadcastWithdraw.result) throw new Error('Failed to broadcast unstake transaction');
-      showToast({ title:'Withdraw submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastWithdraw.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
-      hideProcessingModal(processingModal);
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await updateTokenUI(token, true);
-    }catch(e){
-      hideProcessingModal(processingModal);
-      showToast({ title:'Withdraw error', body:e.message, variant:'danger' });
-    }
-  };
-  return withLoading(btn, 'Withdrawing...', run)();
-}
-async function claimRewards(token){
-  let processingModal = null;
-  const btn = document.getElementById(`claim-rewards-button-${token}`);
-  const run = async ()=>{
-    try{
-      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
-      if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
-      const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'claimRewards');
-      if (shortfall > 0){
-        const totalRequired = shortfall + SAFETY_ENERGY;
-        if (await checkDelegatorEnergy(totalRequired)){
-          const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy);
-          if (modalResult.rent){
-            processingModal = showProcessingModal('(1/2)');
-            await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
-            await delay(5000);
-            hideProcessingModal(processingModal);
-          }
-        }
-      }
-      processingModal = showProcessingModal('(2/2)');
-      const stakingContract = stakingContracts[token];
-      const userData = await stakingContract.methods.users(userAddress).call();
-      await delay(CONTRACT_CALL_DELAY_MS);
-      if (BigInt(userData.pendingRewards) === 0n) throw new Error('No rewards available to claim.');
-      const claimTx = await tronWeb.transactionBuilder.triggerSmartContract(
-        tokenDetails[token].stakingAddress, 'claimRewards()', {}, [], userAddress
-      );
-      if (!claimTx.result || !claimTx.transaction) throw new Error('Failed to create claim transaction');
-      const signedClaimTx = await tronWeb.trx.sign(claimTx.transaction);
-      const broadcastClaim = await tronWeb.trx.sendRawTransaction(signedClaimTx);
-      if (!broadcastClaim.result) throw new Error('Failed to broadcast claim transaction');
-      showToast({ title:'Claim submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastClaim.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
-      hideProcessingModal(processingModal);
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await updateTokenUI(token, true);
-    }catch(e){
-      hideProcessingModal(processingModal);
-      showToast({ title:'Claim error', body:e.message, variant:'danger' });
-    }
-  };
-  return withLoading(btn, 'Claiming...', run)();
-}
-async function activateTokens(token){
-  let processingModal = null;
-  const btn = document.getElementById(`activate-tokens-button-${token}`);
-  const run = async ()=>{
-    try{
-      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
-      if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
-      const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'activateTokens');
-      if (shortfall > 0){
-        const totalRequired = shortfall + SAFETY_ENERGY;
-        if (await checkDelegatorEnergy(totalRequired)){
-          const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy);
-          if (modalResult.rent){
-            processingModal = showProcessingModal('(1/2)');
-            await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
-            await delay(5000);
-            hideProcessingModal(processingModal);
-          }
-        }
-      }
-      processingModal = showProcessingModal('(2/2)');
-      const stakingContract = stakingContracts[token];
-      const userData = await stakingContract.methods.users(userAddress).call();
-      await delay(CONTRACT_CALL_DELAY_MS);
-      if (userData.isActive || BigInt(userData.stakedAmount) === 0n) throw new Error('No inactive tokens to activate.');
-      const activateTx = await tronWeb.transactionBuilder.triggerSmartContract(
-        tokenDetails[token].stakingAddress, 'activateTokens()', {}, [], userAddress
-      );
-      if (!activateTx.result || !activateTx.transaction) throw new Error('Failed to create activation transaction');
-      const signedActivateTx = await tronWeb.trx.sign(activateTx.transaction);
-      const broadcastActivate = await tronWeb.trx.sendRawTransaction(signedActivateTx);
-      if (!broadcastActivate.result) throw new Error('Failed to broadcast activation transaction');
-      showToast({ title:'Activation submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastActivate.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
-      hideProcessingModal(processingModal);
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await updateTokenUI(token, true);
-    }catch(e){
-      hideProcessingModal(processingModal);
-      showToast({ title:'Activation error', body:e.message, variant:'danger' });
-    }
-  };
-  return withLoading(btn, 'Activating...', run)();
-}
-/* ===================== Events ===================== */
-document.addEventListener('DOMContentLoaded', () => {
-  const key = 'cft';
-  const stakeButton = document.getElementById(`stake-button-${key}`);
-  if (stakeButton){
-    stakeButton.addEventListener('click', async (e)=>{
-      e.preventDefault();
-      const amount = document.getElementById(`stake-amount-${key}`).value;
-      await stakeTokens(key, amount);
-    });
-  }
-  const unstakeButton = document.getElementById(`unstake-button-${key}`);
-  if (unstakeButton){
-    unstakeButton.addEventListener('click', async (e)=>{
-      e.preventDefault();
-      await unstakeTokens(key);
-    });
-  }
-  const claimButton = document.getElementById(`claim-rewards-button-${key}`);
-  if (claimButton){
-    claimButton.addEventListener('click', async (e)=>{
-      e.preventDefault();
-      await claimRewards(key);
-    });
-  }
-  const activateButton = document.getElementById(`activate-tokens-button-${key}`);
-  if (activateButton){
-    activateButton.addEventListener('click', async (e)=>{
-      e.preventDefault();
-      await activateTokens(key);
-    });
-  }
-  initialize();
-});
-
+  </section>
+  <section class="py-2">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat-tile"><span class="item-title">Pool Size</span><strong id="pool-size">—</strong></div>
+        <div class="stat-tile"><span class="item-title">Daily Payout</span><strong id="daily-payout">—</strong></div>
+        <div class="stat-tile"><span class="item-title">Total Next Payout</span><strong id="total-next-payout">—</strong></div>
+        <div class="stat-tile"><span class="item-title">Your Next Payout</span><strong id="your-next-payout">—</strong></div>
+        <div class="stat-tile"><span class="item-title">Total Active Tokens</span><strong id="total-active-tokens">—</strong></div>
+        <div class="stat-tile"><span class="item-title">Total Inactive Tokens</span><strong id="total-inactive-tokens">—</strong></div>
+      </div>
+      <!-- Claim before box -->
+      <div class="countdown-tile" id="next-claim-box">
+        <span class="item-title">Expire in</span>
+        <strong id="next-claim-timer" class="inactive">Inactive</strong>
+      </div>
+    </div>
+  </section>
+  <section class="py-3">
+    <div class="container">
+      <div class="cta luxe-ad-card">
+        <div class="row align-items-center g-0">
+          <div class="col-12 col-md-5 text-center p-3">
+            <img src="assets/img/content/guardian.png" alt="CFT Guardian" style="max-width:220px">
+          </div>
+          <div class="col-12 col-md-7 p-3">
+            <div class="inner">
+              <h2 class="m-0">CFT Guardian Minting is Now Live</h2>
+              <p class="mb-3">Earn daily SOL rewards by staking our Guardian NFTs</p>
+              <a class="btn primary" href="https://cftguardians.com/" aria-label="Mint CFT Guardians"><i class="icon-rocket me-2"></i>Mint Now</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ***** Energy Rental Modal Start ***** -->
+  <div class="modal fade" id="energy-rental-modal" tabindex="-1" aria-labelledby="energyRentalModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="energyRentalModalLabel">Insufficient Energy</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+        </div>
+        <div class="modal-body">
+          <p>Your wallet has <span id="user-energy">0</span> energy available, but <span id="required-energy">0</span> energy is required for this transaction.</p>
+          <p>Rent <span id="rental-energy">0</span> energy for <span id="rental-duration">5</span> minutes at a cost of <span id="rental-cost-trx">0.00</span> TRX?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-rent" id="rent-energy-confirm">Rent Energy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ***** Energy Rental Modal End ***** -->
+  <!-- Processing Modal -->
+  <div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-labelledby="transactionProcessingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title" id="transactionProcessingModalLabel">Processing Transaction</h5></div>
+        <div class="modal-body text-center"><div class="spinner"></div><p>Please wait while your transaction is being processed.</p></div>
+      </div>
+    </div>
+  </div>
+  <!-- Mobile Menu Modal -->
+  <div id="menu" class="modal fade p-0">
+    <div class="modal-dialog dialog-animated">
+      <div class="modal-content h-100">
+        <div class="modal-header" data-bs-dismiss="modal">
+          Menu <i class="far fa-times-circle icon-close"></i>
+        </div>
+        <div class="menu modal-body">
+          <div class="row w-100">
+            <div class="items p-0 col-12 text-center"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Toasts -->
+  <div id="toast-container" style="position:fixed;z-index:1100;bottom:16px;right:16px">
+    <div id="app-toast" class="toast text-bg-dark" role="status" aria-live="polite" aria-atomic="true"></div>
+  </div>
+  <!-- Footer -->
+  <footer class="footer-area py-5 mt-3">
+    <div class="container text-center">
+      <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt="" style="height:28px"></a>
+      <div class="social-icons d-flex justify-content-center my-3 gap-3">
+        <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
+        <a class="reddit" href="https://www.reddit.com/" target="_blank"><i class="fab fa-reddit"></i></a>
+        <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
+      </div>
+      <div class="copyright-area py-2">&copy;2025 CFT Ecosystem, All Rights Reserved</div>
+      <div id="scroll-to-top" class="scroll-to-top"><a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a></div>
+    </div>
+  </footer>
+  <!-- Vendor JS -->
+  <script src="assets/js/vendor/jquery.min.js"></script>
+  <script src="assets/js/vendor/popper.min.js"></script>
+  <script src="assets/js/vendor/bootstrap.min.js"></script>
+  <script src="assets/js/vendor/all.min.js"></script>
+  <script src="assets/js/vendor/gallery.min.js"></script>
+  <script src="assets/js/vendor/slider.min.js"></script>
+  <script src="assets/js/vendor/countdown.min.js"></script>
+  <script src="assets/js/vendor/shuffle.min.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+  <!-- App JS -->
+  <script src="assets/js/poolstaking.js" type="module"></script>
+</body>
+</html>
 
 
