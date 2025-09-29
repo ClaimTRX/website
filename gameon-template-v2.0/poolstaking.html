@@ -26,14 +26,14 @@
     }
     html,body{background:var(--bg-0);color:var(--txt);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
 
-    /* Header sizing to match reference */
+    /* Header */
     header#header{padding:1.5rem 0}
     .navbar-brand img{height:48px}
     .navbar-nav.items .nav-link{font-size:1.1rem;padding:.75rem 1rem}
     .navbar-nav.action .btn{font-size:1rem;padding:.5rem 1.25rem;height:50px}
     .navbar-nav.toggle .nav-link{font-size:1.5rem;padding:.5rem}
 
-    /* Mobile menu modal styles */
+    /* Mobile menu modal */
     #menu .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt)}
     #menu .modal-header{border-bottom:1px solid var(--line);padding:1rem}
     #menu .modal-body{padding:1rem}
@@ -43,7 +43,7 @@
     #menu .items .dropdown-menu .nav-link{color:var(--muted);font-size:1rem}
     #menu .items .dropdown-menu .nav-link:hover{color:var(--accent-1)}
 
-    /* Header spacing + bigger top line */
+    /* Hero */
     .hero-section{padding:120px 0 28px;text-align:center}
     .intro-text{display:inline-block;font-size:1rem;letter-spacing:.16em;text-transform:uppercase;color:#c3d3ef;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:.42rem .95rem;border-radius:999px}
     .hero-section h1{font-weight:900;letter-spacing:.4px;margin-top:16px;font-size:3.25rem;line-height:1.1}
@@ -66,9 +66,16 @@
     .kpi span:last-child{color:var(--muted);font-size:.88rem}
 
     /* Action Grid */
-    .action-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;padding:0 32px 36px}
+    .action-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:18px;
+      padding:0 32px 36px;
+      justify-items:stretch;        /* NEW: keep panels same width */
+      align-items:stretch;
+    }
 
-    /* Panel as grid to pin button row */
+    /* Panel */
     .panel{position:relative;display:grid;grid-template-rows:auto auto 1fr auto;gap:12px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:18px 18px 20px;box-shadow:var(--shadow-1)}
     .panel .item-title{color:var(--muted);font-weight:700;letter-spacing:.3px}
     .panel small{color:#9fb0cc}
@@ -76,19 +83,19 @@
     .form-control.luxe{background:#0c1121;border:1px solid var(--line);color:#eaf2ff;border-radius:14px;padding:12px 14px}
     .form-control.luxe:focus{outline:none;box-shadow:var(--focus-ring);border-color:rgba(125,178,255,.6)}
 
-    /* Quick fills: one line */
+    /* Quick fills */
     .quick-fills{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
     .quick-fills .btn{border-radius:999px;border:1px solid var(--line);color:#cfe3ff;background:transparent;font-weight:600;width:100%}
 
-    /* Primary/ghost buttons unified height */
+    /* Buttons */
     .btn.primary,.btn.ghost{height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px}
     .btn.primary{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#0b0e17;border:0;font-weight:800}
     .btn.primary:hover{filter:brightness(1.05)}
     .btn.ghost{border:1px solid var(--line);color:#eaf2ff;background:transparent}
     .btn.ghost:hover{border-color:rgba(125,178,255,.55)}
 
-    /* Ensure Activate Tokens button matches Claim button and same position */
-    #activate-tokens-button-cft,#claim-rewards-button-cft{width:100%;height:48px;font-size:1rem}
+    /* Claim/Activate default hidden to avoid wrong state flash; JS will show correct one */
+    #activate-tokens-button-cft,#claim-rewards-button-cft{width:100%;height:48px;font-size:1rem;display:none}
 
     /* Pool Stats */
     .stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
@@ -116,7 +123,7 @@
     #transaction-processing-modal .spinner{border:4px solid var(--accent-2);border-top-color:transparent;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto 15px}
     @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
 
-    /* Advertisement Card Styling */
+    /* Ad card */
     .luxe-ad-card{position:relative;border-radius:var(--radius-4);background:linear-gradient(135deg,rgba(98,255,207,.1),rgba(125,178,255,.1));border:2px solid var(--accent-3);box-shadow:var(--shadow-2),0 0 20px rgba(125,178,255,.3);overflow:hidden;margin:2rem 0;transition:transform .3s ease,box-shadow .3s ease}
     .luxe-ad-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-2),0 0 30px rgba(125,178,255,.5)}
     .luxe-ad-card .inner{padding:1.5rem}
@@ -126,8 +133,21 @@
     .luxe-ad-card .btn.primary:hover{filter:brightness(1.2)}
 
     /* Responsive */
-    @media (max-width:992px){.kpis{grid-template-columns:repeat(2,1fr)}.action-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}}
-    @media (max-width:576px){.kpis{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr}.hero-section{padding-top:96px}.hero-section h1{font-size:2.4rem}.action-grid{padding:0 16px 24px}.panel{padding:14px}.btn.primary,.btn.ghost{width:100%}}
+    @media (max-width:992px){
+      .kpis{grid-template-columns:repeat(2,1fr)}
+      .action-grid{grid-template-columns:1fr; justify-items:center; padding:0 20px 28px} /* NEW: center panels on tablet/mobile */
+      .action-grid .panel{width:100%; max-width:480px; margin:0 auto}                  /* NEW */
+      .stats-grid{grid-template-columns:repeat(2,1fr)}
+    }
+    @media (max-width:576px){
+      .kpis{grid-template-columns:1fr}
+      .stats-grid{grid-template-columns:1fr}
+      .hero-section{padding-top:96px}
+      .hero-section h1{font-size:2.4rem}
+      .action-grid{padding:0 12px 24px}
+      .panel{padding:14px}
+      .btn.primary,.btn.ghost{width:100%}
+    }
     @media (min-width:992px){.panel{min-height:260px}}
   </style>
 </head>
@@ -223,7 +243,7 @@
           <div class="kpi"><span id="roi-cft" class="skeleton"></span><span>Your ROI</span></div>
           <div class="kpi"><span id="user-total-claimed-cft" class="skeleton"></span><span>Your Total Claimed</span></div>
         </div>
-        <!-- Action Grid (Deposit / Withdraw / Rewards) -->
+        <!-- Action Grid -->
         <div class="action-grid">
           <!-- Deposit -->
           <div class="panel">
@@ -231,9 +251,7 @@
               <span class="item-title">Deposit</span>
               <small>Available: <span id="available-tokens-cft" class="skeleton" style="display:inline-block;min-width:80px;min-height:16px"></span> CFT</small>
             </div>
-            <div>
-              <input type="number" inputmode="decimal" min="0" step="0.000001" placeholder="0.0" id="stake-amount-cft" class="form-control luxe">
-            </div>
+            <div><input type="number" inputmode="decimal" min="0" step="0.000001" placeholder="0.0" id="stake-amount-cft" class="form-control luxe"></div>
             <div class="quick-fills">
               <button class="btn btn-sm" data-fill="0.25">25%</button>
               <button class="btn btn-sm" data-fill="0.5">50%</button>
@@ -243,33 +261,28 @@
           </div>
           <!-- Withdraw -->
           <div class="panel">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="item-title">Withdraw</span>
-              <small>&nbsp;</small>
-            </div>
-            <div>
-              <input type="number" inputmode="decimal" min="0" step="0.000001" placeholder="0.0" id="withdraw-amount-cft" class="form-control luxe">
-            </div>
+            <div class="d-flex justify-content-between align-items-center mb-2"><span class="item-title">Withdraw</span><small>&nbsp;</small></div>
+            <div><input type="number" inputmode="decimal" min="0" step="0.000001" placeholder="0.0" id="withdraw-amount-cft" class="form-control luxe"></div>
             <div></div>
             <a href="#" class="btn primary w-100" id="unstake-button-cft">Withdraw</a>
           </div>
           <!-- Rewards -->
           <div class="panel">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="item-title">Pending Rewards</span>
-            </div>
+            <div class="d-flex justify-content-between align-items-center mb-2"><span class="item-title">Pending Rewards</span></div>
             <div>
               <h4 class="m-0" id="claimable-rewards-cft">0 TRX</h4>
               <span class="mt-2 d-block" style="color:#9fb0cc" id="energy-hint">TRON energy fee required</span>
             </div>
             <div></div>
             <div>
+              <!-- Start hidden; JS will show the correct one immediately -->
               <a href="#" class="btn ghost w-100" id="activate-tokens-button-cft" style="display:none">Activate Tokens</a>
-              <a href="#" class="btn primary w-100" id="claim-rewards-button-cft"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+              <a href="#" class="btn primary w-100" id="claim-rewards-button-cft" style="display:none"><i class="fa-solid fa-lock me-1"></i> Claim</a>
             </div>
           </div>
         </div>
       </div>
+
       <!-- Admin (hidden) -->
       <div id="admin-section" class="mt-4 p-3" style="display:none; background:var(--bg-2); border:1px solid var(--line); border-radius:16px">
         <h3>Admin Controls</h3>
@@ -288,7 +301,7 @@
       <!-- Claim before box -->
       <div class="countdown-tile" id="next-claim-box">
         <span class="item-title">Claim before</span>
-        <strong id="next-claim-timer" class="inactive">—</strong>
+        <strong id="next-claim-timer" class="inactive">Inactive</strong> <!-- default to Inactive -->
       </div>
     </div>
   </section>
