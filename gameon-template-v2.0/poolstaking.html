@@ -118,8 +118,16 @@
     /* Responsive */
     @media (max-width:992px){
       .kpis{grid-template-columns:repeat(2,1fr)}
-      .action-grid{grid-template-columns:1fr; justify-items:center; padding:0 20px 28px}
-      .action-grid .panel{width:100%; max-width:480px; margin:0 auto}
+      .action-grid {
+    grid-template-columns:1fr;
+    justify-items:center; /* centers the panels */
+    padding:0 20px 28px;
+  }
+      .action-grid .panel {
+    width:auto;              /* let the grid decide */
+    max-width:480px;         /* prevent being too wide */
+    margin:0 auto;           /* extra centering */
+  }
       .stats-grid{grid-template-columns:repeat(2,1fr)}
     }
     @media (max-width:576px){
