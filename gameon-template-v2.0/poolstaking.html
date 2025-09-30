@@ -117,38 +117,43 @@
     .luxe-ad-card .btn.primary:hover{filter:brightness(1.2)}
     /* Responsive */
    /* ≤992px: center panels perfectly */
+/* make 100%-width controls actually fit inside on iOS */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* <= 992px: center panels AND guarantee inner fit */
 @media (max-width:992px){
-  .kpis{grid-template-columns:repeat(2,1fr)}
-
   .action-grid{
-    display:flex;               /* <- flex avoids justify-items issues */
+    display:flex;
     flex-direction:column;
-    align-items:center;         /* centers children */
+    align-items:center;
     gap:18px;
-    padding:0 20px 28px;        /* symmetric padding */
+    padding:0 20px 28px;
+    width:100%;
   }
 
+  /* cap to container width minus a small gutter so nothing touches the edge */
   .action-grid .panel{
-    width:min(100%, 480px);     /* full width up to 480px */
-    margin-inline:auto;         /* logical centering */
+    width:100%;
+    max-width:min(480px, calc(100% - 24px)); /* <- key change */
+    margin-inline:auto;
+    padding:16px; /* a touch more breathing room */
   }
 
-  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  /* ensure children never overflow */
+  .action-grid .panel > *{ max-width:100%; }
+  .form-control.luxe{ width:100%; }
+  .quick-fills{ grid-template-columns:repeat(3, minmax(0,1fr)); }
+  .quick-fills .btn{ width:100%; }
+  #stake-button-cft,
+  #unstake-button-cft,
+  #activate-tokens-button-cft,
+  #claim-rewards-button-cft { width:100%; }
 }
 
-/* ≤576px: keep same centering, slightly tighter padding */
 @media (max-width:576px){
-  .kpis{grid-template-columns:1fr}
-  .stats-grid{grid-template-columns:1fr}
-  .hero-section{padding-top:96px}
-  .hero-section h1{font-size:2.4rem}
-  .action-grid{padding:0 12px 24px}
-  .panel{padding:14px}
-  .btn.primary,.btn.ghost{width:100%}
+  .action-grid{ padding:0 12px 24px; }
+  .panel{ padding:16px; } /* keep the same padding on xs as well */
 }
-
-
-
 
 
 </style>
