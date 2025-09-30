@@ -118,15 +118,14 @@
     /* Responsive */
     @media (max-width:992px){
       .kpis{grid-template-columns:repeat(2,1fr)}
-      .action-grid {
+       .action-grid {
     grid-template-columns:1fr;
-    justify-items:center; /* centers the panels */
     padding:0 20px 28px;
   }
-      .action-grid .panel {
-    width:auto;              /* let the grid decide */
-    max-width:480px;         /* prevent being too wide */
-    margin:0 auto;           /* extra centering */
+  .action-grid .panel {
+    width:100%;
+    margin:0 auto;
+    max-width:480px;
   }
       .stats-grid{grid-template-columns:repeat(2,1fr)}
     }
