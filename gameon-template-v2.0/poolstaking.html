@@ -116,39 +116,39 @@
     .luxe-ad-card .btn.primary{background:linear-gradient(135deg,var(--accent-3),var(--accent-2));font-weight:700;padding:.75rem 1.5rem;border-radius:12px}
     .luxe-ad-card .btn.primary:hover{filter:brightness(1.2)}
     /* Responsive */
-   @media (max-width:992px){
+   /* ≤992px: center panels perfectly */
+@media (max-width:992px){
   .kpis{grid-template-columns:repeat(2,1fr)}
 
-  .action-grid {
-    grid-template-columns:1fr;
-    justify-items:center;  /* centers children */
-    padding:0 20px 28px;
+  .action-grid{
+    display:flex;               /* <- flex avoids justify-items issues */
+    flex-direction:column;
+    align-items:center;         /* centers children */
+    gap:18px;
+    padding:0 20px 28px;        /* symmetric padding */
   }
 
-  .action-grid .panel {
-    width:auto;             /* allow content width */
-    max-width:480px;        /* nice max width */
-    margin:0 auto;          /* extra centering */
+  .action-grid .panel{
+    width:min(100%, 480px);     /* full width up to 480px */
+    margin-inline:auto;         /* logical centering */
   }
 
   .stats-grid{grid-template-columns:repeat(2,1fr)}
 }
 
+/* ≤576px: keep same centering, slightly tighter padding */
 @media (max-width:576px){
   .kpis{grid-template-columns:1fr}
   .stats-grid{grid-template-columns:1fr}
   .hero-section{padding-top:96px}
   .hero-section h1{font-size:2.4rem}
-
   .action-grid{padding:0 12px 24px}
-  .action-grid .panel{width:100%; max-width:480px} /* go full width but cap it */
   .panel{padding:14px}
   .btn.primary,.btn.ghost{width:100%}
 }
 
-@media (min-width:992px){
-  .panel{min-height:260px}
-}
+
+
 
 
 </style>
