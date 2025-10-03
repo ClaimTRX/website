@@ -14,7 +14,15 @@
     console.log('Checking script loading for module errors...');
     document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('script:not([type="module"])').forEach(script => {
-        if (script.src) console.log('Non-module script loaded:', script.src);
+        if (script.src) {
+          console.log('Non-module script loaded:', script.src);
+          fetch(script.src)
+            .then(res => res.text())
+            .then(text => {
+              if (text.includes('import ')) console.warn('Non-module script contains import statement:', script.src);
+            })
+            .catch(err => console.error('Failed to fetch script for import check:', script.src, err));
+        }
       });
     });
   </script>
@@ -422,17 +430,25 @@
     </div>
   </footer>
   <!-- Vendor JS -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.min.js" integrity="sha256-T6Z1r2GqaX/Q6hC8BWLv2kpF6D2lDA3l2Wv1EjLnm5g=" crossorigin="anonymous" onload="console.log('Chart.js loaded successfully');" onerror="console.error('Failed to load Chart.js from CDN');"></script>
-  <script>if (typeof Chart === 'undefined') { document.write('<script src="assets/js/chart.min.js"></script>'); console.log('Loaded fallback Chart.js'); }</script>
-  <script src="assets/js/vendor/jquery.min.js"></script>
-  <script src="assets/js/vendor/popper.min.js"></script>
-  <script src="assets/js/vendor/bootstrap.min.js"></script>
-  <script src="assets/js/vendor/all.min.js"></script>
-  <script src="assets/js/vendor/gallery.min.js"></script>
-  <script src="assets/js/vendor/slider.min.js"></script>
-  <script src="assets/js/vendor/countdown.min.js"></script>
-  <script src="assets/js/vendor/shuffle.min.js"></script>
-  <script src="assets/js/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js" integrity="sha512-SQSyE3K2U6Ono8T110kZ0t15zS7nXFLvH0v0S2dS993uIrW3O+25V3Kfy9YAtu57GFCuk1H6oRNz1b4yC0Teg9w==" crossorigin="anonymous" onload="console.log('Chart.js loaded successfully');" onerror="console.error('Failed to load Chart.js from CDN');"></script>
+  <script>
+    if (typeof Chart === 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'assets/js/chart.min.js';
+      script.onload = () => console.log('Loaded fallback Chart.js');
+      script.onerror = () => console.error('Failed to load fallback Chart.js');
+      document.head.appendChild(script);
+    }
+  </script>
+  <script src="https://www.cftecosystem.com/assets/js/vendor/jquery.min.js"></script>
+  <script src="https://www.cftecosystem.com/assets/js/vendor/popper.min.js"></script>
+  <script src="https://www.cftecosystem.com/assets/js/vendor/bootstrap.min.js"></script>
+  <script src="https://www.cftecosystem.com/assets/js/vendor/all.min.js"></script>
+  <script src="https://www.cftecosystem.com/assets/js/vendor/gallery.min.js"></script>
+  <script src="https://www.cftecosystem.com/assets/js/vendor/slider.min.js"></script>
+  <script src="https://www.cftecosystem.com/assets/js/vendor/countdown.min.js"></script>
+  <script src="https://www.cftecosystem.com/assets/js/vendor/shuffle.min.js"></script>
+  <script src="https://www.cftecosystem.com/assets/js/main.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
   <!-- App JS -->
   <script src="assets/js/poolstaking.js" type="module"></script>
