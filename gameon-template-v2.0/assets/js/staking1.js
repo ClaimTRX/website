@@ -1346,7 +1346,6 @@ async function updateAllUI(first = false) {
     await updateTokenUI(key, first);
     await delay(CONTRACT_CALL_DELAY_MS);
   }
-  setInterval(() => updateAllUI(), 60000);
 }
 
 async function updateTokenUI(token, first = false) {
@@ -1706,6 +1705,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
+
 
 
 
