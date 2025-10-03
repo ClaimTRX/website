@@ -1,1709 +1,849 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="description" content="CFT Ecosystem Staking">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-let tronWeb, userAddress;
-const stakingContracts = {};
-const tokenContracts = {};
-const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+  <!-- Icons / CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>CFT Ecosystem - Staking</title>
+  <link rel="icon" href="assets/img/favicon.png">
+  <link rel="stylesheet" href="assets/css/style.css">
 
-/* ===================== Config ===================== */
-const TRONGRID_API_KEYS = [
-  'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca',
-  '664292b1-47ad-47b7-88c1-db67bee6e732'
-];
-const TRONGRID_API_URL = 'https://api.trongrid.io';
-const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
-const SERVER_URL = 'https://api.cftecosystem.com';
-const SAFETY_ENERGY = 20000;
-const ENERGY_PRICE_SUN = 10;
-const SUN_PER_TRX = 1_000_000;
-const ENERGY_RENTAL_DURATION = 2;
-const CACHE_TIMEOUT_MS = 60_000;
-const THROTTLE_GAP_MS = 200;
-const CONTRACT_CALL_DELAY_MS = 200;
-
-/* ===================== Token Config ===================== */
-const tokenDetails = {
-  cft: {
-    tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-    stakingAddress: 'TMrDKEu6vSBSwstToiiooAiwB5xKNghEy8',
-    decimals: 6,
-    displayName: 'CFT',
-    rewardDisplayName: 'CFT',
-    rewardDecimals: 6,
-    energyCosts: {
-      stake: 120000,
-      unstake: 75000,
-      claimRewards: 100000
-    }
-  },
-  cftx: {
-    tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-    stakingAddress: 'THLETrCqWHVJNURBQNKLBYJTLBGpUnDatp',
-    decimals: 6,
-    displayName: 'STABLEX',
-    rewardDisplayName: 'StableX',
-    rewardDecimals: 6,
-    energyCosts: {
-      stake: 120000,
-      unstake: 75000,
-      claimRewards: 100000
-    }
-  },
-  cftturu: {
-    tokenAddress: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
-    stakingAddress: 'TXgt8nXRDTbYxbhDbkZyqs9cgjoBikQa72',
-    decimals: 8,
-    rewardDecimals: 6,
-    displayName: 'CFT',
-    rewardDisplayName: 'CFT',
-    energyCosts: {
-      stake: 120000,
-      unstake: 75000,
-      claimRewards: 100000
-    }
-  },
-  turu: {
-    tokenAddress: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
-    stakingAddress: 'TLQPUiSeCHZ92UcphkesN46XtPN55MkNcm',
-    decimals: 8,
-    displayName: 'BBT',
-    rewardDisplayName: 'BBT',
-    energyCosts: {
-      stake: 120000,
-      unstake: 75000,
-      claimRewards: 100000
-    }
-  },
-  king: {
-    tokenAddress: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
-    stakingAddress: 'TEppqmC7mb2wF4ExBYbQF6LraqD6qXW5Aj',
-    decimals: 6,
-    displayName: 'CFT',
-    rewardDisplayName: 'CFT',
-    energyCosts: {
-      stake: 120000,
-      unstake: 75000,
-      claimRewards: 100000
-    }
-  },
-  fym: {
-    tokenAddress: 'TCTvRkt5kVndeGKWJmMUxEc2rovdrGNoK3',
-    stakingAddress: 'TP4HhAWv2WbSMCH2CRhdSsiwBP6JzViouq',
-    decimals: 6,
-    displayName: 'CFT',
-    rewardDisplayName: 'CFT',
-    energyCosts: {
-      stake: 120000,
-      unstake: 75000,
-      claimRewards: 100000
-    }
+  <style>
+  /* =============================
+     LUXE DESIGN SYSTEM – v2 (Enhanced)
+     ============================= */
+  :root {
+    --bg-0:#07090f; --bg-1:#0b0e17; --bg-2:#0f1321; --surface:#12172a; --line:#212b46;
+    --muted:#9aa7bd; --txt:#e9eef7;
+    --accent-1:#62ffcf; --accent-2:#7db2ff; --accent-3:#b37cff;
+    --success:#00e095; --danger:#ff5b73; --warning:#ffd166;
+    --radius-2:12px; --radius-3:18px; --radius-4:28px;
+    --shadow-1:0 10px 30px rgba(0,0,0,.55); --shadow-2:0 12px 40px rgba(0,0,0,.6);
+    --glass:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+    --focus-ring:0 0 0 3px rgba(125,178,255,.35);
   }
-};
 
-/* ===================== Helpers: throttle, rotation, delay ===================== */
-const throttle = (() => {
-  let queue = Promise.resolve();
-  let last = 0;
-  const gap = THROTTLE_GAP_MS;
-  return async function run(fn) {
-    const exec = async () => {
-      const now = Date.now();
-      const wait = Math.max(0, gap - (now - last));
-      if (wait) await new Promise(r => setTimeout(r, wait));
-      last = Date.now();
-      return await fn();
-    };
-    queue = queue.then(exec, exec);
-    return queue;
-  };
-})();
-
-const apiKeyRotator = (() => {
-  let idx = 0;
-  return function next() {
-    const key = TRONGRID_API_KEYS[idx];
-    idx = (idx + 1) % TRONGRID_API_KEYS.length;
-    return key;
-  };
-})();
-
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-/* ===================== Ad Rotator ===================== */
-const advertisements = [
-  {
-    title: "CFT Guardian Minting is Now Live",
-    description: "Earn daily SOL rewards by staking our Guardian NFTs",
-    image: "assets/img/content/guardian.png",
-    link: "https://cftguardians.com/",
-    linkText: "Mint Now",
-    icon: "icon-rocket"
-  },
-  {
-    title: "Stake StableX",
-    description: "Earn both CFT and StableX with StableX staking",
-    image: "assets/img/content/stablex.png",
-    link: "https://www.cftecosystem.com/buystablex",
-    linkText: "Stake Now",
-    icon: "icon-stake"
+  html,body {
+    background:var(--bg-0);
+    color:var(--txt);
+    font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial
   }
-];
 
-function rotateAdvertisements() {
-  const adContainer = document.querySelector('.luxe-ad-card .row');
-  if (!adContainer) return;
-  let currentAdIndex = 0;
-  const updateAd = () => {
-    const ad = advertisements[currentAdIndex];
-    adContainer.innerHTML = `
-      <div class="col-12 col-md-5 text-center p-3">
-        <img src="${ad.image}" alt="${ad.title}" style="max-width:220px" loading="lazy">
+  /* Header */
+  header#header { padding:1.5rem 0 }
+  .navbar-brand img { height:48px }
+  .navbar-nav.items .nav-link { font-size:1.1rem;padding:.75rem 1rem }
+  .navbar-nav.action .btn { font-size:1rem;padding:.5rem 1.25rem;height:50px }
+  .navbar-nav.toggle .nav-link { font-size:1.5rem;padding:.5rem }
+
+  /* Mobile menu modal */
+  #menu .modal-content { background:var(--bg-1);border:1px solid var(--line);color:var(--txt) }
+  #menu .modal-header { border-bottom:1px solid var(--line);padding:1rem }
+  #menu .modal-body { padding:1rem }
+  #menu .items .nav-item { margin:.5rem 0 }
+  #menu .items .nav-link { color:var(--txt);font-size:1.1rem;padding:.5rem 1rem }
+  #menu .items .dropdown-menu { background:var(--bg-2);border:1px solid var(--line);padding:.5rem }
+  #menu .items .dropdown-menu .nav-link { color:var(--muted);font-size:1rem }
+  #menu .items .dropdown-menu .nav-link:hover { color:var(--accent-1) }
+
+  /* Hero */
+  .hero-section { padding:120px 0 28px;text-align:center }
+  .intro-text {
+    display:inline-block;font-size:1rem;letter-spacing:.16em;text-transform:uppercase;
+    color:#c3d3ef;background:rgba(255,255,255,.03);border:1px solid var(--line);
+    padding:.42rem .95rem;border-radius:999px
+  }
+  .hero-section h1 { font-weight:900;letter-spacing:.4px;margin-top:16px;font-size:3.25rem;line-height:1.1 }
+  .hero-section p { color:#b5c2d8 }
+
+  /* Luxe Card */
+  .luxe-card {
+    position:relative;border-radius:var(--radius-4);background:var(--glass);
+    backdrop-filter:blur(10px);border:1px solid var(--line);box-shadow:var(--shadow-2);overflow:hidden
+  }
+  .staking-header { padding:32px }
+  .staking-title { display:flex;gap:16px;align-items:center }
+  .staking-title img { width:56px;height:56px }
+  .staking-title h4 { margin:0;font-weight:800 }
+  .chip {
+    display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);
+    border:1px solid var(--line);color:#cfe3ff;padding:.35rem .65rem;border-radius:999px;font-size:.85rem
+  }
+  .chip .dot { width:8px;height:8px;border-radius:999px;background:var(--success);box-shadow:0 0 0 2px rgba(0,224,149,.15) }
+  .staking-sub { color:var(--muted) }
+
+  /* KPI Row */
+  .kpis {
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:14px;padding:0 32px 24px
+  }
+  .kpi {
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:6px;padding:16px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3)
+  }
+  .kpi span:first-child { font-weight:800;font-size:1.15rem }
+  .kpi span:last-child { color:var(--muted);font-size:.88rem }
+
+  /* Action Grid */
+  .action-grid {
+    display:grid;
+    grid-template-columns:repeat(3, minmax(220px, 1fr)); /* keeps cards from collapsing */
+    gap:20px;
+    padding:0 32px 36px;
+    justify-items:center;
+    align-items:stretch;
+  }
+  .action-grid > [class*="col-"] { padding:0 } /* fix bootstrap col padding clash */
+
+  /* Panel */
+  .panel {
+    position:relative;display:flex;flex-direction:column;gap:12px;
+    background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);
+    padding:18px 18px 20px;box-shadow:var(--shadow-1);height:100%;
+    width:100%;max-width:280px;
+  }
+  .panel .item-title { color:var(--muted);font-weight:700;letter-spacing:.3px }
+  .panel small { color:#9fb0cc }
+
+  /* Inputs */
+  .form-control.luxe,
+  .input-area .input-text input.form-control {
+    background:#0c1121;border:1px solid var(--line);color:#eaf2ff;
+    border-radius:14px;padding:12px 14px;width:100%;
+  }
+  .form-control.luxe:focus,
+  .input-area .input-text input.form-control:focus {
+    outline:none;box-shadow:var(--focus-ring);border-color:rgba(125,178,255,.6)
+  }
+
+  /* Buttons */
+  .btn.primary,.btn.ghost { height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px }
+  .btn.primary {
+    background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
+    color:#0b0e17;border:0;font-weight:800;width:100%;
+  }
+  .btn.primary:hover { filter:brightness(1.05) }
+  .btn.ghost { border:1px solid var(--line);color:#eaf2ff;background:transparent }
+  .btn.ghost:hover { border-color:rgba(125,178,255,.55) }
+
+  /* Pool Stats */
+  .stats-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px }
+  .stat-tile {
+    background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);
+    padding:14px 18px;display:flex;align-items:center;justify-content:space-between
+  }
+  .stat-tile .item-title { color:var(--muted);font-weight:700 }
+
+  /* Skeleton */
+  .skeleton { position:relative;overflow:hidden;min-width:80px;min-height:20px;background:#141a2b;border-radius:8px }
+  .skeleton::after {
+    content:"";position:absolute;inset:0;transform:translateX(-100%);
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);
+    animation:shimmer 1.2s infinite
+  }
+  @keyframes shimmer { 100% { transform:translateX(100%) } }
+
+  /* Modals */
+  .modal-content { background:var(--bg-1);border:1px solid var(--line);color:var(--txt);border-radius:16px }
+  .modal-header .btn-close { filter:invert(1) }
+  #energy-rental-modal .modal-body { padding-top:10px }
+  #energy-rental-modal .modal-body p { margin-bottom:10px;color:#cfe3ff }
+  #user-energy,#required-energy,#rental-energy,#rental-duration,#rental-cost-trx {
+    display:inline-block;padding:.15rem .5rem;border-radius:10px;
+    background:rgba(125,178,255,.12);border:1px solid rgba(125,178,255,.25);color:#ffffff
+  }
+  .modal .btn-rent {
+    background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
+    border:0;color:#0b0e17;border-radius:12px;font-weight:800
+  }
+  .modal .btn-cancel { border:1px solid var(--line);color:#eaf2ff;background:transparent;border-radius:12px }
+  #transaction-processing-modal .spinner {
+    border:4px solid var(--accent-2);border-top-color:transparent;border-radius:50%;
+    width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto 15px
+  }
+  @keyframes spin { 0%{transform:rotate(0)}100%{transform:rotate(360deg)} }
+
+  /* Ad card */
+  .luxe-ad-card {
+    position:relative;border-radius:var(--radius-4);
+    background:linear-gradient(135deg,rgba(98,255,207,.1),rgba(125,178,255,.1));
+    border:2px solid var(--accent-3);
+    box-shadow:var(--shadow-2),0 0 20px rgba(125,178,255,.3);
+    overflow:hidden;margin:2rem 0;
+    transition:transform .3s ease,box-shadow .3s ease
+  }
+  .luxe-ad-card:hover { transform:translateY(-5px);box-shadow:var(--shadow-2),0 0 30px rgba(125,178,255,.5) }
+  .luxe-ad-card .inner { padding:1.5rem }
+  .luxe-ad-card h2 { font-weight:800;color:var(--accent-1);text-shadow:0 0 5px rgba(98,255,207,.5) }
+  .luxe-ad-card p { color:var(--txt);font-size:1.1rem }
+  .luxe-ad-card .btn.primary {
+    background:linear-gradient(135deg,var(--accent-3),var(--accent-2));
+    font-weight:700;padding:.75rem 1.5rem;border-radius:12px
+  }
+  .luxe-ad-card .btn.primary:hover { filter:brightness(1.2) }
+
+  /* Responsive */
+  *, *::before, *::after { box-sizing: border-box; }
+  .kpis > .kpi { min-width:0; }
+  .kpi span { text-align:center;white-space:normal; }
+  .kpi span:first-child { overflow-wrap:anywhere; }
+
+  @media (max-width:992px){
+    .kpis { grid-template-columns:repeat(2, minmax(0,1fr)); padding:0 20px 20px; }
+    .action-grid {
+      display:flex;flex-direction:column;align-items:center;
+      gap:18px;padding:0 20px 28px;width:100%;
+    }
+    .action-grid .panel {
+      width:100%;
+      max-width:min(480px, calc(100% - 24px));
+      margin-inline:auto;
+      padding:16px;
+    }
+    .action-grid .panel > * { max-width:100%; }
+    .form-control.luxe { width:100%; }
+    .stats-grid { grid-template-columns:repeat(2, minmax(0,1fr)); }
+  }
+
+  @media (max-width:576px){
+    .kpis { grid-template-columns:1fr;padding:0 12px 16px; }
+    .action-grid { padding:0 12px 24px; }
+    .panel { padding:16px; }
+    .stats-grid { grid-template-columns:1fr; }
+    .kpi span:first-child { font-size:1rem; }
+  }
+
+  @media (min-width:992px){
+    .panel { min-height:260px; }
+  }
+
+  /* Staking area custom styles */
+  .staking-area .single-accordion-item { margin-bottom:18px }
+  .staking-area .card-header { background:none;border:none }
+  .staking-btn {
+    background:var(--bg-2);border:1px solid var(--line);
+    border-radius:var(--radius-3);padding:18px;color:var(--txt);width:100%;
+  }
+  .staking-btn:hover { background:rgba(255,255,255,.05) }
+  .staking-info .single-item {
+    display:flex;flex-direction:column;align-items:center;gap:6px
+  }
+  .staking-info .single-item span:first-child { font-weight:800;font-size:1.15rem;line-height:1.2 }
+  .staking-info .single-item span:last-child { color:var(--muted);font-size:.88rem }
+
+  .input-box .item-title { font-weight:700;color:var(--muted);margin-bottom:8px }
+  .input-area .input-btn { background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
+    color:#0b0e17;border:0;font-weight:800;border-radius:14px;height:48px;width:100%; }
+  .input-area .input-btn:hover { filter:brightness(1.05) }
+  .input-area .reward { color:#9fb0cc;font-size:.88rem }
+  .input-area h4.price { color:var(--txt);font-weight:700 }
+
+  /* Leaderboard button fix */
+  .leaderboard-button .btn-bordered {
+    background:transparent !important;
+    --bs-btn-bg:transparent;
+    border:1px solid var(--line);
+    color:#eaf2ff !important;
+    border-radius:14px;
+    padding:12px 20px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:.5rem;
+    box-shadow:none;
+    opacity:1 !important;
+    pointer-events:auto !important;
+  }
+  .leaderboard-button .btn-bordered:hover { border-color:rgba(125,178,255,.55); background:rgba(125,178,255,.1); }
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <header id="header" class="pt-2">
+    <nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
+      <div class="container">
+        <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt=""/></a>
+        <div class="ms-auto"></div>
+        <ul class="navbar-nav items mx-auto">
+          <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
+            <ul class="dropdown-menu">
+              <li class="nav-item"><a href="staking.html" class="nav-link">Staking</a></li>
+              <li class="nav-item"><a href="lockstaking.html" class="nav-link">Locked Staking</a></li>
+              <li class="nav-item"><a href="sellcft.html" class="nav-link">Trading</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
+            <ul class="dropdown-menu">
+              <li class="nav-item"><a href="buystablex.html" class="nav-link">Buy StableX</a></li>
+              <li class="nav-item"><a href="sellstablex.html" class="nav-link">Sell StableX</a></li>
+              <li class="nav-item"><a href="stablexstaking.html" class="nav-link">Stake StableX</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link">CFT News<i class="icon-arrow-down"></i></a>
+            <ul class="dropdown-menu">
+              <li class="nav-item"><a href="blog.html" class="nav-link">News</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
+            <ul class="dropdown-menu">
+              <li class="nav-item"><a href="feb.html" class="nav-link">FEB</a></li>
+              <li class="nav-item"><a href="energy.html" class="nav-link">Rent Energy</a></li>
+            </ul>
+          </li>
+          <li class="nav-item"><a href="swap.html" class="nav-link">Swap</a></li>
+        </ul>
+        <ul class="navbar-nav toggle">
+          <li class="nav-item">
+            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
+              <i class="icon-menu m-0"></i>
+            </a>
+          </li>
+        </ul>
+        <ul class="navbar-nav action">
+          <li class="nav-item ms-2">
+            <button id="connect-button" class="btn btn-outline"><i class="icon-wallet me-md-2"></i> Wallet Connect</button>
+          </li>
+        </ul>
       </div>
-      <div class="col-12 col-md-7 p-3">
-        <div class="inner">
-          <h2 class="m-0">${ad.title}</h2>
-          <p class="mb-3">${ad.description}</p>
-          <a class="btn primary" href="${ad.link}" aria-label="${ad.linkText}"><i class="${ad.icon} me-2"></i>${ad.linkText}</a>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero-section">
+    <div class="container text-center">
+      <span class="intro-text">CFT Ecosystem</span>
+      <h1 class="display-5">CFT Staking</h1>
+      <p class="mb-0">Grow your wealth through staking rewards</p>
+    </div>
+  </section>
+
+  <!-- Staking Card -->
+  <section class="py-3 staking-area">
+    <div class="container">
+      <div class="luxe-card">
+        <!-- Header -->
+        <div class="staking-header">
+          <div class="staking-title">
+            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h4 class="staking-title-text m-0">CFT Staking</h4>
+                <span class="chip" id="status-chip"><span class="dot"></span><span id="status-text">Ready</span></span>
+              </div>
+              <p class="staking-sub mb-0 mt-2">Stake tokens for rewards.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Staking Accordions -->
+        <div id="gameon-accordion" class="accordion p-4">
+          <!-- CFT Staking -->
+          <div class="single-accordion-item">
+            <div class="card-header bg-inherit border-0 p-0">
+              <h2 class="m-0">
+                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCFT">
+                  <div class="row">
+                    <div class="col-12 col-md-8">
+                      <div class="media flex-column flex-md-row">
+                        <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                        <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                          <h4 class="m-0">CFT Staking</h4>
+                          <p>Stake CFT for CFT rewards.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                    <div class="col single-item"><span id="staked-amount-cft"></span><span>Staked</span></div>
+                    <div class="col single-item"><span id="projected-rewards-cft"></span><span>Yearly Rewards</span></div>
+                    <div class="col single-item"><span id="total-claimed-rewards-cft"></span><span>Total Claimed</span></div>
+                  </div>
+                </button>
+              </h2>
+            </div>
+            <div id="collapseCFT" class="collapse" data-bs-parent="#gameon-accordion">
+              <div class="card-body">
+                <div class="row action-grid">
+                  <!-- Deposit -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Deposit</span>
+                    <small><span id="available-tokens-cft"></span> available</small>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="stake-amount-cft" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="stake-button-cft">Stake</a>
+                    </div>
+                  </div>
+                  <!-- Withdraw -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Withdraw</span>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-cft" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="unstake-button-cft">Withdraw</a>
+                    </div>
+                  </div>
+                  <!-- Rewards -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Pending Rewards</span>
+                    <div class="input-area d-flex flex-column">
+                      <h4 class="price m-0" id="claimable-rewards-cft">0 CFT</h4>
+                      <span class="reward my-2">Energy cost applies</span>
+                      <a href="#" class="btn input-btn mt-2 primary" id="claim-rewards-button-cft"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                    </div>
+                  </div>
+                </div>
+                <div class="row justify-content-center mt-4 leaderboard-button">
+                  <div class="col-12 text-center">
+                    <a href="leaderboardcftnew.html" class="btn btn-bordered">
+                      <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CFTx Staking -->
+          <div class="single-accordion-item">
+            <div class="card-header bg-inherit border-0 p-0">
+              <h2 class="m-0">
+                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCFTx">
+                  <div class="row">
+                    <div class="col-12 col-md-8">
+                      <div class="media flex-column flex-md-row">
+                        <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                        <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                          <h4 class="m-0">CFT Staking</h4>
+                          <p>Stake CFT for StableX rewards.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                    <div class="col single-item"><span id="staked-amount-cftx"></span><span>Staked</span></div>
+                    <div class="col single-item"><span id="projected-rewards-cftx"></span><span>Yearly Rewards</span></div>
+                    <div class="col single-item"><span id="total-claimed-rewards-cftx"></span><span>Total Claimed</span></div>
+                  </div>
+                </button>
+              </h2>
+            </div>
+            <div id="collapseCFTx" class="collapse" data-bs-parent="#gameon-accordion">
+              <div class="card-body">
+                <div class="row action-grid">
+                  <!-- Deposit -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Deposit</span>
+                    <small><span id="available-tokens-cftx"></span> available</small>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="stake-amount-cftx" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="stake-button-cftx">Stake</a>
+                    </div>
+                  </div>
+                  <!-- Withdraw -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Withdraw</span>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-cftx" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="unstake-button-cftx">Withdraw</a>
+                    </div>
+                  </div>
+                  <!-- Rewards -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Pending Rewards</span>
+                    <div class="input-area d-flex flex-column">
+                      <h4 class="price m-0" id="claimable-rewards-cftx">0 StableX</h4>
+                      <span class="reward my-2">Energy cost applies</span>
+                      <a href="#" class="btn input-btn mt-2 primary" id="claim-rewards-button-cftx"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                    </div>
+                  </div>
+                </div>
+                <div class="row justify-content-center mt-4 leaderboard-button">
+                  <div class="col-12 text-center">
+                    <a href="leaderboardcftx.html" class="btn btn-bordered">
+                      <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CFT/BBT Staking -->
+          <div class="single-accordion-item">
+            <div class="card-header bg-inherit border-0 p-0">
+              <h2 class="m-0">
+                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapsecftBBT">
+                  <div class="row">
+                    <div class="col-12 col-md-8">
+                      <div class="media flex-column flex-md-row">
+                        <img class="avatar-max-lg" src="assets/img/content/turu.png" alt="">
+                        <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                          <h4 class="m-0">BBT Staking</h4>
+                          <p>Stake BBT for CFT rewards.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                    <div class="col single-item"><span id="staked-amount-cftturu"></span><span>Staked</span></div>
+                    <div class="col single-item"><span id="projected-rewards-cftturu"></span><span>Yearly Rewards</span></div>
+                    <div class="col single-item"><span id="total-claimed-rewards-cftturu"></span><span>Total Claimed</span></div>
+                  </div>
+                </button>
+              </h2>
+            </div>
+            <div id="collapsecftBBT" class="collapse" data-bs-parent="#gameon-accordion">
+              <div class="card-body">
+                <div class="row action-grid">
+                  <!-- Deposit -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Deposit</span>
+                    <small><span id="available-tokens-cftturu"></span> available</small>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="stake-amount-cftturu" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="stake-button-cftturu">Stake</a>
+                    </div>
+                  </div>
+                  <!-- Withdraw -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Withdraw</span>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-cftturu" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="unstake-button-cftturu">Withdraw</a>
+                    </div>
+                  </div>
+                  <!-- Rewards -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Pending Rewards</span>
+                    <div class="input-area d-flex flex-column">
+                      <h4 class="price m-0" id="claimable-rewards-cftturu">0 BBT</h4>
+                      <span class="reward my-2">Energy cost applies</span>
+                      <a href="#" class="btn input-btn mt-2 primary" id="claim-rewards-button-cftturu"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                    </div>
+                  </div>
+                </div>
+                <div class="row justify-content-center mt-4 leaderboard-button">
+                  <div class="col-12 text-center">
+                    <a href="leaderboardbbt.html" class="btn btn-bordered">
+                      <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- BBT Staking -->
+          <div class="single-accordion-item">
+            <div class="card-header bg-inherit border-0 p-0">
+              <h2 class="m-0">
+                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBBT">
+                  <div class="row">
+                    <div class="col-12 col-md-8">
+                      <div class="media flex-column flex-md-row">
+                        <img class="avatar-max-lg" src="assets/img/content/turu.png" alt="">
+                        <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                          <h4 class="m-0">BBT Staking</h4>
+                          <p>Stake BBT for BBT rewards.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                    <div class="col single-item"><span id="staked-amount-turu"></span><span>Staked</span></div>
+                    <div class="col single-item"><span id="projected-rewards-turu"></span><span>Yearly Rewards</span></div>
+                    <div class="col single-item"><span id="total-claimed-rewards-turu"></span><span>Total Claimed</span></div>
+                  </div>
+                </button>
+              </h2>
+            </div>
+            <div id="collapseBBT" class="collapse" data-bs-parent="#gameon-accordion">
+              <div class="card-body">
+                <div class="row action-grid">
+                  <!-- Deposit -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Deposit</span>
+                    <small><span id="available-tokens-turu"></span> available</small>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="stake-amount-turu" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="stake-button-turu">Stake</a>
+                    </div>
+                  </div>
+                  <!-- Withdraw -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Withdraw</span>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-turu" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="unstake-button-turu">Withdraw</a>
+                    </div>
+                  </div>
+                  <!-- Rewards -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Pending Rewards</span>
+                    <div class="input-area d-flex flex-column">
+                      <h4 class="price m-0" id="claimable-rewards-turu">0 BBT</h4>
+                      <span class="reward my-2">Energy cost applies</span>
+                      <a href="#" class="btn input-btn mt-2 primary" id="claim-rewards-button-turu"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                    </div>
+                  </div>
+                </div>
+                <div class="row justify-content-center mt-4 leaderboard-button">
+                  <div class="col-12 text-center">
+                    <a href="leaderboardbbt.html" class="btn btn-bordered">
+                      <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- KING Staking -->
+          <div class="single-accordion-item">
+            <div class="card-header bg-inherit border-0 p-0">
+              <h2 class="m-0">
+                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseKING">
+                  <div class="row">
+                    <div class="col-12 col-md-8">
+                      <div class="media flex-column flex-md-row">
+                        <img class="avatar-max-lg" src="assets/img/content/king.png" alt="">
+                        <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                          <h4 class="m-0">KING Staking (ENDED)</h4>
+                          <p>Stake KING for CFT rewards.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                    <div class="col single-item"><span id="staked-amount-king"></span><span>Staked</span></div>
+                    <div class="col single-item"><span id="projected-rewards-king"></span><span>Yearly Rewards</span></div>
+                    <div class="col single-item"><span id="total-claimed-rewards-king"></span><span>Total Claimed</span></div>
+                  </div>
+                </button>
+              </h2>
+            </div>
+            <div id="collapseKING" class="collapse" data-bs-parent="#gameon-accordion">
+              <div class="card-body">
+                <div class="row action-grid">
+                  <!-- Deposit -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Deposit</span>
+                    <small><span id="available-tokens-king"></span> available</small>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="stake-amount-king" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="stake-button-king">Stake</a>
+                    </div>
+                  </div>
+                  <!-- Withdraw -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Withdraw</span>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-king" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="unstake-button-king">Withdraw</a>
+                    </div>
+                  </div>
+                  <!-- Rewards -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Pending Rewards</span>
+                    <div class="input-area d-flex flex-column">
+                      <h4 class="price m-0" id="claimable-rewards-king">0 CFT</h4>
+                      <span class="reward my-2">Energy cost applies</span>
+                      <a href="#" class="btn input-btn mt-2 primary" id="claim-rewards-button-king"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                    </div>
+                  </div>
+                </div>
+                <div class="row justify-content-center mt-4 leaderboard-button">
+                  <div class="col-12 text-center">
+                    <a href="leaderboardking.html" class="btn btn-bordered">
+                      <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- FYM Staking -->
+          <div class="single-accordion-item">
+            <div class="card-header bg-inherit border-0 p-0">
+              <h2 class="m-0">
+                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFYM">
+                  <div class="row">
+                    <div class="col-12 col-md-8">
+                      <div class="media flex-column flex-md-row">
+                        <img class="avatar-max-lg" src="assets/img/content/fym.png" alt="">
+                        <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                          <h4 class="m-0">FYM Staking</h4>
+                          <p>Stake FYM for CFT rewards.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                    <div class="col single-item"><span id="staked-amount-fym"></span><span>Staked</span></div>
+                    <div class="col single-item"><span id="projected-rewards-fym"></span><span>Yearly Rewards</span></div>
+                    <div class="col single-item"><span id="total-claimed-rewards-fym"></span><span>Total Claimed</span></div>
+                  </div>
+                </button>
+              </h2>
+            </div>
+            <div id="collapseFYM" class="collapse" data-bs-parent="#gameon-accordion">
+              <div class="card-body">
+                <div class="row action-grid">
+                  <!-- Deposit -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Deposit</span>
+                    <small><span id="available-tokens-fym"></span> available</small>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="stake-amount-fym" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="stake-button-fym">Stake</a>
+                    </div>
+                  </div>
+                  <!-- Withdraw -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Withdraw</span>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-fym" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="unstake-button-fym">Withdraw</a>
+                    </div>
+                  </div>
+                  <!-- Rewards -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Pending Rewards</span>
+                    <div class="input-area d-flex flex-column">
+                      <h4 class="price m-0" id="claimable-rewards-fym">0 CFT</h4>
+                      <span class="reward my-2">Energy cost applies</span>
+                      <a href="#" class="btn input-btn mt-2 primary" id="claim-rewards-button-fym"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                    </div>
+                  </div>
+                </div>
+                <div class="row justify-content-center mt-4 leaderboard-button">
+                  <div class="col-12 text-center">
+                    <a href="leaderboardfym.html" class="btn btn-bordered">
+                      <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /accordion -->
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Area -->
+  <section class="py-3">
+    <div class="container">
+      <div class="luxe-ad-card">
+        <div class="row align-items-center g-0">
+          <div class="col-12 col-md-5 text-center p-3">
+            <img src="assets/img/content/cftlogo300.png" alt="" style="max-width:220px">
+          </div>
+          <div class="col-12 col-md-7 p-3">
+            <div class="inner">
+              <h2 class="m-0">Apply for project staking</h2>
+              <p class="mb-3">Earn weekly rewards from staked CFT to build your project</p>
+              <p>Soon available for projects on any chain</p>
+              <a class="btn primary" href="apply.html"><i class="icon-rocket me-2"></i>Coming Soon</a>
+            </div>
+          </div>
         </div>
       </div>
-    `;
-    currentAdIndex = (currentAdIndex + 1) % advertisements.length;
-  };
-  updateAd();
-  setInterval(updateAd, 60000);
-}
-
-/* ===================== TronGrid helper ===================== */
-async function tronGridApiCall(endpoint, params = {}) {
-  const needsHex = endpoint.startsWith('/wallet/');
-  let body = params;
-  if (needsHex && params && params.address) {
-    try {
-      const hex = tronWeb?.address?.toHex ? tronWeb.address.toHex(params.address) : params.address;
-      body = { ...params, address: hex };
-    } catch {
-      body = params;
-    }
-  }
-  return throttle(async () => {
-    const key = apiKeyRotator();
-    const res = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'TRON-PRO-API-KEY': key
-      },
-      body: JSON.stringify(body)
-    });
-    if (res.status === 429) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`TronGrid 429 Too Many Requests. ${text || ''}`.trim());
-    }
-    if (res.status === 403) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`TronGrid 403 Forbidden. ${text || ''}`.trim());
-    }
-    const data = await res.json().catch(() => ({}));
-    if (data.Error) throw new Error(data.Error);
-    return data;
-  });
-}
-
-/* ===================== TronWeb Setup ===================== */
-async function initializeTronWeb() {
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|TronLink/i.test(navigator.userAgent);
-  const initDelay = isMobile ? 1500 : 800;
-  await delay(initDelay);
-  if (!window.tronLink || !window.tronWeb) throw new Error('TronLink is not detected. Install or unlock TronLink.');
-  if (!window.tronLink.ready) throw new Error('TronLink is not ready. Unlock TronLink and select mainnet.');
-  tronWeb = window.tronWeb;
-  if (isMobile) {
-    const originalRequest = tronWeb.request;
-    tronWeb.request = async function(endpoint, params = {}, method = 'POST') {
-      return throttle(async () => {
-        const key = apiKeyRotator();
-        tronWeb.setHeader({ 'TRON-PRO-API-KEY': key });
-        return originalRequest.call(this, endpoint, params, method);
-      });
-    };
-  } else {
-    const HttpProvider = window.TronWeb.providers.HttpProvider;
-    const provider = new HttpProvider(TRONGRID_API_URL);
-    const customHttpProvider = new Proxy(provider, {
-      get(target, prop) {
-        if (prop === 'request') {
-          return async function(endpoint, params = {}, method = 'POST') {
-            return throttle(async () => {
-              const key = apiKeyRotator();
-              const res = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
-                method,
-                headers: {
-                  'Content-Type': 'application/json',
-                  'TRON-PRO-API-KEY': key
-                },
-                body: method === 'POST' ? JSON.stringify(params) : undefined
-              });
-              if (res.status === 429) throw new Error('TronGrid 429 Too Many Requests.');
-              if (res.status === 403) throw new Error('TronGrid 403 Forbidden.');
-              const data = await res.json().catch(() => ({}));
-              if (data.Error) throw new Error(data.Error);
-              return data;
-            });
-          };
-        }
-        return target[prop];
-      }
-    });
-    tronWeb.setFullNode(customHttpProvider);
-    tronWeb.setSolidityNode(customHttpProvider);
-    tronWeb.setEventServer(customHttpProvider);
-  }
-  userAddress = tronWeb.defaultAddress.base58;
-  if (!userAddress) throw new Error('No user address found. Ensure TronLink is connected to mainnet.');
-  const cb = document.getElementById('connect-button');
-  if (cb) cb.innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
-  for (let key in tokenDetails) {
-    let details = tokenDetails[key];
-    if (!isValidTronAddress(details.tokenAddress)) throw new Error(`Invalid token address for ${key}: ${details.tokenAddress}`);
-    if (!isValidTronAddress(details.stakingAddress)) throw new Error(`Invalid staking address for ${key}: ${details.stakingAddress}`);
-    tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
-    await delay(CONTRACT_CALL_DELAY_MS);
-    stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
-    await delay(CONTRACT_CALL_DELAY_MS);
-    if (!details.decimals) {
-      tokenDetails[key].decimals = await tokenContracts[key].methods.decimals().call();
-    }
-  }
-  setStatus('Connected', true);
-  await updateAllUI(true);
-  rotateAdvertisements();
-}
-
-/* ===================== Energy Helpers ===================== */
-async function checkUserEnergy(address, token, action, extraEnergy = 0) {
-  try {
-    const resources = await tronWeb.trx.getAccountResources(address);
-    const energyLimit = resources.EnergyLimit || 0;
-    const energyUsed = resources.EnergyUsed || 0;
-    const availableEnergy = energyLimit - energyUsed;
-    const baseRequiredEnergy = tokenDetails[token].energyCosts[action];
-    const requiredEnergy = baseRequiredEnergy + extraEnergy;
-    const shortfall = Math.max(0, requiredEnergy - availableEnergy);
-    return { availableEnergy, shortfall, requiredEnergy };
-  } catch (error) {
-    console.error(`Error checking energy for ${address}:`, error);
-    const baseRequiredEnergy = tokenDetails[token].energyCosts[action];
-    const requiredEnergy = baseRequiredEnergy + extraEnergy;
-    return { availableEnergy: 0, shortfall: requiredEnergy, requiredEnergy };
-  }
-}
-
-async function checkDelegatorEnergy(requiredAmount) {
-  try {
-    const response = await fetch(`${SERVER_URL}/api/available-energy`, { method: 'GET' });
-    const data = await response.json();
-    if (data.success) {
-      const availableEnergy = Number(data.availableEnergy);
-      return availableEnergy >= requiredAmount;
-    }
-    throw new Error('Failed to fetch delegator energy');
-  } catch (error) {
-    console.error('Error fetching delegator energy:', error);
-    return false;
-  }
-}
-
-async function requestEnergyRental(rentalEnergy, rentalCostTrx) {
-  let processingModal = null;
-  try {
-    processingModal = showProcessingModal('(1/2)');
-    if (!userAddress) {
-      throw new Error('Please connect your wallet first.');
-    }
-    const rentalCostSun = Math.round(rentalEnergy * ENERGY_PRICE_SUN);
-    const paymentRes = await tronWeb.trx.sendTransaction(PAYMENT_ADDRESS, rentalCostSun);
-    if (!paymentRes?.result) {
-      throw new Error('Transaction was rejected or failed.');
-    }
-    const totalEnergy = rentalEnergy + SAFETY_ENERGY;
-    const response = await fetch(`${SERVER_URL}/api/request-energy`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        energyAmount: totalEnergy,
-        receiverAddress: userAddress,
-        trxPrice: rentalCostSun / SUN_PER_TRX,
-        userAddress,
-        paymentTxId: paymentRes.txid,
-        delegationDuration: ENERGY_RENTAL_DURATION
-      })
-    });
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error(`Server error: ${data.message || 'Unknown'}`);
-    }
-    const delegated = await pollDelegationStatus(data.requestId);
-    hideProcessingModal(processingModal);
-    return delegated;
-  } catch (error) {
-    hideProcessingModal(processingModal);
-    throw error;
-  }
-}
-
-async function pollDelegationStatus(requestId) {
-  const maxPollAttempts = 30;
-  let pollAttempts = 0;
-  return new Promise((resolve, reject) => {
-    const interval = setInterval(async () => {
-      pollAttempts++;
-      try {
-        const response = await fetch(`${SERVER_URL}/api/delegation-status?requestId=${requestId}`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-        const data = await response.json();
-        if (data.status === 'delegated') {
-          clearInterval(interval);
-          resolve(true);
-        } else if (data.status === 'failed' || data.status === 'expired') {
-          clearInterval(interval);
-          reject(new Error(`Delegation failed: ${data.message || 'Unknown error'}`));
-        } else if (pollAttempts >= maxPollAttempts) {
-          clearInterval(interval);
-          reject(new Error('Delegation timed out after 60 seconds.'));
-        }
-      } catch (err) {
-        if (pollAttempts >= maxPollAttempts) {
-          clearInterval(interval);
-          reject(new Error(`Error polling delegation status: ${err.message}`));
-        }
-      }
-    }, 2000);
-  });
-}
-
-function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = '') {
-  return new Promise((resolve, reject) => {
-    const modalElement = document.getElementById('energy-rental-modal');
-    if (!modalElement) {
-      reject(new Error('Energy rental modal not found.'));
-      return;
-    }
-    const rentalEnergy = shortfall;
-    const rentalCostSun = rentalEnergy * ENERGY_PRICE_SUN;
-    const rentalCostTrx = rentalCostSun / SUN_PER_TRX;
-    const map = {
-      'user-energy': userEnergy.toLocaleString('en-US'),
-      'required-energy': requiredEnergy.toLocaleString('en-US') + message,
-      'rental-energy': rentalEnergy.toLocaleString('en-US'),
-      'rental-cost-trx': rentalCostTrx.toFixed(2),
-      'rental-duration': ENERGY_RENTAL_DURATION
-    };
-    for (const [id, value] of Object.entries(map)) {
-      const el = document.getElementById(id);
-      if (!el) {
-        reject(new Error(`Modal element ${id} not found.`));
-        return;
-      }
-      el.textContent = value;
-    }
-    const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
-    modalElement.addEventListener('shown.bs.modal', () => modalElement.removeAttribute('aria-hidden'), { once: true });
-    const confirmButton = document.getElementById('rent-energy-confirm');
-    if (!confirmButton) {
-      reject(new Error('Rent energy confirm button not found.'));
-      return;
-    }
-    const confirmHandler = () => {
-      modal.hide();
-      resolve({ rent: true, rentalEnergy, rentalCostTrx });
-      confirmButton.removeEventListener('click', confirmHandler);
-    };
-    confirmButton.addEventListener('click', confirmHandler);
-    const cancelHandler = () => {
-      modal.hide();
-      resolve({ rent: false });
-    };
-    modalElement.addEventListener('hidden.bs.modal', cancelHandler, { once: true });
-    try {
-      modal.show();
-    } catch {
-      reject(new Error('Failed to show energy rental modal.'));
-    }
-  });
-}
-
-/* ===================== ABIs ===================== */
-const stakingContractAbi = [
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_stakingToken",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_dailyReward",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
-    "inputs": [],
-    "name": "viewAPR",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "Staked",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "Withdrawn",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "reward",
-        "type": "uint256"
-      }
-    ],
-    "name": "RewardClaimed",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "OwnerWithdrawn",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "OwnerStakedTokenWithdrawn",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnershipTransferred",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "stake",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "withdraw",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "claimReward",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "rewardPerToken",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "earned",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "viewProjectedRewardsForYear",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "viewTotalUnclaimedRewards",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "totalUnclaimedRewards",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "viewTotalStaked",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "viewStakedAmount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "viewPendingReward",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "viewDailyReward",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "viewTotalClaimedRewards",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_dailyReward",
-        "type": "uint256"
-      }
-    ],
-    "name": "setDailyReward",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "ownerWithdraw",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "ownerWithdrawStakedTokens",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "transferOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "stateMutability": "payable",
-    "type": "receive"
-  }
-];
-
-const tokenContractAbi = [
-  {
-    "inputs": [],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
-    "inputs": [],
-    "name": "name",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "symbol",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "decimals",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "totalSupply",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "taxAddress",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "taxRate",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "whitelist",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "balanceOf",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "allowance",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_value",
-        "type": "uint256"
-      }
-    ],
-    "name": "transfer",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "success",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_spender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_value",
-        "type": "uint256"
-      }
-    ],
-    "name": "approve",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "success",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_from",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_to",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_value",
-        "type": "uint256"
-      }
-    ],
-    "name": "transferFrom",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "success",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_taxRate",
-        "type": "uint256"
-      }
-    ],
-    "name": "setTaxRate",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_taxAddress",
-        "type": "address"
-      }
-    ],
-    "name": "setTaxAddress",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_account",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "_isWhitelisted",
-        "type": "bool"
-      }
-    ],
-    "name": "updateWhitelist",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "Transfer",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "Approval",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "oldRate",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "newRate",
-        "type": "uint256"
-      }
-    ],
-    "name": "TaxRateChanged",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "oldAddress",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "newAddress",
-        "type": "address"
-      }
-    ],
-    "name": "TaxAddressChanged",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "isWhitelisted",
-        "type": "bool"
-      }
-    ],
-    "name": "WhitelistUpdated",
-    "type": "event"
-  }
-];
-
-/* ===================== Utils ===================== */
-const TEN = 10n;
-const toUnits = (raw, decimals = 6) => {
-  try {
-    return Number(BigInt(raw) / (TEN ** BigInt(decimals)));
-  } catch {
-    return 0;
-  }
-};
-const fmt = (n, max = 6) => Number(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: max });
-function isValidTronAddress(address) {
-  return !!(address && typeof address === 'string' && address.startsWith('T') && address.length === 34 && /^[A-Za-z1-9]+$/.test(address));
-}
-function toWei(amt, decimals = 6) {
-  const n = Number(amt || 0);
-  if (!isFinite(n) || n <= 0) return 0n;
-  const base = BigInt(Math.round(n * 1e6));
-  const pow = BigInt(Math.max(0, decimals - 6));
-  return base * (TEN ** pow);
-}
-
-/* ===================== UI Helpers ===================== */
-function showToast({ title = 'Notification', body = '', variant = 'dark', autohide = true }) {
-  const el = document.getElementById('app-toast');
-  if (!el) return;
-  el.className = `toast text-bg-${variant}`;
-  el.innerHTML = `
-    <div class="toast-header">
-      <strong class="me-auto">${title}</strong>
-      <button type="button" class="btn-close ms-2 mb-1" data-bs-dismiss="toast" aria-label="Close"></button>
     </div>
-    <div class="toast-body">${body}</div>`;
-  new bootstrap.Toast(el, { autohide, delay: 4500 }).show();
-}
+  </section>
 
-function withLoading(btn, label = 'Processing', fn) {
-  return async (...args) => {
-    if (!btn) return fn(...args);
-    btn.disabled = true;
-    const old = btn.innerHTML;
-    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>${label}`;
-    try {
-      return await fn(...args);
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = old;
-    }
-  };
-}
+  <!-- Energy Rental Modal -->
+  <div class="modal fade" id="energy-rental-modal" tabindex="-1" aria-labelledby="energyRentalModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="energyRentalModalLabel">Insufficient Energy</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+        </div>
+        <div class="modal-body">
+          <p>Your wallet has <span id="user-energy">0</span> energy available, but <span id="required-energy">0</span> energy is required for this transaction.</p>
+          <p>Rent <span id="rental-energy">0</span> energy for <span id="rental-duration">5</span> minutes at a cost of <span id="rental-cost-trx">0.00</span> TRX?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-rent" id="rent-energy-confirm">Rent Energy</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-function setStatus(text, ok = true) {
-  const chip = document.getElementById('status-chip');
-  const txt = document.getElementById('status-text');
-  if (chip && txt) {
-    txt.textContent = text;
-    chip.querySelector('.dot').style.background = ok ? '#00ff88' : '#ff4d4d';
-  }
-}
+  <!-- Transaction Processing Modal -->
+  <div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-labelledby="transactionProcessingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="transactionProcessingModalLabel">Processing Transaction</h5>
+        </div>
+        <div class="modal-body text-center">
+          <div class="spinner"></div>
+          <p>Please wait while your transaction is being processed.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-function setSkeleton(id, on) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (on) {
-    el.classList.add('skeleton');
-    el.textContent = '';
-    el.style.minHeight = el.style.minHeight || '22px';
-  } else {
-    el.classList.remove('skeleton');
-  }
-}
+  <!-- Mobile Menu Modal -->
+  <div id="menu" class="modal fade p-0">
+    <div class="modal-dialog dialog-animated">
+      <div class="modal-content h-100">
+        <div class="modal-header" data-bs-dismiss="modal">
+          Menu <i class="far fa-times-circle icon-close"></i>
+        </div>
+        <div class="menu modal-body">
+          <div class="row w-100">
+            <div class="items p-0 col-12 text-center"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-function showProcessingModal(step = '') {
-  const modalElement = document.getElementById('transaction-processing-modal');
-  if (!modalElement) throw new Error('Processing modal not found.');
-  const titleElement = document.getElementById('transactionProcessingModalLabel');
-  if (titleElement) titleElement.textContent = `Processing Transaction ${step}`;
-  const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
-  modalElement.addEventListener('shown.bs.modal', () => modalElement.removeAttribute('aria-hidden'), { once: true });
-  modal.show();
-  return modal;
-}
+  <!-- Footer -->
+  <footer class="footer-area py-5 mt-3">
+    <div class="container text-center">
+      <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt="" style="height:28px"></a>
+      <div class="social-icons d-flex justify-content-center my-3 gap-3">
+        <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
+        <a class="reddit" href="https://www.reddit.com/" target="_blank"><i class="fab fa-reddit"></i></a>
+        <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
+      </div>
+      <div class="copyright-area py-2">&copy;2025 CFT Ecosystem, All Rights Reserved</div>
+      <div id="scroll-to-top" class="scroll-to-top"><a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a></div>
+    </div>
+  </footer>
 
-function hideProcessingModal(modal) {
-  if (modal) modal.hide();
-}
+  <!-- Vendor JS -->
+  <script src="assets/js/vendor/jquery.min.js"></script>
+  <!-- Use Bootstrap 5 bundle (includes Popper) to avoid version mismatch -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/vendor/all.min.js"></script>
+  <script src="assets/js/vendor/gallery.min.js"></script>
+  <script src="assets/js/vendor/slider.min.js"></script>
+  <script src="assets/js/vendor/countdown.min.js"></script>
+  <script src="assets/js/vendor/shuffle.min.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
 
-/* ===================== Core ===================== */
-async function initialize() {
-  const connectButton = document.getElementById('connect-button');
-  if (!connectButton) {
-    console.error('Connect button not found.');
-    showToast({ title: 'Error', body: 'Connect button not found in HTML.', variant: 'danger' });
-    return;
-  }
-  connectButton.addEventListener('click', connectWallet);
-  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-  tooltipTriggerList.forEach(t => new bootstrap.Tooltip(t));
-  document.querySelectorAll('[data-fill]')?.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const pct = Number(btn.dataset.fill || '0');
-      const availEl = document.getElementById(`available-tokens-${btn.closest('.panel').querySelector('input').id.split('-')[2]}`);
-      const input = document.getElementById(`stake-amount-${btn.closest('.panel').querySelector('input').id.split('-')[2]}`);
-      const available = Number((availEl?.dataset.raw) || availEl?.textContent?.replace(/[^0-9.]/g, '') || '0');
-      if (input) input.value = (available * pct).toFixed(6);
-    });
-  });
-  const isTronLinkInstalled = await checkTronLinkInstalled();
-  if (isTronLinkInstalled && window.tronLink && window.tronLink.ready) {
-    try {
-      await initializeTronWeb();
-    } catch (e) {
-      showToast({ title: 'Auto-connect failed', body: e.message, variant: 'danger' });
-    }
-  }
-}
+  <!-- App JS -->
+  <script src="assets/js/staking1.js"></script>
+</body>
+</html>
 
-async function checkTronLinkInstalled() {
-  return new Promise(resolve => {
-    let attempts = 0;
-    const maxAttempts = 5;
-    const interval = setInterval(() => {
-      attempts++;
-      if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
-        clearInterval(interval);
-        resolve(true);
-      } else if (attempts >= maxAttempts) {
-        clearInterval(interval);
-        resolve(false);
-      }
-    }, 500);
-  });
-}
-
-async function connectWallet() {
-  try {
-    if (!window.tronLink) throw new Error('TronLink is not detected. Install or unlock TronLink.');
-    if (!window.tronLink.ready) throw new Error('TronLink is not ready. Unlock TronLink and select mainnet.');
-    await window.tronLink.request({ method: 'tron_requestAccounts' });
-    await initializeTronWeb();
-  } catch (e) {
-    showToast({ title: 'Wallet', body: e.message, variant: 'danger' });
-  }
-}
-
-/* ===================== UI Updates ===================== */
-async function updateAllUI(first = false) {
-  for (let key in tokenDetails) {
-    await updateTokenUI(key, first);
-    await delay(CONTRACT_CALL_DELAY_MS);
-  }
-  setInterval(() => updateAllUI(), 60000);
-}
-
-async function updateTokenUI(token, first = false) {
-  const cacheKey = `tokenUI_${token}_${userAddress}`;
-  if (!first) {
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      const { data, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp < CACHE_TIMEOUT_MS) {
-        const { balanceUnits, stakedUnits, projectedUnits, claimableUnits, claimedUnits } = data;
-        const d = tokenDetails[token];
-        const updateElement = (id, value, skeletonId) => {
-          const el = document.getElementById(id);
-          if (el) {
-            el.textContent = value;
-            if (id === `available-tokens-${token}`) el.dataset.raw = String(balanceUnits);
-            if (skeletonId) setSkeleton(skeletonId, false);
-          }
-        };
-        updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
-        updateElement(`staked-amount-${token}`, fmt(stakedUnits), `staked-amount-${token}`);
-        updateElement(`projected-rewards-${token}`, fmt(projectedUnits), `projected-rewards-${token}`);
-        updateElement(`claimable-rewards-${token}`, `${fmt(claimableUnits)} ${d.rewardDisplayName}`);
-        updateElement(`total-claimed-rewards-${token}`, fmt(claimedUnits), `total-claimed-rewards-${token}`);
-        return;
-      }
-    }
-  }
-  try {
-    if (first) {
-      [`available-tokens-${token}`, `staked-amount-${token}`, `projected-rewards-${token}`, `total-claimed-rewards-${token}`].forEach(id => setSkeleton(id, true));
-    }
-    const d = tokenDetails[token];
-    const [balanceRaw, stakedAmount, projectedRewards, claimableRewards, totalClaimedRewards] = await Promise.all([
-      tokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0'),
-      stakingContracts[token].methods.viewStakedAmount(userAddress).call().catch(() => '0'),
-      stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call().catch(() => '0'),
-      stakingContracts[token].methods.viewPendingReward(userAddress).call().catch(() => '0'),
-      stakingContracts[token].methods.viewTotalClaimedRewards(userAddress).call().catch(() => '0')
-    ]);
-    await delay(CONTRACT_CALL_DELAY_MS);
-    const decimals = d.decimals;
-    const rewardDecimals = d.rewardDecimals || decimals;
-    const balanceUnits = toUnits(balanceRaw, decimals);
-    const stakedUnits = toUnits(stakedAmount, decimals);
-    const projectedUnits = toUnits(projectedRewards, rewardDecimals);
-    const claimableUnits = toUnits(claimableRewards, rewardDecimals);
-    const claimedUnits = toUnits(totalClaimedRewards, rewardDecimals);
-    const cacheData = {
-      data: {
-        balanceUnits: Number(balanceUnits),
-        stakedUnits: Number(stakedUnits),
-        projectedUnits: Number(projectedUnits),
-        claimableUnits: Number(claimableUnits),
-        claimedUnits: Number(claimedUnits)
-      },
-      timestamp: Date.now()
-    };
-    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-    const updateElement = (id, value, skeletonId) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.textContent = value;
-        if (id === `available-tokens-${token}`) el.dataset.raw = String(balanceUnits);
-        if (skeletonId) setSkeleton(skeletonId, false);
-      }
-    };
-    updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
-    updateElement(`staked-amount-${token}`, fmt(stakedUnits), `staked-amount-${token}`);
-    updateElement(`projected-rewards-${token}`, fmt(projectedUnits), `projected-rewards-${token}`);
-    updateElement(`claimable-rewards-${token}`, `${fmt(claimableUnits)} ${d.rewardDisplayName}`);
-    updateElement(`total-claimed-rewards-${token}`, fmt(claimedUnits), `total-claimed-rewards-${token}`);
-  } catch (error) {
-    console.error(`Error updating UI for ${token}:`, error);
-    showToast({ title: `UI Update Error for ${token}`, body: error.message, variant: 'danger' });
-    [`available-tokens-${token}`, `staked-amount-${token}`, `projected-rewards-${token}`, `total-claimed-rewards-${token}`].forEach(id => setSkeleton(id, false));
-  }
-}
-
-/* ===================== Actions ===================== */
-async function stakeTokens(token, amount) {
-  let processingModal = null;
-  const stakeBtn = document.getElementById(`stake-button-${token}`);
-  const run = async () => {
-    try {
-      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) {
-        throw new Error(`Invalid staking address: ${tokenDetails[token].stakingAddress}`);
-      }
-      if (!isValidTronAddress(tokenDetails[token].tokenAddress)) {
-        throw new Error(`Invalid token address: ${tokenDetails[token].tokenAddress}`);
-      }
-      if (!userAddress || !isValidTronAddress(userAddress)) {
-        throw new Error('Invalid user address. Please reconnect wallet.');
-      }
-      const amountToStake = toWei(amount, tokenDetails[token].decimals);
-      if (amountToStake === 0n) {
-        throw new Error('Enter a valid amount to stake.');
-      }
-      const stakingContractAddress = tokenDetails[token].stakingAddress;
-      const tokenContract = tokenContracts[token];
-      const stakingContract = stakingContracts[token];
-      if (!tokenContract || !tokenContract.methods.allowance) {
-        throw new Error(`Token contract for ${token} not properly initialized`);
-      }
-      if (!stakingContract || !stakingContract.methods.stake) {
-        throw new Error(`Staking contract for ${token} not properly initialized`);
-      }
-      const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
-      await delay(CONTRACT_CALL_DELAY_MS);
-      if (BigInt(balanceRaw) < amountToStake) {
-        throw new Error('Insufficient balance to stake.');
-      }
-      const allowanceRaw = await tokenContract.methods.allowance(userAddress, stakingContractAddress).call();
-      await delay(CONTRACT_CALL_DELAY_MS);
-      const allowance = BigInt(allowanceRaw);
-      const approvalRequired = allowance < amountToStake;
-      let energyCheckResult = approvalRequired
-        ? await checkUserEnergy(userAddress, token, 'stake', 30000)
-        : await checkUserEnergy(userAddress, token, 'stake');
-      let { availableEnergy, shortfall, requiredEnergy } = energyCheckResult;
-      if (shortfall > 0) {
-        const totalRequired = shortfall + SAFETY_ENERGY;
-        if (await checkDelegatorEnergy(totalRequired)) {
-          const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy, approvalRequired ? ' (incl. ~30,000 for approval)' : '');
-          if (modalResult.rent) {
-            processingModal = showProcessingModal('(1/2)');
-            await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
-            await delay(5000);
-            hideProcessingModal(processingModal);
-          }
-        }
-      }
-      processingModal = showProcessingModal('(2/2)');
-      if (approvalRequired) {
-        const approvalTx = await tronWeb.transactionBuilder.triggerSmartContract(
-          tokenDetails[token].tokenAddress,
-          'approve(address,uint256)',
-          {},
-          [
-            { type: 'address', value: stakingContractAddress },
-            { type: 'uint256', value: maxUint256 }
-          ],
-          userAddress
-        );
-        if (!approvalTx.result || !approvalTx.transaction) {
-          throw new Error('Failed to create approve transaction');
-        }
-        const signedApprovalTx = await tronWeb.trx.sign(approvalTx.transaction);
-        const broadcastApproval = await tronWeb.trx.sendRawTransaction(signedApprovalTx);
-        if (!broadcastApproval.result) {
-          throw new Error('Failed to broadcast approve transaction');
-        }
-        showToast({
-          title: 'Approve submitted',
-          body: `<a href="https://tronscan.org/#/transaction/${broadcastApproval.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
-        });
-        await delay(5000);
-      }
-      const stakeTx = await tronWeb.transactionBuilder.triggerSmartContract(
-        stakingContractAddress,
-        'stake(uint256)',
-        {},
-        [{ type: 'uint256', value: amountToStake.toString() }],
-        userAddress
-      );
-      if (!stakeTx.result || !stakeTx.transaction) {
-        throw new Error('Failed to create stake transaction');
-      }
-      const signedStakeTx = await tronWeb.trx.sign(stakeTx.transaction);
-      const broadcastStake = await tronWeb.trx.sendRawTransaction(signedStakeTx);
-      if (!broadcastStake.result) {
-        throw new Error('Failed to broadcast stake transaction');
-      }
-      showToast({
-        title: 'Stake submitted',
-        body: `<a href="https://tronscan.org/#/transaction/${broadcastStake.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
-      });
-      hideProcessingModal(processingModal);
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await updateTokenUI(token, true);
-    } catch (error) {
-      hideProcessingModal(processingModal);
-      showToast({ title: `Stake error for ${token}`, body: error.message, variant: 'danger' });
-    }
-  };
-  return withLoading(stakeBtn, 'Staking...', run)();
-}
-
-async function unstakeTokens(token) {
-  let processingModal = null;
-  const btn = document.getElementById(`unstake-button-${token}`);
-  const run = async () => {
-    try {
-      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) {
-        throw new Error(`Invalid staking address: ${tokenDetails[token].stakingAddress}`);
-      }
-      if (!userAddress || !isValidTronAddress(userAddress)) {
-        throw new Error('Invalid user address. Please reconnect wallet.');
-      }
-      const unstakeAmount = document.getElementById(`withdraw-amount-${token}`).value;
-      if (!unstakeAmount || isNaN(unstakeAmount) || Number(unstakeAmount) <= 0) {
-        throw new Error('Please enter a valid amount to unstake.');
-      }
-      const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'unstake');
-      if (shortfall > 0) {
-        const totalRequired = shortfall + SAFETY_ENERGY;
-        if (await checkDelegatorEnergy(totalRequired)) {
-          const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy);
-          if (modalResult.rent) {
-            processingModal = showProcessingModal('(1/2)');
-            await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
-            await delay(5000);
-            hideProcessingModal(processingModal);
-          }
-        }
-      }
-      processingModal = showProcessingModal('(2/2)');
-      const amountToUnstake = toWei(unstakeAmount, tokenDetails[token].decimals);
-      const stakingContract = stakingContracts[token];
-      if (!stakingContract || !stakingContract.methods.withdraw) {
-        throw new Error(`Staking contract for ${token} not properly initialized`);
-      }
-      const stakedAmount = await stakingContract.methods.viewStakedAmount(userAddress).call();
-      await delay(CONTRACT_CALL_DELAY_MS);
-      if (BigInt(stakedAmount) < amountToUnstake) {
-        throw new Error('Insufficient staked amount to withdraw.');
-      }
-      const withdrawTx = await tronWeb.transactionBuilder.triggerSmartContract(
-        tokenDetails[token].stakingAddress,
-        'withdraw(uint256)',
-        {},
-        [{ type: 'uint256', value: amountToUnstake.toString() }],
-        userAddress
-      );
-      if (!withdrawTx.result || !withdrawTx.transaction) {
-        throw new Error('Failed to create withdraw transaction');
-      }
-      const signedWithdrawTx = await tronWeb.trx.sign(withdrawTx.transaction);
-      const broadcastWithdraw = await tronWeb.trx.sendRawTransaction(signedWithdrawTx);
-      if (!broadcastWithdraw.result) {
-        throw new Error('Failed to broadcast withdraw transaction');
-      }
-      showToast({
-        title: 'Withdraw submitted',
-        body: `<a href="https://tronscan.org/#/transaction/${broadcastWithdraw.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
-      });
-      hideProcessingModal(processingModal);
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await updateTokenUI(token, true);
-    } catch (error) {
-      hideProcessingModal(processingModal);
-      showToast({ title: `Withdraw error for ${token}`, body: error.message, variant: 'danger' });
-    }
-  };
-  return withLoading(btn, 'Withdrawing...', run)();
-}
-
-async function claimRewards(token) {
-  let processingModal = null;
-  const btn = document.getElementById(`claim-rewards-button-${token}`);
-  const run = async () => {
-    try {
-      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) {
-        throw new Error(`Invalid staking address: ${tokenDetails[token].stakingAddress}`);
-      }
-      if (!userAddress || !isValidTronAddress(userAddress)) {
-        throw new Error('Invalid user address. Please reconnect wallet.');
-      }
-      const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'claimRewards');
-      if (shortfall > 0) {
-        const totalRequired = shortfall + SAFETY_ENERGY;
-        if (await checkDelegatorEnergy(totalRequired)) {
-          const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy);
-          if (modalResult.rent) {
-            processingModal = showProcessingModal('(1/2)');
-            await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
-            await delay(5000);
-            hideProcessingModal(processingModal);
-          }
-        }
-      }
-      processingModal = showProcessingModal('(2/2)');
-      const stakingContract = stakingContracts[token];
-      if (!stakingContract || !stakingContract.methods.claimReward) {
-        throw new Error(`Staking contract for ${token} not properly initialized`);
-      }
-      const pendingReward = await stakingContract.methods.viewPendingReward(userAddress).call();
-      await delay(CONTRACT_CALL_DELAY_MS);
-      if (BigInt(pendingReward) === 0n) {
-        throw new Error('No rewards available to claim.');
-      }
-      const claimTx = await tronWeb.transactionBuilder.triggerSmartContract(
-        tokenDetails[token].stakingAddress,
-        'claimReward()',
-        {},
-        [],
-        userAddress
-      );
-      if (!claimTx.result || !claimTx.transaction) {
-        throw new Error('Failed to create claim reward transaction');
-      }
-      const signedClaimTx = await tronWeb.trx.sign(claimTx.transaction);
-      const broadcastClaim = await tronWeb.trx.sendRawTransaction(signedClaimTx);
-      if (!broadcastClaim.result) {
-        throw new Error('Failed to broadcast claim reward transaction');
-      }
-      showToast({
-        title: 'Claim submitted',
-        body: `<a href="https://tronscan.org/#/transaction/${broadcastClaim.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
-      });
-      hideProcessingModal(processingModal);
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await updateTokenUI(token, true);
-    } catch (error) {
-      hideProcessingModal(processingModal);
-      showToast({ title: `Claim error for ${token}`, body: error.message, variant: 'danger' });
-    }
-  };
-  return withLoading(btn, 'Claiming...', run)();
-}
-
-/* ===================== Events ===================== */
-document.addEventListener('DOMContentLoaded', () => {
-  for (let key in tokenDetails) {
-    const stakeButton = document.getElementById(`stake-button-${key}`);
-    if (stakeButton) {
-      stakeButton.addEventListener('click', async (e) => {
-        e.preventDefault();
-        const amount = document.getElementById(`stake-amount-${key}`).value;
-        if (!amount || isNaN(amount) || Number(amount) <= 0) {
-          showToast({ title: 'Invalid Input', body: 'Please enter a valid amount to stake.', variant: 'danger' });
-          return;
-        }
-        await stakeTokens(key, amount);
-      });
-    } else {
-      console.error(`Stake button for ${key} not found`);
-    }
-    const unstakeButton = document.getElementById(`unstake-button-${key}`);
-    if (unstakeButton) {
-      unstakeButton.addEventListener('click', async (e) => {
-        e.preventDefault();
-        await unstakeTokens(key);
-      });
-    } else {
-      console.error(`Unstake button for ${key} not found`);
-    }
-    const claimButton = document.getElementById(`claim-rewards-button-${key}`);
-    if (claimButton) {
-      claimButton.addEventListener('click', async (e) => {
-        e.preventDefault();
-        await claimRewards(key);
-      });
-    } else {
-      console.error(`Claim rewards button for ${key} not found`);
-    }
-  }
-  initialize();
-});
 
