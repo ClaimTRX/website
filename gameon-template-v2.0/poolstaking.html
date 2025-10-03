@@ -321,22 +321,26 @@
     </div>
   </section>
   <section class="py-2">
-    <div class="container">
-      <div class="stats-grid">
-        <div class="stat-tile"><span class="item-title">Pool Size</span><strong id="pool-size">—</strong></div>
-        <div class="stat-tile"><span class="item-title">Daily Payout</span><strong id="daily-payout">—</strong></div>
-        <div class="stat-tile"><span class="item-title">Total Next Payout</span><strong id="total-next-payout">—</strong></div>
-        <div class="stat-tile"><span class="item-title">Your Next Payout</span><strong id="your-next-payout">—</strong></div>
-        <div class="stat-tile"><span class="item-title">Total Active Tokens</span><strong id="total-active-tokens">—</strong></div>
-        <div class="stat-tile"><span class="item-title">Total Inactive Tokens</span><strong id="total-inactive-tokens">—</strong></div>
-      </div>
-      <!-- Claim before box -->
-      <div class="countdown-tile" id="next-claim-box">
-        <span class="item-title">Expire in</span>
-        <strong id="next-claim-timer" class="inactive">Inactive</strong>
-      </div>
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-tile"><span class="item-title">Pool Size</span><strong id="pool-size">—</strong></div>
+      <div class="stat-tile"><span class="item-title">Daily Payout</span><strong id="daily-payout">—</strong></div>
+      <div class="stat-tile"><span class="item-title">Total Next Payout</span><strong id="total-next-payout">—</strong></div>
+      <div class="stat-tile"><span class="item-title">Your Next Payout</span><strong id="your-next-payout">—</strong></div>
+      <div class="stat-tile"><span class="item-title">Total Active Tokens</span><strong id="total-active-tokens">—</strong></div>
+      <div class="stat-tile"><span class="item-title">Total Inactive Tokens</span><strong id="total-inactive-tokens">—</strong></div>
     </div>
-  </section>
+    <!-- Pool Growth Chart Button -->
+    <div class="text-center mt-3">
+      <button class="btn primary" id="pool-growth-chart-button">View Pool Growth Chart</button>
+    </div>
+    <!-- Claim before box -->
+    <div class="countdown-tile" id="next-claim-box">
+      <span class="item-title">Expire in</span>
+      <strong id="next-claim-timer" class="inactive">Inactive</strong>
+    </div>
+  </div>
+</section>
   <section class="py-3">
     <div class="container">
       <div class="cta luxe-ad-card">
@@ -384,6 +388,25 @@
       </div>
     </div>
   </div>
+
+<!-- Pool Growth Chart Modal -->
+<div class="modal fade" id="pool-growth-modal" tabindex="-1" aria-labelledby="poolGrowthModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="poolGrowthModalLabel">Pool Size Growth Over Time</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+      </div>
+      <div class="modal-body">
+        <canvas id="pool-growth-chart" style="max-height:400px;"></canvas>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+  
   <!-- Mobile Menu Modal -->
   <div id="menu" class="modal fade p-0">
     <div class="modal-dialog dialog-animated">
@@ -427,6 +450,7 @@
   <script src="assets/js/vendor/shuffle.min.js"></script>
   <script src="assets/js/main.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.min.js"></script>
   <!-- App JS -->
   <script src="assets/js/poolstaking.js" type="module"></script>
 </body>
