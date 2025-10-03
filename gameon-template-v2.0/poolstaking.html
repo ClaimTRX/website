@@ -5,11 +5,19 @@
   <meta name="description" content="CFT Ecosystem Staking">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
   <title>CFT Ecosystem - Staking</title>
   <link rel="icon" href="assets/img/favicon.png">
   <link rel="stylesheet" href="assets/css/style.css">
+  <script>
+    console.log('Checking script loading for module errors...');
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('script:not([type="module"])').forEach(script => {
+        if (script.src) console.log('Non-module script loaded:', script.src);
+      });
+    });
+  </script>
   <style>
     /* =============================
        LUXE DESIGN SYSTEM – v2
@@ -106,6 +114,8 @@
     .modal .btn-rent{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));border:0;color:#0b0e17;border-radius:12px;font-weight:800}
     .modal .btn-cancel{border:1px solid var(--line);color:#eaf2ff;background:transparent;border-radius:12px}
     #transaction-processing-modal .spinner{border:4px solid var(--accent-2);border-top-color:transparent;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto 15px}
+    #pool-growth-modal .modal-body{padding:20px}
+    #pool-growth-chart{max-height:400px;width:100%}
     @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
     /* Ad card */
     .luxe-ad-card{position:relative;border-radius:var(--radius-4);background:linear-gradient(135deg,rgba(98,255,207,.1),rgba(125,178,255,.1));border:2px solid var(--accent-3);box-shadow:var(--shadow-2),0 0 20px rgba(125,178,255,.3);overflow:hidden;margin:2rem 0;transition:transform .3s ease,box-shadow .3s ease}
@@ -116,78 +126,53 @@
     .luxe-ad-card .btn.primary{background:linear-gradient(135deg,var(--accent-3),var(--accent-2));font-weight:700;padding:.75rem 1.5rem;border-radius:12px}
     .luxe-ad-card .btn.primary:hover{filter:brightness(1.2)}
     /* Responsive */
-   /* ≤992px: center panels perfectly */
-/* make 100%-width controls actually fit inside on iOS */
-*, *::before, *::after { box-sizing: border-box; }
-
-/* Make 100%-width controls actually fit inside on iOS */
-*, *::before, *::after { box-sizing: border-box; }
-
-/* KPI: allow long numbers to wrap and not push edges */
-.kpis > .kpi{ min-width:0; }
-.kpi span{ text-align:center; white-space:normal; }
-.kpi span:first-child{ overflow-wrap:anywhere; }
-
-/* <= 992px: center panels AND guarantee inner fit */
-@media (max-width:992px){
-  /* KPIs: 2 cols and matching gutters */
-  .kpis{
-    grid-template-columns:repeat(2, minmax(0,1fr));
-    padding:0 20px 20px;
-  }
-
-  .action-grid{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:18px;
-    padding:0 20px 28px;
-    width:100%;
-  }
-
-  /* cap to container width minus a small gutter so nothing touches the edge */
-  .action-grid .panel{
-    width:100%;
-    max-width:min(480px, calc(100% - 24px)); /* <- key change */
-    margin-inline:auto;
-    padding:16px; /* a touch more breathing room */
-  }
-
-  /* ensure children never overflow */
-  .action-grid .panel > *{ max-width:100%; }
-  .form-control.luxe{ width:100%; }
-  .quick-fills{ grid-template-columns:repeat(3, minmax(0,1fr)); }
-  .quick-fills .btn{ width:100%; }
-  #stake-button-cft,
-  #unstake-button-cft,
-  #activate-tokens-button-cft,
-  #claim-rewards-button-cft { width:100%; }
-
-  /* stats grid: 2 cols on tablets */
-  .stats-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
-}
-
-/* <= 576px: single-column KPIs and tighter gutters */
-@media (max-width:576px){
-  .kpis{
-    grid-template-columns:1fr;
-    padding:0 12px 16px;
-  }
-
-  .action-grid{ padding:0 12px 24px; }
-  .panel{ padding:16px; } /* keep the same padding on xs as well */
-
-  .stats-grid{ grid-template-columns:1fr; }
-  .kpi span:first-child{ font-size:1rem; } /* avoid crowding on small phones */
-}
-
-/* >= 992px: keep desktop card height */
-@media (min-width:992px){
-  .panel{ min-height:260px; }
-}
-
-
-</style>
+    *, *::before, *::after { box-sizing: border-box; }
+    .kpis > .kpi{ min-width:0; }
+    .kpi span{ text-align:center; white-space:normal; }
+    .kpi span:first-child{ overflow-wrap:anywhere; }
+    @media (max-width:992px){
+      .kpis{
+        grid-template-columns:repeat(2, minmax(0,1fr));
+        padding:0 20px 20px;
+      }
+      .action-grid{
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:18px;
+        padding:0 20px 28px;
+        width:100%;
+      }
+      .action-grid .panel{
+        width:100%;
+        max-width:min(480px, calc(100% - 24px));
+        margin-inline:auto;
+        padding:16px;
+      }
+      .action-grid .panel > *{ max-width:100%; }
+      .form-control.luxe{ width:100%; }
+      .quick-fills{ grid-template-columns:repeat(3, minmax(0,1fr)); }
+      .quick-fills .btn{ width:100%; }
+      #stake-button-cft,
+      #unstake-button-cft,
+      #activate-tokens-button-cft,
+      #claim-rewards-button-cft { width:100%; }
+      .stats-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+    }
+    @media (max-width:576px){
+      .kpis{
+        grid-template-columns:1fr;
+        padding:0 12px 16px;
+      }
+      .action-grid{ padding:0 12px 24px; }
+      .panel{ padding:16px; }
+      .stats-grid{ grid-template-columns:1fr; }
+      .kpi span:first-child{ font-size:1rem; }
+    }
+    @media (min-width:992px){
+      .panel{ min-height:260px; }
+    }
+  </style>
 </head>
 <body>
   <!-- Header -->
@@ -321,26 +306,26 @@
     </div>
   </section>
   <section class="py-2">
-  <div class="container">
-    <div class="stats-grid">
-      <div class="stat-tile"><span class="item-title">Pool Size</span><strong id="pool-size">—</strong></div>
-      <div class="stat-tile"><span class="item-title">Daily Payout</span><strong id="daily-payout">—</strong></div>
-      <div class="stat-tile"><span class="item-title">Total Next Payout</span><strong id="total-next-payout">—</strong></div>
-      <div class="stat-tile"><span class="item-title">Your Next Payout</span><strong id="your-next-payout">—</strong></div>
-      <div class="stat-tile"><span class="item-title">Total Active Tokens</span><strong id="total-active-tokens">—</strong></div>
-      <div class="stat-tile"><span class="item-title">Total Inactive Tokens</span><strong id="total-inactive-tokens">—</strong></div>
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat-tile"><span class="item-title">Pool Size</span><strong id="pool-size">—</strong></div>
+        <div class="stat-tile"><span class="item-title">Daily Payout</span><strong id="daily-payout">—</strong></div>
+        <div class="stat-tile"><span class="item-title">Total Next Payout</span><strong id="total-next-payout">—</strong></div>
+        <div class="stat-tile"><span class="item-title">Your Next Payout</span><strong id="your-next-payout">—</strong></div>
+        <div class="stat-tile"><span class="item-title">Total Active Tokens</span><strong id="total-active-tokens">—</strong></div>
+        <div class="stat-tile"><span class="item-title">Total Inactive Tokens</span><strong id="total-inactive-tokens">—</strong></div>
+      </div>
+      <!-- Pool Growth Chart Button -->
+      <div class="text-center mt-3">
+        <button class="btn primary" id="pool-growth-chart-button">View Pool Growth Chart</button>
+      </div>
+      <!-- Claim before box -->
+      <div class="countdown-tile" id="next-claim-box">
+        <span class="item-title">Expire in</span>
+        <strong id="next-claim-timer" class="inactive">Inactive</strong>
+      </div>
     </div>
-    <!-- Pool Growth Chart Button -->
-    <div class="text-center mt-3">
-      <button class="btn primary" id="pool-growth-chart-button">View Pool Growth Chart</button>
-    </div>
-    <!-- Claim before box -->
-    <div class="countdown-tile" id="next-claim-box">
-      <span class="item-title">Expire in</span>
-      <strong id="next-claim-timer" class="inactive">Inactive</strong>
-    </div>
-  </div>
-</section>
+  </section>
   <section class="py-3">
     <div class="container">
       <div class="cta luxe-ad-card">
@@ -359,7 +344,7 @@
       </div>
     </div>
   </section>
-  <!-- ***** Energy Rental Modal Start ***** -->
+  <!-- Energy Rental Modal -->
   <div class="modal fade" id="energy-rental-modal" tabindex="-1" aria-labelledby="energyRentalModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -378,7 +363,6 @@
       </div>
     </div>
   </div>
-  <!-- ***** Energy Rental Modal End ***** -->
   <!-- Processing Modal -->
   <div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-labelledby="transactionProcessingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -388,25 +372,23 @@
       </div>
     </div>
   </div>
-
-<!-- Pool Growth Chart Modal -->
-<div class="modal fade" id="pool-growth-modal" tabindex="-1" aria-labelledby="poolGrowthModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="poolGrowthModalLabel">Pool Size Growth Over Time</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
-      </div>
-      <div class="modal-body">
-        <canvas id="pool-growth-chart" style="max-height:400px;"></canvas>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Close</button>
+  <!-- Pool Growth Chart Modal -->
+  <div class="modal fade" id="pool-growth-modal" tabindex="-1" aria-labelledby="poolGrowthModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="poolGrowthModalLabel">Pool Size Growth Over Time</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+        </div>
+        <div class="modal-body">
+          <canvas id="pool-growth-chart" style="max-height:400px;"></canvas>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Close</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
-  
   <!-- Mobile Menu Modal -->
   <div id="menu" class="modal fade p-0">
     <div class="modal-dialog dialog-animated">
@@ -440,22 +422,22 @@
     </div>
   </footer>
   <!-- Vendor JS -->
- <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.min.js"></script>
-<script src="assets/js/vendor/jquery.min.js"></script>
-<script src="assets/js/vendor/popper.min.js"></script>
-<script src="assets/js/vendor/bootstrap.min.js"></script>
-<script src="assets/js/vendor/all.min.js"></script>
-<script src="assets/js/vendor/gallery.min.js"></script>
-<script src="assets/js/vendor/slider.min.js"></script>
-<script src="assets/js/vendor/countdown.min.js"></script>
-<script src="assets/js/vendor/shuffle.min.js"></script>
-<script src="assets/js/main.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
-<!-- App JS -->
-<script src="assets/js/poolstaking.js" type="module"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.min.js" integrity="sha256-T6Z1r2GqaX/Q6hC8BWLv2kpF6D2lDA3l2Wv1EjLnm5g=" crossorigin="anonymous" onload="console.log('Chart.js loaded successfully');" onerror="console.error('Failed to load Chart.js from CDN');"></script>
+  <script>if (typeof Chart === 'undefined') { document.write('<script src="assets/js/chart.min.js"></script>'); console.log('Loaded fallback Chart.js'); }</script>
+  <script src="assets/js/vendor/jquery.min.js"></script>
+  <script src="assets/js/vendor/popper.min.js"></script>
+  <script src="assets/js/vendor/bootstrap.min.js"></script>
+  <script src="assets/js/vendor/all.min.js"></script>
+  <script src="assets/js/vendor/gallery.min.js"></script>
+  <script src="assets/js/vendor/slider.min.js"></script>
+  <script src="assets/js/vendor/countdown.min.js"></script>
+  <script src="assets/js/vendor/shuffle.min.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+  <!-- App JS -->
+  <script src="assets/js/poolstaking.js" type="module"></script>
 </body>
 </html>
-
 
 
 
