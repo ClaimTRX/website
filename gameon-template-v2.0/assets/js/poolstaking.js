@@ -584,9 +584,8 @@ async function updateTokenUI(token, first = false) {
     await delay(CONTRACT_CALL_DELAY_MS);
     const userData = await stakingContracts[token].methods.users(userAddress).call().catch(()=>({ stakedAmount:'0', pendingRewards:'0', isActive:false, lastClaimTimestamp:'0', totalClaimed:'0' }));
     await delay(CONTRACT_CALL_DELAY_MS);
-    const [apy, roi, timeout, userTotalClaimedRaw] = await Promise.all([
+        const [apy, timeout, userTotalClaimedRaw] = await Promise.all([
       stakingContracts[token].methods.calculateAPY(userAddress).call().catch(()=>'0'),
-      stakingContracts[token].methods.calculateROI(userAddress).call().catch(()=>'0'),
       stakingContracts[token].methods.claimTimeout().call().catch(()=>'0'),
       stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(()=>'0')
     ]);
@@ -609,7 +608,10 @@ async function updateTokenUI(token, first = false) {
     const dailyPayoutPct = Number(dailyPctRaw) / 100;
     const totalNextPayout = poolSize * dailyPayoutPct / 100;
     let yourNextPayout = stakedUnits > 0 && totalActiveStaked > 0 && userData.isActive ? (stakedUnits / totalActiveStaked) * totalNextPayout : 0;
-    const roiPct = Number(roi);
+        const CFT_PRICE = 1; // 1 CFT = 1 TRX
+    const stakedAmount = toUnits(userData.stakedAmount, d.decimals);
+    const totalClaimedTrx = Number(userTotalClaimedRaw) / SUN_PER_TRX;
+    const roiPct = (stakedAmount > 0 && userData.isActive) ? (totalClaimedTrx / (stakedAmount * CFT_PRICE)) * 100 : 0;
     let apyPct = Number(apy);
     // Check if timer has expired
     const now = Math.floor(Date.now() / 1000);
@@ -628,7 +630,7 @@ async function updateTokenUI(token, first = false) {
         poolSize: Number(poolSize),
         totalNextPayout: Number(totalNextPayout),
         yourNextPayout: Number(yourNextPayout),
-        roiPct: Number(roiPct),
+                roiPct: Number(roiPct.toFixed(2)), // Ensure 2 decimal places for caching
         apyPct: Number(apyPct),
         dailyPctRaw: Number(dailyPctRaw),
         totalActiveTokens: Number(totalActiveTokens),
@@ -974,5 +976,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
+
 
 
