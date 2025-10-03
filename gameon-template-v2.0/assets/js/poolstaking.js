@@ -579,12 +579,14 @@ async function updateTokenUI(token, first = false) {
         .forEach(id => setSkeleton(id, true));
     }
     const d = tokenDetails[token];
+    // Pace contract calls with 200ms delay to avoid bursts (still covered by throttle)
     const balanceRaw = await tokenContracts[token].methods.balanceOf(userAddress).call().catch(()=>'0');
     await delay(CONTRACT_CALL_DELAY_MS);
     const userData = await stakingContracts[token].methods.users(userAddress).call().catch(()=>({ stakedAmount:'0', pendingRewards:'0', isActive:false, lastClaimTimestamp:'0', totalClaimed:'0' }));
     await delay(CONTRACT_CALL_DELAY_MS);
-    const [apy, timeout, userTotalClaimedRaw] = await Promise.all([
+    const [apy, roi, timeout, userTotalClaimedRaw] = await Promise.all([
       stakingContracts[token].methods.calculateAPY(userAddress).call().catch(()=>'0'),
+      stakingContracts[token].methods.calculateROI(userAddress).call().catch(()=>'0'),
       stakingContracts[token].methods.claimTimeout().call().catch(()=>'0'),
       stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(()=>'0')
     ]);
@@ -607,31 +609,21 @@ async function updateTokenUI(token, first = false) {
     const dailyPayoutPct = Number(dailyPctRaw) / 100;
     const totalNextPayout = poolSize * dailyPayoutPct / 100;
     let yourNextPayout = stakedUnits > 0 && totalActiveStaked > 0 && userData.isActive ? (stakedUnits / totalActiveStaked) * totalNextPayout : 0;
-    // Calculate ROI: (totalClaimed TRX / (staked CFT * CFT price in TRX)) * 100
-    const cftPriceInTrx = 1; // 1 CFT = 1 TRX as per instruction
-    const stakedValueInTrx = stakedUnits * cftPriceInTrx;
-    const roiPct = stakedValueInTrx > 0 ? (userTotalClaimed / stakedValueInTrx) * 100 : 0;
+    const roiPct = Number(roi);
     let apyPct = Number(apy);
     // Check if timer has expired
     const now = Math.floor(Date.now() / 1000);
     const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + Number(timeout);
     const isExpired = timeout && nextClaim <= now;
     if (isExpired) {
-      apyPct = 0;
-      yourNextPayout = 0;
+      apyPct = 0; // Set APY to 0 when expired
+      yourNextPayout = 0; // Set Your Next Payout to 0 when expired
     }
-    // Update pool size history for chart
-    const poolHistoryKey = `poolHistory_${token}`;
-    let poolHistory = JSON.parse(localStorage.getItem(poolHistoryKey) || '[]');
-    poolHistory.push({ timestamp: Date.now(), poolSize });
-    // Keep only last 30 days (30 * 24 * 60 * 60 * 1000 ms)
-    poolHistory = poolHistory.filter(h => Date.now() - h.timestamp < 30 * 24 * 60 * 60 * 1000);
-    localStorage.setItem(poolHistoryKey, JSON.stringify(poolHistory));
     const cacheData = {
       data: {
         balanceUnits: Number(balanceUnits),
         stakedUnits: Number(stakedUnits),
-        rewardUnits: isExpired ? 0 : Number(rewardUnits),
+        rewardUnits: isExpired ? 0 : Number(rewardUnits), // Set rewards to 0 when expired
         userTotalClaimed: Number(userTotalClaimed),
         poolSize: Number(poolSize),
         totalNextPayout: Number(totalNextPayout),
@@ -684,60 +676,6 @@ async function updateTokenUI(token, first = false) {
       .forEach(id => setSkeleton(id, false));
   }
 }
-
-function showPoolGrowthChart(token) {
-  if (typeof Chart === 'undefined') {
-    showToast({ title: 'Chart Error', body: 'Chart.js library failed to load.', variant: 'danger' });
-    return;
-  }
-  const modalElement = document.getElementById('pool-growth-modal');
-  if (!modalElement) {
-    showToast({ title: 'Chart Error', body: 'Pool growth modal not found.', variant: 'danger' });
-    return;
-  }
-  const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
-  const canvas = document.getElementById('pool-growth-chart');
-  if (!canvas) {
-    showToast({ title: 'Chart Error', body: 'Chart canvas not found.', variant: 'danger' });
-    return;
-  }
-  const ctx = canvas.getContext('2d');
-  const poolHistoryKey = `poolHistory_${token}`;
-  const poolHistory = JSON.parse(localStorage.getItem(poolHistoryKey) || '[]');
-  const labels = poolHistory.map(h => new Date(h.timestamp).toLocaleDateString());
-  const data = poolHistory.map(h => h.poolSize);
-  if (window.poolChart) window.poolChart.destroy();
-  window.poolChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Pool Size (TRX)',
-        data: data,
-        borderColor: 'rgba(98,255,207,1)', // --accent-1
-        backgroundColor: 'rgba(98,255,207,0.2)',
-        fill: true,
-        tension: 0.4
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        x: { title: { display: true, text: 'Date', color: 'var(--txt)' } },
-        y: { title: { display: true, text: 'Pool Size (TRX)', color: 'var(--txt)' }, beginAtZero: true }
-      },
-      plugins: {
-        legend: { labels: { color: 'var(--txt)' } },
-        tooltip: { backgroundColor: 'var(--bg-2)', bodyColor: 'var(--txt)', titleColor: 'var(--txt)' }
-      }
-    }
-  });
-  modalElement.addEventListener('hidden.bs.modal', () => {
-    if (window.poolChart) window.poolChart.destroy();
-  }, { once: true });
-  modal.show();
-}
-
 function updateClaimTimer(timeoutSec, lastClaimTs, isActive) {
   const timerEl = document.getElementById('next-claim-timer');
   const claimBtn = document.getElementById('claim-rewards-button-cft');
@@ -1034,13 +972,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await activateTokens(key);
     });
   }
-  const chartButton = document.getElementById('pool-growth-chart-button');
-  if (chartButton){
-    chartButton.addEventListener('click', async (e)=>{
-      e.preventDefault();
-      showPoolGrowthChart(key);
-    });
-  }
   initialize();
 });
+
 
