@@ -1,4 +1,4 @@
-```javascript
+
 let tronWeb, userAddress;
 const stakingContracts = {};
 const tokenContracts = {};
@@ -1706,4 +1706,4 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
-```
+
