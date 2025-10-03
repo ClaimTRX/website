@@ -686,11 +686,21 @@ async function updateTokenUI(token, first = false) {
 }
 
 function showPoolGrowthChart(token) {
+  if (typeof Chart === 'undefined') {
+    showToast({ title: 'Chart Error', body: 'Chart.js library failed to load.', variant: 'danger' });
+    return;
+  }
   const modalElement = document.getElementById('pool-growth-modal');
-  if (!modalElement) return;
+  if (!modalElement) {
+    showToast({ title: 'Chart Error', body: 'Pool growth modal not found.', variant: 'danger' });
+    return;
+  }
   const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
   const canvas = document.getElementById('pool-growth-chart');
-  if (!canvas) return;
+  if (!canvas) {
+    showToast({ title: 'Chart Error', body: 'Chart canvas not found.', variant: 'danger' });
+    return;
+  }
   const ctx = canvas.getContext('2d');
   const poolHistoryKey = `poolHistory_${token}`;
   const poolHistory = JSON.parse(localStorage.getItem(poolHistoryKey) || '[]');
