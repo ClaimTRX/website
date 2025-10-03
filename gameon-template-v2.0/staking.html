@@ -127,6 +127,77 @@
 		.staking-area .leaderboard-button a {
 			margin: 0 auto;
 		}
+
+/* === Bottom-align buttons + perfect card sizing === */
+
+/* Stretch grid rows so each panel can take equal height */
+.action-grid {
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  grid-auto-rows: 1fr;                 /* rows will stretch evenly */
+  align-items: stretch;                 /* make children fill row height */
+  justify-items: center;
+  gap: 22px;
+}
+
+/* Make each panel a flex column so we can push the CTA to the bottom */
+.action-grid .panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  width: 100%;
+  max-width: 320px;                     /* consistent visual width */
+  min-height: 320px;                    /* equal height on desktop */
+  padding: 20px 20px 22px;
+  border-radius: var(--radius-3);
+  box-shadow: var(--shadow-1);
+}
+
+/* Reserve a tiny, consistent meta area height so Deposit (which has <small>)
+   doesn’t make that card “taller” than the others */
+.action-grid .panel .item-title { margin-bottom: 6px; }
+.action-grid .panel small { display: block; min-height: 18px; }
+
+/* The input section grows to the bottom; the button sits at the very end */
+.action-grid .panel .input-area {
+  margin-top: auto;                     /* pushes this block to the bottom */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Full-width controls inside cards */
+.action-grid .panel .form-control,
+.action-grid .panel .input-btn { width: 100%; }
+
+/* Slightly stronger focus ring so inputs feel crisp on dark bg */
+.form-control.luxe:focus,
+.input-area .input-text input.form-control:focus {
+  box-shadow: 0 0 0 3px rgba(125,178,255,.25);
+}
+
+/* Tidy card look */
+.action-grid .panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+}
+.action-grid .panel .input-btn {
+  height: 48px;
+  border-radius: 14px;
+}
+
+/* Responsive: keep the same effect on smaller screens */
+@media (max-width: 992px) {
+  .action-grid { grid-auto-rows: auto; }
+  .action-grid .panel {
+    max-width: min(480px, calc(100% - 24px));
+    min-height: 280px;
+  }
+}
+@media (max-width: 576px) {
+  .action-grid .panel { min-height: 260px; }
+}
+
+		
 	</style>
 
 </head>
