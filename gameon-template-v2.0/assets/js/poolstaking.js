@@ -724,7 +724,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive) {
       const apyEl = document.getElementById('projected-rewards-cft');
       if (apyEl) apyEl.textContent = '0.00%';
       const claimableEl = document.getElementById('claimable-rewards-cft');
-      if (claimableEl) claimableEl.textContent = '0 TRX';
+      if (claimableEl) claimableEl.textContent = '0.00 TRX';
       const yourNextPayoutEl = document.getElementById('your-next-payout');
       if (yourNextPayoutEl) yourNextPayoutEl.textContent = '0 TRX';
     } else {
