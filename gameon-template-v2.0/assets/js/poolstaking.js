@@ -964,7 +964,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   const unstakeButton = document.getElementById(`unstake-button-${key}`);
   if (unstakeButton){
-    unstakeButton.add EXAMINER('click', async (e)=>{
+    unstakeButton.addEventListener('click', async (e)=>{
       e.preventDefault();
       await unstakeTokens(key);
     });
@@ -985,6 +985,5 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
-
 
 
