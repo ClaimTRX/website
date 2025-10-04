@@ -558,7 +558,7 @@ async function updateTokenUI(token, first = false) {
         const apyEl = document.getElementById(`projected-rewards-${token}`);
         if (apyEl) { apyEl.textContent = fmtPct(apyPct); setSkeleton(`projected-rewards-${token}`, false); }
         const claimableEl = document.getElementById(`claimable-rewards-${token}`);
-        if (claimableEl) { claimableEl.textContent = `${fmt(rewardUnits)} ${tokenDetails[token].rewardDisplayName}`; }
+        if (claimableEl) { claimableEl.textContent = `${Number(rewardUnits).toFixed(2)} ${tokenDetails[token].rewardDisplayName}`; }
         const userClaimedEl = document.getElementById('user-total-claimed-cft');
         if (userClaimedEl) { userClaimedEl.textContent = fmtTrx(userTotalClaimed); setSkeleton('user-total-claimed-cft', false); }
         const roiEl = document.getElementById('roi-cft');
@@ -650,7 +650,7 @@ async function updateTokenUI(token, first = false) {
     updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
     updateElement(`staked-amount-${token}`, fmt(stakedUnits), `staked-amount-${token}`);
     updateElement(`projected-rewards-${token}`, fmtPct(apyPct), `projected-rewards-${token}`);
-    updateElement(`claimable-rewards-${token}`, `${fmt(isExpired ? 0 : rewardUnits)} ${d.rewardDisplayName}`);
+    updateElement(`claimable-rewards-${token}`, `${Number(isExpired ? 0 : rewardUnits).toFixed(2)} ${d.rewardDisplayName}`);
     updateElement('user-total-claimed-cft', fmtTrx(userTotalClaimed), 'user-total-claimed-cft');
     updateElement('roi-cft', fmtPct(roiPct), 'roi-cft');
     updateElement('pool-size', fmtTrx(poolSize), 'pool-size');
