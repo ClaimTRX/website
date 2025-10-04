@@ -545,7 +545,7 @@ async function updateTokenUI(token, first = false) {
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
       const { data, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp < CACHE_TIMEOUT_MS) {
+      if (Date.now() - timestamp < CACHE_TIMEOUT_MS && data.rewardUnits === 0) {
         const {
           balanceUnits, stakedUnits, rewardUnits, userTotalClaimed,
           poolSize, totalNextPayout, yourNextPayout, roiPct, apyPct, dailyPctRaw,
@@ -569,6 +569,7 @@ async function updateTokenUI(token, first = false) {
         const yourNextPayoutEl = document.getElementById('your-next-payout'); if (yourNextPayoutEl) { yourNextPayoutEl.textContent = fmtTrx(yourNextPayout); setSkeleton('your-next-payout', false); }
         const totalActiveTokensEl = document.getElementById('total-active-tokens'); if (totalActiveTokensEl) { totalActiveTokensEl.textContent = fmt(totalActiveTokens); setSkeleton('total-active-tokens', false); }
         const totalInactiveTokensEl = document.getElementById('total-inactive-tokens'); if (totalInactiveTokensEl) { totalInactiveTokensEl.textContent = fmt(totalInactiveTokens); setSkeleton('total-inactive-tokens', false); }
+        console.debug('updateTokenUI: Using cached data, rewardUnits:', rewardUnits);
         return;
       }
     }
@@ -584,7 +585,7 @@ async function updateTokenUI(token, first = false) {
     await delay(CONTRACT_CALL_DELAY_MS);
     const userData = await stakingContracts[token].methods.users(userAddress).call().catch(()=>({ stakedAmount:'0', pendingRewards:'0', isActive:false, lastClaimTimestamp:'0', totalClaimed:'0' }));
     await delay(CONTRACT_CALL_DELAY_MS);
-        const [apy, timeout, userTotalClaimedRaw] = await Promise.all([
+    const [apy, timeout, userTotalClaimedRaw] = await Promise.all([
       stakingContracts[token].methods.calculateAPY(userAddress).call().catch(()=>'0'),
       stakingContracts[token].methods.claimTimeout().call().catch(()=>'0'),
       stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(()=>'0')
@@ -608,7 +609,7 @@ async function updateTokenUI(token, first = false) {
     const dailyPayoutPct = Number(dailyPctRaw) / 100;
     const totalNextPayout = poolSize * dailyPayoutPct / 100;
     let yourNextPayout = stakedUnits > 0 && totalActiveStaked > 0 && userData.isActive ? (stakedUnits / totalActiveStaked) * totalNextPayout : 0;
-        const CFT_PRICE = 1; // 1 CFT = 1 TRX
+    const CFT_PRICE = 1; // 1 CFT = 1 TRX
     const stakedAmount = toUnits(userData.stakedAmount, d.decimals);
     const totalClaimedTrx = Number(userTotalClaimedRaw) / SUN_PER_TRX;
     const roiPct = (stakedAmount > 0 && userData.isActive) ? (totalClaimedTrx / (stakedAmount * CFT_PRICE)) * 100 : 0;
@@ -617,6 +618,7 @@ async function updateTokenUI(token, first = false) {
     const now = Math.floor(Date.now() / 1000);
     const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + Number(timeout);
     const isExpired = timeout && nextClaim <= now;
+    console.debug('updateTokenUI: now:', now, 'nextClaim:', nextClaim, 'isExpired:', isExpired, 'pendingRewards:', userData.pendingRewards, 'rewardUnits:', rewardUnits);
     if (isExpired) {
       apyPct = 0; // Set APY to 0 when expired
       yourNextPayout = 0; // Set Your Next Payout to 0 when expired
@@ -630,7 +632,7 @@ async function updateTokenUI(token, first = false) {
         poolSize: Number(poolSize),
         totalNextPayout: Number(totalNextPayout),
         yourNextPayout: Number(yourNextPayout),
-                roiPct: Number(roiPct.toFixed(2)), // Ensure 2 decimal places for caching
+        roiPct: Number(roiPct.toFixed(2)), // Ensure 2 decimal places for caching
         apyPct: Number(apyPct),
         dailyPctRaw: Number(dailyPctRaw),
         totalActiveTokens: Number(totalActiveTokens),
@@ -638,7 +640,14 @@ async function updateTokenUI(token, first = false) {
       },
       timestamp: Date.now()
     };
-    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    // Force cache update if pendingRewards is non-zero
+    if (Number(userData.pendingRewards) > 0) {
+      localStorage.removeItem(cacheKey);
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+      console.debug('updateTokenUI: Cache updated due to non-zero pendingRewards:', userData.pendingRewards);
+    } else {
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    }
     const updateElement = (id, value, skeletonId) => {
       const el = document.getElementById(id);
       if (el) {
@@ -955,7 +964,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   const unstakeButton = document.getElementById(`unstake-button-${key}`);
   if (unstakeButton){
-    unstakeButton.addEventListener('click', async (e)=>{
+    unstakeButton.add EXAMINER('click', async (e)=>{
       e.preventDefault();
       await unstakeTokens(key);
     });
