@@ -438,10 +438,18 @@ const tokenContractAbi = [
 ];
 /* ===================== Utils ===================== */
 const TEN = 10n;
-const toUnits = (raw, decimals = 6) => {
-  try { return Number(BigInt(raw) / (TEN ** BigInt(decimals))); }
-  catch { return 0; }
-};
+function toUnits(raw, decimals = 6) {
+  try {
+    const bi = BigInt(raw);
+    const denom = TEN ** BigInt(decimals);
+    const integer = bi / denom;
+    const frac = bi % denom;
+    return Number(integer) + Number(frac) / Number(denom);
+  } catch {
+    return 0;
+  }
+}
+
 const fmt = (n, max=6) => Number(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: max });
 const fmtPct = (n) => `${(Number(n) || 0).toFixed(2)}%`;
 const fmtTrx = (n) => `${fmt(n)} TRX`;
@@ -965,4 +973,5 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
+
 
