@@ -31,7 +31,7 @@ const CONTRACT_CALL_DELAY_MS = 200;
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-    stakingAddress: 'TT4EiaDtRyx4iFobpSRXzYjPfkp8jLzC87',
+    stakingAddress: 'TVueBekdKYsUZA18sfcyejvXBMivZkmf4u',
     decimals: 6,
     displayName: 'CFT',
     rewardDisplayName: 'TRX',
