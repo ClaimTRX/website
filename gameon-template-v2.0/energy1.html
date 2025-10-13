@@ -1,0 +1,410 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="CFT Ecosystem - Rent Energy">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>CFT Ecosystem - Rent Energy</title>
+    <link rel="icon" href="assets/img/favicon.png">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        /* =============================
+           LUXE DESIGN SYSTEM – v2
+           ============================= */
+        :root{
+            --bg-0:#07090f; --bg-1:#0b0e17; --bg-2:#0f1321; --surface:#12172a; --line:#212b46;
+            --muted:#9aa7bd; --txt:#e9eef7;
+            --accent-1:#62ffcf; --accent-2:#7db2ff; --accent-3:#b37cff;
+            --success:#00e095; --danger:#ff5b73; --warning:#ffd166;
+            --radius-2:12px; --radius-3:18px; --radius-4:28px;
+            --shadow-1:0 10px 30px rgba(0,0,0,.55); --shadow-2:0 12px 40px rgba(0,0,0,.6);
+            --glass:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+            --focus-ring:0 0 0 3px rgba(125,178,255,.35);
+        }
+        html,body{background:var(--bg-0);color:var(--txt);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+        /* Header */
+        header#header{padding:1.5rem 0}
+        .navbar-brand img{height:48px}
+        .navbar-nav.items .nav-link{font-size:1.1rem;padding:.75rem 1rem}
+        .navbar-nav.action .btn{font-size:1rem;padding:.5rem 1.25rem;height:50px}
+        .navbar-nav.toggle .nav-link{font-size:1.5rem;padding:.5rem}
+        /* Mobile menu modal */
+        #menu .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt)}
+        #menu .modal-header{border-bottom:1px solid var(--line);padding:1rem}
+        #menu .modal-body{padding:1rem}
+        #menu .items .nav-item{margin:.5rem 0}
+        #menu .items .nav-link{color:var(--txt);font-size:1.1rem;padding:.5rem 1rem}
+        #menu .items .dropdown-menu{background:var(--bg-2);border:1px solid var(--line);padding:.5rem}
+        #menu .items .dropdown-menu .nav-link{color:var(--muted);font-size:1rem}
+        #menu .items .dropdown-menu .nav-link:hover{color:var(--accent-1)}
+        /* Hero */
+        .hero-section{padding:120px 0 28px;text-align:center}
+        .intro-text{display:inline-block;font-size:1rem;letter-spacing:.16em;text-transform:uppercase;color:#c3d3ef;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:.42rem .95rem;border-radius:999px}
+        .hero-section h1{font-weight:900;letter-spacing:.4px;margin-top:16px;font-size:3.25rem;line-height:1.1}
+        .hero-section p{color:#b5c2d8}
+        /* Buttons */
+        .btn.primary,.btn.ghost{height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px}
+        .btn.primary{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#0b0e17;border:0;font-weight:800}
+        .btn.primary:hover{filter:brightness(1.05)}
+        .btn.ghost{border:1px solid var(--line);color:#eaf2ff;background:transparent}
+        .btn.ghost:hover{border-color:rgba(125,178,255,.55)}
+        /* Energy Area */
+        .staking-area{padding:3rem 0}
+        .staking-area .single-accordion-item{margin-bottom:18px}
+        .staking-area .card-header{background:none;border:none}
+        .staking-btn{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:18px;color:var(--txt)}
+        .staking-btn:hover{background:rgba(255,255,255,.05)}
+        .staking-area .card-body{padding:1.5rem}
+        .staking-area .item-title{font-weight:700;color:var(--muted);margin-bottom:8px}
+        .staking-area .form-control,.staking-area .form-select{background:#0c1121;border:1px solid var(--line);color:#eaf2ff;border-radius:14px;padding:12px 14px}
+        .staking-area .form-control:focus,.staking-area .form-select:focus{outline:none;box-shadow:var(--focus-ring);border-color:rgba(125,178,255,.6)}
+        .staking-area .form-select{background-image:none;-webkit-appearance:menulist;-moz-appearance:menulist;appearance:menulist}
+        .staking-area p{font-size:0.9rem;color:#b5c2d8}
+        .staking-area .input-btn{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#0b0e17;border:0;font-weight:800;border-radius:14px;height:48px}
+        .staking-area .input-btn:hover{filter:brightness(1.05)}
+        .status-message a{color:var(--accent-1);text-decoration:underline}
+        .status-message a:hover{color:var(--accent-2)}
+        /* Ad card */
+        .luxe-ad-card{position:relative;border-radius:var(--radius-4);background:linear-gradient(135deg,rgba(98,255,207,.1),rgba(125,178,255,.1));border:2px solid var(--accent-3);box-shadow:var(--shadow-2),0 0 20px rgba(125,178,255,.3);overflow:hidden;margin:2rem 0;transition:transform .3s ease,box-shadow .3s ease}
+        .luxe-ad-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-2),0 0 30px rgba(125,178,255,.5)}
+        .luxe-ad-card .inner{padding:1.5rem}
+        .luxe-ad-card h2{font-weight:800;color:var(--accent-1);text-shadow:0 0 5px rgba(98,255,207,.5)}
+        .luxe-ad-card p{color:var(--txt);font-size:1.1rem}
+        .luxe-ad-card .btn.primary{background:linear-gradient(135deg,var(--accent-3),var(--accent-2));font-weight:700;padding:.75rem 1.5rem;border-radius:12px}
+        .luxe-ad-card .btn.primary:hover{filter:brightness(1.2)}
+        /* Modal Search */
+        .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt);border-radius:16px}
+        .modal-header .btn-close{filter:invert(1)}
+        .modal-body input{background:#0c1121;border:1px solid var(--line);color:#eaf2ff;border-radius:14px;padding:12px 14px}
+        .modal-body input:focus{outline:none;box-shadow:var(--focus-ring);border-color:rgba(125,178,255,.6)}
+        .modal-body .btn-bordered-white{background:transparent;border:1px solid var(--line);color:#eaf2ff;border-radius:14px;padding:12px 20px}
+        .modal-body .btn-bordered-white:hover{border-color:rgba(125,178,255,.55)}
+        /* Toasts */
+        .toast{background:var(--bg-1);border:1px solid var(--line);color:var(--txt);border-radius:12px}
+        .toast-header{background:var(--bg-2);border-bottom:1px solid var(--line)}
+        .toast-body{color:#cfe3ff}
+        /* Responsive */
+        *, *::before, *::after { box-sizing: border-box; }
+        @media (max-width:992px){
+            .staking-area .card-body{padding:1rem}
+            .staking-area .row > div{margin-bottom:1.5rem}
+        }
+        @media (max-width:576px){
+            .hero-section h1{font-size:2.5rem}
+            .staking-area .item-title{font-size:0.9rem}
+            .staking-area .form-control,.staking-area .form-select{font-size:0.9rem}
+        }
+        /* Preserved Inline CSS for Dropdowns */
+        select#energy-amount,
+        select#delegation-duration {
+            color: #000 !important;
+        }
+        select#energy-amount:focus,
+        select#delegation-duration:focus {
+            color: #000 !important;
+        }
+        select#energy-amount option,
+        select#delegation-duration option {
+            color: #000 !important;
+        }
+        select#energy-amount option:checked,
+        select#delegation-duration option:checked {
+            color: #000 !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header id="header" class="pt-2">
+        <nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
+            <div class="container">
+                <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt=""/></a>
+                <div class="ms-auto"></div>
+                <ul class="navbar-nav items mx-auto">
+                    <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
+                    <li class="nav-item dropdown">
+                        <a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
+                        <ul class="dropdown-menu">
+                            <li class="nav-item"><a href="staking.html" class="nav-link">Staking</a></li>
+                            <li class="nav-item"><a href="lockstaking.html" class="nav-link">Locked Staking</a></li>
+                            <li class="nav-item"><a href="sellcft.html" class="nav-link">Trading</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
+                        <ul class="dropdown-menu">
+                            <li class="nav-item"><a href="buystablex.html" class="nav-link">Buy StableX</a></li>
+                            <li class="nav-item"><a href="sellstablex.html" class="nav-link">Sell StableX</a></li>
+                            <li class="nav-item"><a href="stablexstaking.html" class="nav-link">Stake StableX</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a href="#" class="nav-link">CFT News<i class="icon-arrow-down"></i></a>
+                        <ul class="dropdown-menu">
+                            <li class="nav-item"><a href="blog.html" class="nav-link">News</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
+                        <ul class="dropdown-menu">
+                            <li class="nav-item"><a href="feb.html" class="nav-link">FEB</a></li>
+                            <li class="nav-item"><a href="energy.html" class="nav-link">Rent Energy</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item"><a href="swap.html" class="nav-link">Swap</a></li>
+                </ul>
+                <ul class="navbar-nav toggle">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
+                            <i class="icon-menu m-0"></i>
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav action">
+                    <li class="nav-item ms-2">
+                        <button id="connect-button" class="btn btn-outline"><i class="icon-wallet me-md-2"></i> Wallet Connect</button>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+    <!-- Hero -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <span class="intro-text">CFT Ecosystem</span>
+            <h1 class="display-5">Rent Energy</h1>
+            <p class="mb-0">Grow your wealth through staking rewards</p>
+        </div>
+    </section>
+    <!-- Energy Area -->
+    <section class="staking-area">
+        <div class="container">
+            <div class="luxe-card">
+                <div class="staking-header">
+                    <div class="staking-title">
+                        <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <h4 class="staking-title-text m-0">Rent Energy</h4>
+                                <span class="chip" id="status-chip"><span class="dot"></span><span id="status-text">Ready</span></span>
+                            </div>
+                            <p class="staking-sub mb-0 mt-2">Rent energy for TRON transactions</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="energy-accordion" class="accordion p-4">
+                    <div class="single-accordion-item">
+                        <div class="card-header bg-inherit border-0 p-0">
+                            <h2 class="m-0">
+                                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEnergy" aria-expanded="true">
+                                    <div class="row">
+                                        <div class="col-12 col-md-8">
+                                            <div class="media flex-column flex-md-row">
+                                                <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                                                <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                    <h4 class="m-0">Rent Energy</h4>
+                                                    <p>Available Energy for Rent: <span id="available-energy">Loading...</span> Energy</p>
+                                                    <p>Energy rented for 5, 15, or 60 minutes</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </button>
+                            </h2>
+                        </div>
+                        <div id="collapseEnergy" class="collapse show" data-bs-parent="#energy-accordion">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-12 col-md-6 single-staking-item input-box">
+                                        <span class="item-title mb-2">Select Energy Amount</span>
+                                        <select id="energy-amount" class="form-select form-select-sm mb-3">
+                                            <option value="32000">32,000 Energy</option>
+                                            <option value="50000">50,000 Energy</option>
+                                            <option value="65000">65,000 Energy</option>
+                                            <option value="100000">100,000 Energy</option>
+                                            <option value="135000">135,000 Energy</option>
+                                            <option value="150000">150,000 Energy</option>
+                                            <option value="200000">200,000 Energy</option>
+                                            <option value="250000">250,000 Energy</option>
+                                        </select>
+                                        <span class="item-title mb-2">Select Duration</span>
+                                        <select id="delegation-duration" class="form-select form-select-sm mb-3">
+                                            <option value="5">5 Minutes</option>
+                                            <option value="15">15 Minutes</option>
+                                            <option value="60">60 Minutes</option>
+                                        </select>
+                                        <p>Price: <span id="trx-price">Select options</span></p>
+                                        <input type="text" id="receiver-address" class="form-control form-control-sm mb-2" placeholder="Receiving address (defaults to connected wallet)">
+                                        <a href="#" class="btn input-btn btn-sm mt-2 primary" id="buy-energy-button">Buy Energy</a>
+                                        <div id="payment-instructions" class="mt-3" style="display: none;">
+                                            <p id="payment-message"></p>
+                                        </div>
+                                        <div id="delegation-status" class="status-message" style="display: none;">
+                                            <p id="delegation-message"></p>
+                                            <p>Transaction Hash: <a id="delegation-hash" href="#" target="_blank" style="display: none;"></a></p>
+                                        </div>
+                                        <div class="mt-3">
+                                            <p>Would you like to try to pay with CFT with a 75% reduction in energy price? Try our new EnergyBot</p>
+                                            <a href="https://t.me/CFTEnergy_bot?start=ref_484746159" class="btn input-btn btn-sm primary" target="_blank">Try EnergyBot</a>
+                                            <p>For API sales please contact </p>
+                                            <a href="https://t.me/CFT_dev" class="btn input-btn btn-sm primary" target="_blank">team</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- CTA Area -->
+    <section class="py-3">
+        <div class="container">
+            <div class="luxe-ad-card">
+                <div class="row align-items-center g-0">
+                    <div class="col-12 col-md-5 text-center p-3">
+                        <img src="assets/img/content/cftlogo300.png" alt="Apply for project staking" style="max-width:220px">
+                    </div>
+                    <div class="col-12 col-md-7 p-3">
+                        <div class="inner">
+                            <h2 class="m-0">Apply for project staking</h2>
+                            <p class="mb-3">Earn weekly rewards from staked CFT to build your project</p>
+                            <p>Soon available for projects on any chain</p>
+                            <a class="btn primary" href="apply.html"><i class="icon-rocket me-2"></i>Coming Soon</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Footer -->
+    <footer class="footer-area py-5 mt-3">
+        <div class="container text-center">
+            <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt="" style="height:28px"></a>
+            <div class="social-icons d-flex justify-content-center my-3 gap-3">
+                <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
+                <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
+            </div>
+            <div class="copyright-area py-2">&copy;2025 CFT Ecosystem, All Rights Reserved</div>
+            <div id="scroll-to-top" class="scroll-to-top"><a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a></div>
+        </div>
+    </footer>
+    <!-- Modal Search -->
+    <div id="search" class="modal fade p-0">
+        <div class="modal-dialog dialog-animated">
+            <div class="modal-content h-100">
+                <div class="modal-header" data-bs-dismiss="modal">
+                    Search <i class="far fa-times-circle icon-close"></i>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-12 align-self-center">
+                            <div class="row">
+                                <div class="col-12 pb-3">
+                                    <h2 class="search-title mt-0 mb-3">What are you looking for?</h2>
+                                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12 input-group mt-md-4">
+                                    <input type="text" placeholder="Enter your keywords">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12 input-group align-self-center">
+                                    <button class="btn btn-bordered-white mt-3">Search</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Responsive Menu -->
+    <div id="menu" class="modal fade p-0">
+        <div class="modal-dialog dialog-animated">
+            <div class="modal-content h-100">
+                <div class="modal-header" data-bs-dismiss="modal">
+                    Menu <i class="far fa-times-circle icon-close"></i>
+                </div>
+                <div class="menu modal-body">
+                    <div class="row w-100">
+                        <div class="items p-0 col-12 text-center"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Toasts -->
+    <div id="toast-container" style="position:fixed;z-index:1100;bottom:16px;right:16px">
+        <div id="app-toast" class="toast text-bg-dark" role="status" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    <!-- Vendor JS -->
+    <script src="assets/js/vendor/jquery.min.js"></script>
+    <script src="assets/js/vendor/popper.min.js"></script>
+    <script src="assets/js/vendor/bootstrap.min.js"></script>
+    <script src="assets/js/vendor/all.min.js"></script>
+    <script src="assets/js/vendor/gallery.min.js"></script>
+    <script src="assets/js/vendor/slider.min.js"></script>
+    <script src="assets/js/vendor/countdown.min.js"></script>
+    <script src="assets/js/vendor/shuffle.min.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+    <!-- Ad Rotator JS -->
+    <script>
+        const advertisements = [
+            {
+                title: "CFT Guardian Minting is Now Live",
+                description: "Earn daily SOL rewards by staking our Guardian NFTs",
+                image: "assets/img/content/guardian.png",
+                link: "https://cftguardians.com/",
+                linkText: "Mint Now",
+                icon: "icon-rocket"
+            },
+            {
+                title: "Stake StableX",
+                description: "Earn both CFT and StableX with StableX staking",
+                image: "assets/img/content/stablex.png",
+                link: "https://www.cftecosystem.com/buystablex",
+                linkText: "Stake Now",
+                icon: "icon-stake"
+            }
+        ];
+
+        function rotateAdvertisements() {
+            const adContainer = document.querySelector('.luxe-ad-card .row');
+            if (!adContainer) return;
+            let currentAdIndex = 0;
+            const updateAd = () => {
+                const ad = advertisements[currentAdIndex];
+                adContainer.innerHTML = `
+                    <div class="col-12 col-md-5 text-center p-3">
+                        <img src="${ad.image}" alt="${ad.title}" style="max-width:220px" loading="lazy">
+                    </div>
+                    <div class="col-12 col-md-7 p-3">
+                        <div class="inner">
+                            <h2 class="m-0">${ad.title}</h2>
+                            <p class="mb-3">${ad.description}</p>
+                            <a class="btn primary" href="${ad.link}" aria-label="${ad.linkText}"><i class="${ad.icon} me-2"></i>${ad.linkText}</a>
+                        </div>
+                    </div>
+                `;
+                currentAdIndex = (currentAdIndex + 1) % advertisements.length;
+            };
+            updateAd();
+            setInterval(updateAd, 60000);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            rotateAdvertisements();
+        });
+    </script>
+    <!-- App JS -->
+    <script src="assets/js/energy.js"></script>
+</body>
+</html>
