@@ -18,7 +18,7 @@ const TRONGRID_API_URL = 'https://api.trongrid.io';
 /** IMPORTANT: Match staking.js so backend confirms and delegates */
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
-const SAFETY_ENERGY = 20000; // extra buffer delegated
+const SAFETY_ENERGY = 50000; // extra buffer delegated
 const ENERGY_PRICE_SUN = 10; // price per energy unit (in SUN)
 const SUN_PER_TRX = 1_000_000; // 1 TRX = 1,000,000 SUN
 const ENERGY_RENTAL_DURATION = 2; // minutes
