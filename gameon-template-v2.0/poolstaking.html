@@ -370,21 +370,12 @@
     </div>
   </div>
   <!-- ***** Energy Rental Modal End ***** -->
-  <div class="modal fade" id="energy-rental-modal" tabindex="-1" aria-labelledby="energyRentalModalLabel" aria-hidden="true">
+  <!-- Processing Modal -->
+  <div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-labelledby="transactionProcessingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="energyRentalModalLabel">Insufficient Energy</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
-        </div>
-        <div class="modal-body">
-          <p>Your wallet has <span id="user-energy">0</span> energy available, but <span id="required-energy">0</span> energy is required for this transaction.</p>
-          <p>Rent <span id="rental-energy">0</span> energy for <span id="rental-duration">5</span> minutes at a cost of <span id="rental-cost-trx">0.00</span> TRX?</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-rent" id="rent-energy-confirm">Rent Energy</button>
-        </div>
+        <div class="modal-header"><h5 class="modal-title" id="transactionProcessingModalLabel">Processing Transaction</h5></div>
+        <div class="modal-body text-center"><div class="spinner"></div><p>Please wait while your transaction is being processed.</p></div>
       </div>
     </div>
   </div>
@@ -435,6 +426,17 @@
   <script src="assets/js/poolstaking.js" type="module"></script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
 
 
 
