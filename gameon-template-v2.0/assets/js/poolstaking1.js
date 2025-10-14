@@ -312,7 +312,7 @@ async function checkUserEnergy(address, token, action, extraEnergy = 0) {
   try {
     const resources = await tronWeb.trx.getAccountResources(address);
     const energyLimit = resources.EnergyLimit || 0;
-    the energyUsed = resources.EnergyUsed || 0;
+    const energyUsed = resources.EnergyUsed || 0;
     const availableEnergy = energyLimit - energyUsed;
     const baseRequiredEnergy = tokenDetails[token].energyCosts[action];
     const requiredEnergy = baseRequiredEnergy + extraEnergy;
@@ -891,16 +891,59 @@ async function claimRewards(token){
       }
       processingModal = showProcessingModal('(2/2)');
       const stakingContract = stakingContracts[token];
-      const pendingRewardsRaw = await stakingContract.methods.earned(userAddress).call();
+      const userData = await stakingContract.methods.users(userAddress).call();
       await delay(CONTRACT_CALL_DELAY_MS);
-      if (BigInt(pendingRewardsRaw) === 0n) throw new Error('No rewards available to claim.');
-      const claimTx = await tronWeb.transactionBuilder.triggerSmartContract(
-        tokenDetails[token].stakingAddress, 'claimRewards()', {}, [], userAddress
+      if (userData.isActive || BigInt(userData.stakedAmount) === 0n) throw new Error('No inactive tokens to activate.');
+      const activateTx = await tronWeb.transactionBuilder.triggerSmartContract(
+        tokenDetails[token].stakingAddress, 'activateTokens()', {}, [], userAddress
       );
-      if (!claimTx.result || !claimTx.transaction) throw new Error('Failed to create claim transaction');
-      const signedClaimTx = await tronWeb.trx.sign(claimTx.transaction);
-      const broadcastClaim = await tronWeb.trx.sendRawTransaction(signedClaimTx);
-      if (!broadcastClaim.result) throw new Error('Failed to broadcast claim transaction');
-      showToast({ title
-
+      if (!activateTx.result || !activateTx.transaction) throw new Error('Failed to create activation transaction');
+      const signedActivateTx = await tronWeb.trx.sign(activateTx.transaction);
+      const broadcastActivate = await tronWeb.trx.sendRawTransaction(signedActivateTx);
+      if (!broadcastActivate.result) throw new Error('Failed to broadcast activation transaction');
+      showToast({ title:'Activation submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastActivate.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
+      hideProcessingModal(processingModal);
+      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
+      await updateTokenUI(token, true);
+    }catch(e){
+      hideProcessingModal(processingModal);
+      showToast({ title:'Activation error', body:e.message, variant:'danger' });
+    }
+  };
+  return withLoading(btn, 'Activating...', run)();
+}
+/* ===================== Events ===================== */
+document.addEventListener('DOMContentLoaded', () => {
+  const key = 'cft';
+  const stakeButton = document.getElementById(`stake-button-${key}`);
+  if (stakeButton){
+    stakeButton.addEventListener('click', async (e)=>{
+      e.preventDefault();
+      const amount = document.getElementById(`stake-amount-${key}`).value;
+      await stakeTokens(key, amount);
+    });
+  }
+  const unstakeButton = document.getElementById(`unstake-button-${key}`);
+  if (unstakeButton){
+    unstakeButton.addEventListener('click', async (e)=>{
+      e.preventDefault();
+      await unstakeTokens(key);
+    });
+  }
+  const claimButton = document.getElementById(`claim-rewards-button-${key}`);
+  if (claimButton){
+    claimButton.addEventListener('click', async (e)=>{
+      e.preventDefault();
+      await claimRewards(key);
+    });
+  }
+  const activateButton = document.getElementById(`activate-tokens-button-${key}`);
+  if (activateButton){
+    activateButton.addEventListener('click', async (e)=>{
+      e.preventDefault();
+      await activateTokens(key);
+    });
+  }
+  initialize();
+});
 
