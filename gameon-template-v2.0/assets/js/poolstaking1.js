@@ -31,7 +31,7 @@ const CONTRACT_CALL_DELAY_MS = 200;
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-    stakingAddress: 'TQXXBSceCBjW1kczkdXray2d7U2GRsuLRZ',
+    stakingAddress: 'TFQye7GN1NRXYDEacM5qMumzc37jVApRGT',
     decimals: 6,
     displayName: 'CFT',
     rewardDisplayName: 'TRX',
@@ -387,13 +387,15 @@ const stakingContractAbi = [
   {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newPercentage","type":"uint256"}],"name":"DailyPayoutPercentageUpdated","type":"event"},
   {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newTimeout","type":"uint256"}],"name":"ClaimTimeoutUpdated","type":"event"},
   {"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"newWallet","type":"address"}],"name":"AuthorizedWalletUpdated","type":"event"},
-  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"}],"name":"RewardsForfeited","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"RewardsForfeited","type":"event"},
   {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"}],"name":"TokensActivated","type":"event"},
   {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"TRXWithdrawn","type":"event"},
   {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"TRC20Withdrawn","type":"event"},
   {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newTotal","type":"uint256"}],"name":"TotalClaimedRewardsUpdated","type":"event"},
   {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newTotal","type":"uint256"}],"name":"TotalUnclaimedRewardsUpdated","type":"event"},
   {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"}],"name":"StakerRemoved","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"}],"name":"WalletAddedToWhitelist","type":"event"},
+  {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"}],"name":"WalletRemovedFromWhitelist","type":"event"},
   {"inputs":[],"name":"trc20Token","outputs":[{"internalType":"contract ITRC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"authorizedWallet","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
@@ -405,13 +407,22 @@ const stakingContractAbi = [
   {"inputs":[],"name":"totalUnclaimedRewards","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"totalStaked","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"totalActiveStaked","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"users","outputs":[{"internalType":"uint256","name":"stakedAmount","type":"uint256"},{"internalType":"bool","name":"isActive","type":"bool"},{"internalType":"uint256","name":"pendingRewards","type":"uint256"},{"internalType":"uint256","name":"lastClaimTimestamp","type":"uint256"},{"internalType":"uint256","name":"totalClaimed","type":"uint256"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"users","outputs":[
+    {"internalType":"uint256","name":"stakedAmount","type":"uint256"},
+    {"internalType":"bool","name":"isActive","type":"bool"},
+    {"internalType":"uint256","name":"lastClaimTimestamp","type":"uint256"},
+    {"internalType":"uint256","name":"totalClaimed","type":"uint256"},
+    {"internalType":"uint256","name":"rewards","type":"uint256"},
+    {"internalType":"uint256","name":"userRewardPerTokenPaid","type":"uint256"}
+  ],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"earned","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[{"internalType":"address","name":"_staker","type":"address"}],"name":"getStakerInfo","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"getStakersList","outputs":[{"internalType":"address[]","name":"","type":"address[]"}],"stateMutability":"view","type":"function"},
   {"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"stake","outputs":[],"stateMutability":"nonpayable","type":"function"},
   {"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"unstake","outputs":[],"stateMutability":"nonpayable","type":"function"},
   {"inputs":[],"name":"claimRewards","outputs":[],"stateMutability":"nonpayable","type":"function"},
   {"inputs":[],"name":"distributeRewards","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"forfeitUser","outputs":[],"stateMutability":"nonpayable","type":"function"},
   {"inputs":[{"internalType":"address","name":"_user","type":"address"}],"name":"calculateAPY","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[{"internalType":"address","name":"_user","type":"address"}],"name":"calculateROI","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[{"internalType":"address","name":"_user","type":"address"}],"name":"viewUserTotalClaimed","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
@@ -425,16 +436,10 @@ const stakingContractAbi = [
   {"inputs":[],"name":"activateTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},
   {"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"},{"internalType":"address","name":"_to","type":"address"}],"name":"withdrawTRX","outputs":[],"stateMutability":"nonpayable","type":"function"},
   {"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"},{"internalType":"address","name":"_to","type":"address"}],"name":"withdrawTRC20","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"address","name":"_wallet","type":"address"}],"name":"addToWhitelist","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"address","name":"_wallet","type":"address"}],"name":"removeFromWhitelist","outputs":[],"stateMutability":"nonpayable","type":"function"},
   {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"stakersList","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
   {"stateMutability":"payable","type":"receive"}
-];
-const tokenContractAbi = [
-  {"inputs":[{"internalType":"address","name":"_to","type":"address"},{"internalType":"uint256","name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"_spender","type":"address"},{"internalType":"uint256","name":"_value","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"_from","type":"address"},{"internalType":"address","name":"_to","type":"address"},{"internalType":"uint256","name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"}
 ];
 /* ===================== Utils ===================== */
 const TEN = 10n;
@@ -569,18 +574,20 @@ async function updateTokenUI(token, first = false) {
       // Fallback to provided contract data for debugging
       userData = {
         stakedAmount: '100000000',
-        pendingRewards: '265809',
         isActive: true,
         lastClaimTimestamp: '1759570782',
-        totalClaimed: '627405'
+        totalClaimed: '627405',
+        rewards: '0',
+        userRewardPerTokenPaid: '0'
       };
       showToast({ title: 'Contract Error', body: 'Failed to fetch user data; using fallback data.', variant: 'warning' });
     }
     await delay(CONTRACT_CALL_DELAY_MS);
-    const [apy, timeout, userTotalClaimedRaw] = await Promise.all([
+    const [apy, timeout, userTotalClaimedRaw, pendingRewardsRaw] = await Promise.all([
       stakingContracts[token].methods.calculateAPY(userAddress).call().catch(()=>'0'),
       stakingContracts[token].methods.claimTimeout().call().catch(()=>'1209600'),
-      stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(()=>'627405')
+      stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(()=>'627405'),
+      stakingContracts[token].methods.earned(userAddress).call().catch(()=>'0')
     ]);
     await delay(CONTRACT_CALL_DELAY_MS);
     const [poolSizeRaw, dailyPctRaw, totalStakedRaw, totalActiveStakedRaw] = await Promise.all([
@@ -591,7 +598,7 @@ async function updateTokenUI(token, first = false) {
     ]);
     const balanceUnits = toUnits(balanceRaw, d.decimals);
     const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
-    const rewardUnits = toUnits(userData.pendingRewards, d.rewardDecimals);
+    const rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX; // Convert sun to TRX
     const userTotalClaimed = Number(userTotalClaimedRaw) / SUN_PER_TRX;
     const poolSize = Number(poolSizeRaw) / SUN_PER_TRX;
     const totalStaked = toUnits(totalStakedRaw, d.decimals);
@@ -609,8 +616,8 @@ async function updateTokenUI(token, first = false) {
     // Check if timer has expired
     const now = Math.floor(Date.now() / 1000);
     const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + Number(timeout);
-    const isExpired = timeout && nextClaim <= now;
-    console.debug('updateTokenUI: now:', now, 'nextClaim:', nextClaim, 'isExpired:', isExpired, 'pendingRewards:', userData.pendingRewards, 'rewardUnits:', rewardUnits);
+    const isExpired = timeout && nextClaim <= now && !userData.isActive;
+    console.debug('updateTokenUI: now:', now, 'nextClaim:', nextClaim, 'isExpired:', isExpired, 'pendingRewards:', pendingRewardsRaw, 'rewardUnits:', rewardUnits);
     if (isExpired) {
       apyPct = 0; // Set APY to 0 when expired
       yourNextPayout = 0; // Set Your Next Payout to 0 when expired
@@ -664,7 +671,7 @@ async function updateTokenUI(token, first = false) {
       } else {
         activateButton.style.display = 'none';
         claimButton.style.display = 'block';
-        claimButton.disabled = Number(userData.pendingRewards) === 0;
+        claimButton.disabled = Number(pendingRewardsRaw) === 0;
       }
     }
     updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp), userData.isActive);
@@ -706,10 +713,11 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive) {
     const sec = s % 60;
     return `${d ? d + 'd ' : ''}${(h || d) ? h + 'h ' : ''}${m}m ${sec}s`;
   };
-  const tick = () => {
+  const tick = async () => {
     const now = Math.floor(Date.now() / 1000);
     const rem = Math.max(0, next - now);
-    if (rem === 0) {
+    const pendingRewardsRaw = await stakingContracts['cft'].methods.earned(userAddress).call().catch(() => '0');
+    if (rem === 0 || !isActive) {
       clearInterval(timerEl._claimInterval);
       timerEl._claimInterval = null;
       timerEl.textContent = 'Expired';
@@ -727,7 +735,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive) {
     } else {
       timerEl.textContent = `${format(rem)}`;
       timerEl.classList.remove('inactive');
-      claimBtn.disabled = true;
+      claimBtn.disabled = Number(pendingRewardsRaw) === 0;
       claimBtn.style.display = 'block';
       activateBtn.style.display = 'none';
     }
