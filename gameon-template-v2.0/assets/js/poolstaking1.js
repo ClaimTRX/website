@@ -686,6 +686,10 @@ async function updateActionGridUI(token, first = false) {
         const contract = tronWeb.contract(stakingContractAbi, tokenDetails[token].stakingAddress);
         return contract.methods.earned(userAddress).call();
       });
+      if (pendingRewardsRaw == null || isNaN(Number(pendingRewardsRaw))) {
+        console.warn('Invalid pendingRewardsRaw:', pendingRewardsRaw);
+        pendingRewardsRaw = '0';
+      }
     } catch (error) {
       console.error('updateActionGridUI: earned call failed:', error);
       pendingRewardsRaw = '0';
@@ -700,6 +704,11 @@ async function updateActionGridUI(token, first = false) {
     await delay(CONTRACT_CALL_DELAY_MS);
     const balanceUnits = toUnits(balanceRaw, d.decimals);
     let rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX;
+    if (isNaN(rewardUnits)) {
+      console.warn('rewardUnits is NaN, setting to 0. pendingRewardsRaw:', pendingRewardsRaw);
+      rewardUnits = 0;
+      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
+    }
     const now = Math.floor(Date.now() / 1000);
     const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + Number(timeout);
     const isExpired = timeout && nextClaim <= now && !userData.isActive && !isWhitelisted;
@@ -755,6 +764,7 @@ async function updateActionGridUI(token, first = false) {
     });
   }
 }
+
 async function updateStatsGridUI(token, first = false) {
   const cacheKey = `tokenUI_${token}_${userAddress}`;
   const cached = localStorage.getItem(cacheKey);
@@ -768,7 +778,7 @@ async function updateStatsGridUI(token, first = false) {
       }
     };
     updateElement('pool-size', fmtTrx(cacheData.data.poolSize), 'pool-size');
-    updateElement('daily-payout', `${Number(cacheData.data.dailyPctRaw || 0).toFixed(2)}% / day`, 'daily-payout');
+    updateElement('daily-payout', `${(Number(cacheData.data.dailyPctRaw || 0) / 100).toFixed(2)}% / day`, 'daily-payout');
     updateElement('your-next-payout', fmtTrx(cacheData.data.yourNextPayout), 'your-next-payout');
     return;
   }
@@ -1256,5 +1266,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
+
 
 
