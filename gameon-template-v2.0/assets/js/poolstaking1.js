@@ -636,8 +636,10 @@ async function updateActionGridUI(token, first = false) {
         if (skeletonId) setSkeleton(skeletonId, false);
       }
     };
+    // Validate cached rewardUnits to prevent NaN
+    const rewardUnits = isNaN(Number(cacheData.data.rewardUnits)) ? 0 : Number(cacheData.data.rewardUnits);
     updateElement(`available-tokens-${token}`, fmt(cacheData.data.balanceUnits), `available-tokens-${token}`);
-    updateElement(`claimable-rewards-${token}`, `${Number(cacheData.data.isExpired ? 0 : cacheData.data.rewardUnits).toFixed(2)} ${tokenDetails[token].rewardDisplayName}`);
+    updateElement(`claimable-rewards-${token}`, `${rewardUnits.toFixed(2)} ${tokenDetails[token].rewardDisplayName}`);
     const activateButton = document.getElementById(`activate-tokens-button-${token}`);
     const claimButton = document.getElementById(`claim-rewards-button-${token}`);
     if (activateButton && claimButton) {
@@ -648,7 +650,7 @@ async function updateActionGridUI(token, first = false) {
       } else {
         activateButton.style.display = 'none';
         claimButton.style.display = 'block';
-        claimButton.disabled = Number(cacheData.data.rewardUnits) === 0 || Number(cacheData.data.contractBalance) < Number(cacheData.data.rewardUnits);
+        claimButton.disabled = rewardUnits === 0 || Number(cacheData.data.contractBalance) < rewardUnits;
       }
     }
     updateClaimTimer(cacheData.data.timeoutSec, cacheData.data.lastClaimTimestamp, cacheData.data.isActive, cacheData.data.isWhitelisted);
@@ -667,16 +669,16 @@ async function updateActionGridUI(token, first = false) {
         userData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
         console.debug('updateActionGridUI: users call successful, userData:', userData);
       } catch (error) {
-        console.error('updateActionGridUI: users call failed:', error);
+        console.error('updateActionGridUI: users call failed:', { error: error.message, stack: error.stack, userAddress, token });
         userData = {
-  stakedAmount: '0',
-  isActive: false,
-  lastClaimTimestamp: '0',
-  totalClaimed: '0',
-  rewards: '0',
-  userRewardPerTokenPaid: '0'
-};
-        showToast({ title: 'Contract Error', body: 'Failed to fetch user data; using fallback data.', variant: 'warning' });
+          stakedAmount: '0',
+          isActive: false,
+          lastClaimTimestamp: '0',
+          totalClaimed: '0',
+          rewards: '0',
+          userRewardPerTokenPaid: '0'
+        };
+        showToast({ title: 'Contract Error', body: `Failed to fetch user data: ${error.message}. Displaying default values.`, variant: 'warning' });
       }
     }
     await delay(CONTRACT_CALL_DELAY_MS);
@@ -686,14 +688,15 @@ async function updateActionGridUI(token, first = false) {
         const contract = tronWeb.contract(stakingContractAbi, tokenDetails[token].stakingAddress);
         return contract.methods.earned(userAddress).call();
       });
+      // Validate pendingRewardsRaw
       if (pendingRewardsRaw == null || isNaN(Number(pendingRewardsRaw))) {
         console.warn('Invalid pendingRewardsRaw:', pendingRewardsRaw);
         pendingRewardsRaw = '0';
       }
     } catch (error) {
-      console.error('updateActionGridUI: earned call failed:', error);
+      console.error('updateActionGridUI: earned call failed:', { error: error.message, stack: error.stack, userAddress, token });
       pendingRewardsRaw = '0';
-      showToast({ title: 'Contract Error', body: 'Failed to fetch earned rewards; using fallback data.', variant: 'warning' });
+      showToast({ title: 'Contract Error', body: `Failed to fetch earned rewards: ${error.message}. Using fallback data.`, variant: 'warning' });
     }
     await delay(CONTRACT_CALL_DELAY_MS);
     const [timeout, contractBalanceRaw, isWhitelisted] = await Promise.all([
@@ -707,7 +710,7 @@ async function updateActionGridUI(token, first = false) {
     if (isNaN(rewardUnits)) {
       console.warn('rewardUnits is NaN, setting to 0. pendingRewardsRaw:', pendingRewardsRaw);
       rewardUnits = 0;
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
+      localStorage.removeItem(`tokenUI_${token}_${userAddress}`); // Clear cache to avoid stale data
     }
     const now = Math.floor(Date.now() / 1000);
     const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + Number(timeout);
@@ -738,7 +741,7 @@ async function updateActionGridUI(token, first = false) {
       }
     };
     updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
-    updateElement(`claimable-rewards-${token}`, `${Number(isExpired ? 0 : rewardUnits).toFixed(2)} ${d.rewardDisplayName}`);
+    updateElement(`claimable-rewards-${token}`, `${rewardUnits.toFixed(2)} ${d.rewardDisplayName}`);
     
     const activateButton = document.getElementById(`activate-tokens-button-${token}`);
     const claimButton = document.getElementById(`claim-rewards-button-${token}`);
@@ -750,7 +753,7 @@ async function updateActionGridUI(token, first = false) {
       } else {
         activateButton.style.display = 'none';
         claimButton.style.display = 'block';
-        claimButton.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
+        claimButton.disabled = rewardUnits === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
       }
     }
     updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp), userData.isActive, isWhitelisted);
@@ -1266,6 +1269,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
+
+
+
 
 
 
