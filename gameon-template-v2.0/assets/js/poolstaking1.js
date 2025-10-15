@@ -27,8 +27,8 @@ const ENERGY_PRICE_SUN = 10;
 const SUN_PER_TRX = 1_000_000;
 const ENERGY_RENTAL_DURATION = 2;
 const CACHE_TIMEOUT_MS = 120_000; // 120s cache for runtime updates
-const THROTTLE_GAP_MS = 5000; // Keep 5000ms to stay under 15 QPS per key
-const CONTRACT_CALL_DELAY_MS = 1000; // Increased to 1000ms for safer pacing
+const THROTTLE_GAP_MS = 500; // Keep 5000ms to stay under 15 QPS per key
+const CONTRACT_CALL_DELAY_MS = 200; // Increased to 1000ms for safer pacing
 /* ===================== Token Config ===================== */
 const tokenDetails = {
   cft: {
