@@ -567,13 +567,13 @@ async function updateTopBarUI(token, first = false) {
     } catch (error) {
       console.error('updateTopBarUI: users call failed:', error);
       userData = {
-        stakedAmount: '100000000',
-        isActive: true,
-        lastClaimTimestamp: '1759570782',
-        totalClaimed: '627405',
-        rewards: '0',
-        userRewardPerTokenPaid: '0'
-      };
+  stakedAmount: '0',
+  isActive: false,
+  lastClaimTimestamp: '0',
+  totalClaimed: '0',
+  rewards: '0',
+  userRewardPerTokenPaid: '0'
+};
       showToast({ title: 'Contract Error', body: 'Failed to fetch user data; using fallback data.', variant: 'warning' });
     }
     await delay(CONTRACT_CALL_DELAY_MS);
@@ -669,13 +669,13 @@ async function updateActionGridUI(token, first = false) {
       } catch (error) {
         console.error('updateActionGridUI: users call failed:', error);
         userData = {
-          stakedAmount: '100000000',
-          isActive: true,
-          lastClaimTimestamp: '1759570782',
-          totalClaimed: '627405',
-          rewards: '0',
-          userRewardPerTokenPaid: '0'
-        };
+  stakedAmount: '0',
+  isActive: false,
+  lastClaimTimestamp: '0',
+  totalClaimed: '0',
+  rewards: '0',
+  userRewardPerTokenPaid: '0'
+};
         showToast({ title: 'Contract Error', body: 'Failed to fetch user data; using fallback data.', variant: 'warning' });
       }
     }
