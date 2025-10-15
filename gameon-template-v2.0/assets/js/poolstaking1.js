@@ -27,8 +27,8 @@ const ENERGY_PRICE_SUN = 10;
 const SUN_PER_TRX = 1_000_000;
 const ENERGY_RENTAL_DURATION = 2;
 const CACHE_TIMEOUT_MS = 120_000; // 120s cache for runtime updates
-const THROTTLE_GAP_MS = 200; // Keep 5000ms to stay under 15 QPS per key
-const CONTRACT_CALL_DELAY_MS = 200; // Increased to 1000ms for safer pacing
+const THROTTLE_GAP_MS = 5000; // Keep 5000ms to stay under 15 QPS per key
+const CONTRACT_CALL_DELAY_MS = 1000; // Increased to 1000ms for safer pacing
 /* ===================== Token Config ===================== */
 const tokenDetails = {
   cft: {
@@ -525,6 +525,40 @@ function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = 
     try { modal.show(); } catch { reject(new Error('Failed to show energy rental modal.')); }
   });
 }
+
+/* Add this new function after showEnergyRentalModal */
+function showRewardWarningModal(rewardUnits) {
+  return new Promise((resolve, reject) => {
+    const modalElement = document.getElementById('reward-warning-modal');
+    if (!modalElement) {
+      console.error('Reward warning modal not found.');
+      return reject(new Error('Reward warning modal not found.'));
+    }
+    const rewardDisplay = document.getElementById('pending-rewards-amount');
+    if (rewardDisplay) {
+      rewardDisplay.textContent = `${rewardUnits.toFixed(2)} TRX`;
+    } else {
+      return reject(new Error('Pending rewards display element not found.'));
+    }
+    const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
+    modalElement.addEventListener('shown.bs.modal', () => modalElement.removeAttribute('aria-hidden'), { once: true });
+    const confirmButton = document.getElementById('withdraw-confirm');
+    if (!confirmButton) return reject(new Error('Withdraw confirm button not found.'));
+    const confirmHandler = () => {
+      modal.hide();
+      resolve(true);
+      confirmButton.removeEventListener('click', confirmHandler);
+    };
+    confirmButton.addEventListener('click', confirmHandler);
+    const cancelHandler = () => {
+      modal.hide();
+      resolve(false);
+    };
+    modalElement.addEventListener('hidden.bs.modal', cancelHandler, { once: true });
+    try { modal.show(); } catch { reject(new Error('Failed to show reward warning modal.')); }
+  });
+}
+
 /* ===================== Utils ===================== */
 const TEN = 10n;
 function toUnits(raw, decimals = 6) {
@@ -1073,6 +1107,29 @@ async function unstakeTokens(token) {
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
       const unstakeAmount = document.getElementById(`withdraw-amount-${token}`).value;
       if (!unstakeAmount || isNaN(unstakeAmount) || Number(unstakeAmount) <= 0) throw new Error('Enter a valid amount to withdraw.');
+      
+      // Check for pending rewards
+      let pendingRewardsRaw;
+      try {
+        pendingRewardsRaw = await retryWithBackoff(() => {
+          const contract = tronWeb.contract(stakingContractAbi, tokenDetails[token].stakingAddress);
+          return contract.methods.earned(userAddress).call();
+        });
+        if (pendingRewardsRaw == null || isNaN(Number(pendingRewardsRaw))) {
+          pendingRewardsRaw = '0';
+        }
+      } catch (error) {
+        console.error('unstakeTokens: earned call failed:', error);
+        pendingRewardsRaw = '0';
+      }
+      const rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX;
+      if (rewardUnits > 0) {
+        const proceed = await showRewardWarningModal(rewardUnits);
+        if (!proceed) {
+          throw new Error('Withdrawal cancelled. Please claim your rewards first.');
+        }
+      }
+      
       const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'unstake');
       if (shortfall > 0) {
         const totalRequired = shortfall + SAFETY_ENERGY;
@@ -1266,7 +1323,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
-
 
 
 
