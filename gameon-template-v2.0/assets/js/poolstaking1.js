@@ -2,13 +2,13 @@
    - Same server flow as staking.js (GET /available-energy → pay → POST /request-energy → poll /delegation-status)
    - Payment sends integer SUN (no float rounding issues)
    - Payment address set to the same as staking.js so backend recognizes the tx
-   - Global 3000ms throttle + round-robin API key rotation
-   - 500ms delays between sequential on-chain contract calls to avoid bursts (reduced for faster load)
+   - Global 5000ms throttle + round-robin API key rotation
+   - 1000ms delays between sequential on-chain contract calls to avoid bursts
    - Whitelist check to display "Whitelisted" instead of countdown
    - UI refresh after stake/unstake/claim/activate to prevent stale "Expired" display
    - Reduced updateClaimTimer frequency to 5s and cached results to minimize API calls
    - Paused timer during transactions to prevent overlapping calls
-   - Optimizations: Parallelized fetches with Promise.all, force cache clear on load for latest data
+   - Optimizations: Consolidated user data fetch, increased delays, prioritized UI updates
 */
 let tronWeb, userAddress;
 const stakingContracts = {};
@@ -27,8 +27,8 @@ const ENERGY_PRICE_SUN = 10;
 const SUN_PER_TRX = 1_000_000;
 const ENERGY_RENTAL_DURATION = 2;
 const CACHE_TIMEOUT_MS = 120_000; // 120s cache for runtime updates
-const THROTTLE_GAP_MS = 5000; // Keep 3000ms to stay under 15 QPS per key
-const CONTRACT_CALL_DELAY_MS = 700; // Reduced to 500ms for faster sequential calls
+const THROTTLE_GAP_MS = 5000; // Keep 5000ms to stay under 15 QPS per key
+const CONTRACT_CALL_DELAY_MS = 1000; // Increased to 1000ms for safer pacing
 /* ===================== Token Config ===================== */
 const tokenDetails = {
   cft: {
@@ -325,8 +325,39 @@ async function initializeTronWeb() {
   setStatus('Connected', true);
   // Force clear all caches on init/load for latest data
   ['top', 'action', 'stats'].forEach(section => localStorage.removeItem(`tokenUI_${section}_${key}_${userAddress}`));
-  await updateUI(key, true);
-  // show admin if owner
+  // Fetch user data once and reuse
+  let userData;
+  try {
+    userData = await retryWithBackoff(() => stakingContracts[key].methods.users(userAddress).call());
+    console.debug('initializeTronWeb: users call successful, userData:', userData);
+  } catch (error) {
+    console.error('initializeTronWeb: users call failed:', error);
+    userData = {
+      stakedAmount: '0',
+      isActive: false,
+      lastClaimTimestamp: '0',
+      totalClaimed: '0',
+      rewards: '0',
+      userRewardPerTokenPaid: '0'
+    };
+    showToast({ title: 'Contract Error', body: 'Failed to fetch user data; using fallback data.', variant: 'warning' });
+  }
+  // Cache user data immediately
+  const initialCache = {
+    data: {
+      stakedAmount: userData.stakedAmount,
+      isActive: userData.isActive,
+      lastClaimTimestamp: userData.lastClaimTimestamp,
+      totalClaimed: userData.totalClaimed,
+      rewards: userData.rewards,
+      userRewardPerTokenPaid: userData.userRewardPerTokenPaid
+    },
+    timestamp: Date.now()
+  };
+  localStorage.setItem(`tokenUI_user_${key}_${userAddress}`, JSON.stringify(initialCache));
+  // Update UI with prioritized calls
+  await updateUI(key, true, userData);
+  // Show admin if owner
   try {
     const owner = await retryWithBackoff(() => stakingContracts[key].methods.owner().call());
     if (userAddress === owner) {
@@ -334,7 +365,7 @@ async function initializeTronWeb() {
       if (admin) admin.style.display = 'block';
     }
   } catch {}
-  setInterval(() => updateUI(key), 60000);
+  setInterval(() => updateUI(key, false, userData), 60000);
   rotateAdvertisements();
 }
 /* ===================== Energy helpers (aligned with staking.js) ===================== */
@@ -547,11 +578,11 @@ function showProcessingModal(step='') {
 }
 function hideProcessingModal(modal) { if (modal) modal.hide(); }
 /* ===================== UI (pacing between calls) ===================== */
-async function updateTopBarUI(token, first = false) {
+async function updateTopBarUI(token, first = false, userData) {
   const cacheKey = `tokenUI_top_${token}_${userAddress}`;
   const cached = localStorage.getItem(cacheKey);
   let cacheData = cached ? JSON.parse(cached) : null;
-  if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS) {
+  if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS && !first) {
     const updateElement = (id, value, skeletonId) => {
       const el = document.getElementById(id);
       if (el) {
@@ -571,26 +602,11 @@ async function updateTopBarUI(token, first = false) {
         .forEach(id => setSkeleton(id, true));
     }
     const d = tokenDetails[token];
-    let userData;
-    try {
-      userData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
-      console.debug('updateTopBarUI: users call successful, userData:', userData);
-    } catch (error) {
-      console.error('updateTopBarUI: users call failed:', error);
-      userData = {
-        stakedAmount: '100000000',
-        isActive: true,
-        lastClaimTimestamp: '1759570782',
-        totalClaimed: '627405',
-        rewards: '0',
-        userRewardPerTokenPaid: '0'
-      };
-      showToast({ title: 'Contract Error', body: 'Failed to fetch user data; using fallback data.', variant: 'warning' });
-    }
     const [apy, userTotalClaimedRaw] = await Promise.all([
       retryWithBackoff(() => stakingContracts[token].methods.calculateAPY(userAddress).call().catch(() => '0')),
-      retryWithBackoff(() => stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(() => '627405'))
+      retryWithBackoff(() => stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(() => '0'))
     ]);
+    await delay(CONTRACT_CALL_DELAY_MS);
     const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
     const userTotalClaimed = Number(userTotalClaimedRaw) / SUN_PER_TRX;
     const CFT_PRICE = 1;
@@ -600,7 +616,7 @@ async function updateTopBarUI(token, first = false) {
     let apyPct = Number(apy);
     if (!userData.isActive) apyPct = 0;
     
-    cacheData = cacheData || { data: {}, timestamp: Date.now() };
+    cacheData = { data: {}, timestamp: Date.now() };
     cacheData.data.stakedUnits = Number(stakedUnits);
     cacheData.data.apyPct = Number(apyPct);
     cacheData.data.roiPct = Number(roiPct.toFixed(2));
@@ -632,11 +648,11 @@ async function updateTopBarUI(token, first = false) {
       });
   }
 }
-async function updateActionGridUI(token, first = false) {
+async function updateActionGridUI(token, first = false, userData) {
   const cacheKey = `tokenUI_action_${token}_${userAddress}`;
   const cached = localStorage.getItem(cacheKey);
   let cacheData = cached ? JSON.parse(cached) : null;
-  if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS) {
+  if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS && !first) {
     const updateElement = (id, value, skeletonId) => {
       const el = document.getElementById(id);
       if (el) {
@@ -660,7 +676,7 @@ async function updateActionGridUI(token, first = false) {
         claimButton.disabled = Number(cacheData.data.rewardUnits) === 0 || Number(cacheData.data.contractBalance) < Number(cacheData.data.rewardUnits);
       }
     }
-    updateClaimTimer(cacheData.data.timeoutSec, cacheData.data.lastClaimTimestamp, cacheData.data.isActive, cacheData.data.isWhitelisted);
+    updateClaimTimer(cacheData.data.timeoutSec, cacheData.data.lastClaimTimestamp, cacheData.data.isActive, cacheData.data.isWhitelisted, cacheData.data.rewardUnits, cacheData.data.contractBalance);
     return;
   }
   try {
@@ -668,22 +684,6 @@ async function updateActionGridUI(token, first = false) {
       ['available-tokens-cft', 'claimable-rewards-cft'].forEach(id => setSkeleton(id, true));
     }
     const d = tokenDetails[token];
-    let userData;
-    try {
-      userData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
-      console.debug('updateActionGridUI: users call successful, userData:', userData);
-    } catch (error) {
-      console.error('updateActionGridUI: users call failed:', error);
-      userData = {
-        stakedAmount: '100000000',
-        isActive: true,
-        lastClaimTimestamp: '1759570782',
-        totalClaimed: '627405',
-        rewards: '0',
-        userRewardPerTokenPaid: '0'
-      };
-      showToast({ title: 'Contract Error', body: 'Failed to fetch user data; using fallback data.', variant: 'warning' });
-    }
     let pendingRewardsRaw;
     try {
       pendingRewardsRaw = await retryWithBackoff(() => {
@@ -705,6 +705,7 @@ async function updateActionGridUI(token, first = false) {
       retryWithBackoff(() => stakingContracts[token].methods.whitelist(userAddress).call().catch(() => false)),
       retryWithBackoff(() => tokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0'))
     ]);
+    await delay(CONTRACT_CALL_DELAY_MS);
     const balanceUnits = toUnits(balanceRaw, d.decimals);
     let rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX;
     const now = Math.floor(Date.now() / 1000);
@@ -713,7 +714,7 @@ async function updateActionGridUI(token, first = false) {
     if (isExpired) {
       rewardUnits = 0;
     }
-    cacheData = cacheData || { data: {}, timestamp: Date.now() };
+    cacheData = { data: {}, timestamp: Date.now() };
     cacheData.data.balanceUnits = Number(balanceUnits);
     cacheData.data.rewardUnits = Number(rewardUnits);
     cacheData.data.contractBalance = Number(contractBalanceRaw) / SUN_PER_TRX;
@@ -725,7 +726,6 @@ async function updateActionGridUI(token, first = false) {
     cacheData.data.stakedUnits = Number(toUnits(userData.stakedAmount, d.decimals));
     cacheData.timestamp = Date.now();
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-    console.debug('updateActionGridUI: Cache updated, rewardUnits:', cacheData.data.rewardUnits);
 
     const updateElement = (id, value, skeletonId) => {
       const el = document.getElementById(id);
@@ -751,7 +751,7 @@ async function updateActionGridUI(token, first = false) {
         claimButton.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
       }
     }
-    updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp), userData.isActive, isWhitelisted);
+    updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp), userData.isActive, isWhitelisted, rewardUnits, contractBalanceRaw);
   } catch (e) {
     console.error('updateActionGridUI error:', e);
     showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
@@ -763,11 +763,11 @@ async function updateActionGridUI(token, first = false) {
       });
   }
 }
-async function updateStatsGridUI(token, first = false) {
+async function updateStatsGridUI(token, first = false, userData) {
   const cacheKey = `tokenUI_stats_${token}_${userAddress}`;
   const cached = localStorage.getItem(cacheKey);
   let cacheData = cached ? JSON.parse(cached) : null;
-  if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS) {
+  if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS && !first) {
     const updateElement = (id, value, skeletonId) => {
       const el = document.getElementById(id);
       if (el) {
@@ -785,28 +785,13 @@ async function updateStatsGridUI(token, first = false) {
       ['pool-size', 'daily-payout', 'your-next-payout'].forEach(id => setSkeleton(id, true));
     }
     const d = tokenDetails[token];
-    let userData = cacheData ? cacheData.data : {};
-    if (!userData.stakedAmount) {
-      try {
-        userData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
-      } catch {
-        userData = {
-          stakedAmount: '0',
-          isActive: false,
-          lastClaimTimestamp: '0',
-          totalClaimed: '0',
-          rewards: '0',
-          userRewardPerTokenPaid: '0'
-        };
-        showToast({ title: 'Contract Error', body: 'Failed to fetch user data; using fallback data.', variant: 'warning' });
-      }
-    }
     const [poolSizeRaw, dailyPctRaw, totalStakedRaw, totalActiveStakedRaw] = await Promise.all([
       retryWithBackoff(() => stakingContracts[token].methods.poolSize().call().catch(() => '0')),
       retryWithBackoff(() => stakingContracts[token].methods.dailyPayoutPercentage().call().catch(() => '0')),
       retryWithBackoff(() => (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
       retryWithBackoff(() => stakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
     ]);
+    await delay(CONTRACT_CALL_DELAY_MS);
     const poolSize = Number(poolSizeRaw || '0') / SUN_PER_TRX;
     const dailyPayoutPct = Number(dailyPctRaw || '0') / 100;
     const totalStaked = toUnits(totalStakedRaw, d.decimals);
@@ -815,7 +800,7 @@ async function updateStatsGridUI(token, first = false) {
     let yourNextPayout = stakedUnits > 0 && totalActiveStaked > 0 && userData.isActive ? (stakedUnits / totalActiveStaked) * (poolSize * dailyPayoutPct / 100) : 0;
     if (!userData.isActive) yourNextPayout = 0;
 
-    cacheData = cacheData || { data: {}, timestamp: Date.now() };
+    cacheData = { data: {}, timestamp: Date.now() };
     cacheData.data.poolSize = Number(poolSize);
     cacheData.data.dailyPctRaw = Number(dailyPctRaw || '0');
     cacheData.data.yourNextPayout = Number(yourNextPayout);
@@ -844,16 +829,16 @@ async function updateStatsGridUI(token, first = false) {
     });
   }
 }
-
-async function updateUI(token, first = false) {
-  await updateTopBarUI(token, first);
-  await delay(CONTRACT_CALL_DELAY_MS);
-  await updateActionGridUI(token, first);
-  await delay(CONTRACT_CALL_DELAY_MS);
-  await updateStatsGridUI(token, first);
+async function updateUI(token, first = false, userData) {
+  // Prioritize action grid and top bar for faster initial render
+  await Promise.all([
+    updateTopBarUI(token, first, userData),
+    updateActionGridUI(token, first, userData)
+  ]);
+  await delay(CONTRACT_CALL_DELAY_MS * 2); // Longer delay before stats to spread load
+  await updateStatsGridUI(token, first, userData);
 }
-
-function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
+function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, initialRewards = '0', initialBalance = '0') {
   const timerEl = document.getElementById('next-claim-timer');
   const claimBtn = document.getElementById('claim-rewards-button-cft');
   const activateBtn = document.getElementById('activate-tokens-button-cft');
@@ -862,13 +847,13 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
     clearInterval(timerEl._claimInterval);
     timerEl._claimInterval = null;
   }
-  let cachedRewards = null;
-  let cachedBalance = null;
-  let cacheTimestamp = 0;
+  let cachedRewards = initialRewards;
+  let cachedBalance = initialBalance;
+  let cacheTimestamp = Date.now();
   if (isWhitelisted) {
     timerEl.textContent = 'Whitelisted';
     timerEl.classList.remove('inactive');
-    claimBtn.disabled = false;
+    claimBtn.disabled = Number(cachedRewards) === 0 || Number(cachedBalance) < Number(cachedRewards);
     claimBtn.style.display = 'block';
     activateBtn.style.display = 'none';
     return;
@@ -898,15 +883,12 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
     return `${d ? d + 'd ' : ''}${(h || d) ? h + 'h ' : ''}${m}m ${sec}s`;
   };
   const tick = async () => {
-    if (timerEl._paused) return; // Skip if paused during transaction
+    if (timerEl._paused) return;
     const now = Math.floor(Date.now() / 1000);
     const rem = Math.max(0, next - now);
-    let pendingRewards;
-    let contractBalanceRaw;
-    if (Date.now() - cacheTimestamp < CACHE_TIMEOUT_MS && cachedRewards !== null && cachedBalance !== null) {
-      pendingRewards = cachedRewards;
-      contractBalanceRaw = cachedBalance;
-    } else {
+    let pendingRewards = cachedRewards;
+    let contractBalanceRaw = cachedBalance;
+    if (Date.now() - cacheTimestamp >= CACHE_TIMEOUT_MS) {
       try {
         pendingRewards = await retryWithBackoff(() => {
           const contract = tronWeb.contract(stakingContractAbi, tokenDetails['cft'].stakingAddress);
@@ -946,7 +928,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
     }
   };
   tick();
-  timerEl._claimInterval = setInterval(tick, 5000); // Reduced to 5s
+  timerEl._claimInterval = setInterval(tick, 5000);
 }
 /* ===================== Core ===================== */
 async function initialize() {
@@ -993,7 +975,7 @@ async function stakeTokens(token, amount) {
   const timerEl = document.getElementById('next-claim-timer');
   const run = async () => {
     try {
-      if (timerEl) timerEl._paused = true; // Pause timer
+      if (timerEl) timerEl._paused = true;
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!isValidTronAddress(tokenDetails[token].tokenAddress)) throw new Error('Invalid token address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
@@ -1052,13 +1034,13 @@ async function stakeTokens(token, amount) {
       showToast({ title:'Stake submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastStake.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
       hideProcessingModal(processingModal);
       localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await delay(1000); // Wait for contract state to update
+      await delay(1000);
       await updateUI(token, true);
     } catch (e) {
       hideProcessingModal(processingModal);
       showToast({ title:'Stake error', body:e.message, variant:'danger' });
     } finally {
-      if (timerEl) timerEl._paused = false; // Resume timer
+      if (timerEl) timerEl._paused = false;
     }
   };
   return withLoading(stakeBtn, 'Staking...', run)();
@@ -1069,7 +1051,7 @@ async function unstakeTokens(token) {
   const timerEl = document.getElementById('next-claim-timer');
   const run = async () => {
     try {
-      if (timerEl) timerEl._paused = true; // Pause timer
+      if (timerEl) timerEl._paused = true;
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
       const unstakeAmount = document.getElementById(`withdraw-amount-${token}`).value;
@@ -1103,13 +1085,13 @@ async function unstakeTokens(token) {
       showToast({ title:'Withdraw submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastWithdraw.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
       hideProcessingModal(processingModal);
       localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await delay(1000); // Wait for contract state to update
+      await delay(1000);
       await updateUI(token, true);
     } catch (e) {
       hideProcessingModal(processingModal);
       showToast({ title:'Withdraw error', body:e.message, variant:'danger' });
     } finally {
-      if (timerEl) timerEl._paused = false; // Resume timer
+      if (timerEl) timerEl._paused = false;
     }
   };
   return withLoading(btn, 'Withdrawing...', run)();
@@ -1120,7 +1102,7 @@ async function claimRewards(token) {
   const timerEl = document.getElementById('next-claim-timer');
   const run = async () => {
     try {
-      if (timerEl) timerEl._paused = true; // Pause timer
+      if (timerEl) timerEl._paused = true;
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
       const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'claimRewards');
@@ -1167,13 +1149,13 @@ async function claimRewards(token) {
       });
       hideProcessingModal(processingModal);
       localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await delay(1000); // Wait for contract state to update
+      await delay(1000);
       await updateUI(token, true);
     } catch (e) {
       hideProcessingModal(processingModal);
       showToast({ title:'Claim error', body:e.message, variant:'danger' });
     } finally {
-      if (timerEl) timerEl._paused = false; // Resume timer
+      if (timerEl) timerEl._paused = false;
     }
   };
   return withLoading(btn, 'Claiming...', run)();
@@ -1184,7 +1166,7 @@ async function activateTokens(token) {
   const timerEl = document.getElementById('next-claim-timer');
   const run = async () => {
     try {
-      if (timerEl) timerEl._paused = true; // Pause timer
+      if (timerEl) timerEl._paused = true;
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
       const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'activateTokens');
@@ -1222,13 +1204,13 @@ async function activateTokens(token) {
       });
       hideProcessingModal(processingModal);
       localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await delay(1000); // Wait for contract state to update
+      await delay(1000);
       await updateUI(token, true);
     } catch (e) {
       hideProcessingModal(processingModal);
       showToast({ title: 'Activation error', body: e.message, variant: 'danger' });
     } finally {
-      if (timerEl) timerEl._paused = false; // Resume timer
+      if (timerEl) timerEl._paused = false;
     }
   };
   return withLoading(btn, 'Activating...', run)();
