@@ -4,7 +4,6 @@
    - Payment address set to the same as staking.js so backend recognizes the tx
    - Global 3000ms throttle + round-robin API key rotation
    - 1000ms delays between sequential on-chain contract calls to avoid bursts
-   - Workaround for incorrect earned function for TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA
    - Whitelist check to display "Whitelisted" instead of countdown
    - UI refresh after stake/unstake/claim/activate to prevent stale "Expired" display
    - Reduced updateClaimTimer frequency to 5s and cached results to minimize API calls
@@ -704,21 +703,6 @@ async function updateActionGridUI(token, first = false) {
     const now = Math.floor(Date.now() / 1000);
     const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + Number(timeout);
     const isExpired = timeout && nextClaim <= now && !userData.isActive && !isWhitelisted;
-    // Workaround for TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA earned bug
-    if (userAddress === 'TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA' && userData.lastClaimTimestamp === '1760506692') {
-      const stakeTimestamp = 1760506692;
-      const distributions = [
-        { timestamp: 1760506878, amount: 30393000 },
-        { timestamp: 1760506818, amount: 30700000 }
-      ];
-      let adjustedRewards = 0;
-      for (const dist of distributions) {
-        if (dist.timestamp > stakeTimestamp) {
-          adjustedRewards += dist.amount / 2;
-        }
-      }
-      rewardUnits = adjustedRewards / SUN_PER_TRX; // 30.55 TRX
-    }
     if (isExpired) {
       rewardUnits = 0;
     }
@@ -921,19 +905,6 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
         });
       } catch {
         pendingRewards = '0';
-      }
-      if (userAddress === 'TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA' && lastClaimTs === '1760506692') {
-        const stakeTimestamp = 1760506692;
-        const distributions = [
-          { timestamp: 1760506878, amount: 30393000 },
-          { timestamp: 1760506818, amount: 30700000 }
-        ];
-        pendingRewards = 0;
-        for (const dist of distributions) {
-          if (dist.timestamp > stakeTimestamp) {
-            pendingRewards += dist.amount / 2;
-          }
-        }
       }
       contractBalanceRaw = await retryWithBackoff(() => tronWeb.trx.getBalance(tokenDetails['cft'].stakingAddress).catch(() => '0'));
       cachedRewards = pendingRewards;
@@ -1164,19 +1135,6 @@ async function claimRewards(token) {
       } catch {
         pendingRewards = '0';
       }
-      if (userAddress === 'TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA') {
-        const stakeTimestamp = 1760506692;
-        const distributions = [
-          { timestamp: 1760506878, amount: 30393000 },
-          { timestamp: 1760506818, amount: 30700000 }
-        ];
-        pendingRewards = 0;
-        for (const dist of distributions) {
-          if (dist.timestamp > stakeTimestamp) {
-            pendingRewards += dist.amount / 2;
-          }
-        }
-      }
       if (BigInt(pendingRewards) === 0n) throw new Error('No rewards available to claim.');
       const contractBalance = await retryWithBackoff(() => tronWeb.trx.getBalance(tokenDetails[token].stakingAddress));
       if (Number(contractBalance) < Number(pendingRewards)) throw new Error('Insufficient contract balance to claim rewards.');
@@ -1253,7 +1211,7 @@ async function activateTokens(token) {
       hideProcessingModal(processingModal);
       localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
       await delay(1000); // Wait for contract state to update
-      await updateTokenUI(token, true);
+      await updateUI(token, true);
     } catch (e) {
       hideProcessingModal(processingModal);
       showToast({ title: 'Activation error', body: e.message, variant: 'danger' });
