@@ -169,6 +169,14 @@ async function retryWithBackoff(fn, maxRetries = 5, baseDelay = 2000) {
     }
   }
 }
+function normalizeContractOutput(output) {
+  if (typeof output === 'object' && output !== null) {
+    if (output[0] !== undefined) return String(output[0]);
+    if (output.value !== undefined) return String(output.value);
+    return output;
+  }
+  return String(output || '0');
+}
 /* ===================== Ad Rotator ===================== */
 const advertisements = [
   {
@@ -314,6 +322,7 @@ async function initializeTronWeb() {
     throw new Error('Neither getTotalStaked nor totalStaked found. Check ABI or address.');
   }
   setStatus('Connected', true);
+  ['top', 'action', 'stats'].forEach(section => localStorage.removeItem(`tokenUI_${section}_${key}_${userAddress}`));
   await updateUI(key, true);
   // show admin if owner
   try {
@@ -325,6 +334,10 @@ async function initializeTronWeb() {
   } catch {}
   setInterval(() => updateUI(key), 60000);
   rotateAdvertisements();
+  document.getElementById('refresh-ui')?.addEventListener('click', () => {
+    ['top', 'action', 'stats'].forEach(section => localStorage.removeItem(`tokenUI_${section}_${key}_${userAddress}`));
+    updateUI(key, true);
+  });
 }
 /* ===================== Energy helpers (aligned with staking.js) ===================== */
 async function checkUserEnergy(address, token, action, extraEnergy = 0) {
@@ -537,7 +550,7 @@ function showProcessingModal(step='') {
 function hideProcessingModal(modal) { if (modal) modal.hide(); }
 /* ===================== UI (pacing between calls) ===================== */
 async function updateTopBarUI(token, first = false) {
-  const cacheKey = `tokenUI_${token}_${userAddress}`;
+  const cacheKey = `tokenUI_top_${token}_${userAddress}`;
   const cached = localStorage.getItem(cacheKey);
   let cacheData = cached ? JSON.parse(cached) : null;
   if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS) {
@@ -565,21 +578,21 @@ async function updateTopBarUI(token, first = false) {
       userData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
       console.debug('updateTopBarUI: users call successful, userData:', userData);
     } catch (error) {
-      console.error('updateTopBarUI: users call failed:', error);
+      console.error('updateTopBarUI: users call failed:', { error: error.message, stack: error.stack, userAddress, token });
       userData = {
-  stakedAmount: '0',
-  isActive: false,
-  lastClaimTimestamp: '0',
-  totalClaimed: '0',
-  rewards: '0',
-  userRewardPerTokenPaid: '0'
-};
-      showToast({ title: 'Contract Error', body: 'Failed to fetch user data; using fallback data.', variant: 'warning' });
+        stakedAmount: '0',
+        isActive: false,
+        lastClaimTimestamp: '0',
+        totalClaimed: '0',
+        rewards: '0',
+        userRewardPerTokenPaid: '0'
+      };
+      showToast({ title: 'Contract Error', body: `Failed to fetch user data: ${error.message}. Displaying default values.`, variant: 'warning' });
     }
     await delay(CONTRACT_CALL_DELAY_MS);
     const [apy, userTotalClaimedRaw] = await Promise.all([
-      retryWithBackoff(() => stakingContracts[token].methods.calculateAPY(userAddress).call().catch(() => '0')),
-      retryWithBackoff(() => stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(() => '627405'))
+      retryWithBackoff(() => stakingContracts[token].methods.calculateAPY(userAddress).call().then(normalizeContractOutput).catch(() => '0')),
+      retryWithBackoff(() => stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().then(normalizeContractOutput).catch(() => '0'))
     ]);
     await delay(CONTRACT_CALL_DELAY_MS);
     const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
@@ -624,7 +637,7 @@ async function updateTopBarUI(token, first = false) {
   }
 }
 async function updateActionGridUI(token, first = false) {
-  const cacheKey = `tokenUI_${token}_${userAddress}`;
+  const cacheKey = `tokenUI_action_${token}_${userAddress}`;
   const cached = localStorage.getItem(cacheKey);
   let cacheData = cached ? JSON.parse(cached) : null;
   if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS) {
@@ -636,7 +649,6 @@ async function updateActionGridUI(token, first = false) {
         if (skeletonId) setSkeleton(skeletonId, false);
       }
     };
-    // Validate cached rewardUnits to prevent NaN
     const rewardUnits = isNaN(Number(cacheData.data.rewardUnits)) ? 0 : Number(cacheData.data.rewardUnits);
     updateElement(`available-tokens-${token}`, fmt(cacheData.data.balanceUnits), `available-tokens-${token}`);
     updateElement(`claimable-rewards-${token}`, `${rewardUnits.toFixed(2)} ${tokenDetails[token].rewardDisplayName}`);
@@ -661,7 +673,7 @@ async function updateActionGridUI(token, first = false) {
       ['available-tokens-cft', 'claimable-rewards-cft'].forEach(id => setSkeleton(id, true));
     }
     const d = tokenDetails[token];
-    const balanceRaw = await retryWithBackoff(() => tokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0'));
+    const balanceRaw = await retryWithBackoff(() => tokenContracts[token].methods.balanceOf(userAddress).call().then(normalizeContractOutput).catch(() => '0'));
     await delay(CONTRACT_CALL_DELAY_MS);
     let userData = cacheData ? cacheData.data : {};
     if (!userData.stakedAmount) {
@@ -682,82 +694,79 @@ async function updateActionGridUI(token, first = false) {
       }
     }
     await delay(CONTRACT_CALL_DELAY_MS);
-    let pendingRewardsRaw;
-    try {
-      pendingRewardsRaw = await retryWithBackoff(() => {
-        const contract = tronWeb.contract(stakingContractAbi, tokenDetails[token].stakingAddress);
-        return contract.methods.earned(userAddress).call();
-      });
-      // Validate pendingRewardsRaw
-      if (pendingRewardsRaw == null || isNaN(Number(pendingRewardsRaw))) {
-        console.warn('Invalid pendingRewardsRaw:', pendingRewardsRaw);
-        pendingRewardsRaw = '0';
-      }
-    } catch (error) {
-      console.error('updateActionGridUI: earned call failed:', { error: error.message, stack: error.stack, userAddress, token });
+    let pendingRewardsRaw = await retryWithBackoff(() => {
+      const contract = tronWeb.contract(stakingContractAbi, tokenDetails[token].stakingAddress);
+      return contract.methods.earned(userAddress).call().then(normalizeContractOutput);
+    }).catch(() => '0');
+    if (isNaN(Number(pendingRewardsRaw))) {
+      console.warn('Invalid pendingRewardsRaw after normalization:', pendingRewardsRaw);
       pendingRewardsRaw = '0';
-      showToast({ title: 'Contract Error', body: `Failed to fetch earned rewards: ${error.message}. Using fallback data.`, variant: 'warning' });
     }
     await delay(CONTRACT_CALL_DELAY_MS);
     const [timeout, contractBalanceRaw, isWhitelisted] = await Promise.all([
-    retryWithBackoff(() => stakingContracts[token].methods.claimTimeout().call().then(val => val || '1209600').catch(() => '1209600')),
-    retryWithBackoff(() => tronWeb.trx.getBalance(tokenDetails[token].stakingAddress).catch(() => '0')),
-    retryWithBackoff(() => stakingContracts[token].methods.whitelist(userAddress).call().catch(() => false))
-  ]);
-  await delay(CONTRACT_CALL_DELAY_MS);
-  const balanceUnits = toUnits(balanceRaw, d.decimals);
-  let rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX;
-  if (isNaN(rewardUnits)) {
-    console.warn('rewardUnits is NaN, setting to 0. pendingRewardsRaw:', pendingRewardsRaw);
-    rewardUnits = 0;
-    localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-  }
-  const now = Math.floor(Date.now() / 1000);
-  const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + Number(timeout || 1209600);
-  const isExpired = timeout && nextClaim <= now && !userData.isActive && !isWhitelisted;
-  if (isExpired) {
-    rewardUnits = 0;
-  }
-  cacheData = cacheData || { data: {}, timestamp: Date.now() };
-  cacheData.data.balanceUnits = Number(balanceUnits);
-  cacheData.data.rewardUnits = Number(rewardUnits);
-  cacheData.data.contractBalance = Number(contractBalanceRaw) / SUN_PER_TRX;
-  cacheData.data.isWhitelisted = Boolean(isWhitelisted);
-  cacheData.data.timeoutSec = Number(timeout || 1209600);
-  cacheData.data.isExpired = Boolean(isExpired);
-  cacheData.data.isActive = Boolean(userData.isActive);
-  cacheData.data.lastClaimTimestamp = Number(userData.lastClaimTimestamp);
-  cacheData.data.stakedUnits = Number(toUnits(userData.stakedAmount, d.decimals));
-  cacheData.timestamp = Date.now();
-  localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-  console.debug('updateActionGridUI: Cache updated, rewardUnits:', cacheData.data.rewardUnits);
+      retryWithBackoff(() => stakingContracts[token].methods.claimTimeout().call().then(normalizeContractOutput).catch(() => '604800')),
+      retryWithBackoff(() => tronWeb.trx.getBalance(tokenDetails[token].stakingAddress).catch(() => '0')),
+      retryWithBackoff(() => stakingContracts[token].methods.whitelist(userAddress).call().catch(() => false))
+    ]);
+    await delay(CONTRACT_CALL_DELAY_MS);
+    let timeoutNum = Number(timeout);
+    if (isNaN(timeoutNum) || timeoutNum <= 0) {
+      console.warn('Invalid timeout:', timeout);
+      timeoutNum = 604800;
+    }
+    const balanceUnits = toUnits(balanceRaw, d.decimals);
+    let rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX;
+    if (isNaN(rewardUnits)) {
+      console.warn('rewardUnits is NaN, setting to 0. pendingRewardsRaw:', pendingRewardsRaw);
+      rewardUnits = 0;
+      localStorage.removeItem(cacheKey);
+    }
+    const now = Math.floor(Date.now() / 1000);
+    const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + timeoutNum;
+    const isExpired = timeoutNum > 0 && nextClaim <= now && !userData.isActive && !isWhitelisted;
+    if (isExpired) {
+      rewardUnits = 0;
+    }
+    cacheData = cacheData || { data: {}, timestamp: Date.now() };
+    cacheData.data.balanceUnits = Number(balanceUnits);
+    cacheData.data.rewardUnits = Number(rewardUnits);
+    cacheData.data.contractBalance = Number(contractBalanceRaw) / SUN_PER_TRX;
+    cacheData.data.isWhitelisted = Boolean(isWhitelisted);
+    cacheData.data.timeoutSec = timeoutNum;
+    cacheData.data.isExpired = Boolean(isExpired);
+    cacheData.data.isActive = Boolean(userData.isActive);
+    cacheData.data.lastClaimTimestamp = Number(userData.lastClaimTimestamp);
+    cacheData.data.stakedUnits = Number(toUnits(userData.stakedAmount, d.decimals));
+    cacheData.timestamp = Date.now();
+    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    console.debug('updateActionGridUI: Cache updated, rewardUnits:', cacheData.data.rewardUnits);
 
-  const updateElement = (id, value, skeletonId) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.textContent = value;
-      if (id === `available-tokens-${token}`) el.dataset.raw = String(cacheData.data.balanceUnits);
-      if (skeletonId) setSkeleton(skeletonId, false);
+    const updateElement = (id, value, skeletonId) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = value;
+        if (id === `available-tokens-${token}`) el.dataset.raw = String(cacheData.data.balanceUnits);
+        if (skeletonId) setSkeleton(skeletonId, false);
+      }
+    };
+    updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
+    updateElement(`claimable-rewards-${token}`, `${rewardUnits.toFixed(2)} ${d.rewardDisplayName}`);
+    
+    const activateButton = document.getElementById(`activate-tokens-button-${token}`);
+    const claimButton = document.getElementById(`claim-rewards-button-${token}`);
+    if (activateButton && claimButton) {
+      if (isExpired || (!userData.isActive && Number(userData.stakedAmount) > 0)) {
+        activateButton.style.display = 'block';
+        claimButton.style.display = 'none';
+        claimButton.disabled = true;
+      } else {
+        activateButton.style.display = 'none';
+        claimButton.style.display = 'block';
+        claimButton.disabled = rewardUnits === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
+      }
     }
-  };
-  updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
-  updateElement(`claimable-rewards-${token}`, `${rewardUnits.toFixed(2)} ${d.rewardDisplayName}`);
-  
-  const activateButton = document.getElementById(`activate-tokens-button-${token}`);
-  const claimButton = document.getElementById(`claim-rewards-button-${token}`);
-  if (activateButton && claimButton) {
-    if (isExpired || (!userData.isActive && Number(userData.stakedAmount) > 0)) {
-      activateButton.style.display = 'block';
-      claimButton.style.display = 'none';
-      claimButton.disabled = true;
-    } else {
-      activateButton.style.display = 'none';
-      claimButton.style.display = 'block';
-      claimButton.disabled = rewardUnits === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
-    }
-  }
-  updateClaimTimer(Number(timeout || 1209600), Number(userData.lastClaimTimestamp), userData.isActive, isWhitelisted);
-} catch (e) {
+    updateClaimTimer(timeoutNum, Number(userData.lastClaimTimestamp), userData.isActive, isWhitelisted);
+  } catch (e) {
     console.error('updateActionGridUI error:', e);
     showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
     ['available-tokens-cft', 'claimable-rewards-cft'].forEach(id => {
@@ -767,9 +776,8 @@ async function updateActionGridUI(token, first = false) {
     });
   }
 }
-
 async function updateStatsGridUI(token, first = false) {
-  const cacheKey = `tokenUI_${token}_${userAddress}`;
+  const cacheKey = `tokenUI_stats_${token}_${userAddress}`;
   const cached = localStorage.getItem(cacheKey);
   let cacheData = cached ? JSON.parse(cached) : null;
   if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS) {
@@ -808,10 +816,10 @@ async function updateStatsGridUI(token, first = false) {
     }
     await delay(CONTRACT_CALL_DELAY_MS);
     const [poolSizeRaw, dailyPctRaw, totalStakedRaw, totalActiveStakedRaw] = await Promise.all([
-      retryWithBackoff(() => stakingContracts[token].methods.poolSize().call().catch(() => '0')),
-      retryWithBackoff(() => stakingContracts[token].methods.dailyPayoutPercentage().call().catch(() => '0')),
-      retryWithBackoff(() => (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
-      retryWithBackoff(() => stakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
+      retryWithBackoff(() => stakingContracts[token].methods.poolSize().call().then(normalizeContractOutput).catch(() => '0')),
+      retryWithBackoff(() => stakingContracts[token].methods.dailyPayoutPercentage().call().then(normalizeContractOutput).catch(() => '0')),
+      retryWithBackoff(() => (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().then(normalizeContractOutput).catch(() => '0')),
+      retryWithBackoff(() => stakingContracts[token].methods.totalActiveStaked().call().then(normalizeContractOutput).catch(() => '0'))
     ]);
     await delay(CONTRACT_CALL_DELAY_MS);
     const poolSize = Number(poolSizeRaw || '0') / SUN_PER_TRX;
@@ -886,12 +894,12 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
     activateBtn.style.display = 'block';
     return;
   }
-  if (!timeoutSec || isNaN(timeoutSec)) {
+  if (!timeoutSec || isNaN(timeoutSec) || timeoutSec <= 0) {
     timerEl.textContent = '—';
     timerEl.classList.add('inactive');
     claimBtn.disabled = true;
     claimBtn.style.display = 'none';
-    activateBtn.style.display = 'none'; // Hide activate button for active users
+    activateBtn.style.display = 'none';
     return;
   }
   const next = (lastClaimTs || 0) + timeoutSec;
@@ -915,7 +923,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
       try {
         pendingRewards = await retryWithBackoff(() => {
           const contract = tronWeb.contract(stakingContractAbi, tokenDetails['cft'].stakingAddress);
-          return contract.methods.earned(userAddress).call();
+          return contract.methods.earned(userAddress).call().then(normalizeContractOutput);
         });
         if (pendingRewards == null || isNaN(Number(pendingRewards))) {
           pendingRewards = '0';
@@ -936,6 +944,12 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
       claimBtn.disabled = true;
       claimBtn.style.display = 'none';
       activateBtn.style.display = 'block';
+      const apyEl = document.getElementById('projected-rewards-cft');
+      if (apyEl) apyEl.textContent = '0.00%';
+      const claimableEl = document.getElementById('claimable-rewards-cft');
+      if (claimableEl) claimableEl.textContent = '0.00 TRX';
+      const yourNextPayoutEl = document.getElementById('your-next-payout');
+      if (yourNextPayoutEl) yourNextPayoutEl.textContent = '0 TRX';
     } else {
       timerEl.textContent = `${format(rem)}`;
       timerEl.classList.remove('inactive');
@@ -1050,7 +1064,7 @@ async function stakeTokens(token, amount) {
       if (!broadcastStake.result) throw new Error('Failed to broadcast stake transaction');
       showToast({ title:'Stake submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastStake.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
       hideProcessingModal(processingModal);
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
+      ['top', 'action', 'stats'].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
       await delay(1000); // Wait for contract state to update
       await updateUI(token, true);
     } catch (e) {
@@ -1101,7 +1115,7 @@ async function unstakeTokens(token) {
       if (!broadcastWithdraw.result) throw new Error('Failed to broadcast unstake transaction');
       showToast({ title:'Withdraw submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastWithdraw.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
       hideProcessingModal(processingModal);
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
+      ['top', 'action', 'stats'].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
       await delay(1000); // Wait for contract state to update
       await updateUI(token, true);
     } catch (e) {
@@ -1165,7 +1179,7 @@ async function claimRewards(token) {
         body: `<a href="https://tronscan.org/#/transaction/${broadcastClaim.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
       });
       hideProcessingModal(processingModal);
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
+      ['top', 'action', 'stats'].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
       await delay(1000); // Wait for contract state to update
       await updateUI(token, true);
     } catch (e) {
@@ -1220,7 +1234,7 @@ async function activateTokens(token) {
         body: `<a href="https://tronscan.org/#/transaction/${broadcastActivate.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
       });
       hideProcessingModal(processingModal);
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
+      ['top', 'action', 'stats'].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
       await delay(1000); // Wait for contract state to update
       await updateUI(token, true);
     } catch (e) {
@@ -1266,7 +1280,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
-
 
 
 
