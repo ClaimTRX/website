@@ -2,7 +2,7 @@
    - Same server flow as staking.js (GET /available-energy → pay → POST /request-energy → poll /delegation-status)
    - Payment sends integer SUN (no float rounding issues)
    - Payment address set to the same as staking.js so backend recognizes the tx
-   - Global 1500ms throttle + round-robin API key rotation
+   - Global 3000ms throttle + round-robin API key rotation
    - 1000ms delays between sequential on-chain contract calls to avoid bursts
    - Workaround for incorrect earned function for TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA
    - Whitelist check to display "Whitelisted" instead of countdown
@@ -27,7 +27,7 @@ const ENERGY_PRICE_SUN = 10;
 const SUN_PER_TRX = 1_000_000;
 const ENERGY_RENTAL_DURATION = 2;
 const CACHE_TIMEOUT_MS = 120_000; // Extended to 120s
-const THROTTLE_GAP_MS = 1500; // Increased to 1500ms
+const THROTTLE_GAP_MS = 3000; // Increased to 3000ms
 const CONTRACT_CALL_DELAY_MS = 1000; // Increased to 1000ms
 /* ===================== Token Config ===================== */
 const tokenDetails = {
@@ -315,7 +315,7 @@ async function initializeTronWeb() {
     throw new Error('Neither getTotalStaked nor totalStaked found. Check ABI or address.');
   }
   setStatus('Connected', true);
-  await updateTokenUI(key, true);
+  await updateUI(key, true);
   // show admin if owner
   try {
     const owner = await retryWithBackoff(() => stakingContracts[key].methods.owner().call());
@@ -324,7 +324,7 @@ async function initializeTronWeb() {
       if (admin) admin.style.display = 'block';
     }
   } catch {}
-  setInterval(() => updateTokenUI(key), 60000);
+  setInterval(() => updateUI(key), 60000);
   rotateAdvertisements();
 }
 /* ===================== Energy helpers (aligned with staking.js) ===================== */
@@ -537,63 +537,36 @@ function showProcessingModal(step='') {
 }
 function hideProcessingModal(modal) { if (modal) modal.hide(); }
 /* ===================== UI (pacing between calls) ===================== */
-async function updateTokenUI(token, first = false) {
+async function updateTopBarUI(token, first = false) {
   const cacheKey = `tokenUI_${token}_${userAddress}`;
   const cached = localStorage.getItem(cacheKey);
-  if (cached) {
-    const { data, timestamp } = JSON.parse(cached);
-    if (Date.now() - timestamp < CACHE_TIMEOUT_MS) {
-      const updateElement = (id, value, skeletonId) => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.textContent = value;
-          if (id === `available-tokens-${token}`) el.dataset.raw = String(data.balanceUnits);
-          if (skeletonId) setSkeleton(skeletonId, false);
-        }
-      };
-      updateElement(`available-tokens-${token}`, fmt(data.balanceUnits), `available-tokens-${token}`);
-      updateElement(`staked-amount-${token}`, fmt(data.stakedUnits), `staked-amount-${token}`);
-      updateElement(`projected-rewards-${token}`, fmtPct(data.apyPct), `projected-rewards-${token}`);
-      updateElement(`claimable-rewards-${token}`, `${Number(data.isExpired ? 0 : data.rewardUnits).toFixed(2)} ${tokenDetails[token].rewardDisplayName}`);
-      updateElement('user-total-claimed-cft', fmtTrx(data.userTotalClaimed), 'user-total-claimed-cft');
-      updateElement('roi-cft', fmtPct(data.roiPct), 'roi-cft');
-      updateElement('pool-size', fmtTrx(data.poolSize), 'pool-size');
-      updateElement('daily-payout', `${data.dailyPctRaw.toFixed(2)}% / day`, 'daily-payout');
-      updateElement('total-next-payout', fmtTrx(data.totalNextPayout), 'total-next-payout');
-      updateElement('your-next-payout', fmtTrx(data.yourNextPayout), 'your-next-payout');
-      updateElement('total-active-tokens', fmt(data.totalActiveTokens) + ' CFT', 'total-active-tokens');
-      updateElement('total-inactive-tokens', fmt(data.totalInactiveTokens) + ' CFT', 'total-inactive-tokens');
-      const activateButton = document.getElementById(`activate-tokens-button-${token}`);
-      const claimButton = document.getElementById(`claim-rewards-button-${token}`);
-      if (activateButton && claimButton) {
-        if (data.isExpired || (!data.isActive && Number(data.stakedUnits) > 0)) {
-          activateButton.style.display = 'block';
-          claimButton.style.display = 'none';
-          claimButton.disabled = true;
-        } else {
-          activateButton.style.display = 'none';
-          claimButton.style.display = 'block';
-          claimButton.disabled = Number(data.rewardUnits) === 0 || Number(data.contractBalance) < Number(data.rewardUnits);
-        }
+  let cacheData = cached ? JSON.parse(cached) : null;
+  if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS) {
+    const updateElement = (id, value, skeletonId) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = value;
+        if (skeletonId) setSkeleton(skeletonId, false);
       }
-      updateClaimTimer(data.timeoutSec, data.lastClaimTs, data.isActive, data.isWhitelisted);
-      return;
-    }
+    };
+    updateElement(`staked-amount-${token}`, fmt(cacheData.data.stakedUnits), `staked-amount-${token}`);
+    updateElement(`projected-rewards-${token}`, fmtPct(cacheData.data.apyPct), `projected-rewards-${token}`);
+    updateElement(`roi-cft`, fmtPct(cacheData.data.roiPct), `roi-cft`);
+    updateElement(`user-total-claimed-cft`, fmtTrx(cacheData.data.userTotalClaimed), `user-total-claimed-cft`);
+    return;
   }
   try {
     if (first) {
-      ['available-tokens-cft', 'staked-amount-cft', 'projected-rewards-cft', 'user-total-claimed-cft', 'roi-cft', 'pool-size', 'daily-payout', 'total-next-payout', 'your-next-payout', 'total-active-tokens', 'total-inactive-tokens']
+      ['staked-amount-cft', 'projected-rewards-cft', 'roi-cft', 'user-total-claimed-cft']
         .forEach(id => setSkeleton(id, true));
     }
     const d = tokenDetails[token];
-    const balanceRaw = await retryWithBackoff(() => tokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0'));
-    await delay(CONTRACT_CALL_DELAY_MS);
     let userData;
     try {
       userData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
-      console.debug('updateTokenUI: users call successful, userData:', userData);
+      console.debug('updateTopBarUI: users call successful, userData:', userData);
     } catch (error) {
-      console.error('updateTokenUI: users call failed:', error);
+      console.error('updateTopBarUI: users call failed:', error);
       userData = {
         stakedAmount: '100000000',
         isActive: true,
@@ -605,36 +578,129 @@ async function updateTokenUI(token, first = false) {
       showToast({ title: 'Contract Error', body: 'Failed to fetch user data; using fallback data.', variant: 'warning' });
     }
     await delay(CONTRACT_CALL_DELAY_MS);
-    const [apy, timeout, userTotalClaimedRaw, pendingRewardsRaw, poolSizeRaw, dailyPctRaw, totalStakedRaw, totalActiveStakedRaw, contractBalanceRaw, isWhitelisted] = await Promise.all([
+    const [apy, userTotalClaimedRaw] = await Promise.all([
       retryWithBackoff(() => stakingContracts[token].methods.calculateAPY(userAddress).call().catch(() => '0')),
-      retryWithBackoff(() => stakingContracts[token].methods.claimTimeout().call().catch(() => '1209600')),
-      retryWithBackoff(() => stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(() => '627405')),
-      retryWithBackoff(() => stakingContracts[token].methods.earned(userAddress).catch(() => '0')),
-      retryWithBackoff(() => stakingContracts[token].methods.poolSize().call().catch(() => '1146024463')),
-      retryWithBackoff(() => stakingContracts[token].methods.dailyPayoutPercentage().call().catch(() => '100')),
-      retryWithBackoff(() => (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
-      retryWithBackoff(() => stakingContracts[token].methods.totalActiveStaked().call().catch(() => '0')),
-      retryWithBackoff(() => tronWeb.trx.getBalance(tokenDetails[token].stakingAddress).catch(() => '0')),
-      retryWithBackoff(() => stakingContracts[token].methods.whitelist(userAddress).call().catch(() => false))
+      retryWithBackoff(() => stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(() => '627405'))
     ]);
     await delay(CONTRACT_CALL_DELAY_MS);
-    const balanceUnits = toUnits(balanceRaw, d.decimals);
     const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
-    let rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX;
     const userTotalClaimed = Number(userTotalClaimedRaw) / SUN_PER_TRX;
-    const poolSize = Number(poolSizeRaw) / SUN_PER_TRX;
-    const totalStaked = toUnits(totalStakedRaw, d.decimals);
-    const totalActiveStaked = toUnits(totalActiveStakedRaw, d.decimals);
-    const totalActiveTokens = totalActiveStaked;
-    const totalInactiveTokens = totalStaked - totalActiveStaked;
-    const dailyPayoutPct = Number(dailyPctRaw) / 100;
-    const totalNextPayout = poolSize * dailyPayoutPct / 100;
-    let yourNextPayout = stakedUnits > 0 && totalActiveStaked > 0 && userData.isActive ? (stakedUnits / totalActiveStaked) * totalNextPayout : 0;
     const CFT_PRICE = 1;
     const stakedAmount = toUnits(userData.stakedAmount, d.decimals);
     const totalClaimedTrx = Number(userTotalClaimedRaw) / SUN_PER_TRX;
     const roiPct = (stakedAmount > 0 && userData.isActive) ? (totalClaimedTrx / (stakedAmount * CFT_PRICE)) * 100 : 0;
     let apyPct = Number(apy);
+    if (!userData.isActive) apyPct = 0;
+    
+    cacheData = cacheData || { data: {}, timestamp: Date.now() };
+    cacheData.data.stakedUnits = Number(stakedUnits);
+    cacheData.data.apyPct = Number(apyPct);
+    cacheData.data.roiPct = Number(roiPct.toFixed(2));
+    cacheData.data.userTotalClaimed = Number(userTotalClaimed);
+    cacheData.data.isActive = Boolean(userData.isActive);
+    cacheData.data.lastClaimTimestamp = Number(userData.lastClaimTimestamp);
+    cacheData.timestamp = Date.now();
+    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+
+    const updateElement = (id, value, skeletonId) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = value;
+        if (skeletonId) setSkeleton(skeletonId, false);
+      }
+    };
+    updateElement(`staked-amount-${token}`, fmt(stakedUnits), `staked-amount-${token}`);
+    updateElement(`projected-rewards-${token}`, fmtPct(apyPct), `projected-rewards-${token}`);
+    updateElement(`roi-cft`, fmtPct(roiPct), `roi-cft`);
+    updateElement(`user-total-claimed-cft`, fmtTrx(userTotalClaimed), `user-total-claimed-cft`);
+  } catch (e) {
+    console.error('updateTopBarUI error:', e);
+    showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
+    ['staked-amount-cft', 'projected-rewards-cft', 'roi-cft', 'user-total-claimed-cft']
+      .forEach(id => {
+        setSkeleton(id, false);
+        const el = document.getElementById(id);
+        if (el) el.textContent = '0';
+      });
+  }
+}
+async function updateActionGridUI(token, first = false) {
+  const cacheKey = `tokenUI_${token}_${userAddress}`;
+  const cached = localStorage.getItem(cacheKey);
+  let cacheData = cached ? JSON.parse(cached) : null;
+  if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS) {
+    const updateElement = (id, value, skeletonId) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = value;
+        if (id === `available-tokens-${token}`) el.dataset.raw = String(cacheData.data.balanceUnits);
+        if (skeletonId) setSkeleton(skeletonId, false);
+      }
+    };
+    updateElement(`available-tokens-${token}`, fmt(cacheData.data.balanceUnits), `available-tokens-${token}`);
+    updateElement(`claimable-rewards-${token}`, `${Number(cacheData.data.isExpired ? 0 : cacheData.data.rewardUnits).toFixed(2)} ${tokenDetails[token].rewardDisplayName}`);
+    const activateButton = document.getElementById(`activate-tokens-button-${token}`);
+    const claimButton = document.getElementById(`claim-rewards-button-${token}`);
+    if (activateButton && claimButton) {
+      if (cacheData.data.isExpired || (!cacheData.data.isActive && Number(cacheData.data.stakedUnits) > 0)) {
+        activateButton.style.display = 'block';
+        claimButton.style.display = 'none';
+        claimButton.disabled = true;
+      } else {
+        activateButton.style.display = 'none';
+        claimButton.style.display = 'block';
+        claimButton.disabled = Number(cacheData.data.rewardUnits) === 0 || Number(cacheData.data.contractBalance) < Number(cacheData.data.rewardUnits);
+      }
+    }
+    updateClaimTimer(cacheData.data.timeoutSec, cacheData.data.lastClaimTimestamp, cacheData.data.isActive, cacheData.data.isWhitelisted);
+    return;
+  }
+  try {
+    if (first) {
+      ['available-tokens-cft', 'claimable-rewards-cft'].forEach(id => setSkeleton(id, true));
+    }
+    const d = tokenDetails[token];
+    const balanceRaw = await retryWithBackoff(() => tokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0'));
+    await delay(CONTRACT_CALL_DELAY_MS);
+    let userData = cacheData ? cacheData.data : {};
+    if (!userData.stakedAmount) {
+      try {
+        userData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
+        console.debug('updateActionGridUI: users call successful, userData:', userData);
+      } catch (error) {
+        console.error('updateActionGridUI: users call failed:', error);
+        userData = {
+          stakedAmount: '100000000',
+          isActive: true,
+          lastClaimTimestamp: '1759570782',
+          totalClaimed: '627405',
+          rewards: '0',
+          userRewardPerTokenPaid: '0'
+        };
+        showToast({ title: 'Contract Error', body: 'Failed to fetch user data; using fallback data.', variant: 'warning' });
+      }
+    }
+    await delay(CONTRACT_CALL_DELAY_MS);
+    let pendingRewardsRaw;
+    try {
+      pendingRewardsRaw = await retryWithBackoff(() => {
+        const contract = tronWeb.contract(stakingContractAbi, tokenDetails[token].stakingAddress);
+        return contract.methods.earned(userAddress).call();
+      });
+    } catch (error) {
+      console.error('updateActionGridUI: earned call failed:', error);
+      pendingRewardsRaw = '0';
+      showToast({ title: 'Contract Error', body: 'Failed to fetch earned rewards; using fallback data.', variant: 'warning' });
+    }
+    await delay(CONTRACT_CALL_DELAY_MS);
+    const [timeout, contractBalanceRaw, isWhitelisted] = await Promise.all([
+      retryWithBackoff(() => stakingContracts[token].methods.claimTimeout().call().catch(() => '1209600')),
+      retryWithBackoff(() => tronWeb.trx.getBalance(tokenDetails[token].stakingAddress).catch(() => '0')),
+      retryWithBackoff(() => stakingContracts[token].methods.whitelist(userAddress).call().catch(() => false))
+    ]);
+    await delay(CONTRACT_CALL_DELAY_MS);
+    const balanceUnits = toUnits(balanceRaw, d.decimals);
+    let rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX;
     const now = Math.floor(Date.now() / 1000);
     const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + Number(timeout);
     const isExpired = timeout && nextClaim <= now && !userData.isActive && !isWhitelisted;
@@ -654,35 +720,21 @@ async function updateTokenUI(token, first = false) {
       rewardUnits = adjustedRewards / SUN_PER_TRX; // 30.55 TRX
     }
     if (isExpired) {
-      apyPct = 0;
-      yourNextPayout = 0;
       rewardUnits = 0;
     }
-    const cacheData = {
-      data: {
-        balanceUnits: Number(balanceUnits),
-        stakedUnits: Number(stakedUnits),
-        rewardUnits: Number(rewardUnits),
-        userTotalClaimed: Number(userTotalClaimed),
-        poolSize: Number(poolSize),
-        totalNextPayout: Number(totalNextPayout),
-        yourNextPayout: Number(yourNextPayout),
-        roiPct: Number(roiPct.toFixed(2)),
-        apyPct: Number(apyPct),
-        dailyPctRaw: Number(dailyPctRaw),
-        totalActiveTokens: Number(totalActiveTokens),
-        totalInactiveTokens: Number(totalInactiveTokens),
-        contractBalance: Number(contractBalanceRaw) / SUN_PER_TRX,
-        isWhitelisted: Boolean(isWhitelisted),
-        timeoutSec: Number(timeout),
-        lastClaimTs: Number(userData.lastClaimTimestamp),
-        isActive: Boolean(userData.isActive),
-        isExpired: Boolean(isExpired)
-      },
-      timestamp: Date.now()
-    };
+    cacheData = cacheData || { data: {}, timestamp: Date.now() };
+    cacheData.data.balanceUnits = Number(balanceUnits);
+    cacheData.data.rewardUnits = Number(rewardUnits);
+    cacheData.data.contractBalance = Number(contractBalanceRaw) / SUN_PER_TRX;
+    cacheData.data.isWhitelisted = Boolean(isWhitelisted);
+    cacheData.data.timeoutSec = Number(timeout);
+    cacheData.data.isExpired = Boolean(isExpired);
+    cacheData.data.isActive = Boolean(userData.isActive);
+    cacheData.data.lastClaimTimestamp = Number(userData.lastClaimTimestamp);
+    cacheData.data.stakedUnits = Number(toUnits(userData.stakedAmount, d.decimals));
+    cacheData.timestamp = Date.now();
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-    console.debug('updateTokenUI: Cache updated, rewardUnits:', cacheData.data.rewardUnits);
+    console.debug('updateActionGridUI: Cache updated, rewardUnits:', cacheData.data.rewardUnits);
 
     const updateElement = (id, value, skeletonId) => {
       const el = document.getElementById(id);
@@ -693,18 +745,8 @@ async function updateTokenUI(token, first = false) {
       }
     };
     updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
-    updateElement(`staked-amount-${token}`, fmt(stakedUnits), `staked-amount-${token}`);
-    updateElement(`projected-rewards-${token}`, fmtPct(apyPct), `projected-rewards-${token}`);
     updateElement(`claimable-rewards-${token}`, `${Number(isExpired ? 0 : rewardUnits).toFixed(2)} ${d.rewardDisplayName}`);
-    updateElement('user-total-claimed-cft', fmtTrx(userTotalClaimed), 'user-total-claimed-cft');
-    updateElement('roi-cft', fmtPct(roiPct), 'roi-cft');
-    updateElement('pool-size', fmtTrx(poolSize), 'pool-size');
-    updateElement('daily-payout', `${dailyPayoutPct.toFixed(2)}% / day`, 'daily-payout');
-    updateElement('total-next-payout', fmtTrx(totalNextPayout), 'total-next-payout');
-    updateElement('your-next-payout', fmtTrx(yourNextPayout), 'your-next-payout');
-    updateElement('total-active-tokens', fmt(totalActiveTokens) + ' CFT', 'total-active-tokens');
-    updateElement('total-inactive-tokens', fmt(totalInactiveTokens) + ' CFT', 'total-inactive-tokens');
-
+    
     const activateButton = document.getElementById(`activate-tokens-button-${token}`);
     const claimButton = document.getElementById(`claim-rewards-button-${token}`);
     if (activateButton && claimButton) {
@@ -718,20 +760,105 @@ async function updateTokenUI(token, first = false) {
         claimButton.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
       }
     }
-
     updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp), userData.isActive, isWhitelisted);
   } catch (e) {
-    console.error('updateTokenUI error:', e);
+    console.error('updateActionGridUI error:', e);
     showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
-    ['available-tokens-cft', 'staked-amount-cft', 'projected-rewards-cft', 'user-total-claimed-cft', 'roi-cft', 'pool-size', 'daily-payout', 'total-next-payout', 'your-next-payout', 'total-active-tokens', 'total-inactive-tokens']
-      .forEach(id => {
-        setSkeleton(id, false);
-        const el = document.getElementById(id);
-        if (el) el.textContent = '0';
-      });
-    const claimableEl = document.getElementById(`claimable-rewards-${token}`);
-    if (claimableEl) claimableEl.textContent = `0 ${tokenDetails[token].rewardDisplayName}`;
+    ['available-tokens-cft', 'claimable-rewards-cft'].forEach(id => {
+      setSkeleton(id, false);
+      const el = document.getElementById(id);
+      if (el) el.textContent = id.includes('claimable') ? `0 ${tokenDetails[token].rewardDisplayName}` : '0';
+    });
   }
+}
+async function updateStatsGridUI(token, first = false) {
+  const cacheKey = `tokenUI_${token}_${userAddress}`;
+  const cached = localStorage.getItem(cacheKey);
+  let cacheData = cached ? JSON.parse(cached) : null;
+  if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS) {
+    const updateElement = (id, value, skeletonId) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = value;
+        if (skeletonId) setSkeleton(skeletonId, false);
+      }
+    };
+    updateElement('pool-size', fmtTrx(cacheData.data.poolSize), 'pool-size');
+    updateElement('daily-payout', `${cacheData.data.dailyPctRaw.toFixed(2)}% / day`, 'daily-payout');
+    updateElement('your-next-payout', fmtTrx(cacheData.data.yourNextPayout), 'your-next-payout');
+    return;
+  }
+  try {
+    if (first) {
+      ['pool-size', 'daily-payout', 'your-next-payout'].forEach(id => setSkeleton(id, true));
+    }
+    const d = tokenDetails[token];
+    let userData = cacheData ? cacheData.data : {};
+    if (!userData.stakedAmount) {
+      try {
+        userData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
+      } catch {
+        userData = {
+          stakedAmount: '100000000',
+          isActive: true,
+          lastClaimTimestamp: '1759570782',
+          totalClaimed: '627405',
+          rewards: '0',
+          userRewardPerTokenPaid: '0'
+        };
+      }
+    }
+    await delay(CONTRACT_CALL_DELAY_MS);
+    const [poolSizeRaw, dailyPctRaw, totalStakedRaw, totalActiveStakedRaw] = await Promise.all([
+      retryWithBackoff(() => stakingContracts[token].methods.poolSize().call().catch(() => '1146024463')),
+      retryWithBackoff(() => stakingContracts[token].methods.dailyPayoutPercentage().call().catch(() => '100')),
+      retryWithBackoff(() => (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
+      retryWithBackoff(() => stakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
+    ]);
+    await delay(CONTRACT_CALL_DELAY_MS);
+    const poolSize = Number(poolSizeRaw) / SUN_PER_TRX;
+    const dailyPayoutPct = Number(dailyPctRaw) / 100;
+    const totalStaked = toUnits(totalStakedRaw, d.decimals);
+    const totalActiveStaked = toUnits(totalActiveStakedRaw, d.decimals);
+    const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
+    let yourNextPayout = stakedUnits > 0 && totalActiveStaked > 0 && userData.isActive ? (stakedUnits / totalActiveStaked) * (poolSize * dailyPayoutPct / 100) : 0;
+    if (!userData.isActive) yourNextPayout = 0;
+
+    cacheData = cacheData || { data: {}, timestamp: Date.now() };
+    cacheData.data.poolSize = Number(poolSize);
+    cacheData.data.dailyPctRaw = Number(dailyPctRaw);
+    cacheData.data.yourNextPayout = Number(yourNextPayout);
+    cacheData.data.stakedUnits = Number(stakedUnits);
+    cacheData.data.isActive = Boolean(userData.isActive);
+    cacheData.timestamp = Date.now();
+    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+
+    const updateElement = (id, value, skeletonId) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = value;
+        if (skeletonId) setSkeleton(skeletonId, false);
+      }
+    };
+    updateElement('pool-size', fmtTrx(poolSize), 'pool-size');
+    updateElement('daily-payout', `${dailyPayoutPct.toFixed(2)}% / day`, 'daily-payout');
+    updateElement('your-next-payout', fmtTrx(yourNextPayout), 'your-next-payout');
+  } catch (e) {
+    console.error('updateStatsGridUI error:', e);
+    showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
+    ['pool-size', 'daily-payout', 'your-next-payout'].forEach(id => {
+      setSkeleton(id, false);
+      const el = document.getElementById(id);
+      if (el) el.textContent = '0';
+    });
+  }
+}
+async function updateUI(token, first = false) {
+  await updateTopBarUI(token, first);
+  await delay(CONTRACT_CALL_DELAY_MS);
+  await updateActionGridUI(token, first);
+  await delay(CONTRACT_CALL_DELAY_MS);
+  await updateStatsGridUI(token, first);
 }
 function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
   const timerEl = document.getElementById('next-claim-timer');
@@ -787,7 +914,14 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
       pendingRewards = cachedRewards;
       contractBalanceRaw = cachedBalance;
     } else {
-      pendingRewards = await retryWithBackoff(() => stakingContracts['cft'].methods.earned(userAddress).call().catch(() => '0'));
+      try {
+        pendingRewards = await retryWithBackoff(() => {
+          const contract = tronWeb.contract(stakingContractAbi, tokenDetails['cft'].stakingAddress);
+          return contract.methods.earned(userAddress).call();
+        });
+      } catch {
+        pendingRewards = '0';
+      }
       if (userAddress === 'TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA' && lastClaimTs === '1760506692') {
         const stakeTimestamp = 1760506692;
         const distributions = [
@@ -936,7 +1070,7 @@ async function stakeTokens(token, amount) {
       hideProcessingModal(processingModal);
       localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
       await delay(1000); // Wait for contract state to update
-      await updateTokenUI(token, true);
+      await updateUI(token, true);
     } catch (e) {
       hideProcessingModal(processingModal);
       showToast({ title:'Stake error', body:e.message, variant:'danger' });
@@ -987,7 +1121,7 @@ async function unstakeTokens(token) {
       hideProcessingModal(processingModal);
       localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
       await delay(1000); // Wait for contract state to update
-      await updateTokenUI(token, true);
+      await updateUI(token, true);
     } catch (e) {
       hideProcessingModal(processingModal);
       showToast({ title:'Withdraw error', body:e.message, variant:'danger' });
@@ -1021,7 +1155,15 @@ async function claimRewards(token) {
       }
       processingModal = showProcessingModal('(2/2)');
       const stakingContract = stakingContracts[token];
-      let pendingRewards = await retryWithBackoff(() => stakingContract.methods.earned(userAddress).call());
+      let pendingRewards;
+      try {
+        pendingRewards = await retryWithBackoff(() => {
+          const contract = tronWeb.contract(stakingContractAbi, tokenDetails[token].stakingAddress);
+          return contract.methods.earned(userAddress).call();
+        });
+      } catch {
+        pendingRewards = '0';
+      }
       if (userAddress === 'TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA') {
         const stakeTimestamp = 1760506692;
         const distributions = [
@@ -1056,7 +1198,7 @@ async function claimRewards(token) {
       hideProcessingModal(processingModal);
       localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
       await delay(1000); // Wait for contract state to update
-      await updateTokenUI(token, true);
+      await updateUI(token, true);
     } catch (e) {
       hideProcessingModal(processingModal);
       showToast({ title:'Claim error', body:e.message, variant:'danger' });
