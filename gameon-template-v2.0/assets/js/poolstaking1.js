@@ -844,6 +844,15 @@ async function updateStatsGridUI(token, first = false) {
     });
   }
 }
+
+async function updateUI(token, first = false) {
+  await updateTopBarUI(token, first);
+  await delay(CONTRACT_CALL_DELAY_MS);
+  await updateActionGridUI(token, first);
+  await delay(CONTRACT_CALL_DELAY_MS);
+  await updateStatsGridUI(token, first);
+}
+
 function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
   const timerEl = document.getElementById('next-claim-timer');
   const claimBtn = document.getElementById('claim-rewards-button-cft');
@@ -1258,7 +1267,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
-
 
 
 
