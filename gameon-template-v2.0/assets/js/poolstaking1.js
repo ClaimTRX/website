@@ -1,9 +1,9 @@
-/* poolstaking.js — energy flow aligned with staking.js + throttle + pacing
+/* poolstaking1.js — energy flow aligned with staking.js + throttle + pacing
    - Same server flow as staking.js (GET /available-energy → pay → POST /request-energy → poll /delegation-status)
    - Payment sends integer SUN (no float rounding issues)
    - Payment address set to the same as staking.js so backend recognizes the tx
-   - Global 200ms throttle + round-robin API key rotation
-   - 200ms delays between sequential on-chain contract calls to avoid bursts
+   - Global 500ms throttle + round-robin API key rotation
+   - 500ms delays between sequential on-chain contract calls to avoid bursts
 */
 let tronWeb, userAddress;
 const stakingContracts = {};
@@ -24,9 +24,9 @@ const SUN_PER_TRX = 1_000_000; // 1 TRX = 1,000,000 SUN
 const ENERGY_RENTAL_DURATION = 2; // minutes
 const CACHE_TIMEOUT_MS = 60_000;
 /** Strict throttle gap between ANY outbound request to TronGrid */
-const THROTTLE_GAP_MS = 200;
+const THROTTLE_GAP_MS = 500;
 /** Delay between sequential contract calls */
-const CONTRACT_CALL_DELAY_MS = 200;
+const CONTRACT_CALL_DELAY_MS = 500;
 /* ===================== Token Config ===================== */
 const tokenDetails = {
   cft: {
@@ -124,7 +124,7 @@ const stakingContractAbi = [
   {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"stakersList","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
   {"stateMutability":"payable","type":"receive"}
 ];
-/* ===================== Helpers: throttle, rotation, delay ===================== */
+/* ===================== Helpers: throttle, rotation, delay, retry ===================== */
 const throttle = (() => {
   let queue = Promise.resolve();
   let last = 0;
@@ -151,6 +151,21 @@ const apiKeyRotator = (() => {
 })();
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (error.message.includes('429') && i < maxRetries - 1) {
+        const delayMs = baseDelay * Math.pow(2, i);
+        console.warn(`429 error, retrying after ${delayMs}ms...`);
+        await delay(delayMs);
+        continue;
+      }
+      throw error;
+    }
+  }
 }
 /* ===================== Ad Rotator (unchanged) ===================== */
 const advertisements = [
@@ -194,7 +209,7 @@ function rotateAdvertisements() {
   updateAd();
   setInterval(updateAd, 60000);
 }
-/* ===================== TronGrid helper (throttled + key-rotating) ===================== */
+/* ===================== TronGrid helper (throttled + key-rotating + retry) ===================== */
 async function tronGridApiCall(endpoint, params = {}) {
   const needsHex = endpoint.startsWith('/wallet/');
   let body = params;
@@ -207,26 +222,28 @@ async function tronGridApiCall(endpoint, params = {}) {
     }
   }
   return throttle(async () => {
-    const key = apiKeyRotator();
-    const res = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'TRON-PRO-API-KEY': key
-      },
-      body: JSON.stringify(body)
+    return retryWithBackoff(async () => {
+      const key = apiKeyRotator();
+      const res = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'TRON-PRO-API-KEY': key
+        },
+        body: JSON.stringify(body)
+      });
+      if (res.status === 429) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`TronGrid 429 Too Many Requests. ${text || ''}`.trim());
+      }
+      if (res.status === 403) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`TronGrid 403 Forbidden. ${text || ''}`.trim());
+      }
+      const data = await res.json().catch(() => ({}));
+      if (data.Error) throw new Error(data.Error);
+      return data;
     });
-    if (res.status === 429) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`TronGrid 429 Too Many Requests. ${text || ''}`.trim());
-    }
-    if (res.status === 403) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`TronGrid 403 Forbidden. ${text || ''}`.trim());
-    }
-    const data = await res.json().catch(() => ({}));
-    if (data.Error) throw new Error(data.Error);
-    return data;
   });
 }
 /* ===================== TronWeb Setup (wrap requests) ===================== */
@@ -414,7 +431,10 @@ async function pollDelegationStatus(requestId) {
 function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = '') {
   return new Promise((resolve, reject) => {
     const modalElement = document.getElementById('energy-rental-modal');
-    if (!modalElement) return reject(new Error('Energy rental modal not found.'));
+    if (!modalElement) {
+      console.error('Energy rental modal not found.');
+      return reject(new Error('Energy rental modal not found.'));
+    }
     const rentalEnergy = shortfall;
     const rentalCostSun = rentalEnergy * ENERGY_PRICE_SUN; // integer SUN
     const rentalCostTrx = rentalCostSun / SUN_PER_TRX; // display only
@@ -531,12 +551,12 @@ async function updateTokenUI(token, first = false) {
         .forEach(id => setSkeleton(id, true));
     }
     const d = tokenDetails[token];
-    // Pace contract calls with 200ms delay to avoid bursts (still covered by throttle)
-    const balanceRaw = await tokenContracts[token].methods.balanceOf(userAddress).call().catch(()=> '0');
+    // Pace contract calls with 500ms delay to avoid bursts
+    const balanceRaw = await retryWithBackoff(() => tokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0'));
     await delay(CONTRACT_CALL_DELAY_MS);
     let userData;
     try {
-      userData = await stakingContracts[token].methods.users(userAddress).call();
+      userData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
       console.debug('updateTokenUI: users call successful, userData:', userData);
     } catch (error) {
       console.error('updateTokenUI: users call failed:', error);
@@ -553,17 +573,17 @@ async function updateTokenUI(token, first = false) {
     }
     await delay(CONTRACT_CALL_DELAY_MS);
     const [apy, timeout, userTotalClaimedRaw, pendingRewardsRaw] = await Promise.all([
-      stakingContracts[token].methods.calculateAPY(userAddress).call().catch(()=> '0'),
-      stakingContracts[token].methods.claimTimeout().call().catch(()=> '1209600'),
-      stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(()=> '627405'),
-      stakingContracts[token].methods.earned(userAddress).call().catch(()=> '0')
+      retryWithBackoff(() => stakingContracts[token].methods.calculateAPY(userAddress).call().catch(() => '0')),
+      retryWithBackoff(() => stakingContracts[token].methods.claimTimeout().call().catch(() => '1209600')),
+      retryWithBackoff(() => stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(() => '627405')),
+      retryWithBackoff(() => stakingContracts[token].methods.earned(userAddress).call().catch(() => '0'))
     ]);
     await delay(CONTRACT_CALL_DELAY_MS);
     const [poolSizeRaw, dailyPctRaw, totalStakedRaw, totalActiveStakedRaw] = await Promise.all([
-      stakingContracts[token].methods.poolSize().call().catch(()=> '1146024463'),
-      stakingContracts[token].methods.dailyPayoutPercentage().call().catch(()=> '100'),
-      (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().catch(()=> '0'),
-      stakingContracts[token].methods.totalActiveStaked().call().catch(()=> '0')
+      retryWithBackoff(() => stakingContracts[token].methods.poolSize().call().catch(() => '1146024463')),
+      retryWithBackoff(() => stakingContracts[token].methods.dailyPayoutPercentage().call().catch(() => '100')),
+      retryWithBackoff(() => (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
+      retryWithBackoff(() => stakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
     ]);
     const balanceUnits = toUnits(balanceRaw, d.decimals);
     const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
@@ -650,6 +670,15 @@ async function updateTokenUI(token, first = false) {
   } catch (e) {
     console.error('updateTokenUI error:', e);
     showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
+    // Clear skeletons and set fallback values
+    ['available-tokens-cft', 'staked-amount-cft', 'projected-rewards-cft', 'user-total-claimed-cft', 'roi-cft', 'pool-size', 'daily-payout', 'total-next-payout', 'your-next-payout', 'total-active-tokens', 'total-inactive-tokens']
+      .forEach(id => {
+        setSkeleton(id, false);
+        const el = document.getElementById(id);
+        if (el) el.textContent = '0';
+      });
+    const claimableEl = document.getElementById(`claimable-rewards-${token}`);
+    if (claimableEl) claimableEl.textContent = `0 ${tokenDetails[token].rewardDisplayName}`;
   }
 }
 function updateClaimTimer(timeoutSec, lastClaimTs, isActive) {
@@ -686,7 +715,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive) {
   const tick = async () => {
     const now = Math.floor(Date.now() / 1000);
     const rem = Math.max(0, next - now);
-    const pendingRewardsRaw = await stakingContracts['cft'].methods.earned(userAddress).call().catch(() => '0');
+    const pendingRewardsRaw = await retryWithBackoff(() => stakingContracts['cft'].methods.earned(userAddress).call().catch(() => '0'));
     if (rem === 0 || !isActive) {
       clearInterval(timerEl._claimInterval);
       timerEl._claimInterval = null;
@@ -767,10 +796,10 @@ async function stakeTokens(token, amount){
       const stakingContract = stakingContracts[token];
       if (!tokenContract?.methods?.allowance) throw new Error('Token contract not initialized');
       if (!stakingContract?.methods?.stake) throw new Error('Staking contract not initialized');
-      const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
+      const balanceRaw = await retryWithBackoff(() => tokenContract.methods.balanceOf(userAddress).call());
       await delay(CONTRACT_CALL_DELAY_MS);
       if (BigInt(balanceRaw) < amountToStake) throw new Error('Insufficient balance to stake.');
-      const allowanceRaw = await tokenContract.methods.allowance(userAddress, stakingContractAddress).call();
+      const allowanceRaw = await retryWithBackoff(() => tokenContract.methods.allowance(userAddress, stakingContractAddress).call());
       await delay(CONTRACT_CALL_DELAY_MS);
       const allowance = BigInt(allowanceRaw);
       const approvalRequired = allowance < amountToStake;
@@ -848,7 +877,7 @@ async function unstakeTokens(token){
       processingModal = showProcessingModal('(2/2)');
       const amountToUnstake = toWei(unstakeAmount, tokenDetails[token].decimals);
       const stakingContract = stakingContracts[token];
-      const userData = await stakingContract.methods.users(userAddress).call();
+      const userData = await retryWithBackoff(() => stakingContract.methods.users(userAddress).call());
       await delay(CONTRACT_CALL_DELAY_MS);
       if (BigInt(userData.stakedAmount) < amountToUnstake) throw new Error('Insufficient staked amount.');
       const withdrawTx = await tronWeb.transactionBuilder.triggerSmartContract(
@@ -891,23 +920,79 @@ async function claimRewards(token){
       }
       processingModal = showProcessingModal('(2/2)');
       const stakingContract = stakingContracts[token];
-      const userData = await stakingContract.methods.users(userAddress).call();
-      await delay(CONTRACT_CALL_DELAY_MS);
-      if (userData.isActive || BigInt(userData.stakedAmount) === 0n) throw new Error('No inactive tokens to activate.');
-      const activateTx = await tronWeb.transactionBuilder.triggerSmartContract(
-        tokenDetails[token].stakingAddress, 'activateTokens()', {}, [], userAddress
+      const pendingRewards = await retryWithBackoff(() => stakingContract.methods.earned(userAddress).call());
+      if (BigInt(pendingRewards) === 0n) throw new Error('No rewards available to claim.');
+      const claimTx = await tronWeb.transactionBuilder.triggerSmartContract(
+        tokenDetails[token].stakingAddress,
+        'claimRewards()',
+        {},
+        [],
+        userAddress
       );
-      if (!activateTx.result || !activateTx.transaction) throw new Error('Failed to create activation transaction');
-      const signedActivateTx = await tronWeb.trx.sign(activateTx.transaction);
-      const broadcastActivate = await tronWeb.trx.sendRawTransaction(signedActivateTx);
-      if (!broadcastActivate.result) throw new Error('Failed to broadcast activation transaction');
-      showToast({ title:'Activation submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastActivate.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
+      if (!claimTx.result || !claimTx.transaction) throw new Error('Failed to create claim transaction');
+      const signedClaimTx = await tronWeb.trx.sign(claimTx.transaction);
+      const broadcastClaim = await tronWeb.trx.sendRawTransaction(signedClaimTx);
+      if (!broadcastClaim.result) throw new Error('Failed to broadcast claim transaction');
+      showToast({
+        title: 'Rewards claimed',
+        body: `<a href="https://tronscan.org/#/transaction/${broadcastClaim.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
+      });
       hideProcessingModal(processingModal);
       localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
       await updateTokenUI(token, true);
     }catch(e){
       hideProcessingModal(processingModal);
-      showToast({ title:'Activation error', body:e.message, variant:'danger' });
+      showToast({ title:'Claim error', body:e.message, variant:'danger' });
+    }
+  };
+  return withLoading(btn, 'Claiming...', run)();
+}
+async function activateTokens(token) {
+  let processingModal = null;
+  const btn = document.getElementById(`activate-tokens-button-${token}`);
+  const run = async () => {
+    try {
+      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
+      if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
+      const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'activateTokens');
+      if (shortfall > 0) {
+        const totalRequired = shortfall + SAFETY_ENERGY;
+        if (await checkDelegatorEnergy(totalRequired)) {
+          const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy);
+          if (modalResult.rent) {
+            processingModal = showProcessingModal('(1/2)');
+            await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
+            await delay(5000);
+            hideProcessingModal(processingModal);
+          }
+        }
+      }
+      processingModal = showProcessingModal('(2/2)');
+      const stakingContract = stakingContracts[token];
+      const userData = await retryWithBackoff(() => stakingContract.methods.users(userAddress).call());
+      await delay(CONTRACT_CALL_DELAY_MS);
+      if (userData.isActive || BigInt(userData.stakedAmount) === 0n) throw new Error('No inactive tokens to activate.');
+      const activateTx = await tronWeb.transactionBuilder.triggerSmartContract(
+        tokenDetails[token].stakingAddress,
+        'activateTokens()',
+        {},
+        [],
+        userAddress
+      );
+      if (!activateTx.result || !activateTx.transaction) throw new Error('Failed to create activation transaction');
+      const signedActivateTx = await tronWeb.trx.sign(activateTx.transaction);
+      const broadcastActivate = await tronWeb.trx.sendRawTransaction(signedActivateTx);
+      if (!broadcastActivate.result) throw new Error('Failed to broadcast activation transaction');
+      showToast({
+        title: 'Activation submitted',
+        body: `<a href="https://tronscan.org/#/transaction/${broadcastActivate.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
+      });
+      hideProcessingModal(processingModal);
+      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
+      await updateTokenUI(token, true);
+    } catch (e) {
+      hideProcessingModal(processingModal);
+      showToast({ title: 'Activation error', body: e.message, variant: 'danger' });
     }
   };
   return withLoading(btn, 'Activating...', run)();
