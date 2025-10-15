@@ -700,64 +700,64 @@ async function updateActionGridUI(token, first = false) {
     }
     await delay(CONTRACT_CALL_DELAY_MS);
     const [timeout, contractBalanceRaw, isWhitelisted] = await Promise.all([
-      retryWithBackoff(() => stakingContracts[token].methods.claimTimeout().call().catch(() => '1209600')),
-      retryWithBackoff(() => tronWeb.trx.getBalance(tokenDetails[token].stakingAddress).catch(() => '0')),
-      retryWithBackoff(() => stakingContracts[token].methods.whitelist(userAddress).call().catch(() => false))
-    ]);
-    await delay(CONTRACT_CALL_DELAY_MS);
-    const balanceUnits = toUnits(balanceRaw, d.decimals);
-    let rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX;
-    if (isNaN(rewardUnits)) {
-      console.warn('rewardUnits is NaN, setting to 0. pendingRewardsRaw:', pendingRewardsRaw);
-      rewardUnits = 0;
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`); // Clear cache to avoid stale data
-    }
-    const now = Math.floor(Date.now() / 1000);
-    const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + Number(timeout);
-    const isExpired = timeout && nextClaim <= now && !userData.isActive && !isWhitelisted;
-    if (isExpired) {
-      rewardUnits = 0;
-    }
-    cacheData = cacheData || { data: {}, timestamp: Date.now() };
-    cacheData.data.balanceUnits = Number(balanceUnits);
-    cacheData.data.rewardUnits = Number(rewardUnits);
-    cacheData.data.contractBalance = Number(contractBalanceRaw) / SUN_PER_TRX;
-    cacheData.data.isWhitelisted = Boolean(isWhitelisted);
-    cacheData.data.timeoutSec = Number(timeout);
-    cacheData.data.isExpired = Boolean(isExpired);
-    cacheData.data.isActive = Boolean(userData.isActive);
-    cacheData.data.lastClaimTimestamp = Number(userData.lastClaimTimestamp);
-    cacheData.data.stakedUnits = Number(toUnits(userData.stakedAmount, d.decimals));
-    cacheData.timestamp = Date.now();
-    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-    console.debug('updateActionGridUI: Cache updated, rewardUnits:', cacheData.data.rewardUnits);
+    retryWithBackoff(() => stakingContracts[token].methods.claimTimeout().call().then(val => val || '1209600').catch(() => '1209600')),
+    retryWithBackoff(() => tronWeb.trx.getBalance(tokenDetails[token].stakingAddress).catch(() => '0')),
+    retryWithBackoff(() => stakingContracts[token].methods.whitelist(userAddress).call().catch(() => false))
+  ]);
+  await delay(CONTRACT_CALL_DELAY_MS);
+  const balanceUnits = toUnits(balanceRaw, d.decimals);
+  let rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX;
+  if (isNaN(rewardUnits)) {
+    console.warn('rewardUnits is NaN, setting to 0. pendingRewardsRaw:', pendingRewardsRaw);
+    rewardUnits = 0;
+    localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
+  }
+  const now = Math.floor(Date.now() / 1000);
+  const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + Number(timeout || 1209600);
+  const isExpired = timeout && nextClaim <= now && !userData.isActive && !isWhitelisted;
+  if (isExpired) {
+    rewardUnits = 0;
+  }
+  cacheData = cacheData || { data: {}, timestamp: Date.now() };
+  cacheData.data.balanceUnits = Number(balanceUnits);
+  cacheData.data.rewardUnits = Number(rewardUnits);
+  cacheData.data.contractBalance = Number(contractBalanceRaw) / SUN_PER_TRX;
+  cacheData.data.isWhitelisted = Boolean(isWhitelisted);
+  cacheData.data.timeoutSec = Number(timeout || 1209600);
+  cacheData.data.isExpired = Boolean(isExpired);
+  cacheData.data.isActive = Boolean(userData.isActive);
+  cacheData.data.lastClaimTimestamp = Number(userData.lastClaimTimestamp);
+  cacheData.data.stakedUnits = Number(toUnits(userData.stakedAmount, d.decimals));
+  cacheData.timestamp = Date.now();
+  localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+  console.debug('updateActionGridUI: Cache updated, rewardUnits:', cacheData.data.rewardUnits);
 
-    const updateElement = (id, value, skeletonId) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.textContent = value;
-        if (id === `available-tokens-${token}`) el.dataset.raw = String(cacheData.data.balanceUnits);
-        if (skeletonId) setSkeleton(skeletonId, false);
-      }
-    };
-    updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
-    updateElement(`claimable-rewards-${token}`, `${rewardUnits.toFixed(2)} ${d.rewardDisplayName}`);
-    
-    const activateButton = document.getElementById(`activate-tokens-button-${token}`);
-    const claimButton = document.getElementById(`claim-rewards-button-${token}`);
-    if (activateButton && claimButton) {
-      if (isExpired || (!userData.isActive && Number(userData.stakedAmount) > 0)) {
-        activateButton.style.display = 'block';
-        claimButton.style.display = 'none';
-        claimButton.disabled = true;
-      } else {
-        activateButton.style.display = 'none';
-        claimButton.style.display = 'block';
-        claimButton.disabled = rewardUnits === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
-      }
+  const updateElement = (id, value, skeletonId) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = value;
+      if (id === `available-tokens-${token}`) el.dataset.raw = String(cacheData.data.balanceUnits);
+      if (skeletonId) setSkeleton(skeletonId, false);
     }
-    updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp), userData.isActive, isWhitelisted);
-  } catch (e) {
+  };
+  updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
+  updateElement(`claimable-rewards-${token}`, `${rewardUnits.toFixed(2)} ${d.rewardDisplayName}`);
+  
+  const activateButton = document.getElementById(`activate-tokens-button-${token}`);
+  const claimButton = document.getElementById(`claim-rewards-button-${token}`);
+  if (activateButton && claimButton) {
+    if (isExpired || (!userData.isActive && Number(userData.stakedAmount) > 0)) {
+      activateButton.style.display = 'block';
+      claimButton.style.display = 'none';
+      claimButton.disabled = true;
+    } else {
+      activateButton.style.display = 'none';
+      claimButton.style.display = 'block';
+      claimButton.disabled = rewardUnits === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
+    }
+  }
+  updateClaimTimer(Number(timeout || 1209600), Number(userData.lastClaimTimestamp), userData.isActive, isWhitelisted);
+} catch (e) {
     console.error('updateActionGridUI error:', e);
     showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
     ['available-tokens-cft', 'claimable-rewards-cft'].forEach(id => {
@@ -886,12 +886,12 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
     activateBtn.style.display = 'block';
     return;
   }
-  if (!timeoutSec) {
+  if (!timeoutSec || isNaN(timeoutSec)) {
     timerEl.textContent = '—';
     timerEl.classList.add('inactive');
     claimBtn.disabled = true;
     claimBtn.style.display = 'none';
-    activateBtn.style.display = 'block';
+    activateBtn.style.display = 'none'; // Hide activate button for active users
     return;
   }
   const next = (lastClaimTs || 0) + timeoutSec;
@@ -903,7 +903,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
     return `${d ? d + 'd ' : ''}${(h || d) ? h + 'h ' : ''}${m}m ${sec}s`;
   };
   const tick = async () => {
-    if (timerEl._paused) return; // Skip if paused during transaction
+    if (timerEl._paused) return;
     const now = Math.floor(Date.now() / 1000);
     const rem = Math.max(0, next - now);
     let pendingRewards;
@@ -917,6 +917,9 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
           const contract = tronWeb.contract(stakingContractAbi, tokenDetails['cft'].stakingAddress);
           return contract.methods.earned(userAddress).call();
         });
+        if (pendingRewards == null || isNaN(Number(pendingRewards))) {
+          pendingRewards = '0';
+        }
       } catch {
         pendingRewards = '0';
       }
@@ -933,12 +936,6 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
       claimBtn.disabled = true;
       claimBtn.style.display = 'none';
       activateBtn.style.display = 'block';
-      const apyEl = document.getElementById('projected-rewards-cft');
-      if (apyEl) apyEl.textContent = '0.00%';
-      const claimableEl = document.getElementById('claimable-rewards-cft');
-      if (claimableEl) claimableEl.textContent = '0.00 TRX';
-      const yourNextPayoutEl = document.getElementById('your-next-payout');
-      if (yourNextPayoutEl) yourNextPayoutEl.textContent = '0 TRX';
     } else {
       timerEl.textContent = `${format(rem)}`;
       timerEl.classList.remove('inactive');
@@ -948,7 +945,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
     }
   };
   tick();
-  timerEl._claimInterval = setInterval(tick, 5000); // Reduced to 5s
+  timerEl._claimInterval = setInterval(tick, 5000);
 }
 /* ===================== Core ===================== */
 async function initialize() {
@@ -1269,6 +1266,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
+
+
+
 
 
 
