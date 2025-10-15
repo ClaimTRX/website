@@ -178,6 +178,13 @@ function normalizeContractOutput(output) {
   }
   return String(output || '0');
 }
+
+// Add this new function after normalizeContractOutput
+function serializeBigInt(obj) {
+  return JSON.parse(JSON.stringify(obj, (key, value) =>
+    typeof value === 'bigint' ? value.toString() : value
+  ));
+}
 /* ===================== Ad Rotator ===================== */
 const advertisements = [
   {
@@ -262,8 +269,14 @@ async function initializeTronWeb() {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|TronLink/i.test(navigator.userAgent);
   const initDelay = isMobile ? 1500 : 800;
   await delay(initDelay);
-  if (!window.tronLink || !window.tronWeb) throw new Error('TronLink is not detected. Install or unlock TronLink.');
-  if (!window.tronLink.ready) throw new Error('TronLink is not ready. Unlock TronLink and select mainnet.');
+  if (!window.tronLink || !window.tronWeb) {
+    showToast({ title: 'Auto-connect failed', body: 'TronLink is not detected. Install or unlock TronLink.', variant: 'danger' });
+    return;
+  }
+  if (!window.tronLink.ready) {
+    showToast({ title: 'Auto-connect failed', body: 'TronLink is not ready. Unlock TronLink and select mainnet.', variant: 'danger' });
+    return;
+  }
   tronWeb = window.tronWeb;
   if (isMobile) {
     const originalRequest = tronWeb.request;
@@ -271,7 +284,7 @@ async function initializeTronWeb() {
       return throttle(async () => {
         const key = apiKeyRotator();
         tronWeb.setHeader({ 'TRON-PRO-API-KEY': key });
-        return originalRequest.call(this, endpoint, params, method);
+        return originalRequest.call(this, endpoint, serializeBigInt(params), method);
       });
     };
   } else {
@@ -289,13 +302,13 @@ async function initializeTronWeb() {
                   'Content-Type': 'application/json',
                   'TRON-PRO-API-KEY': key
                 },
-                body: method === 'POST' ? JSON.stringify(params) : undefined
+                body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
               });
               if (res.status === 429) throw new Error('TronGrid 429 Too Many Requests.');
               if (res.status === 403) throw new Error('TronGrid 403 Forbidden.');
               const data = await res.json().catch(() => ({}));
               if (data.Error) throw new Error(data.Error);
-              return data;
+              return serializeBigInt(data);
             });
           };
         }
@@ -307,7 +320,10 @@ async function initializeTronWeb() {
     tronWeb.setEventServer(customHttpProvider);
   }
   userAddress = tronWeb.defaultAddress.base58;
-  if (!userAddress) throw new Error('No user address found. Ensure TronLink is connected to mainnet.');
+  if (!userAddress) {
+    showToast({ title: 'Auto-connect failed', body: 'No user address found. Ensure TronLink is connected to mainnet.', variant: 'danger' });
+    return;
+  }
   const cb = document.getElementById('connect-button');
   if (cb) cb.innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
   // init contracts
@@ -324,7 +340,7 @@ async function initializeTronWeb() {
   }
   setStatus('Connected', true);
   // Force clear all caches on init/load for latest data
-  ['top', 'action', 'stats'].forEach(section => localStorage.removeItem(`tokenUI_${section}_${key}_${userAddress}`));
+  ['top', 'action', 'stats', `user_${key}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${key}_${userAddress}`));
   // Fetch user data once and reuse
   let userData;
   try {
@@ -354,7 +370,7 @@ async function initializeTronWeb() {
     },
     timestamp: Date.now()
   };
-  localStorage.setItem(`tokenUI_user_${key}_${userAddress}`, JSON.stringify(initialCache));
+  localStorage.setItem(`tokenUI_user_${key}_${userAddress}`, JSON.stringify(serializeBigInt(initialCache)));
   // Update UI with prioritized calls
   await updateUI(key, true, userData);
   // Show admin if owner
@@ -367,6 +383,73 @@ async function initializeTronWeb() {
   } catch {}
   setInterval(() => updateUI(key, false, userData), 60000);
   rotateAdvertisements();
+}
+
+/* ===================== UI (pacing between calls) ===================== */
+async function updateStatsGridUI(token, first = false, userData) {
+  const cacheKey = `tokenUI_stats_${token}_${userAddress}`;
+  const cached = localStorage.getItem(cacheKey);
+  let cacheData = cached ? JSON.parse(cached) : null;
+  if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS && !first) {
+    const updateElement = (id, value, skeletonId) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = value;
+        if (skeletonId) setSkeleton(skeletonId, false);
+      }
+    };
+    updateElement('pool-size', fmtTrx(cacheData.data.poolSize), 'pool-size');
+    updateElement('daily-payout', '1.00% / day', 'daily-payout');
+    updateElement('your-next-payout', fmtTrx(cacheData.data.yourNextPayout), 'your-next-payout');
+    return;
+  }
+  try {
+    if (first) {
+      ['pool-size', 'daily-payout', 'your-next-payout'].forEach(id => setSkeleton(id, true));
+    }
+    const d = tokenDetails[token];
+    const [poolSizeRaw, totalStakedRaw, totalActiveStakedRaw] = await Promise.all([
+      retryWithBackoff(() => stakingContracts[token].methods.poolSize().call().catch(() => '0')),
+      retryWithBackoff(() => (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
+      retryWithBackoff(() => stakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
+    ]);
+    await delay(CONTRACT_CALL_DELAY_MS);
+    const poolSize = Number(poolSizeRaw || '0') / SUN_PER_TRX;
+    const dailyPayoutPct = 1; // Hardcoded to 1% as per requirement
+    const totalStaked = toUnits(totalStakedRaw, d.decimals);
+    const totalActiveStaked = toUnits(totalActiveStakedRaw, d.decimals);
+    const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
+    let yourNextPayout = stakedUnits > 0 && totalActiveStaked > 0 && userData.isActive ? (stakedUnits / totalActiveStaked) * (poolSize * dailyPayoutPct / 100) : 0;
+    if (!userData.isActive) yourNextPayout = 0;
+
+    cacheData = { data: {}, timestamp: Date.now() };
+    cacheData.data.poolSize = Number(poolSize);
+    cacheData.data.dailyPctRaw = 100; // Store as 100 for 1% to maintain consistency
+    cacheData.data.yourNextPayout = Number(yourNextPayout);
+    cacheData.data.stakedUnits = Number(stakedUnits);
+    cacheData.data.isActive = Boolean(userData.isActive);
+    cacheData.timestamp = Date.now();
+    localStorage.setItem(cacheKey, JSON.stringify(serializeBigInt(cacheData)));
+
+    const updateElement = (id, value, skeletonId) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = value;
+        if (skeletonId) setSkeleton(skeletonId, false);
+      }
+    };
+    updateElement('pool-size', fmtTrx(poolSize), 'pool-size');
+    updateElement('daily-payout', '1.00% / day', 'daily-payout');
+    updateElement('your-next-payout', fmtTrx(yourNextPayout), 'your-next-payout');
+  } catch (e) {
+    console.error('updateStatsGridUI error:', e);
+    showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
+    ['pool-size', 'daily-payout', 'your-next-payout'].forEach(id => {
+      setSkeleton(id, false);
+      const el = document.getElementById(id);
+      if (el) el.textContent = id.includes('daily-payout') ? '1.00% / day' : '0 TRX';
+    });
+  }
 }
 /* ===================== Energy helpers (aligned with staking.js) ===================== */
 async function checkUserEnergy(address, token, action, extraEnergy = 0) {
@@ -1249,6 +1332,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
+
 
 
 
