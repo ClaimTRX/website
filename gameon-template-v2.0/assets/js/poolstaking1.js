@@ -2,11 +2,13 @@
    - Same server flow as staking.js (GET /available-energy → pay → POST /request-energy → poll /delegation-status)
    - Payment sends integer SUN (no float rounding issues)
    - Payment address set to the same as staking.js so backend recognizes the tx
-   - Global 1000ms throttle + round-robin API key rotation
-   - 500ms delays between sequential on-chain contract calls to avoid bursts
+   - Global 1500ms throttle + round-robin API key rotation
+   - 1000ms delays between sequential on-chain contract calls to avoid bursts
    - Workaround for incorrect earned function for TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA
    - Whitelist check to display "Whitelisted" instead of countdown
    - UI refresh after stake/unstake/claim/activate to prevent stale "Expired" display
+   - Reduced updateClaimTimer frequency to 5s and cached results to minimize API calls
+   - Paused timer during transactions to prevent overlapping calls
 */
 let tronWeb, userAddress;
 const stakingContracts = {};
@@ -24,14 +26,14 @@ const SAFETY_ENERGY = 50000;
 const ENERGY_PRICE_SUN = 10;
 const SUN_PER_TRX = 1_000_000;
 const ENERGY_RENTAL_DURATION = 2;
-const CACHE_TIMEOUT_MS = 60_000;
-const THROTTLE_GAP_MS = 1000;
-const CONTRACT_CALL_DELAY_MS = 500;
+const CACHE_TIMEOUT_MS = 120_000; // Extended to 120s
+const THROTTLE_GAP_MS = 1500; // Increased to 1500ms
+const CONTRACT_CALL_DELAY_MS = 1000; // Increased to 1000ms
 /* ===================== Token Config ===================== */
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-    stakingAddress: 'TFQye7GN1NRXYDEacM5qMumzc37jVApRGT',
+    stakingAddress: 'TCf1vY3EMuczBSmo9Cfrffu6TsGrUvrC52',
     decimals: 6,
     displayName: 'CFT',
     rewardDisplayName: 'TRX',
@@ -153,7 +155,7 @@ const apiKeyRotator = (() => {
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
-async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
+async function retryWithBackoff(fn, maxRetries = 5, baseDelay = 2000) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn();
@@ -316,7 +318,7 @@ async function initializeTronWeb() {
   await updateTokenUI(key, true);
   // show admin if owner
   try {
-    const owner = await stakingContracts[key].methods.owner().call();
+    const owner = await retryWithBackoff(() => stakingContracts[key].methods.owner().call());
     if (userAddress === owner) {
       const admin = document.getElementById('admin-section');
       if (admin) admin.style.display = 'block';
@@ -328,7 +330,7 @@ async function initializeTronWeb() {
 /* ===================== Energy helpers (aligned with staking.js) ===================== */
 async function checkUserEnergy(address, token, action, extraEnergy = 0) {
   try {
-    const resources = await tronWeb.trx.getAccountResources(address);
+    const resources = await retryWithBackoff(() => tronWeb.trx.getAccountResources(address));
     const energyLimit = resources.EnergyLimit || 0;
     const energyUsed = resources.EnergyUsed || 0;
     const availableEnergy = energyLimit - energyUsed;
@@ -537,7 +539,47 @@ function hideProcessingModal(modal) { if (modal) modal.hide(); }
 /* ===================== UI (pacing between calls) ===================== */
 async function updateTokenUI(token, first = false) {
   const cacheKey = `tokenUI_${token}_${userAddress}`;
-  localStorage.removeItem(cacheKey); // Force fresh data
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) {
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp < CACHE_TIMEOUT_MS) {
+      const updateElement = (id, value, skeletonId) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.textContent = value;
+          if (id === `available-tokens-${token}`) el.dataset.raw = String(data.balanceUnits);
+          if (skeletonId) setSkeleton(skeletonId, false);
+        }
+      };
+      updateElement(`available-tokens-${token}`, fmt(data.balanceUnits), `available-tokens-${token}`);
+      updateElement(`staked-amount-${token}`, fmt(data.stakedUnits), `staked-amount-${token}`);
+      updateElement(`projected-rewards-${token}`, fmtPct(data.apyPct), `projected-rewards-${token}`);
+      updateElement(`claimable-rewards-${token}`, `${Number(data.isExpired ? 0 : data.rewardUnits).toFixed(2)} ${tokenDetails[token].rewardDisplayName}`);
+      updateElement('user-total-claimed-cft', fmtTrx(data.userTotalClaimed), 'user-total-claimed-cft');
+      updateElement('roi-cft', fmtPct(data.roiPct), 'roi-cft');
+      updateElement('pool-size', fmtTrx(data.poolSize), 'pool-size');
+      updateElement('daily-payout', `${data.dailyPctRaw.toFixed(2)}% / day`, 'daily-payout');
+      updateElement('total-next-payout', fmtTrx(data.totalNextPayout), 'total-next-payout');
+      updateElement('your-next-payout', fmtTrx(data.yourNextPayout), 'your-next-payout');
+      updateElement('total-active-tokens', fmt(data.totalActiveTokens) + ' CFT', 'total-active-tokens');
+      updateElement('total-inactive-tokens', fmt(data.totalInactiveTokens) + ' CFT', 'total-inactive-tokens');
+      const activateButton = document.getElementById(`activate-tokens-button-${token}`);
+      const claimButton = document.getElementById(`claim-rewards-button-${token}`);
+      if (activateButton && claimButton) {
+        if (data.isExpired || (!data.isActive && Number(data.stakedUnits) > 0)) {
+          activateButton.style.display = 'block';
+          claimButton.style.display = 'none';
+          claimButton.disabled = true;
+        } else {
+          activateButton.style.display = 'none';
+          claimButton.style.display = 'block';
+          claimButton.disabled = Number(data.rewardUnits) === 0 || Number(data.contractBalance) < Number(data.rewardUnits);
+        }
+      }
+      updateClaimTimer(data.timeoutSec, data.lastClaimTs, data.isActive, data.isWhitelisted);
+      return;
+    }
+  }
   try {
     if (first) {
       ['available-tokens-cft', 'staked-amount-cft', 'projected-rewards-cft', 'user-total-claimed-cft', 'roi-cft', 'pool-size', 'daily-payout', 'total-next-payout', 'your-next-payout', 'total-active-tokens', 'total-inactive-tokens']
@@ -567,7 +609,7 @@ async function updateTokenUI(token, first = false) {
       retryWithBackoff(() => stakingContracts[token].methods.calculateAPY(userAddress).call().catch(() => '0')),
       retryWithBackoff(() => stakingContracts[token].methods.claimTimeout().call().catch(() => '1209600')),
       retryWithBackoff(() => stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(() => '627405')),
-      retryWithBackoff(() => stakingContracts[token].methods.earned(userAddress).call().catch(() => '0')),
+      retryWithBackoff(() => stakingContracts[token].methods.earned(userAddress).catch(() => '0')),
       retryWithBackoff(() => stakingContracts[token].methods.poolSize().call().catch(() => '1146024463')),
       retryWithBackoff(() => stakingContracts[token].methods.dailyPayoutPercentage().call().catch(() => '100')),
       retryWithBackoff(() => (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
@@ -631,7 +673,11 @@ async function updateTokenUI(token, first = false) {
         totalActiveTokens: Number(totalActiveTokens),
         totalInactiveTokens: Number(totalInactiveTokens),
         contractBalance: Number(contractBalanceRaw) / SUN_PER_TRX,
-        isWhitelisted: Boolean(isWhitelisted)
+        isWhitelisted: Boolean(isWhitelisted),
+        timeoutSec: Number(timeout),
+        lastClaimTs: Number(userData.lastClaimTimestamp),
+        isActive: Boolean(userData.isActive),
+        isExpired: Boolean(isExpired)
       },
       timestamp: Date.now()
     };
@@ -696,6 +742,9 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
     clearInterval(timerEl._claimInterval);
     timerEl._claimInterval = null;
   }
+  let cachedRewards = null;
+  let cachedBalance = null;
+  let cacheTimestamp = 0;
   if (isWhitelisted) {
     timerEl.textContent = 'Whitelisted';
     timerEl.classList.remove('inactive');
@@ -729,23 +778,34 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
     return `${d ? d + 'd ' : ''}${(h || d) ? h + 'h ' : ''}${m}m ${sec}s`;
   };
   const tick = async () => {
+    if (timerEl._paused) return; // Skip if paused during transaction
     const now = Math.floor(Date.now() / 1000);
     const rem = Math.max(0, next - now);
-    let pendingRewards = await retryWithBackoff(() => stakingContracts['cft'].methods.earned(userAddress).call().catch(() => '0'));
-    if (userAddress === 'TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA' && lastClaimTs === '1760506692') {
-      const stakeTimestamp = 1760506692;
-      const distributions = [
-        { timestamp: 1760506878, amount: 30393000 },
-        { timestamp: 1760506818, amount: 30700000 }
-      ];
-      pendingRewards = 0;
-      for (const dist of distributions) {
-        if (dist.timestamp > stakeTimestamp) {
-          pendingRewards += dist.amount / 2;
+    let pendingRewards;
+    let contractBalanceRaw;
+    if (Date.now() - cacheTimestamp < CACHE_TIMEOUT_MS && cachedRewards !== null && cachedBalance !== null) {
+      pendingRewards = cachedRewards;
+      contractBalanceRaw = cachedBalance;
+    } else {
+      pendingRewards = await retryWithBackoff(() => stakingContracts['cft'].methods.earned(userAddress).call().catch(() => '0'));
+      if (userAddress === 'TXgL1i4dF1vEhDYuVsMuo8ovcfdEE6tztA' && lastClaimTs === '1760506692') {
+        const stakeTimestamp = 1760506692;
+        const distributions = [
+          { timestamp: 1760506878, amount: 30393000 },
+          { timestamp: 1760506818, amount: 30700000 }
+        ];
+        pendingRewards = 0;
+        for (const dist of distributions) {
+          if (dist.timestamp > stakeTimestamp) {
+            pendingRewards += dist.amount / 2;
+          }
         }
       }
+      contractBalanceRaw = await retryWithBackoff(() => tronWeb.trx.getBalance(tokenDetails['cft'].stakingAddress).catch(() => '0'));
+      cachedRewards = pendingRewards;
+      cachedBalance = contractBalanceRaw;
+      cacheTimestamp = Date.now();
     }
-    const contractBalanceRaw = await retryWithBackoff(() => tronWeb.trx.getBalance(tokenDetails['cft'].stakingAddress).catch(() => '0'));
     if (rem === 0 || !isActive) {
       clearInterval(timerEl._claimInterval);
       timerEl._claimInterval = null;
@@ -769,7 +829,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted) {
     }
   };
   tick();
-  timerEl._claimInterval = setInterval(tick, 1000);
+  timerEl._claimInterval = setInterval(tick, 5000); // Reduced to 5s
 }
 /* ===================== Core ===================== */
 async function initialize() {
@@ -813,8 +873,10 @@ async function connectWallet() {
 async function stakeTokens(token, amount) {
   let processingModal = null;
   const stakeBtn = document.getElementById(`stake-button-${token}`);
+  const timerEl = document.getElementById('next-claim-timer');
   const run = async () => {
     try {
+      if (timerEl) timerEl._paused = true; // Pause timer
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!isValidTronAddress(tokenDetails[token].tokenAddress)) throw new Error('Invalid token address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
@@ -873,11 +935,13 @@ async function stakeTokens(token, amount) {
       showToast({ title:'Stake submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastStake.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
       hideProcessingModal(processingModal);
       localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await delay(500); // Wait for contract state to update
+      await delay(1000); // Wait for contract state to update
       await updateTokenUI(token, true);
     } catch (e) {
       hideProcessingModal(processingModal);
       showToast({ title:'Stake error', body:e.message, variant:'danger' });
+    } finally {
+      if (timerEl) timerEl._paused = false; // Resume timer
     }
   };
   return withLoading(stakeBtn, 'Staking...', run)();
@@ -885,8 +949,10 @@ async function stakeTokens(token, amount) {
 async function unstakeTokens(token) {
   let processingModal = null;
   const btn = document.getElementById(`unstake-button-${token}`);
+  const timerEl = document.getElementById('next-claim-timer');
   const run = async () => {
     try {
+      if (timerEl) timerEl._paused = true; // Pause timer
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
       const unstakeAmount = document.getElementById(`withdraw-amount-${token}`).value;
@@ -920,11 +986,13 @@ async function unstakeTokens(token) {
       showToast({ title:'Withdraw submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastWithdraw.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
       hideProcessingModal(processingModal);
       localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await delay(500); // Wait for contract state to update
+      await delay(1000); // Wait for contract state to update
       await updateTokenUI(token, true);
     } catch (e) {
       hideProcessingModal(processingModal);
       showToast({ title:'Withdraw error', body:e.message, variant:'danger' });
+    } finally {
+      if (timerEl) timerEl._paused = false; // Resume timer
     }
   };
   return withLoading(btn, 'Withdrawing...', run)();
@@ -932,8 +1000,10 @@ async function unstakeTokens(token) {
 async function claimRewards(token) {
   let processingModal = null;
   const btn = document.getElementById(`claim-rewards-button-${token}`);
+  const timerEl = document.getElementById('next-claim-timer');
   const run = async () => {
     try {
+      if (timerEl) timerEl._paused = true; // Pause timer
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
       const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'claimRewards');
@@ -985,11 +1055,13 @@ async function claimRewards(token) {
       });
       hideProcessingModal(processingModal);
       localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await delay(500); // Wait for contract state to update
+      await delay(1000); // Wait for contract state to update
       await updateTokenUI(token, true);
     } catch (e) {
       hideProcessingModal(processingModal);
       showToast({ title:'Claim error', body:e.message, variant:'danger' });
+    } finally {
+      if (timerEl) timerEl._paused = false; // Resume timer
     }
   };
   return withLoading(btn, 'Claiming...', run)();
@@ -997,8 +1069,10 @@ async function claimRewards(token) {
 async function activateTokens(token) {
   let processingModal = null;
   const btn = document.getElementById(`activate-tokens-button-${token}`);
+  const timerEl = document.getElementById('next-claim-timer');
   const run = async () => {
     try {
+      if (timerEl) timerEl._paused = true; // Pause timer
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
       const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'activateTokens');
@@ -1036,11 +1110,13 @@ async function activateTokens(token) {
       });
       hideProcessingModal(processingModal);
       localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await delay(500); // Wait for contract state to update
+      await delay(1000); // Wait for contract state to update
       await updateTokenUI(token, true);
     } catch (e) {
       hideProcessingModal(processingModal);
       showToast({ title: 'Activation error', body: e.message, variant: 'danger' });
+    } finally {
+      if (timerEl) timerEl._paused = false; // Resume timer
     }
   };
   return withLoading(btn, 'Activating...', run)();
