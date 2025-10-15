@@ -385,72 +385,7 @@ async function initializeTronWeb() {
   rotateAdvertisements();
 }
 
-/* ===================== UI (pacing between calls) ===================== */
-async function updateStatsGridUI(token, first = false, userData) {
-  const cacheKey = `tokenUI_stats_${token}_${userAddress}`;
-  const cached = localStorage.getItem(cacheKey);
-  let cacheData = cached ? JSON.parse(cached) : null;
-  if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS && !first) {
-    const updateElement = (id, value, skeletonId) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.textContent = value;
-        if (skeletonId) setSkeleton(skeletonId, false);
-      }
-    };
-    updateElement('pool-size', fmtTrx(cacheData.data.poolSize), 'pool-size');
-    updateElement('daily-payout', '1.00% / day', 'daily-payout');
-    updateElement('your-next-payout', fmtTrx(cacheData.data.yourNextPayout), 'your-next-payout');
-    return;
-  }
-  try {
-    if (first) {
-      ['pool-size', 'daily-payout', 'your-next-payout'].forEach(id => setSkeleton(id, true));
-    }
-    const d = tokenDetails[token];
-    const [poolSizeRaw, totalStakedRaw, totalActiveStakedRaw] = await Promise.all([
-      retryWithBackoff(() => stakingContracts[token].methods.poolSize().call().catch(() => '0')),
-      retryWithBackoff(() => (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
-      retryWithBackoff(() => stakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
-    ]);
-    await delay(CONTRACT_CALL_DELAY_MS);
-    const poolSize = Number(poolSizeRaw || '0') / SUN_PER_TRX;
-    const dailyPayoutPct = 1; // Hardcoded to 1% as per requirement
-    const totalStaked = toUnits(totalStakedRaw, d.decimals);
-    const totalActiveStaked = toUnits(totalActiveStakedRaw, d.decimals);
-    const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
-    let yourNextPayout = stakedUnits > 0 && totalActiveStaked > 0 && userData.isActive ? (stakedUnits / totalActiveStaked) * (poolSize * dailyPayoutPct / 100) : 0;
-    if (!userData.isActive) yourNextPayout = 0;
 
-    cacheData = { data: {}, timestamp: Date.now() };
-    cacheData.data.poolSize = Number(poolSize);
-    cacheData.data.dailyPctRaw = 100; // Store as 100 for 1% to maintain consistency
-    cacheData.data.yourNextPayout = Number(yourNextPayout);
-    cacheData.data.stakedUnits = Number(stakedUnits);
-    cacheData.data.isActive = Boolean(userData.isActive);
-    cacheData.timestamp = Date.now();
-    localStorage.setItem(cacheKey, JSON.stringify(serializeBigInt(cacheData)));
-
-    const updateElement = (id, value, skeletonId) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.textContent = value;
-        if (skeletonId) setSkeleton(skeletonId, false);
-      }
-    };
-    updateElement('pool-size', fmtTrx(poolSize), 'pool-size');
-    updateElement('daily-payout', '1.00% / day', 'daily-payout');
-    updateElement('your-next-payout', fmtTrx(yourNextPayout), 'your-next-payout');
-  } catch (e) {
-    console.error('updateStatsGridUI error:', e);
-    showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
-    ['pool-size', 'daily-payout', 'your-next-payout'].forEach(id => {
-      setSkeleton(id, false);
-      const el = document.getElementById(id);
-      if (el) el.textContent = id.includes('daily-payout') ? '1.00% / day' : '0 TRX';
-    });
-  }
-}
 /* ===================== Energy helpers (aligned with staking.js) ===================== */
 async function checkUserEnergy(address, token, action, extraEnergy = 0) {
   try {
@@ -859,7 +794,7 @@ async function updateStatsGridUI(token, first = false, userData) {
       }
     };
     updateElement('pool-size', fmtTrx(cacheData.data.poolSize), 'pool-size');
-    updateElement('daily-payout', `${(Number(cacheData.data.dailyPctRaw || 0) / 100).toFixed(2)}% / day`, 'daily-payout');
+    updateElement('daily-payout', '1.00% / day', 'daily-payout');
     updateElement('your-next-payout', fmtTrx(cacheData.data.yourNextPayout), 'your-next-payout');
     return;
   }
@@ -868,15 +803,14 @@ async function updateStatsGridUI(token, first = false, userData) {
       ['pool-size', 'daily-payout', 'your-next-payout'].forEach(id => setSkeleton(id, true));
     }
     const d = tokenDetails[token];
-    const [poolSizeRaw, dailyPctRaw, totalStakedRaw, totalActiveStakedRaw] = await Promise.all([
+    const [poolSizeRaw, totalStakedRaw, totalActiveStakedRaw] = await Promise.all([
       retryWithBackoff(() => stakingContracts[token].methods.poolSize().call().catch(() => '0')),
-      retryWithBackoff(() => stakingContracts[token].methods.dailyPayoutPercentage().call().catch(() => '0')),
       retryWithBackoff(() => (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
       retryWithBackoff(() => stakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
     ]);
     await delay(CONTRACT_CALL_DELAY_MS);
     const poolSize = Number(poolSizeRaw || '0') / SUN_PER_TRX;
-    const dailyPayoutPct = Number(dailyPctRaw || '0') / 100;
+    const dailyPayoutPct = 1; // Hardcoded to 1% as per requirement
     const totalStaked = toUnits(totalStakedRaw, d.decimals);
     const totalActiveStaked = toUnits(totalActiveStakedRaw, d.decimals);
     const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
@@ -885,12 +819,12 @@ async function updateStatsGridUI(token, first = false, userData) {
 
     cacheData = { data: {}, timestamp: Date.now() };
     cacheData.data.poolSize = Number(poolSize);
-    cacheData.data.dailyPctRaw = Number(dailyPctRaw || '0');
+    cacheData.data.dailyPctRaw = 100; // Store as 100 for 1% to maintain consistency
     cacheData.data.yourNextPayout = Number(yourNextPayout);
     cacheData.data.stakedUnits = Number(stakedUnits);
     cacheData.data.isActive = Boolean(userData.isActive);
     cacheData.timestamp = Date.now();
-    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    localStorage.setItem(cacheKey, JSON.stringify(serializeBigInt(cacheData)));
 
     const updateElement = (id, value, skeletonId) => {
       const el = document.getElementById(id);
@@ -900,7 +834,7 @@ async function updateStatsGridUI(token, first = false, userData) {
       }
     };
     updateElement('pool-size', fmtTrx(poolSize), 'pool-size');
-    updateElement('daily-payout', `${dailyPayoutPct.toFixed(2)}% / day`, 'daily-payout');
+    updateElement('daily-payout', '1.00% / day', 'daily-payout');
     updateElement('your-next-payout', fmtTrx(yourNextPayout), 'your-next-payout');
   } catch (e) {
     console.error('updateStatsGridUI error:', e);
@@ -908,7 +842,7 @@ async function updateStatsGridUI(token, first = false, userData) {
     ['pool-size', 'daily-payout', 'your-next-payout'].forEach(id => {
       setSkeleton(id, false);
       const el = document.getElementById(id);
-      if (el) el.textContent = id.includes('daily-payout') ? '0.00% / day' : '0 TRX';
+      if (el) el.textContent = id.includes('daily-payout') ? '1.00% / day' : '0 TRX';
     });
   }
 }
@@ -1332,6 +1266,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
+
 
 
 
