@@ -29,6 +29,10 @@ const ENERGY_RENTAL_DURATION = 2;
 const CACHE_TIMEOUT_MS = 120_000; // 120s cache for runtime updates
 const THROTTLE_GAP_MS = 500; // Keep 5000ms to stay under 15 QPS per key
 const CONTRACT_CALL_DELAY_MS = 200; // Increased to 1000ms for safer pacing
+const UI_REFRESH_DELAY_MS = 3000; // 3s delay for UI refresh after actions
+// Manual CFT price for APY calculation (update this value as needed)
+const CFT_PRICE = 1; // Manually set CFT price in USD
+const DAILY_PAYOUT_PERCENTAGE = 1; // 1% daily payout as per requirement
 /* ===================== Token Config ===================== */
 const tokenDetails = {
   cft: {
@@ -178,8 +182,6 @@ function normalizeContractOutput(output) {
   }
   return String(output || '0');
 }
-
-// Add this new function after normalizeContractOutput
 function serializeBigInt(obj) {
   return JSON.parse(JSON.stringify(obj, (key, value) =>
     typeof value === 'bigint' ? value.toString() : value
@@ -384,8 +386,6 @@ async function initializeTronWeb() {
   setInterval(() => updateUI(key, false, userData), 60000);
   rotateAdvertisements();
 }
-
-
 /* ===================== Energy helpers (aligned with staking.js) ===================== */
 async function checkUserEnergy(address, token, action, extraEnergy = 0) {
   try {
@@ -525,8 +525,6 @@ function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = 
     try { modal.show(); } catch { reject(new Error('Failed to show energy rental modal.')); }
   });
 }
-
-/* Add this new function after showEnergyRentalModal */
 function showRewardWarningModal(rewardUnits) {
   return new Promise((resolve, reject) => {
     const modalElement = document.getElementById('reward-warning-modal');
@@ -558,7 +556,6 @@ function showRewardWarningModal(rewardUnits) {
     try { modal.show(); } catch { reject(new Error('Failed to show reward warning modal.')); }
   });
 }
-
 /* ===================== Utils ===================== */
 const TEN = 10n;
 function toUnits(raw, decimals = 6) {
@@ -654,20 +651,20 @@ async function updateTopBarUI(token, first = false, userData) {
         .forEach(id => setSkeleton(id, true));
     }
     const d = tokenDetails[token];
-    const [apy, userTotalClaimedRaw] = await Promise.all([
-      retryWithBackoff(() => stakingContracts[token].methods.calculateAPY(userAddress).call().catch(() => '0')),
-      retryWithBackoff(() => stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(() => '0'))
-    ]);
+    const userTotalClaimedRaw = await retryWithBackoff(() => stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(() => '0'));
+    const poolSizeRaw = await retryWithBackoff(() => stakingContracts[token].methods.poolSize().call().catch(() => '0'));
     await delay(CONTRACT_CALL_DELAY_MS);
+    const poolSize = Number(poolSizeRaw || '0') / SUN_PER_TRX;
     const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
     const userTotalClaimed = Number(userTotalClaimedRaw) / SUN_PER_TRX;
-    const CFT_PRICE = 0.6378;
     const stakedAmount = toUnits(userData.stakedAmount, d.decimals);
     const totalClaimedTrx = Number(userTotalClaimedRaw) / SUN_PER_TRX;
     const roiPct = (stakedAmount > 0 && userData.isActive) ? (totalClaimedTrx / (stakedAmount * CFT_PRICE)) * 100 : 0;
-    let apyPct = Number(apy);
+    // Manual APY calculation: (Daily Payout % * Pool Size * 365) / (Staked Amount * CFT Price)
+    let apyPct = (stakedAmount > 0 && userData.isActive && poolSize > 0)
+      ? ((DAILY_PAYOUT_PERCENTAGE / 100 * poolSize * 365) / (stakedAmount * CFT_PRICE)) * 100
+      : 0;
     if (!userData.isActive) apyPct = 0;
-    
     cacheData = { data: {}, timestamp: Date.now() };
     cacheData.data.stakedUnits = Number(stakedUnits);
     cacheData.data.apyPct = Number(apyPct);
@@ -677,7 +674,6 @@ async function updateTopBarUI(token, first = false, userData) {
     cacheData.data.lastClaimTimestamp = Number(userData.lastClaimTimestamp);
     cacheData.timestamp = Date.now();
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-
     const updateElement = (id, value, skeletonId) => {
       const el = document.getElementById(id);
       if (el) {
@@ -778,7 +774,6 @@ async function updateActionGridUI(token, first = false, userData) {
     cacheData.data.stakedUnits = Number(toUnits(userData.stakedAmount, d.decimals));
     cacheData.timestamp = Date.now();
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-
     const updateElement = (id, value, skeletonId) => {
       const el = document.getElementById(id);
       if (el) {
@@ -789,7 +784,6 @@ async function updateActionGridUI(token, first = false, userData) {
     };
     updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
     updateElement(`claimable-rewards-${token}`, `${Number(isExpired ? 0 : rewardUnits).toFixed(2)} ${d.rewardDisplayName}`);
-    
     const activateButton = document.getElementById(`activate-tokens-button-${token}`);
     const claimButton = document.getElementById(`claim-rewards-button-${token}`);
     if (activateButton && claimButton) {
@@ -844,13 +838,12 @@ async function updateStatsGridUI(token, first = false, userData) {
     ]);
     await delay(CONTRACT_CALL_DELAY_MS);
     const poolSize = Number(poolSizeRaw || '0') / SUN_PER_TRX;
-    const dailyPayoutPct = 1; // Hardcoded to 1% as per requirement
+    const dailyPayoutPct = DAILY_PAYOUT_PERCENTAGE; // Use constant
     const totalStaked = toUnits(totalStakedRaw, d.decimals);
     const totalActiveStaked = toUnits(totalActiveStakedRaw, d.decimals);
     const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
     let yourNextPayout = stakedUnits > 0 && totalActiveStaked > 0 && userData.isActive ? (stakedUnits / totalActiveStaked) * (poolSize * dailyPayoutPct / 100) : 0;
     if (!userData.isActive) yourNextPayout = 0;
-
     cacheData = { data: {}, timestamp: Date.now() };
     cacheData.data.poolSize = Number(poolSize);
     cacheData.data.dailyPctRaw = 100; // Store as 100 for 1% to maintain consistency
@@ -859,7 +852,6 @@ async function updateStatsGridUI(token, first = false, userData) {
     cacheData.data.isActive = Boolean(userData.isActive);
     cacheData.timestamp = Date.now();
     localStorage.setItem(cacheKey, JSON.stringify(serializeBigInt(cacheData)));
-
     const updateElement = (id, value, skeletonId) => {
       const el = document.getElementById(id);
       if (el) {
@@ -1084,9 +1076,40 @@ async function stakeTokens(token, amount) {
       if (!broadcastStake.result) throw new Error('Failed to broadcast stake transaction');
       showToast({ title:'Stake submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastStake.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
       hideProcessingModal(processingModal);
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await delay(1000);
-      await updateUI(token, true);
+      // Clear caches and fetch fresh user data
+      ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
+      let newUserData;
+      try {
+        newUserData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
+        console.debug('stakeTokens: new userData fetched:', newUserData);
+      } catch (error) {
+        console.error('stakeTokens: failed to fetch new userData:', error);
+        newUserData = {
+          stakedAmount: '0',
+          isActive: false,
+          lastClaimTimestamp: '0',
+          totalClaimed: '0',
+          rewards: '0',
+          userRewardPerTokenPaid: '0'
+        };
+        showToast({ title: 'Data Fetch Error', body: 'Failed to fetch updated user data; using fallback.', variant: 'warning' });
+      }
+      // Update cache with new user data
+      const updatedCache = {
+        data: {
+          stakedAmount: newUserData.stakedAmount,
+          isActive: newUserData.isActive,
+          lastClaimTimestamp: newUserData.lastClaimTimestamp,
+          totalClaimed: newUserData.totalClaimed,
+          rewards: newUserData.rewards,
+          userRewardPerTokenPaid: newUserData.userRewardPerTokenPaid
+        },
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`tokenUI_user_${token}_${userAddress}`, JSON.stringify(serializeBigInt(updatedCache)));
+      // Force UI refresh after delay
+      await delay(UI_REFRESH_DELAY_MS);
+      await updateUI(token, true, newUserData);
     } catch (e) {
       hideProcessingModal(processingModal);
       showToast({ title:'Stake error', body:e.message, variant:'danger' });
@@ -1107,7 +1130,6 @@ async function unstakeTokens(token) {
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
       const unstakeAmount = document.getElementById(`withdraw-amount-${token}`).value;
       if (!unstakeAmount || isNaN(unstakeAmount) || Number(unstakeAmount) <= 0) throw new Error('Enter a valid amount to withdraw.');
-      
       // Check for pending rewards
       let pendingRewardsRaw;
       try {
@@ -1129,7 +1151,6 @@ async function unstakeTokens(token) {
           throw new Error('Withdrawal cancelled. Please claim your rewards first.');
         }
       }
-      
       const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'unstake');
       if (shortfall > 0) {
         const totalRequired = shortfall + SAFETY_ENERGY;
@@ -1158,9 +1179,40 @@ async function unstakeTokens(token) {
       if (!broadcastWithdraw.result) throw new Error('Failed to broadcast unstake transaction');
       showToast({ title:'Withdraw submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastWithdraw.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
       hideProcessingModal(processingModal);
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await delay(1000);
-      await updateUI(token, true);
+      // Clear caches and fetch fresh user data
+      ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
+      let newUserData;
+      try {
+        newUserData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
+        console.debug('unstakeTokens: new userData fetched:', newUserData);
+      } catch (error) {
+        console.error('unstakeTokens: failed to fetch new userData:', error);
+        newUserData = {
+          stakedAmount: '0',
+          isActive: false,
+          lastClaimTimestamp: '0',
+          totalClaimed: '0',
+          rewards: '0',
+          userRewardPerTokenPaid: '0'
+        };
+        showToast({ title: 'Data Fetch Error', body: 'Failed to fetch updated user data; using fallback.', variant: 'warning' });
+      }
+      // Update cache with new user data
+      const updatedCache = {
+        data: {
+          stakedAmount: newUserData.stakedAmount,
+          isActive: newUserData.isActive,
+          lastClaimTimestamp: newUserData.lastClaimTimestamp,
+          totalClaimed: newUserData.totalClaimed,
+          rewards: newUserData.rewards,
+          userRewardPerTokenPaid: newUserData.userRewardPerTokenPaid
+        },
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`tokenUI_user_${token}_${userAddress}`, JSON.stringify(serializeBigInt(updatedCache)));
+      // Force UI refresh after delay
+      await delay(UI_REFRESH_DELAY_MS);
+      await updateUI(token, true, newUserData);
     } catch (e) {
       hideProcessingModal(processingModal);
       showToast({ title:'Withdraw error', body:e.message, variant:'danger' });
@@ -1222,12 +1274,43 @@ async function claimRewards(token) {
         body: `<a href="https://tronscan.org/#/transaction/${broadcastClaim.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
       });
       hideProcessingModal(processingModal);
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await delay(1000);
-      await updateUI(token, true);
+      // Clear caches and fetch fresh user data
+      ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
+      let newUserData;
+      try {
+        newUserData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
+        console.debug('claimRewards: new userData fetched:', newUserData);
+      } catch (error) {
+        console.error('claimRewards: failed to fetch new userData:', error);
+        newUserData = {
+          stakedAmount: '0',
+          isActive: false,
+          lastClaimTimestamp: '0',
+          totalClaimed: '0',
+          rewards: '0',
+          userRewardPerTokenPaid: '0'
+        };
+        showToast({ title: 'Data Fetch Error', body: 'Failed to fetch updated user data; using fallback.', variant: 'warning' });
+      }
+      // Update cache with new user data
+      const updatedCache = {
+        data: {
+          stakedAmount: newUserData.stakedAmount,
+          isActive: newUserData.isActive,
+          lastClaimTimestamp: newUserData.lastClaimTimestamp,
+          totalClaimed: newUserData.totalClaimed,
+          rewards: newUserData.rewards,
+          userRewardPerTokenPaid: newUserData.userRewardPerTokenPaid
+        },
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`tokenUI_user_${token}_${userAddress}`, JSON.stringify(serializeBigInt(updatedCache)));
+      // Force UI refresh after delay
+      await delay(UI_REFRESH_DELAY_MS);
+      await updateUI(token, true, newUserData);
     } catch (e) {
       hideProcessingModal(processingModal);
-      showToast({ title:'Claim error', body:e.message, variant:'danger' });
+      showToast({ title: 'Claim error', body: e.message, variant: 'danger' });
     } finally {
       if (timerEl) timerEl._paused = false;
     }
@@ -1277,9 +1360,40 @@ async function activateTokens(token) {
         body: `<a href="https://tronscan.org/#/transaction/${broadcastActivate.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
       });
       hideProcessingModal(processingModal);
-      localStorage.removeItem(`tokenUI_${token}_${userAddress}`);
-      await delay(1000);
-      await updateUI(token, true);
+      // Clear caches and fetch fresh user data
+      ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
+      let newUserData;
+      try {
+        newUserData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
+        console.debug('activateTokens: new userData fetched:', newUserData);
+      } catch (error) {
+        console.error('activateTokens: failed to fetch new userData:', error);
+        newUserData = {
+          stakedAmount: '0',
+          isActive: false,
+          lastClaimTimestamp: '0',
+          totalClaimed: '0',
+          rewards: '0',
+          userRewardPerTokenPaid: '0'
+        };
+        showToast({ title: 'Data Fetch Error', body: 'Failed to fetch updated user data; using fallback.', variant: 'warning' });
+      }
+      // Update cache with new user data
+      const updatedCache = {
+        data: {
+          stakedAmount: newUserData.stakedAmount,
+          isActive: newUserData.isActive,
+          lastClaimTimestamp: newUserData.lastClaimTimestamp,
+          totalClaimed: newUserData.totalClaimed,
+          rewards: newUserData.rewards,
+          userRewardPerTokenPaid: newUserData.userRewardPerTokenPaid
+        },
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`tokenUI_user_${token}_${userAddress}`, JSON.stringify(serializeBigInt(updatedCache)));
+      // Force UI refresh after delay
+      await delay(UI_REFRESH_DELAY_MS);
+      await updateUI(token, true, newUserData);
     } catch (e) {
       hideProcessingModal(processingModal);
       showToast({ title: 'Activation error', body: e.message, variant: 'danger' });
