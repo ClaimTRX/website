@@ -8,6 +8,14 @@ const advertisements = [
     icon: "icon-rocket"
   },
   {
+    title: "JM Swap",
+    description: "JustMoney Swap is an AMM decentralized exchange (DEX) launched initially on the Tron Blockchain. It is the first multi and cross-chain swap with full support for taxed tokens.",
+    image: "assets/img/content/jmswap.png",
+    link: "https://just.money",
+    linkText: "Swap Now",
+    icon: "icon-rocket"
+  },
+  {
     title: "Stake StableX",
     description: "Earn both CFT and StableX with StableX staking",
     image: "assets/img/content/stablex.png",
@@ -38,7 +46,7 @@ function rotateAdvertisements() {
     currentAdIndex = (currentAdIndex + 1) % advertisements.length;
   };
   updateAd();
-  setInterval(updateAd, 60000);
+  setInterval(updateAd, 30000);
 }
 
 // Initialize ad rotation on DOM content loaded
