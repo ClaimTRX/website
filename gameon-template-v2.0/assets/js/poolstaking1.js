@@ -31,7 +31,7 @@ const THROTTLE_GAP_MS = 500; // Keep 5000ms to stay under 15 QPS per key
 const CONTRACT_CALL_DELAY_MS = 200; // Increased to 1000ms for safer pacing
 const UI_REFRESH_DELAY_MS = 3000; // 3s delay for UI refresh after actions
 // Manual CFT price for APY calculation (update this value as needed)
-const CFT_TRX_PRICE = 0.6378; // Manually set CFT price in TRX (update as needed)
+const CFT_TRX_PRICE = 1; // Manually set CFT price in TRX (update as needed)
 const DAILY_PAYOUT_PERCENTAGE = 1; // 1% daily payout as per requirement
 /* ===================== Token Config ===================== */
 const tokenDetails = {
@@ -665,7 +665,8 @@ async function updateTopBarUI(token, first = false, userData) {
     const userTotalClaimed = Number(userTotalClaimedRaw) / SUN_PER_TRX;
     const stakedAmount = toUnits(userData.stakedAmount, d.decimals);
     const totalClaimedTrx = Number(userTotalClaimedRaw) / SUN_PER_TRX;
-    const roiPct = (stakedAmount > 0 && userData.isActive) ? (totalClaimedTrx / (stakedAmount * CFT_TRX_PRICE)) * 100 : 0;
+    // Use fixed 1:1 price (1 CFT = 1 TRX) for ROI calculation
+    const roiPct = (stakedAmount > 0 && userData.isActive) ? (totalClaimedTrx / (stakedAmount * 1)) * 100 : 0;
     // Calculate yourNextPayout as in updateStatsGridUI
     const dailyPayoutPct = DAILY_PAYOUT_PERCENTAGE;
     let yourNextPayout = stakedUnits > 0 && totalActiveStaked > 0 && userData.isActive ? (stakedUnits / totalActiveStaked) * (poolSize * dailyPayoutPct / 100) : 0;
