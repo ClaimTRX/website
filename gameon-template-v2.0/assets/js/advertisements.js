@@ -2,10 +2,18 @@ const advertisements = [
   {
     title: "CFT Guardian Minting is Now Live",
     description: "Earn daily SOL rewards by staking our Guardian NFTs",
-    image: "assets/img/content/guardian.png",
+    image: "assets/img/content/guardian1.png",
     link: "https://cftguardians.com/",
     linkText: "Mint Now",
     icon: "icon-rocket"
+  },
+  {
+    title: "UpDawg",
+    description: "UpDawg (UDAWG) is a Proof-of-reserve TRC20 token backed by TRX on the Tron Blockchain. It powers the uDawg_bot on Telegram - gamifying off & on-chain community engagement with rewards.",
+    image: "assets/img/content/jmswapwhite.png",
+    link: "https://t.me/udawgorg",
+    linkText: "Join Now",
+    icon: "icon-telegram"
   },
   {
     title: "JM Swap",
@@ -22,13 +30,22 @@ const advertisements = [
     link: "https://www.cftecosystem.com/buystablex",
     linkText: "Stake Now",
     icon: "icon-stake"
+  },
+  {
+    title: "Advertise Your Project Here",
+    description: "Want to showcase your project to our audience? Contact us to discuss advertising opportunities!",
+    image: "assets/img/content/cftlogo300.png",
+    link: "https://t.me/CFT_dev",
+    linkText: "Contact Us",
+    icon: "icon-telegram"
   }
 ];
 
 function rotateAdvertisements() {
   const adContainer = document.querySelector('.luxe-ad-card .row');
   if (!adContainer) return;
-  let currentAdIndex = 0;
+  // Set random initial index
+  let currentAdIndex = Math.floor(Math.random() * advertisements.length);
   const updateAd = () => {
     const ad = advertisements[currentAdIndex];
     adContainer.innerHTML = `
