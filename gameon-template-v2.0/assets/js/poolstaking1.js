@@ -661,7 +661,7 @@ async function updateTopBarUI(token, first = false, userData) {
     await delay(CONTRACT_CALL_DELAY_MS);
     const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
     const userTotalClaimed = Number(userTotalClaimedRaw) / SUN_PER_TRX;
-    const CFT_PRICE = 1;
+    const CFT_PRICE = 0.6378;
     const stakedAmount = toUnits(userData.stakedAmount, d.decimals);
     const totalClaimedTrx = Number(userTotalClaimedRaw) / SUN_PER_TRX;
     const roiPct = (stakedAmount > 0 && userData.isActive) ? (totalClaimedTrx / (stakedAmount * CFT_PRICE)) * 100 : 0;
