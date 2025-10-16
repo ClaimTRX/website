@@ -16,6 +16,17 @@ const advertisements = [
     icon: "icon-telegram"
   },
   {
+    title: "TronsCore",
+    description: "TronsCore is an all-in-one ecosystem on the TRON blockchain, combining digital identity, gamified learning, and event participation.
+At its core are POAPs (Proof of Attendance Protocols) — blockchain badges that verify your attendance — and Trivion, a quiz game that makes learning about TRON fun and rewarding.
+Creators can host events with POAP Badges for open claims or use the POAP Whitelist for exclusive, wallet-restricted events.
+A TRON DAO HackaTRON Season 7 winner, TronsCore continues to drive community engagement and education across the TRON ecosystem.",
+    image: "assets/img/content/tronscore.png",
+    link: "https://t.me/TronsCore",
+    linkText: "Join Now",
+    icon: "icon-telegram"
+  },
+  {
     title: "JM Swap",
     description: "JustMoney Swap is an AMM decentralized exchange (DEX) launched initially on the Tron Blockchain. It is the first multi and cross-chain swap with full support for taxed tokens.",
     image: "assets/img/content/jmswapwhite.png",
