@@ -10,7 +10,7 @@ const advertisements = [
   {
     title: "JM Swap",
     description: "JustMoney Swap is an AMM decentralized exchange (DEX) launched initially on the Tron Blockchain. It is the first multi and cross-chain swap with full support for taxed tokens.",
-    image: "assets/img/content/jmswap.png",
+    image: "assets/img/content/jmswapwhite.png",
     link: "https://just.money",
     linkText: "Swap Now",
     icon: "icon-rocket"
