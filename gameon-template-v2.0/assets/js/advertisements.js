@@ -34,6 +34,14 @@ A TRON DAO HackaTRON Season 7 winner, TronsCore makes community engagement and d
     icon: "icon-rocket"
   },
   {
+    title: "JM Explorer",
+    description: "JustMoney Explorer brings you all the advantages of a blockchain explorer, a DEX viewer, and a dAppstore in just one place! It offers a comprehensive solution where projects can list their dApps and users can effortlessly navigate and interact with them.",
+    image: "assets/img/content/jme.png",
+    link: "https://explorer.just.money/",
+    linkText: "Explore Now",
+    icon: "icon-rocket"
+  },
+  {
     title: "Stake StableX",
     description: "Earn both CFT and StableX with StableX staking",
     image: "assets/img/content/stablex.png",
