@@ -10,7 +10,7 @@ const advertisements = [
   {
     title: "UpDawg",
     description: "UpDawg (UDAWG) is a Proof-of-reserve TRC20 token backed by TRX on the Tron Blockchain. It powers the uDawg_bot on Telegram - gamifying off & on-chain community engagement with rewards.",
-    image: "assets/img/content/jmswapwhite.png",
+    image: "assets/img/content/updawg.png",
     link: "https://t.me/udawgorg",
     linkText: "Join Now",
     icon: "icon-telegram"
