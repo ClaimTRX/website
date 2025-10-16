@@ -17,11 +17,9 @@ const advertisements = [
   },
   {
     title: "TronsCore",
-    description: `TronsCore is an all-in-one ecosystem on the TRON blockchain, combining digital identity, gamified learning, and event participation.
-At its core are POAPs (Proof of Attendance Protocols) — blockchain badges that verify your attendance — and Trivion, a quiz game that makes learning about TRON fun and rewarding.
-Creators can host events with POAP Badges for open claims or use the POAP Whitelist for exclusive, wallet-restricted events.
-A TRON DAO HackaTRON Season 7 winner, TronsCore continues to drive community engagement and education across the TRON ecosystem.`,
-
+    description: `TronsCore POAPs (Proof of Attendance Protocols) is verifiable badges that prove participation in events.
+Creators can launch open POAP Badges or exclusive Whitelist POAPs with wallet-based access control.
+A TRON DAO HackaTRON Season 7 winner, TronsCore makes community engagement and digital identity on TRON simple and transparent.`,
     image: "assets/img/content/tronscore.png",
     link: "https://t.me/TronsCore",
     linkText: "Join Now",
