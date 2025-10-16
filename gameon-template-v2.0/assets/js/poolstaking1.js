@@ -31,7 +31,7 @@ const THROTTLE_GAP_MS = 500; // Keep 5000ms to stay under 15 QPS per key
 const CONTRACT_CALL_DELAY_MS = 200; // Increased to 1000ms for safer pacing
 const UI_REFRESH_DELAY_MS = 3000; // 3s delay for UI refresh after actions
 // Manual CFT price for APY calculation (update this value as needed)
-const CFT_PRICE = 1; // Manually set CFT price in USD
+const CFT_TRX_PRICE = 1; // Manually set CFT price in TRX (update as needed)
 const DAILY_PAYOUT_PERCENTAGE = 1; // 1% daily payout as per requirement
 /* ===================== Token Config ===================== */
 const tokenDetails = {
@@ -651,18 +651,27 @@ async function updateTopBarUI(token, first = false, userData) {
         .forEach(id => setSkeleton(id, true));
     }
     const d = tokenDetails[token];
-    const userTotalClaimedRaw = await retryWithBackoff(() => stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(() => '0'));
-    const poolSizeRaw = await retryWithBackoff(() => stakingContracts[token].methods.poolSize().call().catch(() => '0'));
+    const [userTotalClaimedRaw, poolSizeRaw, totalStakedRaw, totalActiveStakedRaw] = await Promise.all([
+      retryWithBackoff(() => stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(() => '0')),
+      retryWithBackoff(() => stakingContracts[token].methods.poolSize().call().catch(() => '0')),
+      retryWithBackoff(() => (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
+      retryWithBackoff(() => stakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
+    ]);
     await delay(CONTRACT_CALL_DELAY_MS);
     const poolSize = Number(poolSizeRaw || '0') / SUN_PER_TRX;
+    const totalStaked = toUnits(totalStakedRaw, d.decimals);
+    const totalActiveStaked = toUnits(totalActiveStakedRaw, d.decimals);
     const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
     const userTotalClaimed = Number(userTotalClaimedRaw) / SUN_PER_TRX;
     const stakedAmount = toUnits(userData.stakedAmount, d.decimals);
     const totalClaimedTrx = Number(userTotalClaimedRaw) / SUN_PER_TRX;
-    const roiPct = (stakedAmount > 0 && userData.isActive) ? (totalClaimedTrx / (stakedAmount * CFT_PRICE)) * 100 : 0;
-    // Manual APY calculation: (Daily Payout % * Pool Size * 365) / (Staked Amount * CFT Price)
-    let apyPct = (stakedAmount > 0 && userData.isActive && poolSize > 0)
-      ? ((DAILY_PAYOUT_PERCENTAGE / 100 * poolSize * 365) / (stakedAmount * CFT_PRICE)) * 100
+    const roiPct = (stakedAmount > 0 && userData.isActive) ? (totalClaimedTrx / (stakedAmount * CFT_TRX_PRICE)) * 100 : 0;
+    // Calculate yourNextPayout as in updateStatsGridUI
+    const dailyPayoutPct = DAILY_PAYOUT_PERCENTAGE;
+    let yourNextPayout = stakedUnits > 0 && totalActiveStaked > 0 && userData.isActive ? (stakedUnits / totalActiveStaked) * (poolSize * dailyPayoutPct / 100) : 0;
+    // Manual APY calculation: (yourNextPayout * 365 * 100) / (stakedAmount * CFT_TRX_PRICE)
+    let apyPct = (stakedAmount > 0 && userData.isActive && yourNextPayout > 0)
+      ? (yourNextPayout * 365 * 100) / (stakedAmount * CFT_TRX_PRICE)
       : 0;
     if (!userData.isActive) apyPct = 0;
     cacheData = { data: {}, timestamp: Date.now() };
