@@ -73,18 +73,7 @@ const tokenDetails = {
       claimRewards: 100000
     }
   },
-  king: {
-    tokenAddress: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
-    stakingAddress: 'TEppqmC7mb2wF4ExBYbQF6LraqD6qXW5Aj',
-    decimals: 6,
-    displayName: 'CFT',
-    rewardDisplayName: 'CFT',
-    energyCosts: {
-      stake: 120000,
-      unstake: 75000,
-      claimRewards: 100000
-    }
-  },
+  
   fym: {
     tokenAddress: 'TCTvRkt5kVndeGKWJmMUxEc2rovdrGNoK3',
     stakingAddress: 'TP4HhAWv2WbSMCH2CRhdSsiwBP6JzViouq',
