@@ -1,951 +1,397 @@
 <!doctype html>
 <html class="no-js" lang="en">
-
 <head>
-	<meta charset="UTF-8">
-	<meta name="description" content="">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <meta charset="UTF-8">
+  <meta name="description" content="CFT Ecosystem">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>CFT Ecosystem</title>
+  <link rel="icon" href="assets/img/favicon.png">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    /* =============================
+       LUXE DESIGN SYSTEM – v2
+       ============================= */
+    :root{
+      --bg-0:#07090f; --bg-1:#0b0e17; --bg-2:#0f1321; --surface:#12172a; --line:#212b46;
+      --muted:#9aa7bd; --txt:#e9eef7;
+      --accent-1:#62ffcf; --accent-2:#7db2ff; --accent-3:#b37cff;
+      --success:#00e095; --danger:#ff5b73; --warning:#ffd166;
+      --radius-2:12px; --radius-3:18px; --radius-4:28px;
+      --shadow-1:0 10px 30px rgba(0,0,0,.55); --shadow-2:0 12px 40px rgba(0,0,0,.6);
+      --glass:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      --focus-ring:0 0 0 3px rgba(125,178,255,.35);
+    }
+    html,body{background:var(--bg-0);color:var(--txt);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    /* Header */
+    header#header{padding:1.5rem 0}
+    .navbar-brand img{height:48px}
+    .navbar-nav.items .nav-link{font-size:1.1rem;padding:.75rem 1rem}
+    .navbar-nav.action .btn{font-size:1rem;padding:.5rem 1.25rem;height:50px}
+    .navbar-nav.toggle .nav-link{font-size:1.5rem;padding:.5rem}
+    /* Mobile menu modal */
+    #menu .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt)}
+    #menu .modal-header{border-bottom:1px solid var(--line);padding:1rem}
+    #menu .modal-body{padding:1rem}
+    #menu .items .nav-item{margin:.5rem 0}
+    #menu .items .nav-link{color:var(--txt);font-size:1.1rem;padding:.5rem 1rem}
+    #menu .items .dropdown-menu{background:var(--bg-2);border:1px solid var(--line);padding:.5rem}
+    #menu .items .dropdown-menu .nav-link{color:var(--muted);font-size:1rem}
+    #menu .items .dropdown-menu .nav-link:hover{color:var(--accent-1)}
+    /* Hero */
+    .hero-section{padding:120px 0 28px;text-align:center}
+    .intro-text{display:inline-block;font-size:1rem;letter-spacing:.16em;text-transform:uppercase;color:#c3d3ef;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:.42rem .95rem;border-radius:999px}
+    .hero-section h1{font-weight:900;letter-spacing:.4px;margin-top:16px;font-size:3.25rem;line-height:1.1}
+    .hero-section p{color:#b5c2d8}
+    /* Buttons */
+    .btn.primary,.btn.ghost{height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px}
+    .btn.primary{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#0b0e17;border:0;font-weight:800}
+    .btn.primary:hover{filter:brightness(1.05)}
+    .btn.ghost{border:1px solid var(--line);color:#eaf2ff;background:transparent}
+    .btn.ghost:hover{border-color:rgba(125,178,255,.55)}
+    /* Content Area */
+    .content-area{padding:3rem 0}
+    .content.intro .intro-text{font-size:0.9rem;letter-spacing:.16em}
+    .content-list{align-items:start !important}
+    .content-icon span{display:flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:12px;background:var(--bg-2);border:1px solid var(--line)}
+    .content-icon span.featured{background:linear-gradient(135deg,rgba(98,255,207,.1),rgba(125,178,255,.1));border:1px solid var(--accent-3)}
+    .content-icon i{font-size:1.5rem;color:var(--accent-1)}
+    .content-body h3{font-weight:700;color:var(--txt)}
+    .content-body p{color:#b5c2d8}
+    /* Work Area */
+    .work-area{padding:3rem 0}
+    .intro-content .intro-text{font-size:0.9rem;letter-spacing:.16em}
+    .single-work{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:1.5rem;box-shadow:var(--shadow-1);text-align:center}
+    .single-work i.icons{font-size:2.5rem;color:var(--accent-1);margin-bottom:1rem}
+    .single-work h4{font-weight:700;color:var(--txt)}
+    .single-work p{color:#b5c2d8}
+    /* Ad card */
+    .luxe-ad-card{position:relative;border-radius:var(--radius-4);background:linear-gradient(135deg,rgba(98,255,207,.1),rgba(125,178,255,.1));border:2px solid var(--accent-3);box-shadow:var(--shadow-2),0 0 20px rgba(125,178,255,.3);overflow:hidden;margin:2rem 0;transition:transform .3s ease,box-shadow .3s ease}
+    .luxe-ad-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-2),0 0 30px rgba(125,178,255,.5)}
+    .luxe-ad-card .inner{padding:1.5rem}
+    .luxe-ad-card h2{font-weight:800;color:var(--accent-1);text-shadow:0 0 5px rgba(98,255,207,.5)}
+    .luxe-ad-card p{color:var(--txt);font-size:1.1rem}
+    .luxe-ad-card .btn.primary{background:linear-gradient(135deg,var(--accent-3),var(--accent-2));font-weight:700;padding:.75rem 1.5rem;border-radius:12px}
+    .luxe-ad-card .btn.primary:hover{filter:brightness(1.2)}
+    /* Responsive */
+    *, *::before, *::after { box-sizing: border-box; }
+    @media (max-width:992px){
+      .content-area .content-list{flex-direction:column;align-items:center}
+      .content-icon{margin-bottom:1rem}
+      .work-area .single-work{margin-bottom:1.5rem}
+    }
+    @media (max-width:576px){
+      .hero-section h1{font-size:2.5rem}
+      .content-area .content-body h3{font-size:1.25rem}
+      .work-area .single-work{padding:1rem}
+      .single-work i.icons{font-size:2rem}
+    }
+    /* Modal Search */
+    .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt);border-radius:16px}
+    .modal-header .btn-close{filter:invert(1)}
+    .modal-body input{background:#0c1121;border:1px solid var(--line);color:#eaf2ff;border-radius:14px;padding:12px 14px}
+    .modal-body input:focus{outline:none;box-shadow:var(--focus-ring);border-color:rgba(125,178,255,.6)}
+    .modal-body .btn-bordered-white{background:transparent;border:1px solid var(--line);color:#eaf2ff;border-radius:14px;padding:12px 20px}
+    .modal-body .btn-bordered-white:hover{border-color:rgba(125,178,255,.55)}
+    /* Toasts */
+    .toast{background:var(--bg-1);border:1px solid var(--line);color:var(--txt);border-radius:12px}
+    .toast-header{background:var(--bg-2);border-bottom:1px solid var(--line)}
+    .toast-body{color:#cfe3ff}
 
-	<!-- The above 4 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    /* =============================
+       CFT Guardians – Rotating Logo Orb
+       ============================= */
+    .cftg-orb{display:flex;justify-content:center;align-items:center;margin-top:1.25rem}
+    .cftg-orb .orb{position:relative;width:min(420px, 88vw);aspect-ratio:1/1;filter:drop-shadow(0 12px 28px rgba(0,0,0,.35))}
+    .orb-logo{position:absolute;inset:50% auto auto 50%;transform:translate(-50%, -50%);width:56%;z-index:2;image-rendering:-webkit-optimize-contrast}
+    .ring{position:absolute;inset:0;border-radius:50%;--thickness:14px;background:
+      conic-gradient(from 0deg, rgba(0,255,234,.25), rgba(98,0,255,.25), rgba(0,255,234,.25));
+      -webkit-mask:radial-gradient(farthest-side, transparent calc(50% - var(--thickness)), #000 calc(50% - var(--thickness) + 1px));
+              mask:radial-gradient(farthest-side, transparent calc(50% - var(--thickness)), #000 calc(50% - var(--thickness) + 1px));
+      box-shadow:inset 0 0 22px rgba(0,255,234,.15), inset 0 0 36px rgba(98,0,255,.12);
+      animation:spin 14s linear infinite}
+    .ring-1{filter:blur(.3px)}
+    .ring-2{inset:6%;--thickness:12px;opacity:.9;animation-duration:10s;animation-direction:reverse;filter:blur(.75px)}
+    .ring-3{inset:12%;--thickness:10px;opacity:.7;animation-duration:18s;filter:blur(1.2px)}
+    @keyframes spin{to{transform:rotate(360deg)}}
 
-	<!-- Title  -->
-	<title>CFT Ecosystem. The first treasury VC on Tron</title>
-
-	<!-- Favicon  -->
-	<link rel="icon" href="assets/img/favicon.png">
-
-	<!-- ***** All CSS Files ***** -->
-
-	<!-- Style css -->
-	<link rel="stylesheet" href="assets/css/style.css">
-
+    /* Mobile tweaks so the orb always shows and fits */
+    @media (max-width: 991.98px){
+      .cftg-orb{margin-top:2rem}
+      .cftg-orb .orb{width:min(520px, 92vw)} /* give it a touch more presence on phones/tablets */
+    }
+  </style>
 </head>
-
 <body>
-	<!--====== Preloader Area Start ======-->
-	<div id="gameon-preloader" class="gameon-preloader">
-		<!-- Preloader Animation -->
-		<div class="preloader-animation">
-			<!-- Spinner -->
-			<div class="spinner"></div>
-			<p class="fw-5 text-center text-uppercase">Loading</p>
-		</div>
-		<!-- Loader Animation -->
-		<div class="loader-animation">
-			<div class="row h-100">
-				<!-- Single Loader -->
-				<div class="col-3 single-loader p-0">
-					<div class="loader-bg"></div>
-				</div>
-				<!-- Single Loader -->
-				<div class="col-3 single-loader p-0">
-					<div class="loader-bg"></div>
-				</div>
-				<!-- Single Loader -->
-				<div class="col-3 single-loader p-0">
-					<div class="loader-bg"></div>
-				</div>
-				<!-- Single Loader -->
-				<div class="col-3 single-loader p-0">
-					<div class="loader-bg"></div>
-				</div>
-			</div>
-		</div>
-	</div>
-	<!--====== Preloader Area End ======-->
+  <!-- Header -->
+  <header id="header" class="pt-2">
+    <nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
+      <div class="container">
+        <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt=""/></a>
+        <div class="ms-auto"></div>
+        <ul class="navbar-nav items mx-auto">
+          <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
+            <ul class="dropdown-menu">
+              <li class="nav-item"><a href="poolstaking.html" class="nav-link">Earn TRX</a></li>
+              <li class="nav-item"><a href="staking.html" class="nav-link">Staking</a></li>
+              <li class="nav-item"><a href="lockstaking.html" class="nav-link">Locked Staking</a></li>
+              <li class="nav-item"><a href="sellcft.html" class="nav-link">Trading</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
+            <ul class="dropdown-menu">
+              <li class="nav-item"><a href="buystablex.html" class="nav-link">Buy StableX</a></li>
+              <li class="nav-item"><a href="sellstablex.html" class="nav-link">Sell StableX</a></li>
+              <li class="nav-item"><a href="stablexstaking.html" class="nav-link">Stake StableX</a></li>
+            </ul>
+          </li>
+          
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
+            <ul class="dropdown-menu">
+              <li class="nav-item"><a href="feb.html" class="nav-link">FEB</a></li>
+              <li class="nav-item"><a href="energy.html" class="nav-link">Rent Energy</a></li>
+            </ul>
+          </li>
+          <li class="nav-item"><a href="swap.html" class="nav-link">Swap</a></li>
+          <li class="nav-item"><a href="https://cftguardians.com/" class="nav-link">CFT Guardians</a></li>
+        </ul>
+        
+        <ul class="navbar-nav toggle">
+          <li class="nav-item">
+            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
+              <i class="icon-menu m-0"></i>
+            </a>
+          </li>
+        </ul>
+        <ul class="navbar-nav action">
+          <li class="nav-item ms-2">
+            <button id="connect-button" class="btn btn-outline"><i class="icon-wallet me-md-2"></i> Wallet Connect</button>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </header>
 
-	<div class="main">
-		<!-- ***** Header Start ***** -->
-		<header id="header">
-			<!-- Navbar -->
-			<nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
-				<div class="container header">
+  <!-- Hero -->
+  <section class="hero-section">
+    <div class="container text-center">
+      <span class="intro-text">CFT Ecosystem</span>
+      <h1 class="display-5">Stake and Earn</h1>
+      <p class="mb-4">Grow your wealth through staking</p>
+    </div>
+  </section>
 
-					<!-- Logo -->
-					<a class="navbar-brand" href="index.html">
-						<img src="assets/img/logo/logo.png" alt="" />
-					</a>
+  <!-- Content Area -->
+  <section class="content-area">
+    <div class="container">
+      <div class="row align-items-center">
+        <!-- Left: Copy + Features -->
+        <div class="col-12 col-md-6">
+          <div class="content intro">
+            <span class="intro-text">CFT Ecosystem</span>
+            <h2>Join the Guardians</h2>
+            <p>Mint your CFT Guardians with CFT or SOL and earn SOL Daily.</p>
 
-					<div class="ms-auto"></div>
+            <ul class="list-unstyled items mt-5">
+              <li class="item">
+                <div class="content-list d-flex align-items-center">
+                  <div class="content-icon">
+                    <span><i class="fa-solid fa-crown"></i></span>
+                  </div>
+                  <div class="content-body ms-4">
+                    <h3 class="m-0">Guardian tiers</h3>
+                    <p class="mt-3">Higher rarities (up to Legendary) earn more.</p>
+                  </div>
+                </div>
+              </li>
 
-					<!-- Navbar Nav -->
-					<ul class="navbar-nav items mx-auto">
-						<li class="nav-item">
-							<a href="index.html" class="nav-link">Home</a>
-						</li>
-						
-						<li class="nav-item dropdown">
-							<a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
-							<ul class="dropdown-menu">
-								
-								<li class="nav-item">
-									<a href="staking.html" class="nav-link">Staking</a>
-								</li>
+              <li class="item">
+                <div class="content-list d-flex align-items-center">
+                  <div class="content-icon">
+                    <span class="featured"><i class="fa-solid fa-coins"></i></span>
+                  </div>
+                  <div class="content-body ms-4">
+                    <h3 class="m-0">Earn SOL daily</h3>
+                    <p class="mt-3">Claim before the countdown resets to avoid lost rewards.</p>
+                  </div>
+                </div>
+              </li>
 
-								<li class="nav-item">
-									<a href="lockstaking.html" class="nav-link">Locked Staking</a>
-								</li>
+              <li class="item">
+                <div class="content-list d-flex align-items-center">
+                  <div class="content-icon">
+                    <span><i class="fa-solid fa-shield-halved"></i></span>
+                  </div>
+                  <div class="content-body ms-4">
+                    <h3 class="m-0">Ready to deploy</h3>
+                    <p class="mt-3">Connect your wallet and mint in seconds.</p>
+                  </div>
+                </div>
+              </li>
+            </ul>
 
-								<li class="nav-item">
-									<a href="sellcft.html" class="nav-link">Trading</a>
-								</li>
-								
-							</ul>
-						</li>
-						<li class="nav-item dropdown">
-							<a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
-							<ul class="dropdown-menu">
-								<li class="nav-item">
-									<a href="buystablex.html" class="nav-link">Buy StableX</a>
-								</li>
-								<li class="nav-item">
-									<a href="sellstablex.html" class="nav-link">Sell StableX</a>
-								</li>
-								<li class="nav-item">
-									<a href="stablexstaking.html" class="nav-link">Stake StableX</a>
-								</li>
-							</ul>
-						</li>
-						<li class="nav-item dropdown">
-							<a href="#" class="nav-link">CFT News <i class="icon-arrow-down"></i></a>
-							<ul class="dropdown-menu">
-								<li class="nav-item">
-									<a href="blog.html" class="nav-link">News</a>
-								</li>
-							</ul>
-						</li>
+          </div>
+        </div>
 
-						<li class="nav-item dropdown">
-							<a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
-							<ul class="dropdown-menu">
-								<li class="nav-item">
-									<a href="feb.html" class="nav-link">FEB</a>
-								</li>
-								<li class="nav-item">
-									<a href="energy.html" class="nav-link">Rent Energy</a>
-								</li>
-							
-							</ul>
-						</li>
-						<li class="nav-item">
-									<a href="swap.html" class="nav-link">Swap</a>
-								</li>
-						
-						
-					</ul>
+        <!-- Right: Rotating Logo Orb (now shows on mobile too) -->
+        <div class="col-12 col-md-6">
+          <div class="cftg-orb">
+            <div class="orb">
+              <img class="orb-logo" src="assets/img/content/guardian1.png" alt="CFT Guardians logo" />
+              <div class="ring ring-1"></div>
+              <div class="ring ring-2"></div>
+              <div class="ring ring-3"></div>
+            </div>
+          </div>
+        </div>
 
-					<!-- Navbar Icons -->
-					
+      </div>
+    </div>
+  </section>
 
-					<!-- Navbar Toggler -->
-					<ul class="navbar-nav toggle">
-						<li class="nav-item">
-							<a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
-								<i class="icon-menu m-0"></i>
-							</a>
-						</li>
-					</ul>
+  <!-- Work Area -->
+  <section class="work-area">
+    <div class="container">
+      <div class="row">
+        <div class="col-12">
+          <div class="intro d-flex justify-content-between align-items-end mb-4">
+            <div class="intro-content">
+              <span class="intro-text">How It Works</span>
+              <h3 class="mt-3 mb-0">How To Stake CFT</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row items">
+        <div class="col-12 col-sm-6 col-lg-4 item">
+          <div class="single-work">
+            <i class="icons icon-drawer text-effect"></i>
+            <h4>Buy CFT</h4>
+            <p>You can currently buy CFT from our own swap, sunswap or the trading page.</p>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4 item">
+          <div class="single-work">
+            <i class="icons icon-wallet text-effect"></i>
+            <h4>Stake CFT</h4>
+            <p>Stake your CFT in the TRX pool and earn TRX daily.</p>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4 item">
+          <div class="single-work">
+            <i class="icons icon-fire text-effect"></i>
+            <h4>Claim rewards</h4>
+            <p>Make sure you claim rewards every 14 days to not let the rewards expire.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-					<!-- Navbar Action Button -->
-					<ul class="navbar-nav action">
-						<ul class="navbar-nav action">
-    <li class="nav-item ms-2">
-        <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
-            <i class="icon-wallet me-md-2"></i> Wallet Connect
-        </button>
-    </li>
-</ul>
+  <!-- CTA Area -->
+  <section class="py-3">
+    <div class="container">
+      <div class="luxe-ad-card">
+        <div class="row align-items-center g-0">
+          <div class="col-12 col-md-5 text-center p-3">
+            <img src="assets/img/content/cftlogo300.png" alt="Apply for project staking" style="max-width:220px">
+          </div>
+          <div class="col-12 col-md-7 p-3">
+            <div class="inner">
+              <h2 class="m-0">Apply for project staking</h2>
+              <p class="mb-3">Earn weekly rewards from staked CFT to build your project</p>
+              <p>Soon available for projects on any chain</p>
+              <a class="btn primary" href="apply.html"><i class="icon-rocket me-2"></i>Coming Soon</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-					</ul>
+  <!-- Footer -->
+  <footer class="footer-area py-5 mt-3">
+    <div class="container text-center">
+      <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt="" style="height:28px"></a>
+      <div class="social-icons d-flex justify-content-center my-3 gap-3">
+        <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
+        <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
+      </div>
+      <div class="copyright-area py-2">&copy;2025 CFT Ecosystem, All Rights Reserved</div>
+      <div id="scroll-to-top" class="scroll-to-top"><a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a></div>
+    </div>
+  </footer>
 
-				</div>
-			</nav>
-		</header>
-		<!-- ***** Header End ***** -->
+  <!-- Modal Search -->
+  <div id="search" class="modal fade p-0">
+    <div class="modal-dialog dialog-animated">
+      <div class="modal-content h-100">
+        <div class="modal-header" data-bs-dismiss="modal">
+          Search <i class="far fa-times-circle icon-close"></i>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-12 align-self-center">
+              <div class="row">
+                <div class="col-12 pb-3">
+                  <h2 class="search-title mt-0 mb-3">What are you looking for?</h2>
+                  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-12 input-group mt-md-4">
+                  <input type="text" placeholder="Enter your keywords">
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-12 input-group align-self-center">
+                  <button class="btn btn-bordered-white mt-3">Search</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-		<!-- ***** Hero Area Start ***** -->
-		<section class="hero-section">
-			<div class="container">
-				<div class="row align-items-center justify-content-center">
-					<div class="col-12 col-md-6 col-lg-9 text-center">
-						<!-- Hero Content -->
-						<div class="hero-content">
-							<div class="intro text-center mb-5">
-								<span class="intro-text">CFT Ecosystem</span>
-								<h1 class="mt-4">The Next Generation Web 3.0 VC Treasury</h1>
-								<p>Grow your wealth through staking</p>
-							</div>
-							<!-- Buttons -->
-							<div class="button-group">
-								<a class="btn btn-bordered active" href="swap.html">
-    <i class="icon-rocket me-2"></i>Buy CFT
-</a>
+  <!-- Modal Responsive Menu -->
+  <div id="menu" class="modal fade p-0">
+    <div class="modal-dialog dialog-animated">
+      <div class="modal-content h-100">
+        <div class="modal-header" data-bs-dismiss="modal">
+          Menu <i class="far fa-times-circle icon-close"></i>
+        </div>
+        <div class="menu modal-body">
+          <div class="row w-100">
+            <div class="items p-0 col-12 text-center"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-								<a class="btn btn-bordered-white" href="energy.html"><i class="icon-note me-2"></i>Rent Energy</a>
-								<a class="btn btn-bordered-white" href="staking.html"><i class="fa-solid fa-coins me-2"></i> Stake Now</a>
+  <!-- Toasts -->
+  <div id="toast-container" style="position:fixed;z-index:1100;bottom:16px;right:16px">
+    <div id="app-toast" class="toast text-bg-dark" role="status" aria-live="polite" aria-atomic="true"></div>
+  </div>
 
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- ***** Hero Area End ***** -->
-
-    
-
-		
-
-		<!-- ***** Project Area Start ***** -->
-		<section id="explore" class="project-area">
-			<div class="container">
-				<div class="row">
-					<div class="col-12">
-						<!-- Intro -->
-						<div class="intro d-flex justify-content-between align-items-end m-0">
-							<div class="intro-content">
-								<span class="intro-text">CFT Ecosystem</span>
-								<h3 class="mt-3 mb-0">Coming Soon</h3>
-							</div>
-							
-						</div>
-					</div>
-				</div>
-				<div class="project-slides">
-					<div class="swiper-container slider-mid items">
-						<div class="swiper-wrapper">
-							<!-- Single Slide -->
-							<div class="swiper-slide item">
-								<div class="card project-card">
-									<div class="media">
-										<a href="project-details.html">
-											<img class="card-img-top avatar-max-lg" src="assets/img/content/turu.png" alt="">
-										</a>
-										<div class="media-body ms-4">
-											<a href="project-details.html">
-												<h4 class="m-0">Turu Global</h4>
-											</a>
-											<div class="countdown-times">
-												<h6 class="my-2">Ongoing</h6>
-												<div class="countdown d-flex" data-date="2024-11-30"></div>
-											</div>
-										</div>
-									</div>
-									<!-- Project Body -->
-									<div class="card-body">
-										<div class="items">
-											<!-- Single Item -->
-											<div class="single-item">
-												<span>Total raise</span>
-												<span>50k CFT</span>
-											</div>
-											
-										</div>
-										<div class="item-progress">
-											<div class="progress mt-4 mt-md-5">
-												<div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">0%</div>
-											</div>
-											<div class="progress-sale d-flex justify-content-between mt-3">
-												<span>0/50,000 CFT</span>
-												
-											</div>
-										</div>
-									</div>
-									<!-- Project Footer -->
-									<div class="project-footer d-flex align-items-center mt-4 mt-md-5">
-										<a class="btn btn-bordered-white btn-smaller" href="blog-single.html">Participate</a>
-										<!-- Social Share -->
-										<div class="social-share ms-auto">
-											<ul class="d-flex list-unstyled">
-												<li>
-													<a href="https://x.com/TuruGlobal">
-														<i class="fab fa-twitter"></i>
-													</a>
-												</li>
-												<li>
-													<a href="https://t.me/babyturu">
-														<i class="fab fa-telegram"></i>
-													</a>
-												</li>
-												<li>
-													<a href="#">
-														<i class="fas fa-globe"></i>
-													</a>
-												</li>
-												
-											</ul>
-										</div>
-									</div>
-									<!-- Blockchain Icon -->
-									<div class="blockchain-icon">
-										<img src="assets/img/content/tron.png" alt="">
-									</div>
-								</div>
-							</div>
-							
-							<!-- Single Slide -->
-							<div class="swiper-slide item">
-								<div class="card project-card">
-									<div class="media">
-										<a href="project-details.html">
-											<img class="card-img-top avatar-max-lg" src="assets/img/content/pope.png" alt="">
-										</a>
-										<div class="media-body ms-4">
-											<a href="project-details.html">
-												<h4 class="m-0">TronsCore</h4>
-											</a>
-											<div class="countdown-times">
-												<h6 class="my-2">Ongoing</h6>
-												<div class="countdown d-flex" data-date="2024-11-30"></div>
-											</div>
-										</div>
-									</div>
-									<!-- Project Body -->
-									<div class="card-body">
-										<div class="items">
-											<!-- Single Item -->
-											<div class="single-item">
-												<span>Total raise</span>
-												<span>50k CFT</span>
-											</div>
-											
-										</div>
-										<div class="item-progress">
-											<div class="progress mt-4 mt-md-5">
-												<div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">0%</div>
-											</div>
-											<div class="progress-sale d-flex justify-content-between mt-3">
-												<span>0/50,000 CFT</span>
-												
-											</div>
-										</div>
-									</div>
-									<!-- Project Footer -->
-									<div class="project-footer d-flex align-items-center mt-4 mt-md-5">
-										<a class="btn btn-bordered-white btn-smaller" href="blog-single.html">Participate</a>
-										<!-- Social Share -->
-										<div class="social-share ms-auto">
-											<ul class="d-flex list-unstyled">
-												<li>
-													<a href="https://x.com/TronsCore">
-														<i class="fab fa-twitter"></i>
-													</a>
-												</li>
-												<li>
-													<a href="https://t.me/TronsCore">
-														<i class="fab fa-telegram"></i>
-													</a>
-												</li>
-												<li>
-													<a href="https://tronscore.com/">
-														<i class="fas fa-globe"></i>
-													</a>
-												</li>
-												
-											</ul>
-										</div>
-									</div>
-									<!-- Blockchain Icon -->
-									<div class="blockchain-icon">
-										<img src="assets/img/content/tron.png" alt="">
-									</div>
-								</div>
-							</div>
-							<!-- Single Slide -->
-							
-							<div class="swiper-slide item">
-								<div class="card project-card">
-									<div class="media">
-										<a href="project-details.html">
-											<img class="card-img-top avatar-max-lg" src="assets/img/content/king.png" alt="">
-										</a>
-										<div class="media-body ms-4">
-											<a href="project-details.html">
-												<h4 class="m-0">The Kingdom</h4>
-											</a>
-											<div class="countdown-times">
-												<h6 class="my-2">Ongoing</h6>
-												<div class="countdown d-flex" data-date="2024-11-25"></div>
-											</div>
-										</div>
-									</div>
-									<!-- Project Body -->
-									<div class="card-body">
-										<div class="items">
-											<!-- Single Item -->
-											<div class="single-item">
-												<span>Total raise</span>
-												<span>50k CFT</span>
-											</div>
-											
-										</div>
-										<div class="item-progress">
-											<div class="progress mt-4 mt-md-5">
-												<div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="8" aria-valuemin="0" aria-valuemax="100">0%</div>
-											</div>
-											<div class="progress-sale d-flex justify-content-between mt-3">
-												<span>0/50,000 CFT</span>
-												
-											</div>
-										</div>
-									</div>
-									<!-- Project Footer -->
-									<div class="project-footer d-flex align-items-center mt-4 mt-md-5">
-										<a class="btn btn-bordered-white btn-smaller" href="blog-single.html">Participate</a>
-										<!-- Social Share -->
-										<div class="social-share ms-auto">
-											<ul class="d-flex list-unstyled">
-												<li>
-													<a href="#">
-														<i class="fab fa-twitter"></i>
-													</a>
-												</li>
-												<li>
-													<a href="#">
-														<i class="fab fa-telegram"></i>
-													</a>
-												</li>
-												<li>
-													<a href="#">
-														<i class="fas fa-globe"></i>
-													</a>
-												</li>
-												
-											</ul>
-										</div>
-									</div>
-									<!-- Blockchain Icon -->
-									<div class="blockchain-icon">
-										<img src="assets/img/content/tron.png" alt="">
-									</div>
-								</div>
-							</div>
-							<!-- Single Slide -->
-							
-							
-							<!-- Single Slide -->
-							<div class="swiper-slide item">
-								<div class="card project-card">
-									<div class="media">
-										<a href="project-details.html">
-											<img class="card-img-top avatar-max-lg" src="assets/img/content/war.png" alt="">
-										</a>
-										<div class="media-body ms-4">
-											<a href="project-details.html">
-												<h4 class="m-0">Galaxy War</h4>
-											</a>
-											<div class="countdown-times">
-												<h6 class="my-2">Ongoing</h6>
-												<div class="countdown d-flex" data-date="2024-12-16"></div>
-											</div>
-										</div>
-									</div>
-									<!-- Project Body -->
-									<div class="card-body">
-										<div class="items">
-											<!-- Single Item -->
-											<div class="single-item">
-												<span>Total raise</span>
-												<span>50k CFT</span>
-											</div>
-											
-										</div>
-										<div class="item-progress">
-											<div class="progress mt-4 mt-md-5">
-												<div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="42" aria-valuemin="0" aria-valuemax="100">0%</div>
-											</div>
-											<div class="progress-sale d-flex justify-content-between mt-3">
-												<span>0/50,000 CFT</span>
-												
-											</div>
-										</div>
-									</div>
-									<!-- Project Footer -->
-									<div class="project-footer d-flex align-items-center mt-4 mt-md-5">
-										<a class="btn btn-bordered-white btn-smaller" href="blog-single.html">Participate</a>
-										<!-- Social Share -->
-										<div class="social-share ms-auto">
-											<ul class="d-flex list-unstyled">
-												<li>
-													<a href="#">
-														<i class="fab fa-twitter"></i>
-													</a>
-												</li>
-												<li>
-													<a href="#">
-														<i class="fab fa-telegram"></i>
-													</a>
-												</li>
-												<li>
-													<a href="#">
-														<i class="fas fa-globe"></i>
-													</a>
-												</li>
-												<li>
-													<a href="#">
-														<i class="fab fa-discord"></i>
-													</a>
-												</li>
-											</ul>
-										</div>
-									</div>
-									<!-- Blockchain Icon -->
-									<div class="blockchain-icon">
-										<img src="assets/img/content/binance.png" alt="">
-									</div>
-								</div>
-							</div>
-						</div>
-						<div class="swiper-pagination"></div>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- ***** Project Area End ***** -->
-
-		<!-- ***** Ended Project Area Start ***** --> 
-		<section class="explore-area prev-project-area load-more p-0">
-			<div class="container">
-				<div class="row">
-					<div class="col-12">
-						<!-- Intro -->
-						<div class="intro d-flex justify-content-between align-items-end m-0">
-							<div class="intro-content">
-								<span class="intro-text">CFT Ecosystem</span>
-								<h3 class="mt-3 mb-0">Coming Soon</h3>
-							</div>
-							
-						</div>
-					</div>
-				</div>
-				<div class="row items">
-					<div class="col-12 item">
-						<!-- Project Card -->
-						<div class="card project-card prev-project-card">
-							<!-- Project Content -->
-							<div class="project-content d-md-flex flex-column flex-md-row align-items-center justify-content-md-between">
-								<div class="item-header d-flex align-items-center mb-4 mb-md-0">
-									<img class="card-img-top avatar-max-lg" src="assets/img/content/king.png" alt="">
-									<div class="content ms-4">
-										<h4 class="m-0">The Kingdom</h4>
-										
-									</div>
-								</div>
-								<div class="blockchain d-inline-block me-1 me-md-0">
-									<img src="assets/img/content/tron.png" alt="">
-								</div>
-								<div class="single-item">
-									<span>0 weeks ago</span>
-								</div>
-								<div class="single-item d-none d-md-inline-block">
-									<span>x0 supporters</span>
-								</div>
-								<div class="single-item">
-									<span>Total earned</span>
-									<span>0 CFT</span>
-								</div>
-							</div>
-							<a class="project-link" href="project-details.html"></a>
-						</div>
-					</div>
-					<div class="col-12 item">
-						<!-- Project Card -->
-						<div class="card project-card prev-project-card">
-							<!-- Project Content -->
-							<div class="project-content d-md-flex flex-column flex-md-row align-items-center justify-content-md-between">
-								<div class="item-header d-flex align-items-center mb-4 mb-md-0">
-									<img class="card-img-top avatar-max-lg" src="assets/img/content/war.png" alt="">
-									<div class="content ms-4">
-										<h4 class="m-0">Galaxy War</h4>
-										
-									</div>
-								</div>
-								<div class="blockchain d-inline-block me-1 me-md-0">
-									<img src="assets/img/content/binance.png" alt="">
-								</div>
-								<div class="single-item">
-									<span>0 weeks ago</span>
-								</div>
-								<div class="single-item d-none d-md-inline-block">
-									<span>x0 Supporters</span>
-								</div>
-								<div class="single-item">
-									<span>Total Earned</span>
-									<span>0 CFT</span>
-								</div>
-							</div>
-							<a class="project-link" href="project-details.html"></a>
-						</div>
-					</div>
-					<div class="col-12 item">
-						<!-- Project Card -->
-						<div class="card project-card prev-project-card">
-							<!-- Project Content -->
-							<div class="project-content d-md-flex flex-column flex-md-row align-items-center justify-content-md-between">
-								<div class="item-header d-flex align-items-center mb-4 mb-md-0">
-									<img class="card-img-top avatar-max-lg" src="assets/img/content/turu.png" alt="">
-									<div class="content ms-4">
-										<h4 class="m-0">Turu Global</h4>
-										
-									</div>
-								</div>
-								<div class="blockchain d-inline-block me-1 me-md-0">
-									<img src="assets/img/content/tron.png" alt="">
-								</div>
-								<div class="single-item">
-									<span>0 weeks ago</span>
-								</div>
-								<div class="single-item d-none d-md-inline-block">
-									<span>x0 supporters</span>
-								</div>
-								<div class="single-item">
-									<span>Total Earned</span>
-									<span>0 CFT</span>
-								</div>
-							</div>
-							<a class="project-link" href="project-details.html"></a>
-						</div>
-					</div>
-					<div class="col-12 item">
-						<!-- Project Card -->
-						<div class="card project-card prev-project-card">
-							<!-- Project Content -->
-							<div class="project-content d-md-flex flex-column flex-md-row align-items-center justify-content-md-between">
-								<div class="item-header d-flex align-items-center mb-4 mb-md-0">
-									<img class="card-img-top avatar-max-lg" src="assets/img/content/pope.png" alt="">
-									<div class="content ms-4">
-										<h4 class="m-0">TronsCore</h4>
-										
-									</div>
-								</div>
-								<div class="blockchain d-inline-block me-1 me-md-0">
-									<img src="assets/img/content/tron.png" alt="">
-								</div>
-								<div class="single-item">
-									<span>0 weeks ago</span>
-								</div>
-								<div class="single-item d-none d-md-inline-block">
-									<span>x0 supporters</span>
-								</div>
-								<div class="single-item">
-									<span>Total Earned</span>
-									<span>0 CFT</span>
-								</div>
-							</div>
-							<a class="project-link" href="project-details.html"></a>
-						</div>
-					</div>
-					<div class="col-12 item">
-						<!-- Project Card -->
-						<div class="card project-card prev-project-card">
-							<!-- Project Content -->
-							<div class="project-content d-md-flex flex-column flex-md-row align-items-center justify-content-md-between">
-								<div class="item-header d-flex align-items-center mb-4 mb-md-0">
-									<img class="card-img-top avatar-max-lg" src="assets/img/content/jm.png" alt="">
-									<div class="content ms-4">
-										<h4 class="m-0">JustMoney</h4>
-										
-									</div>
-								</div>
-								<div class="blockchain d-inline-block me-1 me-md-0">
-									<img src="assets/img/content/tron.png" alt="">
-								</div>
-								<div class="single-item">
-									<span>0 weeks ago</span>
-								</div>
-								<div class="single-item d-none d-md-inline-block">
-									<span>x0 Supporters</span>
-								</div>
-								<div class="single-item">
-									<span>Total Earned</span>
-									<span>0 CFT</span>
-								</div>
-							</div>
-							<a class="project-link" href="project-details.html"></a>
-						</div>
-					</div>
-					
-				</div>
-				<div class="row">
-					<div class="col-12 text-center">
-						<a id="load-btn" class="btn btn-bordered-white mt-4 mt-md-5" href="#">Load More</a>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- ***** Ended Project Area End ***** -->
-
-		<!-- ***** Content Area Start ***** -->
-		<section class="content-area">
-			<div class="container">
-				<div class="row align-items-center">
-					<div class="col-12 col-md-6">
-						<div class="content intro">
-							<span class="intro-text">CFT Ecosystem</span>
-							<h2>Stake CFT</h2>
-							<p>Stake CFT and be rewarded with CFT daily.</p>
-							<ul class="list-unstyled items mt-5">
-								<li class="item">
-									<!-- Content List -->
-									<div class="content-list d-flex align-items-center">
-										<div class="content-icon">
-											<span>
-												<i class="fa-brands fa-telegram"></i>
-											</span>
-										</div>
-										<div class="content-body ms-4">
-											<h3 class="m-0">Join a vibrant community</h3>
-											<p class="mt-3">CFT focus on rewarding its community</p>
-										</div>
-									</div>
-								</li>
-								<li class="item">
-									<!-- Content List -->
-									<div class="content-list d-flex align-items-center">
-										<div class="content-icon">
-											<span class="featured">
-												<i class="fa-brands fa-hotjar"></i>
-											</span>
-										</div>
-										<div class="content-body ms-4">
-											<h3 class="m-0">Contribute</h3>
-											<p class="mt-3">Contribute towards your favorite ecosystem.</p>
-										</div>
-									</div>
-								</li>
-								<li class="item">
-									<!-- Content List -->
-									<div class="content-list d-flex align-items-center">
-										<div class="content-icon">
-											<span>
-												<i class="fa-solid fa-rocket"></i>
-											</span>
-										</div>
-										<div class="content-body ms-4">
-											<h3 class="m-0">Lets Go</h3>
-											<p class="mt-3">What are you waiting for? .</p>
-										</div>
-									</div>
-								</li>
-							</ul>
-						</div>
-					</div>
-					<div class="col-12 col-md-6">
-						<!-- Blockchain Animation -->
-						<div class="wrapper-animation d-none d-md-block">
-							<div class="blockchain-wrapper">
-								<div class="pyramid">
-									<div class="square">
-										<div class="triangle"></div>
-										<div class="triangle"></div>
-										<div class="triangle"></div>
-										<div class="triangle"></div>
-									</div>
-								</div>
-								<div class="pyramid inverse">
-									<div class="square">
-										<div class="triangle"></div>
-										<div class="triangle"></div>
-										<div class="triangle"></div>
-										<div class="triangle"></div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- ***** Content Area End ***** -->
-
-		
-		<!-- ***** Work Area Start ***** -->
-		<section class="work-area">
-			<div class="container">
-				<div class="row">
-					<div class="col-12">
-						<!-- Intro -->
-						<div class="intro d-flex justify-content-between align-items-end mb-4">
-							<div class="intro-content">
-								<span class="intro-text">How It Works</span>
-								<h3 class="mt-3 mb-0">How To Participate</h3>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="row items">
-					<div class="col-12 col-sm-6 col-lg-4 item">
-						<!-- Single Work -->
-						<div class="single-work">
-							<i class="icons icon-drawer text-effect"></i>
-							<h4>Submit application</h4>
-							<p>Submit your projects detailes, including roadmap and team info.</p>
-						</div>
-					</div>
-					<div class="col-12 col-sm-6 col-lg-4 item">
-						<!-- Single Work -->
-						<div class="single-work">
-							<i class="icons icon-wallet text-effect"></i>
-							<h4>Verify project</h4>
-							<p>Once your projects is verified the CFT fundraising starts, oncve you hit the milestone of 50,000 CFT you can continue to the next step.</p>
-						</div>
-					</div>
-					<div class="col-12 col-sm-6 col-lg-4 item">
-						<!-- Single Work -->
-						<div class="single-work">
-							<i class="icons icon-fire text-effect"></i>
-							<h4>Start Staking</h4>
-							<p>CFT tokens are now locked for 6 months ensuring your project weekly revenue from our treasury income.</p>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- ***** Work Area End ***** -->
-
-		<!-- ***** CTA Area Start ***** -->
-		<section class="cta-area p-0">
-			<div class="container">
-				<div class="row">
-					<div class="col-12 card">
-						<div class="row align-items-center justify-content-center">
-							<div class="col-12 col-md-5 text-center">
-								<img src="assets/img/content/cftlogo300.png" alt="">
-							</div>
-							<div class="col-12 col-md-6 mt-4 mt-md-0">
-								<h2 class="m-0">Apply for project staking</h2>
-								<p>Earn weekly rewards from staked CFT to build your project</p>
-								<p>Soon available for projects on any chain</p>
-								<a class="btn btn-bordered active d-inline-block" ><i class="icon-rocket me-2"></i>Coming Soon</a>
-							</div>
-						</div>
-						<a class="cta-link" href="apply.html"></a>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- ***** CTA Area End ***** -->
-
-		<!--====== Footer Area Start ======-->
-		<footer class="footer-area">
-			<div class="container">
-				<div class="row justify-content-center">
-					<div class="col-12 col-md-8 text-center">
-						<!-- Footer Items -->
-						<div class="footer-items">
-							<!-- Logo -->
-							<a class="navbar-brand" href="index.html">
-								<img src="assets/img/logo/logo.png" alt="">
-							</a>
-							<!-- Social Icons -->
-							<div class="social-icons d-flex justify-content-center my-4">
-    <!-- X (Formerly Twitter) -->
-    <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank">
-        <i class="fab fa-x-twitter"></i>
-    </a>
-
-    <!-- Reddit -->
-    <a class="reddit" href="https://www.reddit.com/" target="_blank">
-        <i class="fab fa-reddit"></i>
-    </a>
-
-    <!-- Telegram -->
-    <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank">
-        <i class="fab fa-telegram-plane"></i>
-    </a>
-</div>
-
-
-							
-							<!-- Copyright Area -->
-							<div class="copyright-area py-4">&copy;2025 CFT Ecosystem, All Rights Reserved </div>
-						</div>
-						<!-- Scroll To Top -->
-						<div id="scroll-to-top" class="scroll-to-top">
-							<a href="#header" class="smooth-anchor">
-								<i class="fa-solid fa-arrow-up"></i>
-							</a>
-						</div>
-					</div>
-				</div>
-			</div>
-		</footer>
-		<!--====== Footer Area End ======-->
-
-		<!--====== Modal Search Area Start ======-->
-		<div id="search" class="modal fade p-0">
-			<div class="modal-dialog dialog-animated">
-				<div class="modal-content h-100">
-					<div class="modal-header" data-bs-dismiss="modal">
-						Search <i class="far fa-times-circle icon-close"></i>
-					</div>
-					<div class="modal-body">
-						<form class="row">
-							<div class="col-12 align-self-center">
-								<div class="row">
-									<div class="col-12 pb-3">
-										<h2 class="search-title mt-0 mb-3">What are you looking for?</h2>
-										<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-									</div>
-								</div>
-								<div class="row">
-									<div class="col-12 input-group mt-md-4">
-										<input type="text" placeholder="Enter your keywords">
-									</div>
-								</div>
-								<div class="row">
-									<div class="col-12 input-group align-self-center">
-										<button class="btn btn-bordered-white mt-3">Search</button>
-									</div>
-								</div>
-							</div>
-						</form>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!--====== Modal Search Area End ======-->
-
-		<!--====== Modal Responsive Menu Area Start ======-->
-		<div id="menu" class="modal fade p-0">
-			<div class="modal-dialog dialog-animated">
-				<div class="modal-content h-100">
-					<div class="modal-header" data-bs-dismiss="modal">
-						Menu <i class="far fa-times-circle icon-close"></i>
-					</div>
-					<div class="menu modal-body">
-						<div class="row w-100">
-							<div class="items p-0 col-12 text-center"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!--====== Modal Responsive Menu Area End ======-->
-
-	</div>
-
-	<!-- ***** All jQuery Plugins ***** -->
-
-	<!-- jQuery(necessary for all JavaScript plugins) -->
-	<script src="assets/js/vendor/jquery.min.js"></script>
-
-	<!-- Bootstrap js -->
-	<script src="assets/js/vendor/popper.min.js"></script>
-	<script src="assets/js/vendor/bootstrap.min.js"></script>
-
-	<!-- Plugins js -->
-	<script src="assets/js/vendor/all.min.js"></script>
-	<script src="assets/js/vendor/gallery.min.js"></script>
-	<script src="assets/js/vendor/slider.min.js"></script>
-	<script src="assets/js/vendor/countdown.min.js"></script>
-	<script src="assets/js/vendor/shuffle.min.js"></script>
-
-	<!-- Main js -->
-	<script src="assets/js/main.js"></script>
-	
+  <!-- Vendor JS -->
+  <script src="assets/js/vendor/jquery.min.js"></script>
+  <script src="assets/js/vendor/popper.min.js"></script>
+  <script src="assets/js/vendor/bootstrap.min.js"></script>
+  <script src="assets/js/vendor/all.min.js"></script>
+  <script src="assets/js/vendor/gallery.min.js"></script>
+  <script src="assets/js/vendor/slider.min.js"></script>
+  <script src="assets/js/vendor/countdown.min.js"></script>
+  <script src="assets/js/vendor/shuffle.min.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script src="assets/js/advertisements.js"></script>
 </body>
-
 </html>
