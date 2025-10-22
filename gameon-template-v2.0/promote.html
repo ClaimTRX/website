@@ -51,8 +51,9 @@
     .panel { position: relative; display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-3); padding: 18px 18px 20px; box-shadow: var(--shadow-1); }
     .panel .item-title { color: var(--muted); font-weight: 700; letter-spacing: .3px; }
     .panel small { color: #9fb0cc; }
-    .form-control.luxe { background: #0c1121; border: 1px solid var(--line); color: #eaf2ff; border-radius: 14px; padding: 12px 14px; }
+    .form-control.luxe { background: #0c1121; border: 1px solid var(--line); color: var(--txt); border-radius: 14px; padding: 12px 14px; }
     .form-control.luxe:focus { outline: none; box-shadow: var(--focus-ring); border-color: rgba(125,178,255,.6); }
+    .form-control.luxe::placeholder { color: var(--muted); opacity: 1; }
     .btn.primary, .btn.ghost { height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 14px; }
     .btn.primary { background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); color: #0b0e17; border: 0; font-weight: 800; }
     .btn.primary:hover { filter: brightness(1.05); }
@@ -96,17 +97,42 @@
 </head>
 <body>
   <header id="header" class="pt-2">
-    <nav class="navbar gameon-navbar navbar-expand">
+    <nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
       <div class="container">
-        <a class="navbar-brand" href="#"><img src="assets/img/logo/logo.png" alt="CFT Logo"></a>
+        <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt="CFT Logo"></a>
         <div class="ms-auto"></div>
         <ul class="navbar-nav items mx-auto">
-          <li class="nav-item"><a href="#" class="nav-link">Home</a></li>
-          <li class="nav-item"><a href="#" class="nav-link">Social Rewards</a></li>
+          <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
+            <ul class="dropdown-menu">
+              <li class="nav-item"><a href="staking.html" class="nav-link">Staking</a></li>
+              <li class="nav-item"><a href="lockstaking.html" class="nav-link">Locked Staking</a></li>
+              <li class="nav-item"><a href="sellcft.html" class="nav-link">Trading</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
+            <ul class="dropdown-menu">
+              <li class="nav-item"><a href="buystablex.html" class="nav-link">Buy StableX</a></li>
+              <li class="nav-item"><a href="sellstablex.html" class="nav-link">Sell StableX</a></li>
+              <li class="nav-item"><a href="stablexstaking.html" class="nav-link">Stake StableX</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
+            <ul class="dropdown-menu">
+              <li class="nav-item"><a href="feb.html" class="nav-link">FEB</a></li>
+              <li class="nav-item"><a href="energy.html" class="nav-link">Rent Energy</a></li>
+            </ul>
+          </li>
+          <li class="nav-item"><a href="swap.html" class="nav-link">Swap</a></li>
         </ul>
         <ul class="navbar-nav toggle">
           <li class="nav-item">
-            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu"><i class="icon-menu m-0"></i></a>
+            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
+              <i class="icon-menu m-0"></i>
+            </a>
           </li>
         </ul>
         <ul class="navbar-nav action">
@@ -190,7 +216,6 @@
           <table class="table table-bordered">
             <thead>
               <tr>
-                <th>Wallet Address</th>
                 <th>Telegram Link</th>
                 <th>Twitter Link</th>
                 <th>Discord Link</th>
@@ -204,7 +229,9 @@
   </section>
   <section class="py-3">
     <div class="container">
-      <div class="cta luxe-ad-card" id="ad-container"></div>
+      <div class="cta luxe-ad-card">
+        <div class="row" id="ad-container"></div>
+      </div>
     </div>
   </section>
   <div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-labelledby="transactionProcessingModalLabel" aria-hidden="true">
@@ -249,7 +276,7 @@
   <script>
     const contractAddress = "TWNgbmQ5o9BJ6ATNttNA5N9EFDQdJ6sfoQ"; // Replace with deployed contract address
     let tronWeb, contract, userAddress;
-    const UI_REFRESH_DELAY_MS = 3000; // From poolstaking1.js
+    const UI_REFRESH_DELAY_MS = 3000;
 
     function showToast({ title='Notification', body='', variant='dark', autohide=true }) {
       const el = document.getElementById('app-toast');
@@ -339,25 +366,22 @@
 
     async function loadRegisteredLinks() {
       const tableBody = document.getElementById("links-table-body");
-      tableBody.innerHTML = '<tr><td colspan="4" class="text-center"><div class="skeleton"></div></td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="3" class="text-center"><div class="skeleton"></div></td></tr>';
       try {
         const [wallets, telegramLinks, twitterLinks, discordLinks] = await contract.getAllRegistrations().call();
         tableBody.innerHTML = "";
         if (wallets.length === 0) {
-          tableBody.innerHTML = '<tr><td colspan="4" class="text-center">No registrations yet</td></tr>';
+          tableBody.innerHTML = '<tr><td colspan="3" class="text-center">No registrations yet</td></tr>';
           return;
         }
         for (let i = 0; i < wallets.length; i++) {
           const row = document.createElement("tr");
-          const walletCell = document.createElement("td");
-          walletCell.textContent = wallets[i].slice(0, 6) + "...";
           const telegramCell = document.createElement("td");
           telegramCell.innerHTML = telegramLinks[i] ? `<a href="${telegramLinks[i]}" target="_blank">${telegramLinks[i]}</a>` : "—";
           const twitterCell = document.createElement("td");
           twitterCell.innerHTML = twitterLinks[i] ? `<a href="${twitterLinks[i]}" target="_blank">${twitterLinks[i]}</a>` : "—";
           const discordCell = document.createElement("td");
           discordCell.innerHTML = discordLinks[i] ? `<a href="${discordLinks[i]}" target="_blank">${discordLinks[i]}</a>` : "—";
-          row.appendChild(walletCell);
           row.appendChild(telegramCell);
           row.appendChild(twitterCell);
           row.appendChild(discordCell);
@@ -429,6 +453,14 @@
       } finally {
         hideProcessingModal(processingModal);
       }
+    }
+
+    function validateLink(link, type) {
+      if (!link) return true; // Empty links are valid (optional)
+      if (type === 'telegram' && !link.startsWith('https://t.me/')) return false;
+      if (type === 'twitter' && !link.startsWith('https://x.com/')) return false;
+      if (type === 'discord' && !link.startsWith('https://discord.gg/')) return false;
+      return true;
     }
 
     function showLanding() {
