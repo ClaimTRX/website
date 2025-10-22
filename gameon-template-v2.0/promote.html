@@ -121,7 +121,7 @@
     <div class="container text-center">
       <span class="intro-text">CFT Ecosystem</span>
       <h1 class="display-5">Social Rewards</h1>
-      <p class="mb-0">Register your Telegram and Twitter links to promote CFT and earn rewards</p>
+      <p class="mb-0">Register your Telegram, Twitter, and Discord links to promote CFT and earn rewards</p>
     </div>
   </section>
   <section class="py-3">
@@ -159,9 +159,13 @@
               <span class="item-title" id="panel-title">Register Links</span>
               <small>Wallet: <span id="wallet-status-register" class="skeleton" style="display:inline-block;min-width:80px;min-height:16px"></span></small>
             </div>
-            <div><input type="text" placeholder="Telegram Invite Link (optional)" id="telegram-link" class="form-control luxe"></div>
-            <div><input type="text" placeholder="Twitter Link (optional)" id="twitter-link" class="form-control luxe"></div>
-            <a href="#" class="btn primary w-100" id="register-button">Register</a>
+            <div><input type="text" placeholder="Telegram Invite Link (optional, e.g., https://t.me/...)" id="telegram-link" class="form-control luxe"></div>
+            <div><input type="text" placeholder="Twitter Link (optional, e.g., https://x.com/...)" id="twitter-link" class="form-control luxe"></div>
+            <div><input type="text" placeholder="Discord Invite Link (optional, e.g., https://discord.gg/...)" id="discord-link" class="form-control luxe"></div>
+            <div class="d-flex gap-3">
+              <a href="#" class="btn ghost w-100" id="back-register">Back</a>
+              <a href="#" class="btn primary w-100" id="register-button">Register</a>
+            </div>
           </div>
         </div>
         <div id="edit-section" class="action-grid single" style="display: none;">
@@ -170,18 +174,26 @@
               <span class="item-title">Edit Links</span>
               <small>Wallet: <span id="wallet-status-edit" class="skeleton" style="display:inline-block;min-width:80px;min-height:16px"></span></small>
             </div>
-            <div><input type="text" placeholder="New Telegram Link (optional)" id="edit-telegram-link" class="form-control luxe"></div>
-            <div><input type="text" placeholder="New Twitter Link (optional)" id="edit-twitter-link" class="form-control luxe"></div>
-            <a href="#" class="btn primary w-100" id="edit-button">Update Links</a>
+            <div><input type="text" placeholder="New Telegram Link (optional, e.g., https://t.me/...)" id="edit-telegram-link" class="form-control luxe"></div>
+            <div><input type="text" placeholder="New Twitter Link (optional, e.g., https://x.com/...)" id="edit-twitter-link" class="form-control luxe"></div>
+            <div><input type="text" placeholder="New Discord Link (optional, e.g., https://discord.gg/...)" id="edit-discord-link" class="form-control luxe"></div>
+            <div class="d-flex gap-3">
+              <a href="#" class="btn ghost w-100" id="back-edit">Back</a>
+              <a href="#" class="btn primary w-100" id="edit-button">Update Links</a>
+            </div>
           </div>
         </div>
         <div id="groups-section" class="table-container" style="display: none;">
+          <div class="d-flex justify-content-start mb-3">
+            <a href="#" class="btn ghost" id="back-groups">Back</a>
+          </div>
           <table class="table table-bordered">
             <thead>
               <tr>
                 <th>Wallet Address</th>
                 <th>Telegram Link</th>
                 <th>Twitter Link</th>
+                <th>Discord Link</th>
               </tr>
             </thead>
             <tbody id="links-table-body"></tbody>
@@ -192,20 +204,7 @@
   </section>
   <section class="py-3">
     <div class="container">
-      <div class="cta luxe-ad-card">
-        <div class="row align-items-center g-0">
-          <div class="col-12 col-md-5 text-center p-3">
-            <img src="assets/img/content/guardian.png" alt="CFT Guardian" style="max-width:220px">
-          </div>
-          <div class="col-12 col-md-7 p-3">
-            <div class="inner">
-              <h2 class="m-0">CFT Guardian Minting is Now Live</h2>
-              <p class="mb-3">Earn daily SOL rewards by staking our Guardian NFTs</p>
-              <a class="btn primary" href="https://cftguardians.com/" aria-label="Mint CFT Guardians"><i class="icon-rocket me-2"></i>Mint Now</a>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div class="cta luxe-ad-card" id="ad-container"></div>
     </div>
   </section>
   <div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-labelledby="transactionProcessingModalLabel" aria-hidden="true">
@@ -246,9 +245,45 @@
   </footer>
   <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/advertisements.js" type="module"></script>
   <script>
-    const contractAddress = "TLrt2tgbfi77kzpNyWSUnXv2ynMrVaK9MC"; // Replace with deployed contract address
+    const contractAddress = "YOUR_CONTRACT_ADDRESS_HERE"; // Replace with deployed contract address
     let tronWeb, contract, userAddress;
+    const UI_REFRESH_DELAY_MS = 3000; // From poolstaking1.js
+
+    function showToast({ title='Notification', body='', variant='dark', autohide=true }) {
+      const el = document.getElementById('app-toast');
+      if (!el) return;
+      el.className = `toast text-bg-${variant}`;
+      el.innerHTML = `
+        <div class="toast-header">
+          <strong class="me-auto">${title}</strong>
+          <button type="button" class="btn-close ms-2 mb-1" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">${body}</div>`;
+      new bootstrap.Toast(el, { autohide, delay: 4500 }).show();
+    }
+
+    function showProcessingModal(step='') {
+      const modalElement = document.getElementById('transaction-processing-modal');
+      if (!modalElement) throw new Error('Processing modal not found.');
+      const titleElement = document.getElementById('transactionProcessingModalLabel');
+      if (titleElement) titleElement.textContent = `Processing Transaction ${step}`;
+      const modal = new bootstrap.Modal(modalElement, { backdrop:'static', keyboard:false });
+      modalElement.addEventListener('shown.bs.modal', () => modalElement.removeAttribute('aria-hidden'), { once: true });
+      modal.show();
+      return modal;
+    }
+
+    function hideProcessingModal(modal) { if (modal) modal.hide(); }
+
+    function validateLink(link, type) {
+      if (!link) return true; // Empty links are valid (optional)
+      if (type === 'telegram' && !link.startsWith('https://t.me/')) return false;
+      if (type === 'twitter' && !link.startsWith('https://x.com/')) return false;
+      if (type === 'discord' && !link.startsWith('https://discord.gg/')) return false;
+      return true;
+    }
 
     async function initTronWeb() {
       if (window.tronWeb && window.tronWeb.ready) {
@@ -258,24 +293,24 @@
         document.getElementById("wallet-status").textContent = userAddress ? userAddress.slice(0, 6) + "..." : "Not Connected";
         document.getElementById("wallet-status-register").textContent = userAddress ? userAddress.slice(0, 6) + "..." : "Not Connected";
         document.getElementById("wallet-status-edit").textContent = userAddress ? userAddress.slice(0, 6) + "..." : "Not Connected";
-        document.getElementById("connect-button").textContent = userAddress ? "Connected" : "Wallet Connect";
-        if (userAddress) checkRegistration();
+        document.getElementById("connect-button").innerHTML = userAddress ? `<i class="icon-wallet me-md-2"></i> Wallet Connected` : `<i class="icon-wallet me-md-2"></i> Wallet Connect`;
+        if (userAddress) await checkRegistration();
       } else {
-        showToast("Please install TronLink or connect your wallet.");
+        showToast({ title: 'Auto-connect failed', body: 'TronLink is not detected. Install or unlock TronLink.', variant: 'danger' });
         showLanding();
       }
     }
 
     async function connectWallet() {
       if (!window.tronWeb) {
-        showToast("TronLink not detected. Please install TronLink.");
+        showToast({ title: 'Wallet', body: 'TronLink not detected. Please install TronLink.', variant: 'danger' });
         return;
       }
       try {
-        await window.tronLink.request({ method: "tron_requestAccounts" });
-        initTronWeb();
+        await window.tronLink.request({ method: 'tron_requestAccounts' });
+        await initTronWeb();
       } catch (error) {
-        showToast("Wallet connection failed: " + error.message);
+        showToast({ title: 'Wallet', body: 'Wallet connection failed: ' + error.message, variant: 'danger' });
       }
     }
 
@@ -283,83 +318,116 @@
       try {
         const isRegistered = await contract.isRegistered(userAddress).call();
         if (isRegistered) {
-          const telegramLink = await contract.telegramLinks(userAddress).call();
-          const twitterLink = await contract.twitterLinks(userAddress).call();
-          document.getElementById("edit-telegram-link").value = telegramLink;
-          document.getElementById("edit-twitter-link").value = twitterLink;
-          showLanding();
+          const [wallets, telegramLinks, twitterLinks, discordLinks] = await contract.getAllRegistrations().call();
+          const index = wallets.indexOf(userAddress);
+          if (index !== -1) {
+            document.getElementById("edit-telegram-link").value = telegramLinks[index];
+            document.getElementById("edit-twitter-link").value = twitterLinks[index];
+            document.getElementById("edit-discord-link").value = discordLinks[index];
+            document.getElementById("edit-section").style.display = "block";
+            document.getElementById("register-section").style.display = "none";
+          }
         } else {
-          showLanding();
+          document.getElementById("edit-section").style.display = "none";
+          document.getElementById("register-section").style.display = "block";
         }
+        showLanding();
       } catch (error) {
-        showToast("Error checking registration: " + error.message);
+        showToast({ title: 'Error', body: 'Error checking registration: ' + error.message, variant: 'danger' });
       }
     }
 
     async function loadRegisteredLinks() {
       const tableBody = document.getElementById("links-table-body");
-      tableBody.innerHTML = '<tr><td colspan="3" class="text-center"><div class="skeleton"></div></td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="4" class="text-center"><div class="skeleton"></div></td></tr>';
       try {
-        const events = await tronWeb.getEventResult(contractAddress, { eventName: "Registered" });
+        const [wallets, telegramLinks, twitterLinks, discordLinks] = await contract.getAllRegistrations().call();
         tableBody.innerHTML = "";
-        for (const event of events) {
+        if (wallets.length === 0) {
+          tableBody.innerHTML = '<tr><td colspan="4" class="text-center">No registrations yet</td></tr>';
+          return;
+        }
+        for (let i = 0; i < wallets.length; i++) {
           const row = document.createElement("tr");
           const walletCell = document.createElement("td");
-          walletCell.textContent = event.result.user;
+          walletCell.textContent = wallets[i].slice(0, 6) + "...";
           const telegramCell = document.createElement("td");
-          telegramCell.innerHTML = event.result.telegramLink ? `<a href="${event.result.telegramLink}" target="_blank">${event.result.telegramLink}</a>` : "—";
+          telegramCell.innerHTML = telegramLinks[i] ? `<a href="${telegramLinks[i]}" target="_blank">${telegramLinks[i]}</a>` : "—";
           const twitterCell = document.createElement("td");
-          twitterCell.innerHTML = event.result.twitterLink ? `<a href="${event.result.twitterLink}" target="_blank">${event.result.twitterLink}</a>` : "—";
+          twitterCell.innerHTML = twitterLinks[i] ? `<a href="${twitterLinks[i]}" target="_blank">${twitterLinks[i]}</a>` : "—";
+          const discordCell = document.createElement("td");
+          discordCell.innerHTML = discordLinks[i] ? `<a href="${discordLinks[i]}" target="_blank">${discordLinks[i]}</a>` : "—";
           row.appendChild(walletCell);
           row.appendChild(telegramCell);
           row.appendChild(twitterCell);
+          row.appendChild(discordCell);
           tableBody.appendChild(row);
         }
-        if (events.length === 0) {
-          tableBody.innerHTML = '<tr><td colspan="3" class="text-center">No registrations yet</td></tr>';
-        }
       } catch (error) {
-        showToast("Error loading registered links: " + error.message);
+        showToast({ title: 'Error', body: 'Error loading registered links: ' + error.message, variant: 'danger' });
       }
     }
 
     async function registerLinks() {
       const telegramLink = document.getElementById("telegram-link").value.trim();
       const twitterLink = document.getElementById("twitter-link").value.trim();
+      const discordLink = document.getElementById("discord-link").value.trim();
       if (!userAddress) {
-        showToast("Please connect your wallet first.");
+        showToast({ title: 'Wallet', body: 'Please connect your wallet first.', variant: 'danger' });
         return;
       }
-      showProcessingModal();
+      if (!validateLink(telegramLink, 'telegram') || !validateLink(twitterLink, 'twitter') || !validateLink(discordLink, 'discord')) {
+        showToast({ title: 'Invalid Link', body: 'Links must start with https://t.me/ for Telegram, https://x.com/ for Twitter, or https://discord.gg/ for Discord.', variant: 'danger' });
+        return;
+      }
+      let processingModal = null;
       try {
-        await contract.register(telegramLink, twitterLink).send({ shouldPollResponse: true });
-        showToast("Registration successful!");
+        processingModal = showProcessingModal();
+        const tx = await contract.register(telegramLink, twitterLink, discordLink).send({ shouldPollResponse: true });
+        showToast({ 
+          title: 'Registration successful', 
+          body: `<a href="https://tronscan.org/#/transaction/${tx}" target="_blank" rel="noopener">View on Tronscan</a>`, 
+          variant: 'success' 
+        });
         document.getElementById("telegram-link").value = "";
         document.getElementById("twitter-link").value = "";
-        checkRegistration();
+        document.getElementById("discord-link").value = "";
+        await new Promise(resolve => setTimeout(resolve, UI_REFRESH_DELAY_MS));
+        await checkRegistration();
       } catch (error) {
-        showToast("Registration failed: " + error.message);
+        showToast({ title: 'Registration error', body: error.message, variant: 'danger' });
       } finally {
-        hideProcessingModal();
+        hideProcessingModal(processingModal);
       }
     }
 
     async function editLinks() {
       const newTelegramLink = document.getElementById("edit-telegram-link").value.trim();
       const newTwitterLink = document.getElementById("edit-twitter-link").value.trim();
+      const newDiscordLink = document.getElementById("edit-discord-link").value.trim();
       if (!userAddress) {
-        showToast("Please connect your wallet first.");
+        showToast({ title: 'Wallet', body: 'Please connect your wallet first.', variant: 'danger' });
         return;
       }
-      showProcessingModal();
+      if (!validateLink(newTelegramLink, 'telegram') || !validateLink(newTwitterLink, 'twitter') || !validateLink(newDiscordLink, 'discord')) {
+        showToast({ title: 'Invalid Link', body: 'Links must start with https://t.me/ for Telegram, https://x.com/ for Twitter, or https://discord.gg/ for Discord.', variant: 'danger' });
+        return;
+      }
+      let processingModal = null;
       try {
-        await contract.editLinks(newTelegramLink, newTwitterLink).send({ shouldPollResponse: true });
-        showToast("Links updated successfully!");
-        checkRegistration();
+        processingModal = showProcessingModal();
+        const tx = await contract.editLinks(newTelegramLink, newTwitterLink, newDiscordLink).send({ shouldPollResponse: true });
+        showToast({ 
+          title: 'Links updated', 
+          body: `<a href="https://tronscan.org/#/transaction/${tx}" target="_blank" rel="noopener">View on Tronscan</a>`, 
+          variant: 'success' 
+        });
+        await new Promise(resolve => setTimeout(resolve, UI_REFRESH_DELAY_MS));
+        await checkRegistration();
       } catch (error) {
-        showToast("Update failed: " + error.message);
+        showToast({ title: 'Update error', body: error.message, variant: 'danger' });
       } finally {
-        hideProcessingModal();
+        hideProcessingModal(processingModal);
       }
     }
 
@@ -371,10 +439,9 @@
     }
 
     function showRegister() {
-      const isRegistered = document.getElementById("edit-section").style.display === "block";
       document.getElementById("landing-section").style.display = "none";
       document.getElementById("groups-section").style.display = "none";
-      if (isRegistered) {
+      if (document.getElementById("edit-section").style.display === "block") {
         document.getElementById("edit-section").style.display = "block";
         document.getElementById("register-section").style.display = "none";
       } else {
@@ -391,25 +458,14 @@
       loadRegisteredLinks();
     }
 
-    function showToast(message) {
-      const toast = document.getElementById("app-toast");
-      toast.textContent = message;
-      bootstrap.Toast.getOrCreateInstance(toast).show();
-    }
-
-    function showProcessingModal() {
-      bootstrap.Modal.getOrCreateInstance(document.getElementById("transaction-processing-modal")).show();
-    }
-
-    function hideProcessingModal() {
-      bootstrap.Modal.getOrCreateInstance(document.getElementById("transaction-processing-modal")).hide();
-    }
-
     document.getElementById("connect-button").addEventListener("click", connectWallet);
     document.getElementById("register-option").addEventListener("click", showRegister);
     document.getElementById("view-groups-option").addEventListener("click", showGroups);
     document.getElementById("register-button").addEventListener("click", registerLinks);
     document.getElementById("edit-button").addEventListener("click", editLinks);
+    document.getElementById("back-register").addEventListener("click", showLanding);
+    document.getElementById("back-edit").addEventListener("click", showLanding);
+    document.getElementById("back-groups").addEventListener("click", showLanding);
 
     window.addEventListener("load", initTronWeb);
   </script>
