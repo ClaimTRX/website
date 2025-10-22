@@ -201,6 +201,7 @@
           <li class="nav-item dropdown">
             <a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
             <ul class="dropdown-menu">
+              <li class="nav-item"><a href="poolstaking.html" class="nav-link">Earn TRX</a></li>
               <li class="nav-item"><a href="staking.html" class="nav-link">Staking</a></li>
               <li class="nav-item"><a href="lockstaking.html" class="nav-link">Locked Staking</a></li>
               <li class="nav-item"><a href="sellcft.html" class="nav-link">Trading</a></li>
@@ -223,7 +224,9 @@
             </ul>
           </li>
           <li class="nav-item"><a href="swap.html" class="nav-link">Swap</a></li>
+          <li class="nav-item"><a href="https://cftguardians.com/" class="nav-link">CFT Guardians</a></li>
         </ul>
+        
         <ul class="navbar-nav toggle">
           <li class="nav-item">
             <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
@@ -320,10 +323,10 @@
       <div class="stats-grid">
         <div class="stat-tile"><span class="item-title">Pool Size</span><strong id="pool-size">—</strong></div>
         <div class="stat-tile"><span class="item-title">Daily Payout</span><strong id="daily-payout">—</strong></div>
-        <div class="stat-tile"><span class="item-title">Total Next Payout</span><strong id="total-next-payout">—</strong></div>
+        
         <div class="stat-tile"><span class="item-title">Your Next Payout</span><strong id="your-next-payout">—</strong></div>
         
-        <div class="stat-tile"><span class="item-title">Total Inactive Tokens</span><strong id="total-inactive-tokens">—</strong></div>
+        
       </div>
       <!-- Claim before box -->
       <div class="countdown-tile" id="next-claim-box">
@@ -370,6 +373,24 @@
     </div>
   </div>
   <!-- ***** Energy Rental Modal End ***** -->
+  <div class="modal fade" id="reward-warning-modal" tabindex="-1" aria-labelledby="rewardWarningModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="rewardWarningModalLabel">Pending Rewards Warning</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+      </div>
+      <div class="modal-body">
+        <p>You have <span id="pending-rewards-amount">0</span> in pending rewards. Withdrawing your CFT tokens now will reduce these rewards.</p>
+        <p>We recommend claiming your rewards before withdrawing. Proceed with withdrawal anyway?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-rent" id="withdraw-confirm">Proceed with Withdrawal</button>
+      </div>
+    </div>
+  </div>
+</div>
   <!-- Processing Modal -->
   <div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-labelledby="transactionProcessingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -423,9 +444,52 @@
   <script src="assets/js/main.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
   <!-- App JS -->
-  <script src="assets/js/poolstaking.js" type="module"></script>
+  <script src="assets/js/poolstaking1.js" type="module"></script>
+  <script src="assets/js/advertisements.js" type="module"></script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
