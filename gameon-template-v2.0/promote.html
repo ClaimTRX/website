@@ -9,107 +9,67 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <title>CFT Ecosystem - Social Rewards</title>
   <link rel="icon" href="assets/img/favicon.png">
+  <!-- Shared site styles (same as your reference page) -->
+  <link rel="stylesheet" href="assets/css/style.css">
   <style>
-    :root {
-      --bg-0: #07090f; --bg-1: #0b0e17; --bg-2: #0f1321; --surface: #12172a; --line: #212b46;
-      --muted: #9aa7bd; --txt: #e9eef7;
-      --accent-1: #62ffcf; --accent-2: #7db2ff; --accent-3: #b37cff;
-      --success: #00e095; --danger: #ff5b73; --warning: #ffd166;
-      --radius-2: 12px; --radius-3: 18px; --radius-4: 28px;
-      --shadow-1: 0 10px 30px rgba(0,0,0,.55); --shadow-2: 0 12px 40px rgba(0,0,0,.6);
-      --glass: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      --focus-ring: 0 0 0 3px rgba(125,178,255,.35);
+    /* Page-specific light styling (kept minimal to avoid clashing with global style.css) */
+    .sr-card{border-radius:var(--radius-4);background:var(--glass);border:1px solid var(--line);box-shadow:var(--shadow-2);overflow:hidden}
+    .sr-header{padding:32px}
+    .sr-title{display:flex;gap:16px;align-items:center}
+    .sr-title img{width:56px;height:56px}
+    .sr-title h4{margin:0;font-weight:800}
+    .chip{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:#cfe3ff;padding:.35rem .65rem;border-radius:999px;font-size:.85rem}
+    .chip .dot{width:8px;height:8px;border-radius:999px;background:var(--success);box-shadow:0 0 0 2px rgba(0,224,149,.15)}
+    .sr-sub{color:var(--muted)}
+    .sr-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;padding:0 32px 36px}
+    .sr-actions.single{grid-template-columns:1fr;max-width:520px;margin:0 auto}
+    .panel{display:grid;grid-template-rows:auto auto 1fr auto;gap:12px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:18px;box-shadow:var(--shadow-1)}
+    .panel .item-title{color:var(--muted);font-weight:700;letter-spacing:.3px}
+    .form-control.luxe{background:#0c1121;border:1px solid var(--line);color:var(--txt);border-radius:14px;padding:12px 14px}
+    .form-control.luxe:focus{outline:none;box-shadow:var(--focus-ring);border-color:rgba(125,178,255,.6)}
+    .form-control.luxe::placeholder{color:var(--muted)}
+    .btn.primary,.btn.ghost{height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px}
+    .btn.primary{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#0b0e17;border:0;font-weight:800}
+    .btn.primary:hover{filter:brightness(1.05)}
+    .btn.ghost{border:1px solid var(--line);color:#eaf2ff;background:transparent}
+    .btn.ghost:hover{border-color:rgba(125,178,255,.55)}
+    .btn.vote{font-size:.9rem;padding:.3rem .8rem;height:36px}
+
+    .table-container{padding:0 32px 36px}
+    .table-container table{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);overflow:hidden}
+    .table-container th,.table-container td{background:#0c1121;color:var(--txt);border:1px solid var(--line);padding:12px}
+    .table-container th{background:var(--bg-1);font-weight:700}
+    .table-container a{color:var(--accent-1);text-decoration:none}
+    .table-container a:hover{text-decoration:underline}
+
+    .skeleton{position:relative;overflow:hidden;min-width:80px;min-height:16px;background:#141a2b;border-radius:8px}
+    .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);animation:shimmer 1.2s infinite}
+    @keyframes shimmer{100%{transform:translateX(100%)}}
+
+    .spinner{border:4px solid var(--accent-2);border-top-color:transparent;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto 15px}
+    @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+
+    /* Responsive tweaks aligned with site style */
+    @media (max-width:992px){
+      .sr-actions{display:flex;flex-direction:column;gap:18px;padding:0 20px 28px}
+      .panel{width:100%;max-width:min(520px,calc(100% - 24px));margin-inline:auto;padding:16px}
+      .form-control.luxe{width:100%}
     }
-    html, body { background: var(--bg-0); color: var(--txt); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
-    header#header { padding: 1.5rem 0; }
-    .navbar-brand img { height: 48px; }
-    .navbar-nav.items .nav-link { font-size: 1.1rem; padding: .75rem 1rem; color: #ffffff; }
-    .navbar-nav.action .btn { font-size: 1rem; padding: .5rem 1.25rem; height: 50px; }
-    .navbar-nav.toggle .nav-link { font-size: 1.5rem; padding: .5rem; color: #ffffff; }
-    #menu .modal-content { background: var(--bg-1); border: 1px solid var(--line); color: var(--txt); }
-    #menu .modal-header { border-bottom: 1px solid var(--line); padding: 1rem; }
-    #menu .modal-body { padding: 1rem; }
-    #menu .items .nav-item { margin: .5rem 0; }
-    #menu .items .nav-link { color: #ffffff; font-size: 1.1rem; padding: .5rem 1rem; }
-    #menu .items .dropdown-menu { background: var(--bg-2); border: 1px solid var(--line); padding: .5rem; }
-    #menu .items .dropdown-menu .nav-link { color: #ffffff; font-size: 1rem; }
-    #menu .items .dropdown-menu .nav-link:hover { color: var(--accent-1); }
-    .hero-section { padding: 120px 0 28px; text-align: center; }
-    .intro-text { display: inline-block; font-size: 1rem; letter-spacing: .16em; text-transform: uppercase; color: #c3d3ef; background: rgba(255,255,255,.03); border: 1px solid var(--line); padding: .42rem .95rem; border-radius: 999px; }
-    .hero-section h1 { font-weight: 900; letter-spacing: .4px; margin-top: 16px; font-size: 3.25rem; line-height: 1.1; }
-    .hero-section p { color: #b5c2d8; }
-    .luxe-card { position: relative; border-radius: var(--radius-4); background: var(--glass); backdrop-filter: blur(10px); border: 1px solid var(--line); box-shadow: var(--shadow-2); overflow: hidden; }
-    .staking-header { padding: 32px; }
-    .staking-title { display: flex; gap: 16px; align-items: center; }
-    .staking-title img { width: 56px; height: 56px; }
-    .staking-title h4 { margin: 0; font-weight: 800; }
-    .chip { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,.04); border: 1px solid var(--line); color: #cfe3ff; padding: .35rem .65rem; border-radius: 999px; font-size: .85rem; }
-    .chip .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--success); box-shadow: 0 0 0 2px rgba(0,224,149,.15); }
-    .staking-sub { color: var(--muted); }
-    .action-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; padding: 0 32px 36px; justify-items: stretch; align-items: stretch; }
-    .action-grid.single { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
-    .panel { position: relative; display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-3); padding: 18px 18px 20px; box-shadow: var(--shadow-1); }
-    .panel .item-title { color: var(--muted); font-weight: 700; letter-spacing: .3px; }
-    .panel small { color: #9fb0cc; }
-    .form-control.luxe { background: #0c1121; border: 1px solid var(--line); color: #fff; border-radius: 14px; padding: 12px 14px; }
-    .form-control.luxe:focus { outline: none; box-shadow: var(--focus-ring); border-color: rgba(125,178,255,.6); }
-    .form-control.luxe::placeholder { color: var(--muted); opacity: 1; }
-    .btn.primary, .btn.ghost { height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 14px; }
-    .btn.primary { background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); color: #0b0e17; border: 0; font-weight: 800; }
-    .btn.primary:hover { filter: brightness(1.05); }
-    .btn.ghost { border: 1px solid var(--line); color: #eaf2ff; background: transparent; }
-    .btn.ghost:hover { border-color: rgba(125,178,255,.55); }
-    .btn.vote { font-size: 0.9rem; padding: 0.3rem 0.8rem; height: 36px; }
-    .table-container { padding: 0 32px 36px; }
-    .table-container table { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-3); }
-    .table-container th, .table-container td { background: #0c1121; color: #fff; border: 1px solid var(--line); padding: 12px; }
-    .table-container th { background: var(--bg-1); font-weight: 700; }
-    .table-container a { color: var(--accent-1); text-decoration: none; }
-    .table-container a:hover { text-decoration: underline; }
-    .skeleton { position: relative; overflow: hidden; min-width: 80px; min-height: 20px; background: #141a2b; border-radius: 8px; }
-    .skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent); animation: shimmer 1.2s infinite; }
-    @keyframes shimmer { 100% { transform: translateX(100%); } }
-    .modal-content { background: var(--bg-1); border: 1px solid var(--line); color: var(--txt); border-radius: 16px; }
-    .modal-header .btn-close { filter: invert(1); }
-    .modal .btn-cancel { border: 1px solid var(--line); color: #eaf2ff; background: transparent; border-radius: 12px; }
-    .modal .btn-rent { background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); border: 0; color: #0b0e17; border-radius: 12px; font-weight: 800; }
-    .spinner { border: 4px solid var(--accent-2); border-top-color: transparent; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
-    @keyframes spin { 0% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
-    .luxe-ad-card { position: relative; border-radius: var(--radius-4); background: linear-gradient(135deg, rgba(98,255,207,.1), rgba(125,178,255,.1)); border: 2px solid var(--accent-3); box-shadow: var(--shadow-2), 0 0 20px rgba(125,178,255,.3); overflow: hidden; margin: 2rem 0; transition: transform .3s ease, box-shadow .3s ease; }
-    .luxe-ad-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-2), 0 0 30px rgba(125,178,255,.5); }
-    .luxe-ad-card .inner { padding: 1.5rem; }
-    .luxe-ad-card h2 { font-weight: 800; color: var(--accent-1); text-shadow: 0 0 5px rgba(98,255,207,.5); }
-    .luxe-ad-card p { color: var(--txt); font-size: 1.1rem; }
-    .luxe-ad-card .btn.primary { background: linear-gradient(135deg, var(--accent-3), var(--accent-2)); font-weight: 700; padding: .75rem 1.5rem; border-radius: 12px; }
-    .luxe-ad-card .btn.primary:hover { filter: brightness(1.2); }
-    @media (max-width: 992px) {
-      .action-grid { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 0 20px 28px; width: 100%; }
-      .action-grid .panel { width: 100%; max-width: min(480px, calc(100% - 24px)); margin-inline: auto; padding: 16px; }
-      .action-grid .panel > * { max-width: 100%; }
-      .form-control.luxe { width: 100%; }
-    }
-    @media (max-width: 576px) {
-      .action-grid { padding: 0 12px 24px; }
-      .panel { padding: 16px; }
-      .table-container { padding: 0 12px 24px; }
-      .table-container table { font-size: 0.9rem; }
-      .table-container thead { display: none; }
-      .table-container tr { display: block; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
-      .table-container td { display: block; text-align: left; padding: 8px 12px; }
-      .table-container td:before { content: attr(data-label); display: block; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
-      .table-container td:empty:before { content: none; }
-      .hero-section h1 { font-size: 2.5rem; }
-      .navbar-brand img { height: 36px; }
-      .navbar-nav.items .nav-link { font-size: 1rem; padding: .5rem; }
-      .navbar-nav.action .btn { font-size: 0.9rem; padding: .4rem 1rem; height: 40px; }
+    @media (max-width:576px){
+      .table-container{padding:0 12px 24px}
+      .table-container thead{display:none}
+      .table-container tr{display:block;margin-bottom:16px;border-bottom:1px solid var(--line)}
+      .table-container td{display:block;text-align:left;padding:8px 12px}
+      .table-container td:before{content:attr(data-label);display:block;font-weight:700;color:var(--muted);margin-bottom:4px}
     }
   </style>
 </head>
 <body>
+  <!-- Header (shared) -->
   <header id="header" class="pt-2">
     <nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
       <div class="container">
-        <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt="CFT Logo"></a>
+        <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt=""/></a>
         <div class="ms-auto"></div>
         <ul class="navbar-nav items mx-auto">
           <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
@@ -153,100 +113,113 @@
       </div>
     </nav>
   </header>
+
+  <!-- Hero (shared style) -->
   <section class="hero-section">
     <div class="container text-center">
       <span class="intro-text">CFT Ecosystem</span>
       <h1 class="display-5">Social Rewards</h1>
-      <p class="mb-0">Register your Telegram, Twitter, and Discord links to promote CFT, vote for your favorites, and earn rewards</p>
+      <p class="mb-0">Register your Telegram, X, and Discord links, get votes, and earn rewards.</p>
     </div>
   </section>
-  <section class="py-3">
+
+  <!-- Content Area (shared spacing) -->
+  <section class="content-area">
     <div class="container">
-      <div class="luxe-card">
-        <div class="staking-header">
-          <div class="staking-title">
-            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="CFT Logo">
+      <div class="sr-card">
+        <div class="sr-header">
+          <div class="sr-title">
+            <img src="assets/img/content/cftlogo518.png" alt="CFT Logo">
             <div>
               <div class="d-flex align-items-center gap-2 flex-wrap">
-                <h4 class="staking-title-text m-0">Social Rewards</h4>
-                <span class="chip" id="status-chip"><span class="dot"></span><span id="status-text">Ready</span></span>
+                <h4 class="m-0">Social Rewards</h4>
+                <span class="chip"><span class="dot"></span><span id="status-text">Ready</span></span>
               </div>
-              <p class="staking-sub mb-0 mt-2">Register your social links to participate or vote for projects.</p>
+              <p class="sr-sub mb-0 mt-2">Register links to participate or browse/vote without connecting.</p>
             </div>
           </div>
         </div>
-        <div id="landing-section" class="action-grid">
+
+        <!-- Landing actions -->
+        <div id="landing-section" class="sr-actions">
           <div class="panel">
             <div class="d-flex justify-content-between align-items-center mb-2">
               <span class="item-title">Get Started</span>
-              <small>Wallet: <span id="wallet-status" class="skeleton" style="display:inline-block;min-width:80px;min-height:16px"></span></small>
+              <small>Wallet: <span id="wallet-status" class="skeleton" style="display:inline-block"></span></small>
             </div>
-            <div></div>
-            <div></div>
+            <div></div><div></div>
             <div class="d-flex gap-3">
-              <a href="#" class="btn primary w-100" id="register-option">Register</a>
-              <a href="#" class="btn ghost w-100" id="view-groups-option">View Active Groups</a>
-              <a href="#" class="btn ghost w-100" id="view-rankings-option">View Rankings</a>
+              <a href="#" class="btn primary w-100" id="register-option"><i class="fa-regular fa-square-plus me-2"></i>Register</a>
+              <a href="#" class="btn ghost w-100" id="view-groups-option"><i class="fa-solid fa-users me-2"></i>View Active Groups</a>
+              <a href="#" class="btn ghost w-100" id="view-rankings-option"><i class="fa-solid fa-ranking-star me-2"></i>View Rankings</a>
             </div>
           </div>
         </div>
-        <div id="register-section" class="action-grid single" style="display: none;">
+
+        <!-- Register -->
+        <div id="register-section" class="sr-actions single" style="display:none">
           <div class="panel">
             <div class="d-flex justify-content-between align-items-center mb-2">
               <span class="item-title" id="panel-title">Register Links</span>
-              <small>Wallet: <span id="wallet-status-register" class="skeleton" style="display:inline-block;min-width:80px;min-height:16px"></span></small>
+              <small>Wallet: <span id="wallet-status-register" class="skeleton" style="display:inline-block"></span></small>
             </div>
-            <div><input type="text" placeholder="Telegram Invite Link (optional, e.g., https://t.me/...)" id="telegram-link" class="form-control luxe"></div>
-            <div><input type="text" placeholder="Twitter Link (optional, e.g., https://x.com/...)" id="twitter-link" class="form-control luxe"></div>
-            <div><input type="text" placeholder="Discord Invite Link (optional, e.g., https://discord.gg/...)" id="discord-link" class="form-control luxe"></div>
+            <div><input type="text" placeholder="Telegram (e.g., https://t.me/...)" id="telegram-link" class="form-control luxe"></div>
+            <div><input type="text" placeholder="X / Twitter (e.g., https://x.com/...)" id="twitter-link" class="form-control luxe"></div>
+            <div><input type="text" placeholder="Discord (e.g., https://discord.gg/...)" id="discord-link" class="form-control luxe"></div>
             <div class="d-flex gap-3">
               <a href="#" class="btn ghost w-100" id="back-register">Back</a>
               <a href="#" class="btn primary w-100" id="register-button">Register</a>
             </div>
           </div>
         </div>
-        <div id="edit-section" class="action-grid single" style="display: none;">
+
+        <!-- Edit -->
+        <div id="edit-section" class="sr-actions single" style="display:none">
           <div class="panel">
             <div class="d-flex justify-content-between align-items-center mb-2">
               <span class="item-title">Edit Links</span>
-              <small>Wallet: <span id="wallet-status-edit" class="skeleton" style="display:inline-block;min-width:80px;min-height:16px"></span></small>
+              <small>Wallet: <span id="wallet-status-edit" class="skeleton" style="display:inline-block"></span></small>
             </div>
-            <div><input type="text" placeholder="New Telegram Link (optional, e.g., https://t.me/...)" id="edit-telegram-link" class="form-control luxe"></div>
-            <div><input type="text" placeholder="New Twitter Link (optional, e.g., https://x.com/...)" id="edit-twitter-link" class="form-control luxe"></div>
-            <div><input type="text" placeholder="New Discord Link (optional, e.g., https://discord.gg/...)" id="edit-discord-link" class="form-control luxe"></div>
+            <div><input type="text" placeholder="New Telegram (https://t.me/...)" id="edit-telegram-link" class="form-control luxe"></div>
+            <div><input type="text" placeholder="New X/Twitter (https://x.com/...)" id="edit-twitter-link" class="form-control luxe"></div>
+            <div><input type="text" placeholder="New Discord (https://discord.gg/...)" id="edit-discord-link" class="form-control luxe"></div>
             <div class="d-flex gap-3">
               <a href="#" class="btn ghost w-100" id="back-edit">Back</a>
               <a href="#" class="btn primary w-100" id="edit-button">Update Links</a>
             </div>
           </div>
         </div>
-        <div id="groups-section" class="table-container" style="display: none;">
+
+        <!-- Groups -->
+        <div id="groups-section" class="table-container" style="display:none">
           <div class="d-flex justify-content-start mb-3">
-            <a href="#" class="btn ghost" id="back-groups">Back</a>
+            <a href="#" class="btn ghost" id="back-groups"><i class="fa-solid fa-arrow-left me-2"></i>Back</a>
           </div>
           <table class="table table-bordered">
             <thead>
               <tr>
-                <th>Telegram Link</th>
-                <th>Twitter Link</th>
-                <th>Discord Link</th>
+                <th>Telegram</th>
+                <th>X/Twitter</th>
+                <th>Discord</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody id="links-table-body"></tbody>
           </table>
         </div>
-        <div id="rankings-section" class="table-container" style="display: none;">
+
+        <!-- Rankings -->
+        <div id="rankings-section" class="table-container" style="display:none">
           <div class="d-flex justify-content-start mb-3">
-            <a href="#" class="btn ghost" id="back-rankings">Back</a>
+            <a href="#" class="btn ghost" id="back-rankings"><i class="fa-solid fa-arrow-left me-2"></i>Back</a>
           </div>
           <table class="table table-bordered">
             <thead>
               <tr>
                 <th>Rank</th>
-                <th>Telegram Link</th>
-                <th>Twitter Link</th>
-                <th>Discord Link</th>
+                <th>Telegram</th>
+                <th>X/Twitter</th>
+                <th>Discord</th>
                 <th>Votes</th>
               </tr>
             </thead>
@@ -256,21 +229,33 @@
       </div>
     </div>
   </section>
+
+  <!-- CTA Area (same look as reference) -->
   <section class="py-3">
     <div class="container">
-      <div class="cta luxe-ad-card">
-        <div class="row" id="ad-container"></div>
+      <div class="luxe-ad-card">
+        <div class="row align-items-center g-0" id="ad-container">
+          <!-- Filled by advertisements.js if you use it site-wide,
+               or leave empty to use the rotator below -->
+        </div>
       </div>
     </div>
   </section>
-  <div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-labelledby="transactionProcessingModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title" id="transactionProcessingModalLabel">Processing Transaction</h5></div>
-        <div class="modal-body text-center"><div class="spinner"></div><p>Please wait while your transaction is being processed.</p></div>
+
+  <!-- Footer (shared) -->
+  <footer class="footer-area py-5 mt-3">
+    <div class="container text-center">
+      <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt="" style="height:28px"></a>
+      <div class="social-icons d-flex justify-content-center my-3 gap-3">
+        <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
+        <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
       </div>
+      <div class="copyright-area py-2">&copy;2025 CFT Ecosystem, All Rights Reserved</div>
+      <div id="scroll-to-top" class="scroll-to-top"><a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a></div>
     </div>
-  </div>
+  </footer>
+
+  <!-- Modals (shared) -->
   <div id="menu" class="modal fade p-0">
     <div class="modal-dialog dialog-animated">
       <div class="modal-content h-100">
@@ -285,59 +270,89 @@
       </div>
     </div>
   </div>
+
+  <!-- Toasts (shared) -->
   <div id="toast-container" style="position:fixed;z-index:1100;bottom:16px;right:16px">
     <div id="app-toast" class="toast text-bg-dark" role="status" aria-live="polite" aria-atomic="true"></div>
   </div>
-  <footer class="footer-area py-5 mt-3">
-    <div class="container text-center">
-      <a class="navbar-brand" href="#"><img src="assets/img/logo/logo.png" alt="CFT Logo" style="height:28px"></a>
-      <div class="social-icons d-flex justify-content-center my-3 gap-3">
-        <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
-        <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
-      </div>
-      <div class="copyright-area py-2">&copy;2025 CFT Ecosystem, All Rights Reserved</div>
-      <div id="scroll-to-top" class="scroll-to-top"><a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a></div>
-    </div>
-  </footer>
 
-  <!-- Load TronWeb early -->
+  <!-- Vendor & site JS (same as reference) -->
+  <script src="assets/js/vendor/jquery.min.js"></script>
+  <script src="assets/js/vendor/popper.min.js"></script>
+  <script src="assets/js/vendor/bootstrap.min.js"></script>
+  <script src="assets/js/vendor/all.min.js"></script>
+  <script src="assets/js/vendor/gallery.min.js"></script>
+  <script src="assets/js/vendor/slider.min.js"></script>
+  <script src="assets/js/vendor/countdown.min.js"></script>
+  <script src="assets/js/vendor/shuffle.min.js"></script>
+  <script src="assets/js/main.js"></script>
+
+  <!-- TronWeb -->
   <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="assets/js/advertisements.js" type="module"></script>
 
+  <!-- Optional ad rotator (matches reference behaviour if you want it here too) -->
   <script>
-    // =========================
-    // Config
-    // =========================
+    const advertisements = [
+      { title:"CFT Guardian Minting is Now Live", description:"Earn daily SOL rewards by staking our Guardian NFTs",
+        image:"assets/img/content/guardian.png", link:"https://cftguardians.com/", linkText:"Mint Now", icon:"icon-rocket" },
+      { title:"Swap Your tokens at JM Swap", description:"JustMoney Swap is an AMM DEX on Tron with multi-chain support.",
+        image:"assets/img/content/stablex.png", link:"https://just.money/", linkText:"Try Now", icon:"icon-rocket" },
+      { title:"Stake StableX", description:"Earn both CFT and StableX with StableX staking",
+        image:"assets/img/content/stablex.png", link:"https://www.cftecosystem.com/buystablex", linkText:"Stake Now", icon:"icon-stake" },
+    ];
+    function rotateAdvertisements() {
+      const adContainer = document.querySelector('.luxe-ad-card .row');
+      if (!adContainer) return;
+      let i = 0;
+      const update = () => {
+        const ad = advertisements[i];
+        adContainer.innerHTML = `
+          <div class="col-12 col-md-5 text-center p-3">
+            <img src="${ad.image}" alt="${ad.title}" style="max-width:220px" loading="lazy">
+          </div>
+          <div class="col-12 col-md-7 p-3">
+            <div class="inner">
+              <h2 class="m-0">${ad.title}</h2>
+              <p class="mb-3">${ad.description}</p>
+              <a class="btn primary" href="${ad.link}" aria-label="${ad.linkText}"><i class="${ad.icon} me-2"></i>${ad.linkText}</a>
+            </div>
+          </div>`;
+        i = (i + 1) % advertisements.length;
+      };
+      update();
+      setInterval(update, 60000);
+    }
+    document.addEventListener('DOMContentLoaded', rotateAdvertisements);
+  </script>
+
+  <!-- Page logic (keeps all your working fixes) -->
+  <script>
+    // ---- Config ----
     const contractAddress = "TPcSvCGXj6MbCR3SfRHYqNckQQSJpjFm3y";
     const defaultAddress  = "THNiVH2i5gqgTXR3PMYFaMKdygiXrzJPrk";
     const cftTokenAddress = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK";
 
     const TRONGRID_API_URL = "https://api.trongrid.io";
-    const TRONGRID_API_KEY = "1c09f073-c70c-4840-8d24-7fef9dcc84f0"; // replace
+    const TRONGRID_API_KEY = "1c09f073-c70c-4840-8d24-7fef9dcc84f0";
 
     const UI_REFRESH_DELAY_MS = 2000;
     const CFT_DECIMALS = 6;
 
-    // =========================
-    // Globals
-    // =========================
+    // ---- Globals ----
     let tronWeb, contract, cftContract, userAddress = null;
 
-    // =========================
-    // Helpers
-    // =========================
-    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-    const toBigInt = (v) => (typeof v === 'bigint' ? v : BigInt(v));
+    // ---- Helpers ----
+    const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
+    const toBigInt = (v)=> (typeof v === 'bigint' ? v : BigInt(v));
     const TEN = 10n;
-    const formatUnits = (raw, decimals = 6) => {
+    const formatUnits = (raw, decimals=6)=>{
       const bn = toBigInt(raw);
       const denom = TEN ** BigInt(decimals);
       const whole = bn / denom;
       const fracBN = bn % denom;
       if (fracBN === 0n) return whole.toString();
-      const frac = fracBN.toString().padStart(decimals, '0').replace(/0+$/, '');
-      return `${whole.toString()}${frac ? '.' + frac : ''}`;
+      const frac = fracBN.toString().padStart(decimals,'0').replace(/0+$/,'');
+      return `${whole.toString()}${frac?'.'+frac:''}`;
     };
     function showToast({ title='Notification', body='', variant='dark', autohide=true }) {
       const el = document.getElementById('app-toast');
@@ -361,44 +376,40 @@
       modal.show();
       return modal;
     }
-    function hideProcessingModal(modal) { try { modal?.hide(); } catch {} }
+    function hideProcessingModal(modal){try{modal?.hide()}catch{}}
 
-    function validateLink(link, type) {
-      if (!link) return true;
-      if (type === 'telegram' && !link.startsWith('https://t.me/')) return false;
-      if (type === 'twitter'  && !link.startsWith('https://x.com/')) return false;
-      if (type === 'discord'  && !link.startsWith('https://discord.gg/')) return false;
+    function validateLink(link,type){
+      if(!link) return true;
+      if(type==='telegram' && !link.startsWith('https://t.me/')) return false;
+      if(type==='twitter'  && !link.startsWith('https://x.com/')) return false;
+      if(type==='discord'  && !link.startsWith('https://discord.gg/')) return false;
       return true;
     }
 
-    // Handle different CDN builds: TronWeb, TronWeb.TronWeb, TronWeb.default
-    function getTronWebCtor() {
-      if (!window.TronWeb) return null;
-      if (typeof window.TronWeb === 'function') return window.TronWeb;
-      if (typeof window.TronWeb?.TronWeb === 'function') return window.TronWeb.TronWeb;
-      if (typeof window.TronWeb?.default === 'function') return window.TronWeb.default;
+    function getTronWebCtor(){
+      if(!window.TronWeb) return null;
+      if(typeof window.TronWeb==='function') return window.TronWeb;
+      if(typeof window.TronWeb?.TronWeb==='function') return window.TronWeb.TronWeb;
+      if(typeof window.TronWeb?.default==='function') return window.TronWeb.default;
       return null;
     }
 
-    async function initTronWeb() {
-      try {
+    async function initTronWeb(){
+      try{
         const ctor = getTronWebCtor();
 
-        if (window.tronWeb && window.tronWeb.ready) {
-          tronWeb = window.tronWeb; // TronLink injected
+        if(window.tronWeb && window.tronWeb.ready){
+          tronWeb = window.tronWeb;
           userAddress = tronWeb.defaultAddress.base58 || null;
-        } else if (ctor) {
-          tronWeb = new ctor({
-            fullHost: TRONGRID_API_URL,
-            headers: { "TRON-PRO-API-KEY": TRONGRID_API_KEY }
-          });
+        }else if(ctor){
+          tronWeb = new ctor({ fullHost: TRONGRID_API_URL, headers: { "TRON-PRO-API-KEY": TRONGRID_API_KEY }});
           userAddress = null;
-        } else {
-          showToast({ title: 'Error', body: 'TronWeb not available. Check CDN or TronLink installation.', variant: 'danger' });
+        }else{
+          showToast({ title:'Error', body:'TronWeb not available. Check CDN or TronLink.', variant:'danger' });
           return;
         }
 
-        const display = (addr) => addr ? addr.slice(0, 6) + "..." : "Not Connected";
+        const display = (addr)=>addr? addr.slice(0,6)+'...' : 'Not Connected';
         document.getElementById("wallet-status").textContent = display(userAddress);
         document.getElementById("wallet-status-register").textContent = display(userAddress);
         document.getElementById("wallet-status-edit").textContent = display(userAddress);
@@ -407,321 +418,290 @@
           ? `<i class="icon-wallet me-md-2"></i> Wallet Connected`
           : `<i class="icon-wallet me-md-2"></i> Wallet Connect`;
 
-        // Contracts
         contract    = await tronWeb.contract().at(contractAddress);
         cftContract = await tronWeb.contract().at(cftTokenAddress);
 
-        if (userAddress) await checkRegistration();
+        if(userAddress) await checkRegistration();
 
         // Show data without wallet
-        showGroups(); // guarded inside to avoid undefined contract usage
-      } catch (error) {
-        showToast({ title: 'Initialization Error', body: error.message, variant: 'danger' });
+        showGroups();
+      }catch(error){
+        showToast({ title:'Initialization Error', body:error.message, variant:'danger' });
       }
     }
 
-    async function connectWallet() {
-      if (!window.tronLink) {
-        showToast({ title: 'Wallet', body: 'TronLink not detected. Please install TronLink.', variant: 'danger' });
+    async function connectWallet(){
+      if(!window.tronLink){
+        showToast({ title:'Wallet', body:'TronLink not detected. Please install TronLink.', variant:'danger' });
         return;
       }
-      try {
-        await window.tronLink.request({ method: 'tron_requestAccounts' });
+      try{
+        await window.tronLink.request({ method:'tron_requestAccounts' });
         await initTronWeb();
-      } catch (error) {
-        showToast({ title: 'Wallet', body: 'Wallet connection failed: ' + error.message, variant: 'danger' });
+      }catch(error){
+        showToast({ title:'Wallet', body:'Wallet connection failed: ' + error.message, variant:'danger' });
       }
     }
 
-    async function checkRegistration() {
-      try {
-        if (!userAddress || !contract) {
-          document.getElementById("edit-section").style.display = "none";
-          document.getElementById("register-section").style.display = "block";
+    async function checkRegistration(){
+      try{
+        if(!userAddress || !contract){
+          document.getElementById("edit-section").style.display="none";
+          document.getElementById("register-section").style.display="block";
           return;
         }
-
         const [walletsHex, telegramLinksArr, twitterLinksArr, discordLinksArr] =
-          await contract.getAllRegistrations().call({ from: userAddress });
+          await contract.getAllRegistrations().call({ from:userAddress });
 
-        const wallets = walletsHex.map(w => tronWeb.address.fromHex(w));
+        const wallets = walletsHex.map(w=> tronWeb.address.fromHex(w));
         const index = wallets.indexOf(userAddress);
-        const isReg = await contract.isRegistered(userAddress).call({ from: userAddress });
+        const isReg = await contract.isRegistered(userAddress).call({ from:userAddress });
 
-        if (isReg && index !== -1) {
+        if(isReg && index!==-1){
           document.getElementById("edit-telegram-link").value = telegramLinksArr[index] || "";
           document.getElementById("edit-twitter-link").value  = twitterLinksArr[index] || "";
           document.getElementById("edit-discord-link").value  = discordLinksArr[index] || "";
-          document.getElementById("edit-section").style.display = "block";
-          document.getElementById("register-section").style.display = "none";
-        } else {
-          document.getElementById("edit-section").style.display = "none";
-          document.getElementById("register-section").style.display = "block";
+          document.getElementById("edit-section").style.display="block";
+          document.getElementById("register-section").style.display="none";
+        }else{
+          document.getElementById("edit-section").style.display="none";
+          document.getElementById("register-section").style.display="block";
         }
-      } catch (error) {
-        showToast({ title: 'Error', body: 'Error checking registration: ' + error.message, variant: 'danger' });
+      }catch(error){
+        showToast({ title:'Error', body:'Error checking registration: '+error.message, variant:'danger' });
       }
     }
 
-    async function loadRegisteredLinks() {
-      const tableBody = document.getElementById("links-table-body");
-      tableBody.innerHTML = '<tr><td colspan="4" class="text-center"><div class="skeleton"></div></td></tr>';
+    async function loadRegisteredLinks(){
+      const tbody = document.getElementById("links-table-body");
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center"><div class="skeleton"></div></td></tr>';
+      if(!contract){ tbody.innerHTML = '<tr><td colspan="4" class="text-center">Unable to load contract.</td></tr>'; return; }
 
-      if (!contract) {
-        tableBody.innerHTML = '<tr><td colspan="4" class="text-center">Unable to load contract.</td></tr>';
-        return;
-      }
-
-      try {
-        const addressToUse = userAddress || defaultAddress;
+      try{
+        const fromAddr = userAddress || defaultAddress;
         const [walletsHex, telegramLinksArr, twitterLinksArr, discordLinksArr] =
-          await contract.getAllRegistrations().call({ from: addressToUse });
+          await contract.getAllRegistrations().call({ from: fromAddr });
 
         let voteFeeRaw = 0n;
-        try { voteFeeRaw = toBigInt(await contract.voteFee().call({ from: addressToUse })); } catch {}
+        try{ voteFeeRaw = toBigInt(await contract.voteFee().call({ from: fromAddr })); }catch{}
         const voteFeeDisplay = formatUnits(voteFeeRaw, CFT_DECIMALS);
 
-        tableBody.innerHTML = "";
-        if (walletsHex.length === 0) {
-          tableBody.innerHTML = '<tr><td colspan="4" class="text-center">No registrations yet</td></tr>';
+        tbody.innerHTML = "";
+        if(walletsHex.length===0){
+          tbody.innerHTML = '<tr><td colspan="4" class="text-center">No registrations yet</td></tr>';
           return;
         }
+        const wallets = walletsHex.map(w=> tronWeb.address.fromHex(w));
 
-        const wallets = walletsHex.map(w => tronWeb.address.fromHex(w));
+        for(let i=0;i<wallets.length;i++){
+          const tr = document.createElement("tr");
 
-        for (let i = 0; i < wallets.length; i++) {
-          const row = document.createElement("tr");
+          const tg = document.createElement("td");
+          tg.setAttribute("data-label","Telegram");
+          tg.innerHTML = telegramLinksArr[i] ? `<a href="${telegramLinksArr[i]}" target="_blank">${telegramLinksArr[i]}</a>` : "—";
 
-          const telegramCell = document.createElement("td");
-          telegramCell.setAttribute("data-label", "Telegram Link");
-          telegramCell.innerHTML = telegramLinksArr[i] ? `<a href="${telegramLinksArr[i]}" target="_blank">${telegramLinksArr[i]}</a>` : "—";
+          const tw = document.createElement("td");
+          tw.setAttribute("data-label","X/Twitter");
+          tw.innerHTML = twitterLinksArr[i] ? `<a href="${twitterLinksArr[i]}" target="_blank">${twitterLinksArr[i]}</a>` : "—";
 
-          const twitterCell = document.createElement("td");
-          twitterCell.setAttribute("data-label", "Twitter Link");
-          twitterCell.innerHTML = twitterLinksArr[i] ? `<a href="${twitterLinksArr[i]}" target="_blank">${twitterLinksArr[i]}</a>` : "—";
+          const dc = document.createElement("td");
+          dc.setAttribute("data-label","Discord");
+          dc.innerHTML = discordLinksArr[i] ? `<a href="${discordLinksArr[i]}" target="_blank">${discordLinksArr[i]}</a>` : "—";
 
-          const discordCell = document.createElement("td");
-          discordCell.setAttribute("data-label", "Discord Link");
-          discordCell.innerHTML = discordLinksArr[i] ? `<a href="${discordLinksArr[i]}" target="_blank">${discordLinksArr[i]}</a>` : "—";
+          const act = document.createElement("td");
+          act.setAttribute("data-label","Action");
+          act.innerHTML = `<a href="#" class="btn vote primary vote-button" data-wallet="${wallets[i]}">Vote (${voteFeeDisplay} CFT)</a>`;
 
-          const actionCell = document.createElement("td");
-          actionCell.setAttribute("data-label", "Action");
-          actionCell.innerHTML = `<a href="#" class="btn vote primary vote-button" data-wallet="${wallets[i]}">Vote (${voteFeeDisplay} CFT)</a>`;
-
-          row.appendChild(telegramCell);
-          row.appendChild(twitterCell);
-          row.appendChild(discordCell);
-          row.appendChild(actionCell);
-          tableBody.appendChild(row);
+          tr.appendChild(tg); tr.appendChild(tw); tr.appendChild(dc); tr.appendChild(act);
+          tbody.appendChild(tr);
         }
 
-        document.querySelectorAll('.vote-button').forEach(button => {
-          button.addEventListener('click', async (e) => {
+        document.querySelectorAll('.vote-button').forEach(btn=>{
+          btn.addEventListener('click', async (e)=>{
             e.preventDefault();
-            await voteForProject(button.dataset.wallet);
+            await voteForProject(btn.dataset.wallet);
           });
         });
-      } catch (error) {
-        showToast({ title: 'Error', body: 'Error loading registered links: ' + error.message, variant: 'danger' });
+      }catch(error){
+        showToast({ title:'Error', body:'Error loading registered links: '+error.message, variant:'danger' });
       }
     }
 
-    async function loadRankings() {
-      const tableBody = document.getElementById("rankings-table-body");
-      tableBody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="skeleton"></div></td></tr>';
+    async function loadRankings(){
+      const tbody = document.getElementById("rankings-table-body");
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="skeleton"></div></td></tr>';
+      if(!contract){ tbody.innerHTML = '<tr><td colspan="5" class="text-center">Unable to load contract.</td></tr>'; return; }
 
-      if (!contract) {
-        tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Unable to load contract.</td></tr>';
-        return;
-      }
-
-      try {
-        const addressToUse = userAddress || defaultAddress;
+      try{
+        const fromAddr = userAddress || defaultAddress;
         const [walletsHex, telegramLinksArr, twitterLinksArr, discordLinksArr, voteCountsArr] =
-          await contract.getRankings().call({ from: addressToUse });
+          await contract.getRankings().call({ from: fromAddr });
 
-        tableBody.innerHTML = "";
-        if (walletsHex.length === 0) {
-          tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No rankings yet</td></tr>';
+        tbody.innerHTML = "";
+        if(walletsHex.length===0){
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center">No rankings yet</td></tr>';
           return;
         }
 
-        for (let i = 0; i < walletsHex.length; i++) {
-          const row = document.createElement("tr");
+        for(let i=0;i<walletsHex.length;i++){
+          const tr = document.createElement("tr");
 
-          const rankCell = document.createElement("td");
-          rankCell.setAttribute("data-label", "Rank");
-          rankCell.textContent = i + 1;
+          const rk = document.createElement("td");
+          rk.setAttribute("data-label","Rank");
+          rk.textContent = i+1;
 
-          const telegramCell = document.createElement("td");
-          telegramCell.setAttribute("data-label", "Telegram Link");
-          telegramCell.innerHTML = telegramLinksArr[i] ? `<a href="${telegramLinksArr[i]}" target="_blank">${telegramLinksArr[i]}</a>` : "—";
+          const tg = document.createElement("td");
+          tg.setAttribute("data-label","Telegram");
+          tg.innerHTML = telegramLinksArr[i] ? `<a href="${telegramLinksArr[i]}" target="_blank">${telegramLinksArr[i]}</a>` : "—";
 
-          const twitterCell = document.createElement("td");
-          twitterCell.setAttribute("data-label", "Twitter Link");
-          twitterCell.innerHTML = twitterLinksArr[i] ? `<a href="${twitterLinksArr[i]}" target="_blank">${twitterLinksArr[i]}</a>` : "—";
+          const tw = document.createElement("td");
+          tw.setAttribute("data-label","X/Twitter");
+          tw.innerHTML = twitterLinksArr[i] ? `<a href="${twitterLinksArr[i]}" target="_blank">${twitterLinksArr[i]}</a>` : "—";
 
-          const discordCell = document.createElement("td");
-          discordCell.setAttribute("data-label", "Discord Link");
-          discordCell.innerHTML = discordLinksArr[i] ? `<a href="${discordLinksArr[i]}" target="_blank">${discordLinksArr[i]}</a>` : "—";
+          const dc = document.createElement("td");
+          dc.setAttribute("data-label","Discord");
+          dc.innerHTML = discordLinksArr[i] ? `<a href="${discordLinksArr[i]}" target="_blank">${discordLinksArr[i]}</a>` : "—";
 
-          const votesCell = document.createElement("td");
-          votesCell.setAttribute("data-label", "Votes");
-          votesCell.textContent = voteCountsArr[i];
+          const vt = document.createElement("td");
+          vt.setAttribute("data-label","Votes");
+          vt.textContent = voteCountsArr[i];
 
-          row.appendChild(rankCell);
-          row.appendChild(telegramCell);
-          row.appendChild(twitterCell);
-          row.appendChild(discordCell);
-          row.appendChild(votesCell);
-          tableBody.appendChild(row);
+          tr.appendChild(rk); tr.appendChild(tg); tr.appendChild(tw); tr.appendChild(dc); tr.appendChild(vt);
+          tbody.appendChild(tr);
         }
-      } catch (error) {
-        showToast({ title: 'Error', body: 'Error loading rankings: ' + error.message, variant: 'danger' });
+      }catch(error){
+        showToast({ title:'Error', body:'Error loading rankings: '+error.message, variant:'danger' });
       }
     }
 
-    async function waitForAllowance(owner, spender, minAmount, attempts = 10, delayMs = 1500) {
-      for (let i = 0; i < attempts; i++) {
+    async function waitForAllowance(owner, spender, minAmount, attempts=12, delayMs=1500){
+      for(let i=0;i<attempts;i++){
         const a = toBigInt(await cftContract.allowance(owner, spender).call());
-        if (a >= minAmount) return true;
+        if(a >= minAmount) return true;
         await sleep(delayMs);
       }
       return false;
     }
 
-    async function registerLinks() {
-      if (!userAddress) {
-        showToast({ title: 'Wallet', body: 'Please connect your wallet to register links.', variant: 'danger' });
-        return;
-      }
+    async function registerLinks(){
+      if(!userAddress){ showToast({ title:'Wallet', body:'Please connect your wallet to register links.', variant:'danger' }); return; }
       const telegramLink = document.getElementById("telegram-link").value.trim();
       const twitterLink  = document.getElementById("twitter-link").value.trim();
       const discordLink  = document.getElementById("discord-link").value.trim();
 
-      if (!validateLink(telegramLink, 'telegram') || !validateLink(twitterLink, 'twitter') || !validateLink(discordLink, 'discord')) {
-        showToast({ title: 'Invalid Link', body: 'Links must start with https://t.me/, https://x.com/, or https://discord.gg/.', variant: 'danger' });
+      if(!validateLink(telegramLink,'telegram') || !validateLink(twitterLink,'twitter') || !validateLink(discordLink,'discord')){
+        showToast({ title:'Invalid Link', body:'Links must start with https://t.me/, https://x.com/, or https://discord.gg/.', variant:'danger' });
         return;
       }
 
-      let modal = null;
-      try {
+      let modal=null;
+      try{
         modal = showProcessingModal('(register)');
-        const txId = await contract.register(telegramLink, twitterLink, discordLink).send(); // no shouldPollResponse
-        showToast({ title: 'Registration submitted', body: `<a href="https://tronscan.org/#/transaction/${txId}" target="_blank" rel="noopener">View on Tronscan</a>`, variant: 'success' });
-      } catch (error) {
-        showToast({ title: 'Registration error', body: error.message, variant: 'danger' });
-      } finally {
+        const txId = await contract.register(telegramLink, twitterLink, discordLink).send();
+        showToast({ title:'Registration submitted', body:`<a href="https://tronscan.org/#/transaction/${txId}" target="_blank" rel="noopener">View on Tronscan</a>`, variant:'success' });
+      }catch(error){
+        showToast({ title:'Registration error', body:error.message, variant:'danger' });
+      }finally{
         hideProcessingModal(modal);
         await sleep(UI_REFRESH_DELAY_MS);
         await checkRegistration();
       }
     }
 
-    async function editLinks() {
-      if (!userAddress) {
-        showToast({ title: 'Wallet', body: 'Please connect your wallet to edit links.', variant: 'danger' });
-        return;
-      }
+    async function editLinks(){
+      if(!userAddress){ showToast({ title:'Wallet', body:'Please connect your wallet to edit links.', variant:'danger' }); return; }
       const newTelegramLink = document.getElementById("edit-telegram-link").value.trim();
       const newTwitterLink  = document.getElementById("edit-twitter-link").value.trim();
       const newDiscordLink  = document.getElementById("edit-discord-link").value.trim();
 
-      if (!validateLink(newTelegramLink, 'telegram') || !validateLink(newTwitterLink, 'twitter') || !validateLink(newDiscordLink, 'discord')) {
-        showToast({ title: 'Invalid Link', body: 'Links must start with https://t.me/, https://x.com/, or https://discord.gg/.', variant: 'danger' });
+      if(!validateLink(newTelegramLink,'telegram') || !validateLink(newTwitterLink,'twitter') || !validateLink(newDiscordLink,'discord')){
+        showToast({ title:'Invalid Link', body:'Links must start with https://t.me/, https://x.com/, or https://discord.gg/.', variant:'danger' });
         return;
       }
 
-      let modal = null;
-      try {
+      let modal=null;
+      try{
         modal = showProcessingModal('(update)');
         const txId = await contract.editLinks(newTelegramLink, newTwitterLink, newDiscordLink).send();
-        showToast({ title: 'Update submitted', body: `<a href="https://tronscan.org/#/transaction/${txId}" target="_blank" rel="noopener">View on Tronscan</a>`, variant: 'success' });
-      } catch (error) {
-        showToast({ title: 'Update error', body: error.message, variant: 'danger' });
-      } finally {
+        showToast({ title:'Update submitted', body:`<a href="https://tronscan.org/#/transaction/${txId}" target="_blank" rel="noopener">View on Tronscan</a>`, variant:'success' });
+      }catch(error){
+        showToast({ title:'Update error', body:error.message, variant:'danger' });
+      }finally{
         hideProcessingModal(modal);
         await sleep(UI_REFRESH_DELAY_MS);
         await checkRegistration();
       }
     }
 
-    async function voteForProject(projectWallet) {
-      if (!userAddress) {
-        showToast({ title: 'Wallet', body: 'Please connect your wallet to vote.', variant: 'danger' });
-        return;
-      }
-      let modal = null;
-      try {
+    async function voteForProject(projectWallet){
+      if(!userAddress){ showToast({ title:'Wallet', body:'Please connect your wallet to vote.', variant:'danger' }); return; }
+      let modal=null;
+      try{
         modal = showProcessingModal('(vote)');
+
         const fee = toBigInt(await contract.voteFee().call());
         const bal = toBigInt(await cftContract.balanceOf(userAddress).call());
-        if (bal < fee) throw new Error('Insufficient CFT balance for voting.');
+        if(bal < fee) throw new Error('Insufficient CFT balance for voting.');
 
         const allowance = toBigInt(await cftContract.allowance(userAddress, contractAddress).call());
-        if (allowance < fee) {
-          showToast({ title: 'Approval Required', body: 'Approving CFT spending for voting…', variant: 'warning' });
+        if(allowance < fee){
+          showToast({ title:'Approval Required', body:'Approving CFT spending for voting…', variant:'warning' });
           const approvalTx = await cftContract.approve(contractAddress, fee.toString()).send();
-          showToast({ title: 'Approval submitted', body: `<a href="https://tronscan.org/#/transaction/${approvalTx}" target="_blank" rel="noopener">View on Tronscan</a>`, variant: 'success' });
+          showToast({ title:'Approval submitted', body:`<a href="https://tronscan.org/#/transaction/${approvalTx}" target="_blank" rel="noopener">View on Tronscan</a>`, variant:'success' });
 
-          // Wait until allowance is visible on-chain to avoid needing a manual refresh
           const ok = await waitForAllowance(userAddress, contractAddress, fee, 12, 1500);
-          if (!ok) throw new Error('Approval not confirmed yet. Please try voting again in a moment.');
+          if(!ok) throw new Error('Approval not confirmed yet. Please try voting again in a moment.');
         }
 
         const voteTx = await contract.vote(projectWallet).send();
-        showToast({ title: 'Vote submitted', body: `<a href="https://tronscan.org/#/transaction/${voteTx}" target="_blank" rel="noopener">View on Tronscan</a>`, variant: 'success' });
-      } catch (error) {
-        showToast({ title: 'Vote error', body: error.message, variant: 'danger' });
-      } finally {
+        showToast({ title:'Vote submitted', body:`<a href="https://tronscan.org/#/transaction/${voteTx}" target="_blank" rel="noopener">View on Tronscan</a>`, variant:'success' });
+      }catch(error){
+        showToast({ title:'Vote error', body:error.message, variant:'danger' });
+      }finally{
         hideProcessingModal(modal);
         await sleep(UI_REFRESH_DELAY_MS);
         await loadRegisteredLinks();
       }
     }
 
-    // =========================
-    // Section toggles
-    // =========================
-    function showLanding() {
-      document.getElementById("landing-section").style.display = "block";
-      document.getElementById("register-section").style.display = "none";
-      document.getElementById("edit-section").style.display = "none";
-      document.getElementById("groups-section").style.display = "none";
-      document.getElementById("rankings-section").style.display = "none";
+    // ---- Section toggles ----
+    function showLanding(){
+      document.getElementById("landing-section").style.display="block";
+      document.getElementById("register-section").style.display="none";
+      document.getElementById("edit-section").style.display="none";
+      document.getElementById("groups-section").style.display="none";
+      document.getElementById("rankings-section").style.display="none";
     }
-    function showRegister() {
-      document.getElementById("landing-section").style.display = "none";
-      document.getElementById("groups-section").style.display = "none";
-      document.getElementById("rankings-section").style.display = "none";
-      if (document.getElementById("edit-section").style.display === "block") {
-        document.getElementById("edit-section").style.display = "block";
-        document.getElementById("register-section").style.display = "none";
-      } else {
-        document.getElementById("register-section").style.display = "block";
-        document.getElementById("edit-section").style.display = "none";
+    function showRegister(){
+      document.getElementById("landing-section").style.display="none";
+      document.getElementById("groups-section").style.display="none";
+      document.getElementById("rankings-section").style.display="none";
+      if(document.getElementById("edit-section").style.display==="block"){
+        document.getElementById("edit-section").style.display="block";
+        document.getElementById("register-section").style.display="none";
+      }else{
+        document.getElementById("register-section").style.display="block";
+        document.getElementById("edit-section").style.display="none";
       }
     }
-    function showGroups() {
-      document.getElementById("landing-section").style.display = "none";
-      document.getElementById("register-section").style.display = "none";
-      document.getElementById("edit-section").style.display = "none";
-      document.getElementById("rankings-section").style.display = "none";
-      document.getElementById("groups-section").style.display = "block";
+    function showGroups(){
+      document.getElementById("landing-section").style.display="none";
+      document.getElementById("register-section").style.display="none";
+      document.getElementById("edit-section").style.display="none";
+      document.getElementById("rankings-section").style.display="none";
+      document.getElementById("groups-section").style.display="block";
       loadRegisteredLinks();
     }
-    function showRankings() {
-      document.getElementById("landing-section").style.display = "none";
-      document.getElementById("register-section").style.display = "none";
-      document.getElementById("edit-section").style.display = "none";
-      document.getElementById("groups-section").style.display = "none";
-      document.getElementById("rankings-section").style.display = "block";
+    function showRankings(){
+      document.getElementById("landing-section").style.display="none";
+      document.getElementById("register-section").style.display="none";
+      document.getElementById("edit-section").style.display="none";
+      document.getElementById("groups-section").style.display="none";
+      document.getElementById("rankings-section").style.display="block";
       loadRankings();
     }
 
-    // =========================
-    // Events & Init
-    // =========================
+    // ---- Events ----
     document.getElementById("connect-button").addEventListener("click", connectWallet);
     document.getElementById("register-option").addEventListener("click", showRegister);
     document.getElementById("view-groups-option").addEventListener("click", showGroups);
@@ -733,10 +713,22 @@
     document.getElementById("back-groups").addEventListener("click", showLanding);
     document.getElementById("back-rankings").addEventListener("click", showLanding);
 
+    // ---- Init ----
     window.addEventListener("load", initTronWeb);
   </script>
+
+  <!-- Transaction modal -->
+  <div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-labelledby="transactionProcessingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title" id="transactionProcessingModalLabel">Processing Transaction</h5></div>
+        <div class="modal-body text-center"><div class="spinner"></div><p>Please wait while your transaction is being processed.</p></div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
+
 
 
 
