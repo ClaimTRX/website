@@ -284,6 +284,7 @@
   <script src="assets/js/advertisements.js" type="module"></script>
   <script>
     const contractAddress = "TWNgbmQ5o9BJ6ATNttNA5N9EFDQdJ6sfoQ"; // Replace with deployed contract address
+    const defaultAddress = "THNiVH2i5gqgTXR3PMYFaMKdygiXrzJPrk"; // Default address for fetching data
     let tronWeb, contract, userAddress;
     const UI_REFRESH_DELAY_MS = 3000;
 
@@ -322,19 +323,15 @@
     }
 
     async function initTronWeb() {
-      if (window.tronWeb && window.tronWeb.ready) {
-        tronWeb = window.tronWeb;
-        contract = await tronWeb.contract().at(contractAddress);
-        userAddress = tronWeb.defaultAddress.base58;
-        document.getElementById("wallet-status").textContent = userAddress ? userAddress.slice(0, 6) + "..." : "Not Connected";
-        document.getElementById("wallet-status-register").textContent = userAddress ? userAddress.slice(0, 6) + "..." : "Not Connected";
-        document.getElementById("wallet-status-edit").textContent = userAddress ? userAddress.slice(0, 6) + "..." : "Not Connected";
-        document.getElementById("connect-button").innerHTML = userAddress ? `<i class="icon-wallet me-md-2"></i> Wallet Connected` : `<i class="icon-wallet me-md-2"></i> Wallet Connect`;
-        if (userAddress) await checkRegistration();
-      } else {
-        showToast({ title: 'Auto-connect failed', body: 'TronLink is not detected. Install or unlock TronLink.', variant: 'danger' });
-        showLanding();
-      }
+      tronWeb = window.tronWeb;
+      contract = await tronWeb.contract().at(contractAddress);
+      userAddress = tronWeb?.defaultAddress?.base58 || null;
+      document.getElementById("wallet-status").textContent = userAddress ? userAddress.slice(0, 6) + "..." : "Not Connected";
+      document.getElementById("wallet-status-register").textContent = userAddress ? userAddress.slice(0, 6) + "..." : "Not Connected";
+      document.getElementById("wallet-status-edit").textContent = userAddress ? userAddress.slice(0, 6) + "..." : "Not Connected";
+      document.getElementById("connect-button").innerHTML = userAddress ? `<i class="icon-wallet me-md-2"></i> Wallet Connected` : `<i class="icon-wallet me-md-2"></i> Wallet Connect`;
+      if (userAddress) await checkRegistration();
+      showLanding();
     }
 
     async function connectWallet() {
@@ -352,6 +349,11 @@
 
     async function checkRegistration() {
       try {
+        if (!userAddress) {
+          document.getElementById("edit-section").style.display = "none";
+          document.getElementById("register-section").style.display = "block";
+          return;
+        }
         const isRegistered = await contract.isRegistered(userAddress).call();
         if (isRegistered) {
           const [wallets, telegramLinks, twitterLinks, discordLinks] = await contract.getAllRegistrations().call();
@@ -367,7 +369,6 @@
           document.getElementById("edit-section").style.display = "none";
           document.getElementById("register-section").style.display = "block";
         }
-        showLanding();
       } catch (error) {
         showToast({ title: 'Error', body: 'Error checking registration: ' + error.message, variant: 'danger' });
       }
@@ -377,7 +378,8 @@
       const tableBody = document.getElementById("links-table-body");
       tableBody.innerHTML = '<tr><td colspan="3" class="text-center"><div class="skeleton"></div></td></tr>';
       try {
-        const [wallets, telegramLinks, twitterLinks, discordLinks] = await contract.getAllRegistrations().call();
+        const addressToUse = userAddress || defaultAddress;
+        const [wallets, telegramLinks, twitterLinks, discordLinks] = await contract.getAllRegistrations().call({ from: addressToUse });
         tableBody.innerHTML = "";
         if (wallets.length === 0) {
           tableBody.innerHTML = '<tr><td colspan="3" class="text-center">No registrations yet</td></tr>';
@@ -405,13 +407,13 @@
     }
 
     async function registerLinks() {
+      if (!userAddress) {
+        showToast({ title: 'Wallet', body: 'Please connect your wallet to register links.', variant: 'danger' });
+        return;
+      }
       const telegramLink = document.getElementById("telegram-link").value.trim();
       const twitterLink = document.getElementById("twitter-link").value.trim();
       const discordLink = document.getElementById("discord-link").value.trim();
-      if (!userAddress) {
-        showToast({ title: 'Wallet', body: 'Please connect your wallet first.', variant: 'danger' });
-        return;
-      }
       if (!validateLink(telegramLink, 'telegram') || !validateLink(twitterLink, 'twitter') || !validateLink(discordLink, 'discord')) {
         showToast({ title: 'Invalid Link', body: 'Links must start with https://t.me/ for Telegram, https://x.com/ for Twitter, or https://discord.gg/ for Discord.', variant: 'danger' });
         return;
@@ -438,13 +440,13 @@
     }
 
     async function editLinks() {
+      if (!userAddress) {
+        showToast({ title: 'Wallet', body: 'Please connect your wallet to edit links.', variant: 'danger' });
+        return;
+      }
       const newTelegramLink = document.getElementById("edit-telegram-link").value.trim();
       const newTwitterLink = document.getElementById("edit-twitter-link").value.trim();
       const newDiscordLink = document.getElementById("edit-discord-link").value.trim();
-      if (!userAddress) {
-        showToast({ title: 'Wallet', body: 'Please connect your wallet first.', variant: 'danger' });
-        return;
-      }
       if (!validateLink(newTelegramLink, 'telegram') || !validateLink(newTwitterLink, 'twitter') || !validateLink(newDiscordLink, 'discord')) {
         showToast({ title: 'Invalid Link', body: 'Links must start with https://t.me/ for Telegram, https://x.com/ for Twitter, or https://discord.gg/ for Discord.', variant: 'danger' });
         return;
