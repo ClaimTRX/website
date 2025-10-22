@@ -33,9 +33,6 @@ const UI_REFRESH_DELAY_MS = 3000; // 3s delay for UI refresh after actions
 // Manual CFT price for APY calculation (update this value as needed)
 const CFT_TRX_PRICE = 0.6378; // Manually set CFT price in TRX (update as needed)
 const DAILY_PAYOUT_PERCENTAGE = 1; // 1% daily payout as per requirement
-
-const FALLBACK_VIEW_WALLET = 'THNiVH2i5gqgTXR3PMYFaMKdygiXrzJPrk';
-
 /* ===================== Token Config ===================== */
 const tokenDetails = {
   cft: {
@@ -348,64 +345,6 @@ async function initializeTronWeb() {
   setInterval(() => updateUI(key, false, userData), 60000);
 
 }
-async function initializeReadOnlyTronWeb() {
-  // Build a throttled, API-key rotating provider (same behavior as desktop branch in initializeTronWeb)
-  const HttpProvider = window.TronWeb.providers.HttpProvider;
-  const provider = new HttpProvider(TRONGRID_API_URL);
-  const customHttpProvider = new Proxy(provider, {
-    get(target, prop) {
-      if (prop === 'request') {
-        return async function (endpoint, params = {}, method = 'POST') {
-          return throttle(async () => {
-            const key = apiKeyRotator();
-            const res = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
-              method,
-              headers: { 'Content-Type': 'application/json', 'TRON-PRO-API-KEY': key },
-              body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
-            });
-            if (res.status === 429) throw new Error('TronGrid 429 Too Many Requests.');
-            if (res.status === 403) throw new Error('TronGrid 403 Forbidden.');
-            const data = await res.json().catch(() => ({}));
-            if (data.Error) throw new Error(data.Error);
-            return serializeBigInt(data);
-          });
-        };
-      }
-      return target[prop];
-    }
-  });
-
-  // Create a read-only TronWeb (no private key, no TronLink)
-  tronWeb = new window.TronWeb(customHttpProvider, customHttpProvider, customHttpProvider);
-
-  // Use the viewer wallet so calls that need an address can still work
-  userAddress = FALLBACK_VIEW_WALLET;
-
-  // Init contracts (same addresses/ABIs you already have)
-  const key = 'cft';
-  const details = tokenDetails[key];
-  tokenContracts[key]  = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
-  await delay(CONTRACT_CALL_DELAY_MS);
-  stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
-
-  // Let the UI know we’re in view-only mode
-  setStatus('View Only', true);
-
-  // Minimal user data for stats (no staking info)
-  const emptyUser = {
-    stakedAmount: '0',
-    isActive: false,
-    lastClaimTimestamp: '0',
-    totalClaimed: '0',
-    rewards: '0',
-    userRewardPerTokenPaid: '0'
-  };
-
-  // Only fetch what we need: Pool Size & Daily Payout (and compute Your Next Payout = 0)
-  await updateStatsGridUI(key, true, emptyUser);
-}
-
-
 /* ===================== Energy helpers (aligned with staking.js) ===================== */
 async function checkUserEnergy(address, token, action, extraEnergy = 0) {
   try {
@@ -1007,10 +946,8 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
 async function initialize() {
   const connectButton = document.getElementById('connect-button');
   if (connectButton) { connectButton.addEventListener('click', connectWallet); }
-
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
   tooltipTriggerList.forEach(t => new bootstrap.Tooltip(t));
-
   document.querySelectorAll('[data-fill]')?.forEach(btn => {
     btn.addEventListener('click', () => {
       const pct = Number(btn.dataset.fill || '0');
@@ -1020,23 +957,21 @@ async function initialize() {
       if (input) input.value = (available * pct).toFixed(6);
     });
   });
-
   const isTronLinkInstalled = await checkTronLinkInstalled();
-
   if (isTronLinkInstalled && window.tronLink && window.tronLink.ready) {
-    try {
-      await initializeTronWeb();
-    } catch (e) {
-      showToast({ title:'Auto-connect failed', body:e.message, variant:'danger' });
-      // Fallback to read-only so Pool Size & Daily Payout still show
-      await initializeReadOnlyTronWeb();
-    }
-  } else {
-    // No wallet? Load read-only stats
-    await initializeReadOnlyTronWeb();
+    try { await initializeTronWeb(); } catch (e) { showToast({ title:'Auto-connect failed', body:e.message, variant:'danger' }); }
   }
 }
-
+function checkTronLinkInstalled() {
+  return new Promise(resolve => {
+    let attempts = 0; const maxAttempts = 5;
+    const interval = setInterval(() => {
+      attempts++;
+      if (window.tronWeb && window.tronWeb.defaultAddress.base58) { clearInterval(interval); resolve(true); }
+      else if (attempts >= maxAttempts) { clearInterval(interval); resolve(false); }
+    }, 500);
+  });
+}
 async function connectWallet() {
   try {
     if (!window.tronLink) throw new Error('TronLink is not detected. Install or unlock TronLink.');
@@ -1471,6 +1406,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
+
+
+
+
+
+
 
 
 
