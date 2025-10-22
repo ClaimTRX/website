@@ -141,12 +141,7 @@
                             <li class="nav-item"><a href="stablexstaking.html" class="nav-link">Stake StableX</a></li>
                         </ul>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a href="#" class="nav-link">CFT News<i class="icon-arrow-down"></i></a>
-                        <ul class="dropdown-menu">
-                            <li class="nav-item"><a href="blog.html" class="nav-link">News</a></li>
-                        </ul>
-                    </li>
+                    
                     <li class="nav-item dropdown">
                         <a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
                         <ul class="dropdown-menu">
@@ -155,6 +150,7 @@
                         </ul>
                     </li>
                     <li class="nav-item"><a href="swap.html" class="nav-link">Swap</a></li>
+                     <li class="nav-item"><a href="https://cftguardians.com/" class="nav-link">CFT Guardians</a></li>
                 </ul>
                 <ul class="navbar-nav toggle">
                     <li class="nav-item">
@@ -179,6 +175,29 @@
             <p class="mb-0">Grow your wealth through staking rewards</p>
         </div>
     </section>
+
+    <!-- CTA Area -->
+    <section class="py-3">
+        <div class="container">
+            <div class="luxe-ad-card">
+                <div class="row align-items-center g-0">
+                    <div class="col-12 col-md-5 text-center p-3">
+                        <img src="assets/img/content/cftlogo300.png" alt="Apply for project staking" style="max-width:220px">
+                    </div>
+                    <div class="col-12 col-md-7 p-3">
+                        <div class="inner">
+                            <h2 class="m-0">Apply for project staking</h2>
+                            <p class="mb-3">Earn weekly rewards from staked CFT to build your project</p>
+                            <p>Soon available for projects on any chain</p>
+                            <a class="btn primary" href="apply.html"><i class="icon-rocket me-2"></i>Coming Soon</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Footer -->
+    
     <!-- Staking Area -->
     <section class="staking-area">
         <div class="container">
@@ -317,27 +336,7 @@
             </div>
         </div>
     </section>
-    <!-- CTA Area -->
-    <section class="py-3">
-        <div class="container">
-            <div class="luxe-ad-card">
-                <div class="row align-items-center g-0">
-                    <div class="col-12 col-md-5 text-center p-3">
-                        <img src="assets/img/content/cftlogo300.png" alt="Apply for project staking" style="max-width:220px">
-                    </div>
-                    <div class="col-12 col-md-7 p-3">
-                        <div class="inner">
-                            <h2 class="m-0">Apply for project staking</h2>
-                            <p class="mb-3">Earn weekly rewards from staked CFT to build your project</p>
-                            <p>Soon available for projects on any chain</p>
-                            <a class="btn primary" href="apply.html"><i class="icon-rocket me-2"></i>Coming Soon</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    <!-- Footer -->
+    
     <footer class="footer-area py-5 mt-3">
         <div class="container text-center">
             <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt="" style="height:28px"></a>
@@ -412,55 +411,9 @@
     <script src="assets/js/main.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
     <!-- Ad Rotator JS -->
-    <script>
-        const advertisements = [
-            {
-                title: "CFT Guardian Minting is Now Live",
-                description: "Earn daily SOL rewards by staking our Guardian NFTs",
-                image: "assets/img/content/guardian.png",
-                link: "https://cftguardians.com/",
-                linkText: "Mint Now",
-                icon: "icon-rocket"
-            },
-            {
-                title: "Stake StableX",
-                description: "Earn both CFT and StableX with StableX staking",
-                image: "assets/img/content/stablex.png",
-                link: "https://www.cftecosystem.com/buystablex",
-                linkText: "Stake Now",
-                icon: "icon-stake"
-            }
-        ];
-
-        function rotateAdvertisements() {
-            const adContainer = document.querySelector('.luxe-ad-card .row');
-            if (!adContainer) return;
-            let currentAdIndex = 0;
-            const updateAd = () => {
-                const ad = advertisements[currentAdIndex];
-                adContainer.innerHTML = `
-                    <div class="col-12 col-md-5 text-center p-3">
-                        <img src="${ad.image}" alt="${ad.title}" style="max-width:220px" loading="lazy">
-                    </div>
-                    <div class="col-12 col-md-7 p-3">
-                        <div class="inner">
-                            <h2 class="m-0">${ad.title}</h2>
-                            <p class="mb-3">${ad.description}</p>
-                            <a class="btn primary" href="${ad.link}" aria-label="${ad.linkText}"><i class="${ad.icon} me-2"></i>${ad.linkText}</a>
-                        </div>
-                    </div>
-                `;
-                currentAdIndex = (currentAdIndex + 1) % advertisements.length;
-            };
-            updateAd();
-            setInterval(updateAd, 60000);
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            rotateAdvertisements();
-        });
-    </script>
+    
     <!-- App JS -->
     <script src="assets/js/sellcft.js"></script>
+    <script src="assets/js/advertisements.js"></script>
 </body>
 </html>
