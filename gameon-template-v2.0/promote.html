@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html class="no-js" lang="en">
 <head>
@@ -52,7 +51,7 @@
     .panel { position: relative; display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-3); padding: 18px 18px 20px; box-shadow: var(--shadow-1); }
     .panel .item-title { color: var(--muted); font-weight: 700; letter-spacing: .3px; }
     .panel small { color: #9fb0cc; }
-    .form-control.luxe { background: #0c1121; border: 1px solid var(--line); color: var(--txt); border-radius: 14px; padding: 12px 14px; }
+    .form-control.luxe { background: #0c1121; border: 1px solid var(--line); color: #fff; border-radius: 14px; padding: 12px 14px; }
     .form-control.luxe:focus { outline: none; box-shadow: var(--focus-ring); border-color: rgba(125,178,255,.6); }
     .form-control.luxe::placeholder { color: var(--muted); opacity: 1; }
     .btn.primary, .btn.ghost { height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 14px; }
@@ -63,7 +62,7 @@
     .btn.vote { font-size: 0.9rem; padding: 0.3rem 0.8rem; height: 36px; }
     .table-container { padding: 0 32px 36px; }
     .table-container table { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-3); }
-    .table-container th, .table-container td { background: #0c1121; color: var(--txt); border: 1px solid var(--line); padding: 12px; }
+    .table-container th, .table-container td { background: #0c1121; color: #fff; border: 1px solid var(--line); padding: 12px; }
     .table-container th { background: var(--bg-1); font-weight: 700; }
     .table-container a { color: var(--accent-1); text-decoration: none; }
     .table-container a:hover { text-decoration: underline; }
@@ -300,27 +299,35 @@
       <div id="scroll-to-top" class="scroll-to-top"><a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a></div>
     </div>
   </footer>
+
+  <!-- Load TronWeb early -->
   <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="assets/js/advertisements.js" type="module"></script>
+
   <script>
-    // ---- Config ----
-    const contractAddress = "TPcSvCGXj6MbCR3SfRHYqNckQQSJpjFm3y"; // Deployed contract address
-    const defaultAddress = "THNiVH2i5gqgTXR3PMYFaMKdygiXrzJPrk"; // Default 'from' for read-only calls
-    const cftTokenAddress = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK"; // CFT TRC-20 address
+    // =========================
+    // Config
+    // =========================
+    const contractAddress = "TPcSvCGXj6MbCR3SfRHYqNckQQSJpjFm3y";
+    const defaultAddress  = "THNiVH2i5gqgTXR3PMYFaMKdygiXrzJPrk";
+    const cftTokenAddress = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK";
 
-    // ---- Globals ----
-    let tronWeb, contract, userAddress, cftContract;
+    const TRONGRID_API_URL = "https://api.trongrid.io";
+    const TRONGRID_API_KEY = "1c09f073-c70c-4840-8d24-7fef9dcc84f0"; // replace
 
-    // ---- UI/Format ----
-    const UI_REFRESH_DELAY_MS = 3000;
+    const UI_REFRESH_DELAY_MS = 2000;
     const CFT_DECIMALS = 6;
 
-    // ---- TronGrid fallback ----
-    const TRONGRID_API_URL = 'https://api.trongrid.io';
-    const TRONGRID_API_KEY = '1c09f073-c70c-4840-8d24-7fef9dcc84f0'; // replace with your key
+    // =========================
+    // Globals
+    // =========================
+    let tronWeb, contract, cftContract, userAddress = null;
 
-    // ---- BigInt helpers ----
+    // =========================
+    // Helpers
+    // =========================
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     const toBigInt = (v) => (typeof v === 'bigint' ? v : BigInt(v));
     const TEN = 10n;
     const formatUnits = (raw, decimals = 6) => {
@@ -330,9 +337,8 @@
       const fracBN = bn % denom;
       if (fracBN === 0n) return whole.toString();
       const frac = fracBN.toString().padStart(decimals, '0').replace(/0+$/, '');
-      return `${whole.toString()}.${frac}`;
+      return `${whole.toString()}${frac ? '.' + frac : ''}`;
     };
-
     function showToast({ title='Notification', body='', variant='dark', autohide=true }) {
       const el = document.getElementById('app-toast');
       if (!el) return;
@@ -345,7 +351,6 @@
         <div class="toast-body">${body}</div>`;
       new bootstrap.Toast(el, { autohide, delay: 4500 }).show();
     }
-
     function showProcessingModal(step='') {
       const modalElement = document.getElementById('transaction-processing-modal');
       if (!modalElement) throw new Error('Processing modal not found.');
@@ -356,38 +361,42 @@
       modal.show();
       return modal;
     }
-    function hideProcessingModal(modal) { if (modal) modal.hide(); }
+    function hideProcessingModal(modal) { try { modal?.hide(); } catch {} }
 
-    // Single copy of validateLink
     function validateLink(link, type) {
-      if (!link) return true; // optional
+      if (!link) return true;
       if (type === 'telegram' && !link.startsWith('https://t.me/')) return false;
       if (type === 'twitter'  && !link.startsWith('https://x.com/')) return false;
       if (type === 'discord'  && !link.startsWith('https://discord.gg/')) return false;
       return true;
     }
 
+    // Handle different CDN builds: TronWeb, TronWeb.TronWeb, TronWeb.default
+    function getTronWebCtor() {
+      if (!window.TronWeb) return null;
+      if (typeof window.TronWeb === 'function') return window.TronWeb;
+      if (typeof window.TronWeb?.TronWeb === 'function') return window.TronWeb.TronWeb;
+      if (typeof window.TronWeb?.default === 'function') return window.TronWeb.default;
+      return null;
+    }
+
     async function initTronWeb() {
-      if (!window.TronWeb) {
-        showToast({ title: 'Error', body: 'TronWeb library not found. Please ensure the TronWeb script is loaded.', variant: 'danger' });
-        return;
-      }
-
-      if (window.tronWeb && window.tronWeb.ready) {
-        tronWeb = window.tronWeb;
-        userAddress = tronWeb.defaultAddress.base58 || null;
-      } else {
-        // Fallback provider for read-only (and we can still send if user connects later)
-        tronWeb = new window.TronWeb({
-          fullHost: TRONGRID_API_URL,
-          headers: { "TRON-PRO-API-KEY": TRONGRID_API_KEY }
-        });
-        userAddress = null;
-      }
-
       try {
-        contract = await tronWeb.contract().at(contractAddress);
-        cftContract = await tronWeb.contract().at(cftTokenAddress);
+        const ctor = getTronWebCtor();
+
+        if (window.tronWeb && window.tronWeb.ready) {
+          tronWeb = window.tronWeb; // TronLink injected
+          userAddress = tronWeb.defaultAddress.base58 || null;
+        } else if (ctor) {
+          tronWeb = new ctor({
+            fullHost: TRONGRID_API_URL,
+            headers: { "TRON-PRO-API-KEY": TRONGRID_API_KEY }
+          });
+          userAddress = null;
+        } else {
+          showToast({ title: 'Error', body: 'TronWeb not available. Check CDN or TronLink installation.', variant: 'danger' });
+          return;
+        }
 
         const display = (addr) => addr ? addr.slice(0, 6) + "..." : "Not Connected";
         document.getElementById("wallet-status").textContent = display(userAddress);
@@ -398,17 +407,21 @@
           ? `<i class="icon-wallet me-md-2"></i> Wallet Connected`
           : `<i class="icon-wallet me-md-2"></i> Wallet Connect`;
 
+        // Contracts
+        contract    = await tronWeb.contract().at(contractAddress);
+        cftContract = await tronWeb.contract().at(cftTokenAddress);
+
         if (userAddress) await checkRegistration();
 
-        // Auto-show groups so data is visible without connecting
-        showGroups(); // calls loadRegisteredLinks() internally
+        // Show data without wallet
+        showGroups(); // guarded inside to avoid undefined contract usage
       } catch (error) {
-        showToast({ title: 'Initialization Error', body: 'Failed to initialize contract: ' + error.message, variant: 'danger' });
+        showToast({ title: 'Initialization Error', body: error.message, variant: 'danger' });
       }
     }
 
     async function connectWallet() {
-      if (!window.tronWeb || !window.tronLink) {
+      if (!window.tronLink) {
         showToast({ title: 'Wallet', body: 'TronLink not detected. Please install TronLink.', variant: 'danger' });
         return;
       }
@@ -422,19 +435,19 @@
 
     async function checkRegistration() {
       try {
-        if (!userAddress) {
+        if (!userAddress || !contract) {
           document.getElementById("edit-section").style.display = "none";
           document.getElementById("register-section").style.display = "block";
           return;
         }
-        // Normalize hex -> base58 for array comparison
+
         const [walletsHex, telegramLinksArr, twitterLinksArr, discordLinksArr] =
           await contract.getAllRegistrations().call({ from: userAddress });
 
         const wallets = walletsHex.map(w => tronWeb.address.fromHex(w));
         const index = wallets.indexOf(userAddress);
-
         const isReg = await contract.isRegistered(userAddress).call({ from: userAddress });
+
         if (isReg && index !== -1) {
           document.getElementById("edit-telegram-link").value = telegramLinksArr[index] || "";
           document.getElementById("edit-twitter-link").value  = twitterLinksArr[index] || "";
@@ -453,6 +466,12 @@
     async function loadRegisteredLinks() {
       const tableBody = document.getElementById("links-table-body");
       tableBody.innerHTML = '<tr><td colspan="4" class="text-center"><div class="skeleton"></div></td></tr>';
+
+      if (!contract) {
+        tableBody.innerHTML = '<tr><td colspan="4" class="text-center">Unable to load contract.</td></tr>';
+        return;
+      }
+
       try {
         const addressToUse = userAddress || defaultAddress;
         const [walletsHex, telegramLinksArr, twitterLinksArr, discordLinksArr] =
@@ -468,7 +487,6 @@
           return;
         }
 
-        // Convert to base58 for UI and data attributes
         const wallets = walletsHex.map(w => tronWeb.address.fromHex(w));
 
         for (let i = 0; i < wallets.length; i++) {
@@ -497,7 +515,6 @@
           tableBody.appendChild(row);
         }
 
-        // Add event listeners to vote buttons
         document.querySelectorAll('.vote-button').forEach(button => {
           button.addEventListener('click', async (e) => {
             e.preventDefault();
@@ -512,6 +529,12 @@
     async function loadRankings() {
       const tableBody = document.getElementById("rankings-table-body");
       tableBody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="skeleton"></div></td></tr>';
+
+      if (!contract) {
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Unable to load contract.</td></tr>';
+        return;
+      }
+
       try {
         const addressToUse = userAddress || defaultAddress;
         const [walletsHex, telegramLinksArr, twitterLinksArr, discordLinksArr, voteCountsArr] =
@@ -525,6 +548,7 @@
 
         for (let i = 0; i < walletsHex.length; i++) {
           const row = document.createElement("tr");
+
           const rankCell = document.createElement("td");
           rankCell.setAttribute("data-label", "Rank");
           rankCell.textContent = i + 1;
@@ -557,6 +581,15 @@
       }
     }
 
+    async function waitForAllowance(owner, spender, minAmount, attempts = 10, delayMs = 1500) {
+      for (let i = 0; i < attempts; i++) {
+        const a = toBigInt(await cftContract.allowance(owner, spender).call());
+        if (a >= minAmount) return true;
+        await sleep(delayMs);
+      }
+      return false;
+    }
+
     async function registerLinks() {
       if (!userAddress) {
         showToast({ title: 'Wallet', body: 'Please connect your wallet to register links.', variant: 'danger' });
@@ -567,28 +600,21 @@
       const discordLink  = document.getElementById("discord-link").value.trim();
 
       if (!validateLink(telegramLink, 'telegram') || !validateLink(twitterLink, 'twitter') || !validateLink(discordLink, 'discord')) {
-        showToast({ title: 'Invalid Link', body: 'Links must start with https://t.me/ for Telegram, https://x.com/ for Twitter, or https://discord.gg/ for Discord.', variant: 'danger' });
+        showToast({ title: 'Invalid Link', body: 'Links must start with https://t.me/, https://x.com/, or https://discord.gg/.', variant: 'danger' });
         return;
       }
 
-      let processingModal = null;
+      let modal = null;
       try {
-        processingModal = showProcessingModal();
-        const tx = await contract.register(telegramLink, twitterLink, discordLink).send({ shouldPollResponse: true });
-        showToast({
-          title: 'Registration successful',
-          body: `<a href="https://tronscan.org/#/transaction/${tx}" target="_blank" rel="noopener">View on Tronscan</a>`,
-          variant: 'success'
-        });
-        document.getElementById("telegram-link").value = "";
-        document.getElementById("twitter-link").value  = "";
-        document.getElementById("discord-link").value  = "";
-        await new Promise(resolve => setTimeout(resolve, UI_REFRESH_DELAY_MS));
-        await checkRegistration();
+        modal = showProcessingModal('(register)');
+        const txId = await contract.register(telegramLink, twitterLink, discordLink).send(); // no shouldPollResponse
+        showToast({ title: 'Registration submitted', body: `<a href="https://tronscan.org/#/transaction/${txId}" target="_blank" rel="noopener">View on Tronscan</a>`, variant: 'success' });
       } catch (error) {
         showToast({ title: 'Registration error', body: error.message, variant: 'danger' });
       } finally {
-        hideProcessingModal(processingModal);
+        hideProcessingModal(modal);
+        await sleep(UI_REFRESH_DELAY_MS);
+        await checkRegistration();
       }
     }
 
@@ -602,25 +628,21 @@
       const newDiscordLink  = document.getElementById("edit-discord-link").value.trim();
 
       if (!validateLink(newTelegramLink, 'telegram') || !validateLink(newTwitterLink, 'twitter') || !validateLink(newDiscordLink, 'discord')) {
-        showToast({ title: 'Invalid Link', body: 'Links must start with https://t.me/ for Telegram, https://x.com/ for Twitter, or https://discord.gg/ for Discord.', variant: 'danger' });
+        showToast({ title: 'Invalid Link', body: 'Links must start with https://t.me/, https://x.com/, or https://discord.gg/.', variant: 'danger' });
         return;
       }
 
-      let processingModal = null;
+      let modal = null;
       try {
-        processingModal = showProcessingModal();
-        const tx = await contract.editLinks(newTelegramLink, newTwitterLink, newDiscordLink).send({ shouldPollResponse: true });
-        showToast({
-          title: 'Links updated',
-          body: `<a href="https://tronscan.org/#/transaction/${tx}" target="_blank" rel="noopener">View on Tronscan</a>`,
-          variant: 'success'
-        });
-        await new Promise(resolve => setTimeout(resolve, UI_REFRESH_DELAY_MS));
-        await checkRegistration();
+        modal = showProcessingModal('(update)');
+        const txId = await contract.editLinks(newTelegramLink, newTwitterLink, newDiscordLink).send();
+        showToast({ title: 'Update submitted', body: `<a href="https://tronscan.org/#/transaction/${txId}" target="_blank" rel="noopener">View on Tronscan</a>`, variant: 'success' });
       } catch (error) {
         showToast({ title: 'Update error', body: error.message, variant: 'danger' });
       } finally {
-        hideProcessingModal(processingModal);
+        hideProcessingModal(modal);
+        await sleep(UI_REFRESH_DELAY_MS);
+        await checkRegistration();
       }
     }
 
@@ -629,45 +651,38 @@
         showToast({ title: 'Wallet', body: 'Please connect your wallet to vote.', variant: 'danger' });
         return;
       }
-      let processingModal = null;
+      let modal = null;
       try {
-        processingModal = showProcessingModal();
-
-        const voteFee = toBigInt(await contract.voteFee().call());
-        const balance = toBigInt(await cftContract.balanceOf(userAddress).call());
-        if (balance < voteFee) {
-          throw new Error('Insufficient CFT balance for voting.');
-        }
+        modal = showProcessingModal('(vote)');
+        const fee = toBigInt(await contract.voteFee().call());
+        const bal = toBigInt(await cftContract.balanceOf(userAddress).call());
+        if (bal < fee) throw new Error('Insufficient CFT balance for voting.');
 
         const allowance = toBigInt(await cftContract.allowance(userAddress, contractAddress).call());
-        if (allowance < voteFee) {
-          showToast({ title: 'Approval Required', body: 'Approving CFT spending for voting...', variant: 'warning' });
-          const approvalTx = await cftContract.approve(contractAddress, voteFee.toString()).send({ shouldPollResponse: true });
-          showToast({
-            title: 'Approval successful',
-            body: `<a href="https://tronscan.org/#/transaction/${approvalTx}" target="_blank" rel="noopener">View on Tronscan</a>`,
-            variant: 'success'
-          });
-          await new Promise(resolve => setTimeout(resolve, UI_REFRESH_DELAY_MS));
+        if (allowance < fee) {
+          showToast({ title: 'Approval Required', body: 'Approving CFT spending for voting…', variant: 'warning' });
+          const approvalTx = await cftContract.approve(contractAddress, fee.toString()).send();
+          showToast({ title: 'Approval submitted', body: `<a href="https://tronscan.org/#/transaction/${approvalTx}" target="_blank" rel="noopener">View on Tronscan</a>`, variant: 'success' });
+
+          // Wait until allowance is visible on-chain to avoid needing a manual refresh
+          const ok = await waitForAllowance(userAddress, contractAddress, fee, 12, 1500);
+          if (!ok) throw new Error('Approval not confirmed yet. Please try voting again in a moment.');
         }
 
-        // projectWallet is base58 from our UI
-        const voteTx = await contract.vote(projectWallet).send({ shouldPollResponse: true });
-        showToast({
-          title: 'Vote successful',
-          body: `<a href="https://tronscan.org/#/transaction/${voteTx}" target="_blank" rel="noopener">View on Tronscan</a>`,
-          variant: 'success'
-        });
-        await new Promise(resolve => setTimeout(resolve, UI_REFRESH_DELAY_MS));
-        await loadRegisteredLinks();
+        const voteTx = await contract.vote(projectWallet).send();
+        showToast({ title: 'Vote submitted', body: `<a href="https://tronscan.org/#/transaction/${voteTx}" target="_blank" rel="noopener">View on Tronscan</a>`, variant: 'success' });
       } catch (error) {
         showToast({ title: 'Vote error', body: error.message, variant: 'danger' });
       } finally {
-        hideProcessingModal(processingModal);
+        hideProcessingModal(modal);
+        await sleep(UI_REFRESH_DELAY_MS);
+        await loadRegisteredLinks();
       }
     }
 
-    // ---- Section toggles ----
+    // =========================
+    // Section toggles
+    // =========================
     function showLanding() {
       document.getElementById("landing-section").style.display = "block";
       document.getElementById("register-section").style.display = "none";
@@ -679,7 +694,6 @@
       document.getElementById("landing-section").style.display = "none";
       document.getElementById("groups-section").style.display = "none";
       document.getElementById("rankings-section").style.display = "none";
-      // If user already has entries loaded into edit, show edit instead
       if (document.getElementById("edit-section").style.display === "block") {
         document.getElementById("edit-section").style.display = "block";
         document.getElementById("register-section").style.display = "none";
@@ -705,7 +719,9 @@
       loadRankings();
     }
 
-    // ---- Events ----
+    // =========================
+    // Events & Init
+    // =========================
     document.getElementById("connect-button").addEventListener("click", connectWallet);
     document.getElementById("register-option").addEventListener("click", showRegister);
     document.getElementById("view-groups-option").addEventListener("click", showGroups);
@@ -717,10 +733,10 @@
     document.getElementById("back-groups").addEventListener("click", showLanding);
     document.getElementById("back-rankings").addEventListener("click", showLanding);
 
-    // ---- Init ----
     window.addEventListener("load", initTronWeb);
   </script>
 </body>
 </html>
+
 
 
