@@ -88,6 +88,55 @@ const tokenDetails = {
   }
 };
 
+/* ===================== Lazy loading on collapse ===================== */
+const panelTokenMap = {
+  collapseCFT: 'cft',
+  collapseCFTx: 'cftx',
+  collapsecftBBT: 'cftturu',
+  collapseBBT: 'turu',
+  collapseFYM: 'fym',
+};
+
+// track last time we loaded a panel so we can respect CACHE_TIMEOUT_MS
+const lastLoadedAt = {};
+
+/** Show skeletons for a token’s KPI fields just before loading */
+function setTokenSkeletons(token, on = true) {
+  [
+    `available-tokens-${token}`,
+    `staked-amount-${token}`,
+    `projected-rewards-${token}`,
+    `total-claimed-rewards-${token}`,
+  ].forEach(id => setSkeleton(id, on));
+}
+
+/** Attach listeners that fetch data when a panel is opened */
+function setupLazyLoading() {
+  Object.entries(panelTokenMap).forEach(([collapseId, token]) => {
+    const el = document.getElementById(collapseId);
+    if (!el) return;
+
+    // When the accordion is ABOUT TO open, start the fetch (gives skeleton time to show)
+    el.addEventListener('show.bs.collapse', async () => {
+      const now = Date.now();
+      const stale = !lastLoadedAt[token] || (now - lastLoadedAt[token]) > CACHE_TIMEOUT_MS;
+
+      if (stale) {
+        setTokenSkeletons(token, true);
+        // first=true tells updateTokenUI to keep skeletons on until data lands
+        await updateTokenUI(token, true);
+        lastLoadedAt[token] = Date.now();
+      }
+    });
+
+    // Optional: when it’s fully shown, if user spam-opens, short-circuit using cache
+    el.addEventListener('shown.bs.collapse', async () => {
+      // no-op; updateTokenUI already caches, this keeps UI snappy
+    });
+  });
+}
+
+
 /* ===================== Helpers: throttle, rotation, delay ===================== */
 const throttle = (() => {
   let queue = Promise.resolve();
@@ -119,49 +168,6 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/* ===================== Ad Rotator ===================== */
-const advertisements = [
-  {
-    title: "CFT Guardian Minting is Now Live",
-    description: "Earn daily SOL rewards by staking our Guardian NFTs",
-    image: "assets/img/content/guardian.png",
-    link: "https://cftguardians.com/",
-    linkText: "Mint Now",
-    icon: "icon-rocket"
-  },
-  {
-    title: "Stake StableX",
-    description: "Earn both CFT and StableX with StableX staking",
-    image: "assets/img/content/stablex.png",
-    link: "https://www.cftecosystem.com/buystablex",
-    linkText: "Stake Now",
-    icon: "icon-stake"
-  }
-];
-
-function rotateAdvertisements() {
-  const adContainer = document.querySelector('.luxe-ad-card .row');
-  if (!adContainer) return;
-  let currentAdIndex = 0;
-  const updateAd = () => {
-    const ad = advertisements[currentAdIndex];
-    adContainer.innerHTML = `
-      <div class="col-12 col-md-5 text-center p-3">
-        <img src="${ad.image}" alt="${ad.title}" style="max-width:220px" loading="lazy">
-      </div>
-      <div class="col-12 col-md-7 p-3">
-        <div class="inner">
-          <h2 class="m-0">${ad.title}</h2>
-          <p class="mb-3">${ad.description}</p>
-          <a class="btn primary" href="${ad.link}" aria-label="${ad.linkText}"><i class="${ad.icon} me-2"></i>${ad.linkText}</a>
-        </div>
-      </div>
-    `;
-    currentAdIndex = (currentAdIndex + 1) % advertisements.length;
-  };
-  updateAd();
-  setInterval(updateAd, 60000);
-}
 
 /* ===================== TronGrid helper ===================== */
 async function tronGridApiCall(endpoint, params = {}) {
@@ -264,9 +270,16 @@ async function initializeTronWeb() {
       tokenDetails[key].decimals = await tokenContracts[key].methods.decimals().call();
     }
   }
-  setStatus('Connected', true);
-  await updateAllUI(true);
-  rotateAdvertisements();
+    setStatus('Connected', true);
+
+  // Attach lazy loading so each card loads only when opened
+  setupLazyLoading();
+
+  // Use external ads rotator if present
+  if (typeof rotateAdvertisements === 'function') {
+    rotateAdvertisements();
+  }
+
 }
 
 /* ===================== Energy Helpers ===================== */
