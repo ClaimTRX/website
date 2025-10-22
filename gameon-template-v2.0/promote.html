@@ -303,7 +303,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="assets/js/advertisements.js" type="module"></script>
   <script>
-    const contractAddress = "TWNgbmQ5o9BJ6ATNttNA5N9EFDQdJ6sfoQ"; // Replace with deployed contract address
+    const contractAddress = "TPcSvCGXj6MbCR3SfRHYqNckQQSJpjFm3y"; // Replace with deployed contract address
     const defaultAddress = "THNiVH2i5gqgTXR3PMYFaMKdygiXrzJPrk"; // Default address for fetching data
     const cftTokenAddress = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK"; // Replace with CFT TRC-20 address
     let tronWeb, contract, userAddress, cftContract;
@@ -347,14 +347,19 @@
     }
 
     async function initTronWeb() {
+      if (!window.TronWeb) {
+        showToast({ title: 'Error', body: 'TronWeb library not found. Please ensure the TronWeb script is loaded.', variant: 'danger' });
+        return;
+      }
       if (window.tronWeb && window.tronWeb.ready) {
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58 || null;
       } else {
         // Fallback to TronGrid provider
-        const HttpProvider = TronWeb.providers.HttpProvider;
-        const provider = new HttpProvider(TRONGRID_API_URL, undefined, undefined, TRONGRID_API_KEY);
-        tronWeb = new TronWeb({ fullHost: provider });
+        tronWeb = new window.TronWeb({
+          fullHost: TRONGRID_API_URL,
+          headers: { "TRON-PRO-API-KEY": TRONGRID_API_KEY }
+        });
       }
       try {
         contract = await tronWeb.contract().at(contractAddress);
@@ -437,11 +442,7 @@
           discordCell.innerHTML = discordLinks[i] ? `<a href="${discordLinks[i]}" target="_blank">${discordLinks[i]}</a>` : "—";
           const actionCell = document.createElement("td");
           actionCell.setAttribute("data-label", "Action");
-          let hasVoted = false;
-          if (userAddress) {
-            try { hasVoted = await contract.votes(userAddress, wallets[i]).call({ from: userAddress }); } catch {}
-          }
-          actionCell.innerHTML = `<a href="#" class="btn vote ${hasVoted ? 'ghost' : 'primary'} vote-button" data-wallet="${wallets[i]}">${hasVoted ? 'Remove Vote' : `Vote (${voteFee} CFT)`}</a>`;
+          actionCell.innerHTML = `<a href="#" class="btn vote primary vote-button" data-wallet="${wallets[i]}">Vote (${voteFee} CFT)</a>`;
           row.appendChild(telegramCell);
           row.appendChild(twitterCell);
           row.appendChild(discordCell);
@@ -452,7 +453,7 @@
         document.querySelectorAll('.vote-button').forEach(button => {
           button.addEventListener('click', async (e) => {
             e.preventDefault();
-            await voteForProject(button.dataset.wallet, button.textContent.includes('Remove Vote'));
+            await voteForProject(button.dataset.wallet);
           });
         });
       } catch (error) {
@@ -563,7 +564,7 @@
       }
     }
 
-    async function voteForProject(projectWallet, removeVote = false) {
+    async function voteForProject(projectWallet) {
       if (!userAddress) {
         showToast({ title: 'Wallet', body: 'Please connect your wallet to vote.', variant: 'danger' });
         return;
@@ -571,41 +572,32 @@
       let processingModal = null;
       try {
         processingModal = showProcessingModal();
-        if (removeVote) {
-          const tx = await contract.removeVote(projectWallet).send({ shouldPollResponse: true });
-          showToast({ 
-            title: 'Vote removed', 
-            body: `<a href="https://tronscan.org/#/transaction/${tx}" target="_blank" rel="noopener">View on Tronscan</a>`, 
-            variant: 'success' 
-          });
-        } else {
-          const voteFee = await contract.voteFee().call();
-          const balance = await cftContract.balanceOf(userAddress).call();
-          if (Number(balance) < Number(voteFee)) {
-            throw new Error('Insufficient CFT balance for voting.');
-          }
-          const allowance = await cftContract.allowance(userAddress, contractAddress).call();
-          if (Number(allowance) < Number(voteFee)) {
-            showToast({ title: 'Approval Required', body: 'Approving CFT spending for voting...', variant: 'warning' });
-            const approvalTx = await cftContract.approve(contractAddress, voteFee).send({ shouldPollResponse: true });
-            showToast({ 
-              title: 'Approval successful', 
-              body: `<a href="https://tronscan.org/#/transaction/${approvalTx}" target="_blank" rel="noopener">View on Tronscan</a>`, 
-              variant: 'success' 
-            });
-            await new Promise(resolve => setTimeout(resolve, UI_REFRESH_DELAY_MS));
-          }
-          const voteTx = await contract.vote(projectWallet).send({ shouldPollResponse: true });
-          showToast({ 
-            title: 'Vote successful', 
-            body: `<a href="https://tronscan.org/#/transaction/${voteTx}" target="_blank" rel="noopener">View on Tronscan</a>`, 
-            variant: 'success' 
-          });
+        const voteFee = await contract.voteFee().call();
+        const balance = await cftContract.balanceOf(userAddress).call();
+        if (Number(balance) < Number(voteFee)) {
+          throw new Error('Insufficient CFT balance for voting.');
         }
+        const allowance = await cftContract.allowance(userAddress, contractAddress).call();
+        if (Number(allowance) < Number(voteFee)) {
+          showToast({ title: 'Approval Required', body: 'Approving CFT spending for voting...', variant: 'warning' });
+          const approvalTx = await cftContract.approve(contractAddress, voteFee).send({ shouldPollResponse: true });
+          showToast({ 
+            title: 'Approval successful', 
+            body: `<a href="https://tronscan.org/#/transaction/${approvalTx}" target="_blank" rel="noopener">View on Tronscan</a>`, 
+            variant: 'success' 
+          });
+          await new Promise(resolve => setTimeout(resolve, UI_REFRESH_DELAY_MS));
+        }
+        const voteTx = await contract.vote(projectWallet).send({ shouldPollResponse: true });
+        showToast({ 
+          title: 'Vote successful', 
+          body: `<a href="https://tronscan.org/#/transaction/${voteTx}" target="_blank" rel="noopener">View on Tronscan</a>`, 
+          variant: 'success' 
+        });
         await new Promise(resolve => setTimeout(resolve, UI_REFRESH_DELAY_MS));
         await loadRegisteredLinks(); // Refresh table to update button states
       } catch (error) {
-        showToast({ title: removeVote ? 'Vote removal error' : 'Vote error', body: error.message, variant: 'danger' });
+        showToast({ title: 'Vote error', body: error.message, variant: 'danger' });
       } finally {
         hideProcessingModal(processingModal);
       }
