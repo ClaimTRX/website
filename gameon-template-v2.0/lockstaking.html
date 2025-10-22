@@ -1,691 +1,542 @@
 <!doctype html>
 <html class="no-js" lang="en">
-
 <head>
-	<meta charset="UTF-8">
-	<meta name="description" content="">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-
-	<!-- Title -->
-	<title>CFT Ecosystem. The first treasury VC on Tron</title>
-
-	<!-- Favicon -->
-	<link rel="icon" href="assets/img/favicon.png">
-
-	<!-- Style css -->
-	<link rel="stylesheet" href="assets/css/style.css">
-	<style>
-		.single-staking-item {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			text-align: center;
-			padding: 20px;
-			width: 100%;
-			margin: 0 auto;
-		}
-
-		.input-area {
-			width: 100%;
-			max-width: 300px;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			margin: 0 auto;
-		}
-
-		.input-text input {
-			width: 100%;
-			text-align: center;
-			margin-bottom: 10px;
-			padding: 8px;
-			border-radius: 6px;
-			border: 1px solid #444;
-			background: #111;
-			color: #fff;
-		}
-
-		/* APR + APY styling */
-		.staking-info .apr-apy-pair {
-			display: flex;
-			gap: 12px;
-			align-items: center;
-			justify-content: center;
-			flex-wrap: wrap;
-		}
-
-		.staking-info .single-item {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			text-align: center;
-			font-size: 1.1em;
-			white-space: nowrap;
-		}
-
-		.staking-info .single-item span {
-			margin-right: 5px;
-		}
-
-		.staking-info .single-item span:last-child {
-			margin-right: 0;
-		}
-
-		/* New APR/APY specific styling */
-		.apr-apy-container {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-		}
-
-		.apr-value {
-			font-size: 1.1em;
-		}
-
-		.apy-value {
-			font-size: 0.8em;
-			color: #aaa;
-		}
-
-		.card-body .row {
-			justify-content: center !important;
-		}
-
-		/* Owner controls styling */
-		.owner-controls {
-			margin-top: 20px;
-			padding: 20px;
-			border: 1px solid #444;
-			border-radius: 6px;
-			background: #111;
-		}
-
-		.owner-controls h3 {
-			margin-bottom: 15px;
-			font-size: 1.5em;
-		}
-
-		.owner-controls .input-area {
-			margin-bottom: 15px;
-		}
-
-		.no-tronlink-message {
-			color: #ff4d4d;
-			font-weight: bold;
-			margin-top: 10px;
-		}
-
-		/* Energy rental and transaction processing modal styling */
-		#energy-rental-modal .modal-content,
-		#transaction-processing-modal .modal-content,
-		#transaction-initiating-modal .modal-content {
-			background: #111;
-			border: 1px solid #444;
-			border-radius: 6px;
-			color: #fff;
-		}
-
-		#energy-rental-modal .modal-header,
-		#transaction-processing-modal .modal-header,
-		#transaction-initiating-modal .modal-header {
-			border-bottom: 1px solid #444;
-			padding: 15px;
-		}
-
-		#energy-rental-modal .modal-title,
-		#transaction-processing-modal .modal-title,
-		#transaction-initiating-modal .modal-title {
-			font-size: 1.5em;
-			color: #fff;
-		}
-
-		#energy-rental-modal .modal-body,
-		#transaction-processing-modal .modal-body,
-		#transaction-initiating-modal .modal-body {
-			padding: 20px;
-			text-align: center;
-		}
-
-		#energy-rental-modal .modal-body p,
-		#transaction-processing-modal .modal-body p,
-		#transaction-initiating-modal .modal-body p {
-			margin-bottom: 15px;
-			font-size: 1.1em;
-		}
-
-		#energy-rental-modal .modal-footer,
-		#transaction-processing-modal .modal-footer,
-		#transaction-initiating-modal .modal-footer {
-			border-top: 1px solid #444;
-			padding: 15px;
-			justify-content: center;
-		}
-
-		#energy-rental-modal .btn-rent {
-			background: #00ff88;
-			color: #111;
-			border: none;
-			padding: 10px 20px;
-			border-radius: 6px;
-			font-weight: bold;
-			transition: background 0.3s;
-		}
-
-		#energy-rental-modal .btn-rent:hover {
-			background: #00cc66;
-		}
-
-		#energy-rental-modal .btn-cancel {
-			background: #ff4d4d;
-			color: #fff;
-			border: none;
-			padding: 10px 20px;
-			border-radius: 6px;
-			font-weight: bold;
-			transition: background 0.3s;
-		}
-
-		#energy-rental-modal .btn-cancel:hover {
-			background: #cc3333;
-		}
-
-		/* Transaction processing and initiating modal specific styles */
-		#transaction-processing-modal .spinner,
-		#transaction-initiating-modal .spinner {
-			border: 4px solid #00ff88;
-			border-top: 4px solid transparent;
-			border-radius: 50%;
-			width: 40px;
-			height: 40px;
-			animation: spin 1s linear infinite;
-			margin: 0 auto 15px;
-		}
-
-		@keyframes spin {
-			0% { transform: rotate(0deg); }
-			100% { transform: rotate(360deg); }
-		}
-
-		@media (max-width: 768px) {
-			.staking-info .apr-apy-pair {
-				flex-direction: column;
-				gap: 5px;
-			}
-
-			.owner-controls {
-				padding: 15px;
-			}
-
-			#energy-rental-modal .modal-body p,
-			#transaction-processing-modal .modal-body p,
-			#transaction-initiating-modal .modal-body p {
-				font-size: 1em;
-			}
-		}
-
-		/* Ensure leaderboard button is centered */
-		.staking-area .leaderboard-button {
-			display: flex;
-			justify-content: center;
-			align-items: center;
-		}
-
-		.staking-area .leaderboard-button a {
-			margin: 0 auto;
-		}
-	</style>
+    <meta charset="UTF-8">
+    <meta name="description" content="CFT Ecosystem - Locked Staking">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>CFT Ecosystem - Locked Staking</title>
+    <link rel="icon" href="assets/img/favicon.png">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        /* =============================
+           LUXE DESIGN SYSTEM – v2
+           ============================= */
+        :root{
+            --bg-0:#07090f; --bg-1:#0b0e17; --bg-2:#0f1321; --surface:#12172a; --line:#212b46;
+            --muted:#9aa7bd; --txt:#e9eef7;
+            --accent-1:#62ffcf; --accent-2:#7db2ff; --accent-3:#b37cff;
+            --success:#00e095; --danger:#ff5b73; --warning:#ffd166;
+            --radius-2:12px; --radius-3:18px; --radius-4:28px;
+            --shadow-1:0 10px 30px rgba(0,0,0,.55); --shadow-2:0 12px 40px rgba(0,0,0,.6);
+            --glass:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+            --focus-ring:0 0 0 3px rgba(125,178,255,.35);
+        }
+        html,body{background:var(--bg-0);color:var(--txt);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+        /* Header */
+        header#header{padding:1.5rem 0}
+        .navbar-brand img{height:48px}
+        .navbar-nav.items .nav-link{font-size:1.1rem;padding:.75rem 1rem}
+        .navbar-nav.action .btn{font-size:1rem;padding:.5rem 1.25rem;height:50px}
+        .navbar-nav.toggle .nav-link{font-size:1.5rem;padding:.5rem}
+        /* Mobile menu modal */
+        #menu .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt)}
+        #menu .modal-header{border-bottom:1px solid var(--line);padding:1rem}
+        #menu .modal-body{padding:1rem}
+        #menu .items .nav-item{margin:.5rem 0}
+        #menu .items .nav-link{color:var(--txt);font-size:1.1rem;padding:.5rem 1rem}
+        #menu .items .dropdown-menu{background:var(--bg-2);border:1px solid var(--line);padding:.5rem}
+        #menu .items .dropdown-menu .nav-link{color:var(--muted);font-size:1rem}
+        #menu .items .dropdown-menu .nav-link:hover{color:var(--accent-1)}
+        /* Hero */
+        .hero-section{padding:120px 0 28px;text-align:center}
+        .intro-text{display:inline-block;font-size:1rem;letter-spacing:.16em;text-transform:uppercase;color:#c3d3ef;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:.42rem .95rem;border-radius:999px}
+        .hero-section h1{font-weight:900;letter-spacing:.4px;margin-top:16px;font-size:3.25rem;line-height:1.1}
+        .hero-section p{color:#b5c2d8}
+        /* Staking Area */
+        .staking-area{padding:3rem 0}
+        .luxe-card{position:relative;border-radius:var(--radius-4);background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);box-shadow:var(--shadow-2);overflow:hidden}
+        .staking-header{padding:32px}
+        .staking-title{display:flex;gap:16px;align-items:center}
+        .staking-title img{width:56px;height:56px}
+        .staking-title h4{margin:0;font-weight:800}
+        .chip{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:#cfe3ff;padding:.35rem .65rem;border-radius:999px;font-size:.85rem}
+        .chip .dot{width:8px;height:8px;border-radius:999px;background:var(--success);box-shadow:0 0 0 2px rgba(0,224,149,.15)}
+        .staking-sub{color:var(--muted)}
+        .staking-area .single-accordion-item{margin-bottom:18px}
+        .staking-area .card-header{background:none;border:none}
+        .staking-btn{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:18px;color:var(--txt)}
+        .staking-btn:hover{background:rgba(255,255,255,.05)}
+        .staking-info .single-item{display:flex;flex-direction:column;align-items:center;gap:6px}
+        .staking-info .single-item span:first-child{font-weight:800;font-size:1.15rem}
+        .staking-info .single-item span:last-child{color:var(--muted);font-size:.88rem}
+        .input-box .item-title{font-weight:700;color:var(--muted);margin-bottom:8px}
+        .input-area .input-text input.form-control{background:#0c1121;border:1px solid var(--line);color:#eaf2ff;border-radius:14px;padding:12px 14px}
+        .input-area .input-text input.form-control:focus{outline:none;box-shadow:var(--focus-ring);border-color:rgba(125,178,255,.6)}
+        .input-area .input-btn{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#0b0e17;border:0;font-weight:800;border-radius:14px;height:48px}
+        .input-area .input-btn:hover{filter:brightness(1.05)}
+        .input-area p{font-size:0.9rem;color:#b5c2d8}
+        .leaderboard-button .btn-bordered{background:transparent;border:1px solid var(--line);color:#eaf2ff;border-radius:14px;padding:12px 20px}
+        .leaderboard-button .btn-bordered:hover{border-color:rgba(125,178,255,.55)}
+        /* Ad card */
+        .luxe-ad-card{position:relative;border-radius:var(--radius-4);background:linear-gradient(135deg,rgba(98,255,207,.1),rgba(125,178,255,.1));border:2px solid var(--accent-3);box-shadow:var(--shadow-2),0 0 20px rgba(125,178,255,.3);overflow:hidden;margin:2rem 0;transition:transform .3s ease,box-shadow .3s ease}
+        .luxe-ad-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-2),0 0 30px rgba(125,178,255,.5)}
+        .luxe-ad-card .inner{padding:1.5rem}
+        .luxe-ad-card h2{font-weight:800;color:var(--accent-1);text-shadow:0 0 5px rgba(98,255,207,.5)}
+        .luxe-ad-card p{color:var(--txt);font-size:1.1rem}
+        .luxe-ad-card .btn.primary{background:linear-gradient(135deg,var(--accent-3),var(--accent-2));font-weight:700;padding:.75rem 1.5rem;border-radius:12px}
+        .luxe-ad-card .btn.primary:hover{filter:brightness(1.2)}
+        /* Modals */
+        .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt);border-radius:16px}
+        .modal-header .btn-close{filter:invert(1)}
+        #energy-rental-modal .modal-body{padding-top:10px}
+        #energy-rental-modal .modal-body p{margin-bottom:10px;color:#cfe3ff}
+        #user-energy,#required-energy,#rental-energy,#rental-duration,#rental-cost-trx{display:inline-block;padding:.15rem .5rem;border-radius:10px;background:rgba(125,178,255,.12);border:1px solid rgba(125,178,255,.25);color:#ffffff}
+        .modal .btn-rent{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));border:0;color:#0b0e17;border-radius:12px;font-weight:800}
+        .modal .btn-cancel{border:1px solid var(--line);color:#eaf2ff;background:transparent;border-radius:12px}
+        #transaction-processing-modal .spinner,#transaction-initiating-modal .spinner{border:4px solid var(--accent-2);border-top-color:transparent;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto 15px}
+        @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+        /* Responsive */
+        *, *::before, *::after { box-sizing: border-box; }
+        @media (max-width:992px){
+            .staking-area .card-body{padding:1rem}
+            .staking-area .row > div{margin-bottom:1.5rem}
+            .input-area{max-width:100%}
+        }
+        @media (max-width:576px){
+            .hero-section h1{font-size:2.5rem}
+            .staking-info .single-item span:first-child{font-size:1rem}
+            .input-box .item-title{font-size:0.9rem}
+            .input-area .input-text input.form-control{font-size:0.9rem}
+        }
+        /* Preserved Inline CSS */
+        .single-staking-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .input-area {
+            width: 100%;
+            max-width: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 auto;
+        }
+        .input-text input {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #111;
+            color: #fff;
+        }
+        .staking-info .apr-apy-pair {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .staking-info .single-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            font-size: 1.1em;
+            white-space: nowrap;
+        }
+        .staking-info .single-item span {
+            margin-right: 5px;
+        }
+        .staking-info .single-item span:last-child {
+            margin-right: 0;
+        }
+        .apr-apy-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .apr-value {
+            font-size: 1.1em;
+        }
+        .apy-value {
+            font-size: 0.8em;
+            color: #aaa;
+        }
+        .card-body .row {
+            justify-content: center !important;
+        }
+        .owner-controls {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background: #111;
+        }
+        .owner-controls h3 {
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        .owner-controls .input-area {
+            margin-bottom: 15px;
+        }
+        .no-tronlink-message {
+            color: var(--danger);
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
 </head>
-
 <body>
-	<!--====== Preloader Area Start ======-->
-	<div id="gameon-preloader" class="gameon-preloader">
-		<div class="preloader-animation">
-			<div class="spinner"></div>
-			<p class="fw-5 text-center text-uppercase">Loading</p>
-		</div>
-		<div class="loader-animation">
-			<div class="row h-100">
-				<div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
-				<div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
-				<div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
-				<div class="col-3 single-loader p-0"><div class="loader-bg"></div></div>
-			</div>
-		</div>
-	</div>
-	<!--====== Preloader Area End ======-->
+    <!-- Header -->
+    <header id="header" class="pt-2">
+        <nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
+            <div class="container">
+                <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt=""/></a>
+                <div class="ms-auto"></div>
+                <ul class="navbar-nav items mx-auto">
+                    <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
+                    <li class="nav-item dropdown">
+                        <a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
+                        <ul class="dropdown-menu">
+                            <li class="nav-item"><a href="staking.html" class="nav-link">Staking</a></li>
+                            <li class="nav-item"><a href="lockstaking.html" class="nav-link">Locked Staking</a></li>
+                            <li class="nav-item"><a href="sellcft.html" class="nav-link">Trading</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
+                        <ul class="dropdown-menu">
+                            <li class="nav-item"><a href="buystablex.html" class="nav-link">Buy StableX</a></li>
+                            <li class="nav-item"><a href="sellstablex.html" class="nav-link">Sell StableX</a></li>
+                            <li class="nav-item"><a href="stablexstaking.html" class="nav-link">Stake StableX</a></li>
+                        </ul>
+                    </li>
+                    
+                    <li class="nav-item dropdown">
+                        <a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
+                        <ul class="dropdown-menu">
+                            <li class="nav-item"><a href="feb.html" class="nav-link">FEB</a></li>
+                            <li class="nav-item"><a href="energy.html" class="nav-link">Rent Energy</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item"><a href="swap.html" class="nav-link">Swap</a></li>
+                     <li class="nav-item"><a href="https://cftguardians.com/" class="nav-link">CFT Guardians</a></li>
+                </ul>
+                <ul class="navbar-nav toggle">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
+                            <i class="icon-menu m-0"></i>
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav action">
+                    <li class="nav-item ms-2">
+                        <button id="connect-button" class="btn btn-outline"><i class="icon-wallet me-md-2"></i> Wallet Connect</button>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+    <!-- Hero -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <span class="intro-text">CFT Ecosystem</span>
+            <h1 class="display-5">CFT Staking</h1>
+            <p class="mb-0">Grow your wealth with 34-39% APY over 6 or 12 months</p>
+        </div>
+    </section>
 
-	<div class="main">
-		<!-- ***** Header Start ***** -->
-		<header id="header">
-			<!-- Navbar -->
-			<nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
-				<div class="container header">
-
-					<!-- Logo -->
-					<a class="navbar-brand" href="index.html">
-						<img src="assets/img/logo/logo.png" alt="" />
-					</a>
-
-					<div class="ms-auto"></div>
-
-					<!-- Navbar Nav -->
-					<ul class="navbar-nav items mx-auto">
-						<li class="nav-item">
-							<a href="index.html" class="nav-link">Home</a>
-						</li>
-						
-						<li class="nav-item dropdown">
-							<a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
-							<ul class="dropdown-menu">
-								
-								<li class="nav-item">
-									<a href="staking.html" class="nav-link">Staking</a>
-								</li>
-
-								<li class="nav-item">
-									<a href="lockstaking.html" class="nav-link">Locked Staking</a>
-								</li>
-
-								<li class="nav-item">
-									<a href="sellcft.html" class="nav-link">Trading</a>
-								</li>
-								
-							</ul>
-						</li>
-						<li class="nav-item dropdown">
-							<a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
-							<ul class="dropdown-menu">
-								<li class="nav-item">
-									<a href="buystablex.html" class="nav-link">Buy StableX</a>
-								</li>
-								<li class="nav-item">
-									<a href="sellstablex.html" class="nav-link">Sell StableX</a>
-								</li>
-								<li class="nav-item">
-									<a href="stablexstaking.html" class="nav-link">Stake StableX</a>
-								</li>
-							</ul>
-						</li>
-						<li class="nav-item dropdown">
-							<a href="#" class="nav-link">CFT News <i class="icon-arrow-down"></i></a>
-							<ul class="dropdown-menu">
-								<li class="nav-item">
-									<a href="blog.html" class="nav-link">News</a>
-								</li>
-							</ul>
-						</li>
-
-						<li class="nav-item dropdown">
-							<a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
-							<ul class="dropdown-menu">
-								<li class="nav-item">
-									<a href="feb.html" class="nav-link">FEB</a>
-								</li>
-								<li class="nav-item">
-									<a href="energy.html" class="nav-link">Rent Energy</a>
-								</li>
-							
-							</ul>
-						</li>
-						<li class="nav-item">
-									<a href="swap.html" class="nav-link">Swap</a>
-								</li>
-						
-						
-					</ul>
-
-					<!-- Navbar Icons -->
-					
-
-					<!-- Navbar Toggler -->
-					<ul class="navbar-nav toggle">
-						<li class="nav-item">
-							<a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
-								<i class="icon-menu m-0"></i>
-							</a>
-						</li>
-					</ul>
-
-					<!-- Navbar Action Button -->
-					<ul class="navbar-nav action">
-						<ul class="navbar-nav action">
-    <li class="nav-item ms-2">
-        <button id="connect-button" class="btn ms-lg-auto btn-bordered-white">
-            <i class="icon-wallet me-md-2"></i> Wallet Connect
-        </button>
-    </li>
-</ul>
-
-					</ul>
-
-				</div>
-			</nav>
-		</header>
-		<!-- ***** Header End ***** -->
-
-		<!-- ***** Hero Area Start ***** -->
-		<section class="hero-section">
-			<div class="container">
-				<div class="row align-items-center justify-content-center">
-					<div class="col-12 col-md-6 col-lg-9 text-center">
-						<div class="hero-content">
-							<div class="intro text-center mb-5">
-								<span class="intro-text">CFT Ecosystem</span>
-								<h1 class="mt-4">CFT Staking</h1>
-								<p>Grow your wealth with 34-39% APY over 6 or 12 months</p>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- ***** Hero Area End ***** -->
-
-		<!-- ***** Staking Area Start ***** -->
-		<section class="staking-area">
-			<div id="gameon-accordion" class="container accordion">
-				<div class="row justify-content-center">
-					<div class="col-12 col-md-10">
-						<!-- CFT Staking (6 Months) -->
-						<div class="single-accordion-item">
-							<div class="card-header bg-inherit border-0 p-0">
-								<h2 class="m-0">
-									<button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCFT6M">
-										<div class="row">
-											<div class="col-12 col-md-8">
-												<div class="media flex-column flex-md-row">
-													<img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="CFT Logo">
-													<div class="content media-body mt-4 mt-md-0 ms-md-4">
-														<h4 class="m-0">CFT Staking (6 Months)</h4>
-														<p>Stake up to 150,000 CFT for CFT rewards with a 6-month lock. All rewards compound and are claimed when the 6-month period ends.</p>
-														<p>Each wallet can only stake once.❗️❗️</p>
-													</div>
-												</div>
-											</div>
-										</div>
-										<div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
-											<div class="col-4 single-item apr-apy-pair">
-												<div class="apr-apy-container">
-													<span class="apr-value">30% APR</span>
-													<span class="apy-value">(34.98% APY)</span>
-												</div>
-											</div>
-											<div class="col-4 single-item"><span id="total-balance-cft_6m">0.000000 CFT</span><span>Total Balance</span></div>
-											<div class="col-4 single-item"><span id="remaining-lock-time-cft_6m">Unlocked</span><span>Unlock Time</span></div>
-										</div>
-									</button>
-								</h2>
-							</div>
-							<div id="collapseCFT6M" class="collapse" data-bs-parent="#gameon-accordion">
-								<div class="card-body">
-									<div class="row justify-content-center">
-										<!-- Deposit -->
-										<div class="col-12 col-md-6 single-staking-item input-box" id="deposit-section-cft_6m">
-											<span class="item-title mb-2">Deposit</span>
-											<p><span id="available-tokens-cft_6m">0</span> CFT available in wallet</p>
-											<p><span id="remaining-stakeable-cft_6m">500000</span> CFT remaining stakeable</p>
-											<div class="input-area d-flex flex-column">
-												<div class="input-text"><input type="number" placeholder="Enter CFT amount" id="stake-amount-cft_6m" min="0" step="1"></div>
-												<button class="btn input-btn mt-2" id="stake-button-cft_6m">Stake</button>
-											</div>
-											<p id="no-tronlink-message-cft_6m" class="no-tronlink-message" style="display: none;">Please install TronLink to stake.</p>
-										</div>
-										<!-- Withdraw -->
-										<div class="col-12 col-md-6 single-staking-item input-box" id="withdraw-section-cft_6m" style="display: none;">
-											<span class="item-title mb-2">Withdraw</span>
-											<p><span id="initial-stake-cft_6m">0</span> CFT initial stake</p>
-											<p><span id="earned-rewards-cft_6m">0</span> CFT earned rewards</p>
-											<div class="input-area d-flex flex-column" id="unstake-area-cft_6m">
-												<!-- Unstake button added dynamically -->
-											</div>
-										</div>
-									</div>
-									<div class="row justify-content-center mt-4">
-										<div class="col-12 text-center leaderboard-button">
-											<a href="leaderboardlock.html" class="btn btn-bordered">
-												<i class="fa-solid fa-trophy me-2"></i> View Leaderboard
-											</a>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-						<!-- CFT Staking (12 Months) -->
-						<div class="single-accordion-item">
-							<div class="card-header bg-inherit border-0 p-0">
-								<h2 class="m-0">
-									<button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCFT12M">
-										<div class="row">
-											<div class="col-12 col-md-8">
-												<div class="media flex-column flex-md-row">
-													<img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="CFT Logo">
-													<div class="content media-body mt-4 mt-md-0 ms-md-4">
-														<h4 class="m-0">CFT Staking (12 Months)</h4>
-														<p>Stake up to 150,000 CFT for CFT rewards with a 12-month lock. All rewards compound and are claimed when the 12-month period ends.</p>
-														<p>Each wallet can only stake once.❗️❗️</p>
-													</div>
-												</div>
-											</div>
-										</div>
-										<div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
-											<div class="col-4 single-item apr-apy-pair">
-												<div class="apr-apy-container">
-													<span class="apr-value">33% APR</span>
-													<span class="apy-value">(39.08% APY)</span>
-												</div>
-											</div>
-											<div class="col-4 single-item"><span id="total-balance-cft_12m">0.000000 CFT</span><span>Total Balance</span></div>
-											<div class="col-4 single-item"><span id="remaining-lock-time-cft_12m">Unlocked</span><span>Unlock Time</span></div>
-										</div>
-									</button>
-								</h2>
-							</div>
-							<div id="collapseCFT12M" class="collapse" data-bs-parent="#gameon-accordion">
-								<div class="card-body">
-									<div class="row justify-content-center">
-										<!-- Deposit -->
-										<div class="col-12 col-md-6 single-staking-item input-box" id="deposit-section-cft_12m">
-											<span class="item-title mb-2">Deposit</span>
-											<p><span id="available-tokens-cft_12m">0</span> CFT available in wallet</p>
-											<p><span id="remaining-stakeable-cft_12m">500000</span> CFT remaining stakeable</p>
-											<div class="input-area d-flex flex-column">
-												<div class="input-text"><input type="number" placeholder="Enter CFT amount" id="stake-amount-cft_12m" min="0" step="1"></div>
-												<button class="btn input-btn mt-2" id="stake-button-cft_12m">Stake</button>
-											</div>
-											<p id="no-tronlink-message-cft_12m" class="no-tronlink-message" style="display: none;">Please install TronLink to stake.</p>
-										</div>
-										<!-- Withdraw -->
-										<div class="col-12 col-md-6 single-staking-item input-box" id="withdraw-section-cft_12m" style="display: none;">
-											<span class="item-title mb-2">Withdraw</span>
-											<p><span id="initial-stake-cft_12m">0</span> CFT initial stake</p>
-											<p><span id="earned-rewards-cft_12m">0</span> CFT earned rewards</p>
-											<div class="input-area d-flex flex-column" id="unstake-area-cft_12m">
-												<!-- Unstake button added dynamically -->
-											</div>
-										</div>
-									</div>
-									<div class="row justify-content-center mt-4">
-										<div class="col-12 text-center leaderboard-button">
-											<a href="leaderboardlock12.html" class="btn btn-bordered">
-												<i class="fa-solid fa-trophy me-2"></i> View Leaderboard
-											</a>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- ***** Staking Area End ***** -->
-
-		<!-- ***** CTA Area Start ***** -->
-		<section class="cta-area p-0">
-			<div class="container">
-				<div class="row">
-					<div class="col-12 card">
-						<div class="row align-items-center justify-content-center">
-							<div class="col-12 col-md-5 text-center">
-								<img src="assets/img/content/cftlogo300.png" alt="CFT Logo">
-							</div>
-							<div class="col-12 col-md-6 mt-4 mt-md-0">
-								<h2 class="m-0">Apply for project staking</h2>
-								<p>Earn weekly rewards from staked CFT to build your project</p>
-								<p>Soon available for projects on any chain</p>
-								<a class="btn btn-bordered active d-inline-block"><i class="icon-rocket me-2"></i>Coming Soon</a>
-							</div>
-						</div>
-						<a class="cta-link" href="apply.html"></a>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- ***** CTA Area End ***** -->
-
-		<!-- ***** Energy Rental Modal Start ***** -->
-		<div class="modal fade" id="energy-rental-modal" tabindex="-1" aria-labelledby="energyRentalModalLabel" aria-hidden="true">
-			<div class="modal-dialog modal-dialog-centered">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h5 class="modal-title" id="energyRentalModalLabel">Insufficient Energy</h5>
-						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
-					</div>
-					<div class="modal-body">
-						<p>Your wallet has <span id="user-energy">0</span> energy available, but <span id="required-energy">0</span> energy is required for this transaction.</p>
-						<p>Rent <span id="rental-energy">0</span> energy for <span id="rental-duration">5</span> minutes at a cost of <span id="rental-cost-trx">0.00</span> TRX?</p>
-					</div>
-					<div class="modal-footer">
-						<button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
-						<button type="button" class="btn btn-rent" id="rent-energy-confirm">Rent Energy</button>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!-- ***** Energy Rental Modal End ***** -->
-
-		<!-- ***** Transaction Initiating Modal Start ***** -->
-		<div class="modal fade" id="transaction-initiating-modal" tabindex="-1" aria-labelledby="transactionInitiatingModalLabel" aria-hidden="true">
-			<div class="modal-dialog modal-dialog-centered">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h5 class="modal-title" id="transactionInitiatingModalLabel">Initiating Transaction</h5>
-					</div>
-					<div class="modal-body">
-						<div class="spinner"></div>
-						<p>Please wait while your transaction is being initiated.</p>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!-- ***** Transaction Initiating Modal End ***** -->
-
-		<!-- ***** Transaction Processing Modal Start ***** -->
-		<div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-labelledby="transactionProcessingModalLabel" aria-hidden="true">
-			<div class="modal-dialog modal-dialog-centered">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h5 class="modal-title" id="transactionProcessingModalLabel">Processing Transaction</h5>
-					</div>
-					<div class="modal-body">
-						<div class="spinner"></div>
-						<p>Please wait while your transaction is being processed.</p>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!-- ***** Transaction Processing Modal End ***** -->
-
-		<!--====== Footer Area Start ======-->
-		<footer class="footer-area">
-			<div class="container">
-				<div class="row justify-content-center">
-					<div class="col-12 col-md-8 text-center">
-						<div class="footer-items">
-							<a class="navbar-brand" href="index.html">
-								<img src="assets/img/logo/logo.png" alt="CFT Ecosystem Logo">
-							</a>
-							<div class="social-icons d-flex justify-content-center my-4">
-								<a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
-								<a class="reddit" href="https://www.reddit.com/" target="_blank"><i class="fab fa-reddit"></i></a>
-								<a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
-							</div>
-							<div class="copyright-area py-4">©2025 CFT Ecosystem, All Rights Reserved</div>
-						</div>
-						<div id="scroll-to-top" class="scroll-to-top">
-							<a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a>
-						</div>
-					</div>
-				</div>
-			</div>
-		</footer>
-		<!--====== Footer Area End ======-->
-
-		<!--====== Modal Search Area Start ======-->
-		<div id="search" class="modal fade p-0">
-			<div class="modal-dialog dialog-animated">
-				<div class="modal-content h-100">
-					<div class="modal-header" data-bs-dismiss="modal">
-						Search <i class="far fa-times-circle icon-close"></i>
-					</div>
-					<div class="modal-body">
-						<form class="row">
-							<div class="col-12 align-self-center">
-								<div class="row">
-									<div class="col-12 pb-3">
-										<h2 class="search-title mt-0 mb-3">What are you looking for?</h2>
-										<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-									</div>
-								</div>
-								<div class="row">
-									<div class="col-12 input-group mt-md-4">
-										<input type="text" placeholder="Enter your keywords">
-									</div>
-								</div>
-								<div class="row">
-									<div class="col-12 input-group align-self-center">
-										<button class="btn btn-bordered-white mt-3">Search</button>
-									</div>
-								</div>
-							</div>
-						</form>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!--====== Modal Search Area End ======-->
-
-		<!--====== Modal Responsive Menu Area Start ======-->
-		<div id="menu" class="modal fade p-0">
-			<div class="modal-dialog dialog-animated">
-				<div class="modal-content h-100">
-					<div class="modal-header" data-bs-dismiss="modal">
-						Menu <i class="far fa-times-circle icon-close"></i>
-					</div>
-					<div class="menu modal-body">
-						<div class="row w-100">
-							<div class="items p-0 col-12 text-center"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!--====== Modal Responsive Menu Area End ======-->
-
-		<!-- ***** All jQuery Plugins ***** -->
-		<script src="assets/js/vendor/jquery.min.js"></script>
-		<script src="assets/js/vendor/popper.min.js"></script>
-		<script src="assets/js/vendor/bootstrap.min.js"></script>
-		<script src="assets/js/vendor/all.min.js"></script>
-		<script src="assets/js/vendor/gallery.min.js"></script>
-		<script src="assets/js/vendor/slider.min.js"></script>
-		<script src="assets/js/vendor/countdown.min.js"></script>
-		<script src="assets/js/vendor/shuffle.min.js"></script>
-		<script src="assets/js/main.js"></script>
-		<script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
-		<script src="assets/js/lockstaking.js"></script>
-	</div>
+    <!-- CTA Area -->
+    <section class="py-3">
+        <div class="container">
+            <div class="luxe-ad-card">
+                <div class="row align-items-center g-0">
+                    <div class="col-12 col-md-5 text-center p-3">
+                        <img src="assets/img/content/cftlogo300.png" alt="Apply for project staking" style="max-width:220px">
+                    </div>
+                    <div class="col-12 col-md-7 p-3">
+                        <div class="inner">
+                            <h2 class="m-0">Apply for project staking</h2>
+                            <p class="mb-3">Earn weekly rewards from staked CFT to build your project</p>
+                            <p>Soon available for projects on any chain</p>
+                            <a class="btn primary" href="apply.html"><i class="icon-rocket me-2"></i>Coming Soon</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Staking Area -->
+    <section class="staking-area">
+        <div class="container">
+            <div class="luxe-card">
+                <div class="staking-header">
+                    <div class="staking-title">
+                        <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <h4 class="staking-title-text m-0">CFT Locked Staking</h4>
+                                <span class="chip" id="status-chip"><span class="dot"></span><span id="status-text">Ready</span></span>
+                            </div>
+                            <p class="staking-sub mb-0 mt-2">Stake CFT for rewards with a 6 or 12-month lock</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="gameon-accordion" class="accordion p-4">
+                    <!-- CFT Staking (6 Months) -->
+                    <div class="single-accordion-item">
+                        <div class="card-header bg-inherit border-0 p-0">
+                            <h2 class="m-0">
+                                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCFT6M">
+                                    <div class="row">
+                                        <div class="col-12 col-md-8">
+                                            <div class="media flex-column flex-md-row">
+                                                <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="CFT Logo">
+                                                <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                    <h4 class="m-0">CFT Staking (6 Months)</h4>
+                                                    <p>Stake up to 150,000 CFT for CFT rewards with a 6-month lock. All rewards compound and are claimed when the 6-month period ends.</p>
+                                                    <p>Each wallet can only stake once.❗️❗️</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                        <div class="col-4 single-item apr-apy-pair">
+                                            <div class="apr-apy-container">
+                                                <span class="apr-value">30% APR</span>
+                                                <span class="apy-value">(34.98% APY)</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-4 single-item"><span id="total-balance-cft_6m">0.000000 CFT</span><span>Total Balance</span></div>
+                                        <div class="col-4 single-item"><span id="remaining-lock-time-cft_6m">Unlocked</span><span>Unlock Time</span></div>
+                                    </div>
+                                </button>
+                            </h2>
+                        </div>
+                        <div id="collapseCFT6M" class="collapse" data-bs-parent="#gameon-accordion">
+                            <div class="card-body">
+                                <div class="row justify-content-center">
+                                    <div class="col-12 col-md-6 single-staking-item input-box" id="deposit-section-cft_6m">
+                                        <span class="item-title mb-2">Deposit</span>
+                                        <p><span id="available-tokens-cft_6m">0</span> CFT available in wallet</p>
+                                        <p><span id="remaining-stakeable-cft_6m">500000</span> CFT remaining stakeable</p>
+                                        <div class="input-area d-flex flex-column">
+                                            <div class="input-text"><input type="number" placeholder="Enter CFT amount" id="stake-amount-cft_6m" min="0" step="1" class="form-control"></div>
+                                            <button class="btn input-btn mt-2 primary" id="stake-button-cft_6m">Stake</button>
+                                        </div>
+                                        <p id="no-tronlink-message-cft_6m" class="no-tronlink-message" style="display: none;">Please install TronLink to stake.</p>
+                                    </div>
+                                    <div class="col-12 col-md-6 single-staking-item input-box" id="withdraw-section-cft_6m" style="display: none;">
+                                        <span class="item-title mb-2">Withdraw</span>
+                                        <p><span id="initial-stake-cft_6m">0</span> CFT initial stake</p>
+                                        <p><span id="earned-rewards-cft_6m">0</span> CFT earned rewards</p>
+                                        <div class="input-area d-flex flex-column" id="unstake-area-cft_6m">
+                                            <!-- Unstake button added dynamically -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row justify-content-center mt-4">
+                                    <div class="col-12 text-center leaderboard-button">
+                                        <a href="leaderboardlock.html" class="btn btn-bordered">
+                                            <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- CFT Staking (12 Months) -->
+                    <div class="single-accordion-item">
+                        <div class="card-header bg-inherit border-0 p-0">
+                            <h2 class="m-0">
+                                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCFT12M">
+                                    <div class="row">
+                                        <div class="col-12 col-md-8">
+                                            <div class="media flex-column flex-md-row">
+                                                <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="CFT Logo">
+                                                <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                                                    <h4 class="m-0">CFT Staking (12 Months)</h4>
+                                                    <p>Stake up to 150,000 CFT for CFT rewards with a 12-month lock. All rewards compound and are claimed when the 12-month period ends.</p>
+                                                    <p>Each wallet can only stake once.❗️❗️</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                                        <div class="col-4 single-item apr-apy-pair">
+                                            <div class="apr-apy-container">
+                                                <span class="apr-value">33% APR</span>
+                                                <span class="apy-value">(39.08% APY)</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-4 single-item"><span id="total-balance-cft_12m">0.000000 CFT</span><span>Total Balance</span></div>
+                                        <div class="col-4 single-item"><span id="remaining-lock-time-cft_12m">Unlocked</span><span>Unlock Time</span></div>
+                                    </div>
+                                </button>
+                            </h2>
+                        </div>
+                        <div id="collapseCFT12M" class="collapse" data-bs-parent="#gameon-accordion">
+                            <div class="card-body">
+                                <div class="row justify-content-center">
+                                    <div class="col-12 col-md-6 single-staking-item input-box" id="deposit-section-cft_12m">
+                                        <span class="item-title mb-2">Deposit</span>
+                                        <p><span id="available-tokens-cft_12m">0</span> CFT available in wallet</p>
+                                        <p><span id="remaining-stakeable-cft_12m">500000</span> CFT remaining stakeable</p>
+                                        <div class="input-area d-flex flex-column">
+                                            <div class="input-text"><input type="number" placeholder="Enter CFT amount" id="stake-amount-cft_12m" min="0" step="1" class="form-control"></div>
+                                            <button class="btn input-btn mt-2 primary" id="stake-button-cft_12m">Stake</button>
+                                        </div>
+                                        <p id="no-tronlink-message-cft_12m" class="no-tronlink-message" style="display: none;">Please install TronLink to stake.</p>
+                                    </div>
+                                    <div class="col-12 col-md-6 single-staking-item input-box" id="withdraw-section-cft_12m" style="display: none;">
+                                        <span class="item-title mb-2">Withdraw</span>
+                                        <p><span id="initial-stake-cft_12m">0</span> CFT initial stake</p>
+                                        <p><span id="earned-rewards-cft_12m">0</span> CFT earned rewards</p>
+                                        <div class="input-area d-flex flex-column" id="unstake-area-cft_12m">
+                                            <!-- Unstake button added dynamically -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row justify-content-center mt-4">
+                                    <div class="col-12 text-center leaderboard-button">
+                                        <a href="leaderboardlock12.html" class="btn btn-bordered">
+                                            <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Energy Rental Modal -->
+    <div class="modal fade" id="energy-rental-modal" tabindex="-1" aria-labelledby="energyRentalModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="energyRentalModalLabel">Insufficient Energy</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Your wallet has <span id="user-energy">0</span> energy available, but <span id="required-energy">0</span> energy is required for this transaction.</p>
+                    <p>Rent <span id="rental-energy">0</span> energy for <span id="rental-duration">5</span> minutes at a cost of <span id="rental-cost-trx">0.00</span> TRX?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-rent" id="rent-energy-confirm">Rent Energy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Transaction Initiating Modal -->
+    <div class="modal fade" id="transaction-initiating-modal" tabindex="-1" aria-labelledby="transactionInitiatingModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="transactionInitiatingModalLabel">Initiating Transaction</h5>
+                </div>
+                <div class="modal-body">
+                    <div class="spinner"></div>
+                    <p>Please wait while your transaction is being initiated.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Transaction Processing Modal -->
+    <div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-labelledby="transactionProcessingModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="transactionProcessingModalLabel">Processing Transaction</h5>
+                </div>
+                <div class="modal-body">
+                    <div class="spinner"></div>
+                    <p>Please wait while your transaction is being processed.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Footer -->
+    <footer class="footer-area py-5 mt-3">
+        <div class="container text-center">
+            <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt="" style="height:28px"></a>
+            <div class="social-icons d-flex justify-content-center my-3 gap-3">
+                <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
+                <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
+            </div>
+            <div class="copyright-area py-2">&copy;2025 CFT Ecosystem, All Rights Reserved</div>
+            <div id="scroll-to-top" class="scroll-to-top"><a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a></div>
+        </div>
+    </footer>
+    <!-- Modal Search -->
+    <div id="search" class="modal fade p-0">
+        <div class="modal-dialog dialog-animated">
+            <div class="modal-content h-100">
+                <div class="modal-header" data-bs-dismiss="modal">
+                    Search <i class="far fa-times-circle icon-close"></i>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-12 align-self-center">
+                            <div class="row">
+                                <div class="col-12 pb-3">
+                                    <h2 class="search-title mt-0 mb-3">What are you looking for?</h2>
+                                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12 input-group mt-md-4">
+                                    <input type="text" placeholder="Enter your keywords">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12 input-group align-self-center">
+                                    <button class="btn btn-bordered-white mt-3">Search</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Responsive Menu -->
+    <div id="menu" class="modal fade p-0">
+        <div class="modal-dialog dialog-animated">
+            <div class="modal-content h-100">
+                <div class="modal-header" data-bs-dismiss="modal">
+                    Menu <i class="far fa-times-circle icon-close"></i>
+                </div>
+                <div class="menu modal-body">
+                    <div class="row w-100">
+                        <div class="items p-0 col-12 text-center"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Toasts -->
+    <div id="toast-container" style="position:fixed;z-index:1100;bottom:16px;right:16px">
+        <div id="app-toast" class="toast text-bg-dark" role="status" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    <!-- Vendor JS -->
+    <script src="assets/js/vendor/jquery.min.js"></script>
+    <script src="assets/js/vendor/popper.min.js"></script>
+    <script src="assets/js/vendor/bootstrap.min.js"></script>
+    <script src="assets/js/vendor/all.min.js"></script>
+    <script src="assets/js/vendor/gallery.min.js"></script>
+    <script src="assets/js/vendor/slider.min.js"></script>
+    <script src="assets/js/vendor/countdown.min.js"></script>
+    <script src="assets/js/vendor/shuffle.min.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+    
+    </script>
+    <!-- App JS -->
+    <script src="assets/js/lockstaking.js"></script>
+    <script src="assets/js/advertisements.js"></script>
 </body>
 </html>
