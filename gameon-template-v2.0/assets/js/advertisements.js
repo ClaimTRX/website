@@ -8,6 +8,14 @@ const advertisements = [
     icon: "icon-rocket"
   },
   {
+    title: "BabyTuru",
+    description: "BabyTuru ($BBT) is a multichain memetoken originating on the Tron blockchain, blending playful bird-themed memes with practical utilities like deflationary token burns, arbitrage mechanisms and seamless staking rewards to incentivize long-term holding. It is a standout OG memecoin that has been around for over 4 years.",
+    image: "assets/img/content/bbt.png",
+    link: "https://t.me/babyturu",
+    linkText: "Join Now",
+    icon: "icon-telegram"
+  },
+  {
     title: "UpDawg",
     description: "UpDawg (UDAWG) is a Proof-of-reserve TRC20 token backed by TRX on the Tron Blockchain. It powers the uDawg_bot on Telegram - gamifying off & on-chain community engagement with rewards.",
     image: "assets/img/content/updawg.png",
