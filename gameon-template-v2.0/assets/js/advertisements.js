@@ -10,7 +10,7 @@ const advertisements = [
   {
     title: "BabyTuru",
     description: "BabyTuru ($BBT) is a multichain memetoken originating on the Tron blockchain, blending playful bird-themed memes with practical utilities like deflationary token burns, arbitrage mechanisms and seamless staking rewards to incentivize long-term holding. It is a standout OG memecoin that has been around for over 4 years.",
-    image: "assets/img/content/bbt.png",
+    image: "assets/img/content/bbt.jpg",
     link: "https://t.me/babyturu",
     linkText: "Join Now",
     icon: "icon-telegram"
