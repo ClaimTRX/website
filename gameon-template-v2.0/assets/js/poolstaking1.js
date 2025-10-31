@@ -32,7 +32,7 @@ const CONTRACT_CALL_DELAY_MS = 300; // Increased to 1000ms for safer pacing
 const UI_REFRESH_DELAY_MS = 3000; // 3s delay for UI refresh after actions
 // Manual CFT price for APY calculation (update this value as needed)
 const CFT_TRX_PRICE = 0.6378; // Manually set CFT price in TRX (update as needed)
-const DAILY_PAYOUT_PERCENTAGE = 1; // 1% daily payout as per requirement
+const DAILY_PAYOUT_PERCENTAGE = 2; // 1% daily payout as per requirement
 /* ===================== Token Config ===================== */
 const tokenDetails = {
   cft: {
