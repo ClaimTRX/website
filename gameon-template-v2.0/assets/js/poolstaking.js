@@ -585,7 +585,7 @@ async function updateTokenUI(token, first = false) {
     await delay(CONTRACT_CALL_DELAY_MS);
     const [poolSizeRaw, dailyPctRaw, totalStakedRaw, totalActiveStakedRaw] = await Promise.all([
       stakingContracts[token].methods.poolSize().call().catch(()=>'1146024463'),
-      stakingContracts[token].methods.dailyPayoutPercentage().call().catch(()=>'100'),
+      stakingContracts[token].methods.dailyPayoutPercentage().call().catch(()=>'200'),
       (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().catch(()=>'0'),
       stakingContracts[token].methods.totalActiveStaked().call().catch(()=>'0')
     ]);
@@ -973,5 +973,4 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
-
 
