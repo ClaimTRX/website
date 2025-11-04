@@ -696,8 +696,17 @@
       let modal = null;
       try {
         modal = showProcessingModal('(register)');
-        const txId = await contract.register(telegramLink, twitterLink, discordLink).send(); // no shouldPollResponse
-        showToast({ title: 'Registration submitted', body: `<a href="https://tronscan.org/#/transaction/${txId}" target="_blank" rel="noopener">View on Tronscan</a>`, variant: 'success' });
+let txId;
+try {
+  const result = await contract.register(telegramLink, twitterLink, discordLink).send({
+    feeLimit: 100_000_000,
+    shouldPollResponse: true
+  });
+  txId = result.txid || result.transaction?.txID;
+} catch (err) {
+  console.error("Transaction failed:", err);
+  throw err;
+}        showToast({ title: 'Registration submitted', body: `<a href="https://tronscan.org/#/transaction/${txId}" target="_blank" rel="noopener">View on Tronscan</a>`, variant: 'success' });
       } catch (error) {
         showToast({ title: 'Registration error', body: error.message, variant: 'danger' });
       } finally {
@@ -831,6 +840,22 @@ document.addEventListener("DOMContentLoaded", () => {
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
