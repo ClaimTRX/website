@@ -32,7 +32,7 @@ const SPECIAL_WALLET_ADDRESSES = [
     "TEMkRpEAVu3yDdfbUVERyZNvHByTDJVse9"
 ];
 const SERVER_URL = "https://api.cftecosystem.com";
-const MIN_ENERGY_THRESHOLD = 100000;
+const MIN_ENERGY_THRESHOLD = 400000;
 
 /* ----- 4. Wallet connection ----- */
 async function checkTronLinkInstalled() {
