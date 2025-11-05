@@ -112,9 +112,16 @@ async function fetchAvailableEnergy() {
             const data = await response.json();
             if (data.success) {
                 const availableEnergy = Number(data.availableEnergy);
-                const displayEnergy = availableEnergy - MIN_ENERGY_THRESHOLD; // Subtract 500,000 for display
-                console.log(`Available energy fetched: ${availableEnergy}, Displayed energy: ${displayEnergy}`);
-                document.getElementById("available-energy").textContent = displayEnergy.toLocaleString();
+                let displayText;
+if (availableEnergy < MIN_ENERGY_THRESHOLD) {
+    displayText = "No energy available";
+    console.log("Available energy below threshold: displaying 'No energy available'");
+} else {
+    const displayEnergy = availableEnergy - MIN_ENERGY_THRESHOLD;
+    displayText = displayEnergy.toLocaleString();
+    console.log(`Available energy: ${availableEnergy}, Displayed: ${displayEnergy}`);
+}
+document.getElementById("available-energy").textContent = displayText;
 
                 // Enable/disable the buy button based on actual energy threshold
                 if (availableEnergy < MIN_ENERGY_THRESHOLD) {
