@@ -2,7 +2,7 @@
 let tronWeb, userAddress;
 
 /* ----- 1. NEW PRICE ENGINE (from energybot.js) ----- */
-const BASE_PRICE_SUN_PER_ENERGY = 50;               // 50 SUN per 1 energy
+const BASE_PRICE_SUN_PER_ENERGY = 55;               // 55 SUN per 1 energy
 const SUN_PER_TRX               = 1_000_000;
 const DURATION_MULTIPLIERS = { 5: 1.0, 15: 1.10, 60: 1.20 };
 
@@ -32,7 +32,7 @@ const SPECIAL_WALLET_ADDRESSES = [
     "TEMkRpEAVu3yDdfbUVERyZNvHByTDJVse9"
 ];
 const SERVER_URL = "https://api.cftecosystem.com";
-const MIN_ENERGY_THRESHOLD = 500000;
+const MIN_ENERGY_THRESHOLD = 100000;
 
 /* ----- 4. Wallet connection ----- */
 async function checkTronLinkInstalled() {
