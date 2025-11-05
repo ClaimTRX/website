@@ -204,15 +204,7 @@ const stakingConfigs = [
         rewardUnit: 'CFT',
         isSameToken: false
     },
-    {
-        name: 'KING',
-        tokenContractAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-        stakingContractAddress: 'TEppqmC7mb2wF4ExBYbQF6LraqD6qXW5Aj',
-        stakingContractAbi: cftStakingContractAbi,
-        tokenContractAbi: tokenContractAbi,
-        rewardUnit: 'CFT',
-        isSameToken: false
-    },
+    
     {
         name: 'FYM',
         tokenContractAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
