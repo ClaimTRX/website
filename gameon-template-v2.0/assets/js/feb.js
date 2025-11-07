@@ -1,3 +1,4 @@
+
 const allowedAddresses = [
     "TR2XJawheHUAcbxgzABVh1toDA59Eb4RbM",
     "TQLrSGjNtYwtUdttbm4HsXxD6vmbePWni4",
