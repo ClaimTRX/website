@@ -441,13 +441,14 @@
 <script>
 /* -------------------------------------------------
    CFT Telegram Live Feed – ALWAYS SHOW LAST 5 POSTS
+   NO getUpdates → ONLY getChatHistory (RELIABLE)
    ------------------------------------------------- */
 const BOT_TOKEN   = '8452869704:AAFx0HbaGqQJG_OgZdMAKgR_-L_5rIjbOjc';
 const CHANNEL_ID  = -1002414524369;
 const API         = `https://api.telegram.org/bot${BOT_TOKEN}`;
-const MAX_POSTS   = 5;    // how many to show
+const MAX_POSTS   = 5;
 
-let displayedIds = new Set();  // prevent duplicates
+let lastMessageId = 0;  // to detect new posts
 
 /* ---------- Helpers ---------- */
 function formatTime(unix) {
@@ -467,11 +468,11 @@ function entitiesToHTML(text, entities = []) {
       case 'bold':          html = `<strong>${part}</strong>`; break;
       case 'italic':        html = `<em>${part}</em>`; break;
       case 'underline':     html = `<u>${part}</u>`; break;
-      case 'strikointe':    html = `<s>${part}</s>`; break;
+      case 'strikethrough': html = `<s>${part}</s>`; break;
       case 'code':          html = `<code>${part}</code>`; break;
       case 'pre':           html = `<pre>${part}</pre>`; break;
-      case 'text_link':     html = `<a href="${e.url}" target="_blank">${part}</a>`; break;
-      case 'url':           html = `<a href="${part}" target="_blank">${part}</a>`; break;
+      case 'text_link':     html = `<a href="${e.url}" target="_blank" style="color:var(--accent-1)">${part}</a>`; break;
+      case 'url':           html = `<a href="${part}" target="_blank" style="color:var(--accent-1)">${part}</a>`; break;
     }
     text = text.slice(0,s) + html + text.slice(s+len);
   }
@@ -495,56 +496,51 @@ function render(messages) {
   }
 }
 
-/* ---------- Fetch Latest N Messages ---------- */
+/* ---------- Fetch Last N Messages ---------- */
 async function loadLatest() {
   try {
-    // Step 1: Get the latest message ID (to anchor history)
-    const updatesRes = await fetch(`${API}/getUpdates?limit=1&allowed_updates=["channel_post"]`);
-    const updates = await updatesRes.json();
-    if (!updates.ok || !updates.result.length) throw new Error('No updates');
+    // Fetch the latest MAX_POSTS messages from the channel
+    const res = await fetch(`${API}/getChatHistory?chat_id=${CHANNEL_ID}&limit=${MAX_POSTS + 5}`);
+    const data = await res.json();
 
-    const latestMsg = updates.result[0].channel_post;
-    const fromMessageId = latestMsg.message_id;
+    if (!data.ok) throw new Error(data.description || 'API error');
 
-    // Step 2: Get last MAX_POSTS messages
-    const historyRes = await fetch(`${API}/getChatHistory?chat_id=${CHANNEL_ID}&from_message_id=${fromMessageId}&limit=${MAX_POSTS}`);
-    const history = await historyRes.json();
-    if (!history.ok) throw new Error(history.description);
-
-    const msgs = history.result.messages
+    const msgs = data.result.messages
       .filter(m => m.chat.id === CHANNEL_ID)
-      .sort((a,b) => b.message_id - a.message_id)  // newest first
+      .sort((a, b) => b.message_id - a.message_id)
       .slice(0, MAX_POSTS);
 
-    const newMessages = [];
-    for (const msg of msgs) {
-      if (displayedIds.has(msg.message_id)) continue;
-      displayedIds.add(msg.message_id);
-
-      const html = entitiesToHTML(msg.text || msg.caption || '[Media]', msg.entities || msg.caption_entities);
-      newMessages.push({ id: msg.message_id, html, date: msg.date });
+    if (!msgs.length) {
+      document.getElementById('tg-messages').innerHTML = 
+        `<div class="text-center text-muted small">No messages yet.</div>`;
+      return;
     }
 
-    // Only prepend *new* messages
-    const allMessages = [...newMessages, ...window.telegramMessages || []].slice(0, MAX_POSTS);
-    window.telegramMessages = allMessages;
+    // Detect new message (top one is newest)
+    const newestId = msgs[0].message_id;
+    const isNew = newestId > lastMessageId;
+    lastMessageId = newestId;
 
-    render(allMessages);
+    // Format all messages
+    const formatted = msgs.map(msg => ({
+      id: msg.message_id,
+      html: entitiesToHTML(msg.text || msg.caption || '[Media]', msg.entities || msg.caption_entities),
+      date: msg.date
+    }));
+
+    render(formatted);
+
+    // Optional: visual cue for new post
+    if (isNew && document.visibilityState === 'visible') {
+      const box = document.getElementById('tg-live-box');
+      box.style.boxShadow = '0 0 20px rgba(98,255,207,.6)';
+      setTimeout(() => box.style.boxShadow = '', 1000);
+    }
 
   } catch (e) {
     console.error('Telegram error:', e);
-    const container = document.getElementById('tg-messages');
-    container.innerHTML = `<div class="text-center text-muted small">
-      Check announcements → <a href="https://t.me/CFTAnnouncement" target="_blank" style="color:var(--accent-1)">Open Channel</a>
-    </div>`;
-  }
-}
-
-/* ---------- Start ---------- */
-window.telegramMessages = [];  // global store
-loadLatest();
-setInterval(loadLatest, 30000);  // every 30s
-</script>
+    document.getElementById('tg-messages').innerHTML = 
+      `<div class="text
 </body>
 </html>
 
