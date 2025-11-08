@@ -275,25 +275,20 @@
     </div>
   </section>
 
-  <section class="py-4">
+ <!-- ==== CFT TELEGRAM LIVE ANNOUNCEMENTS (SCROLLABLE) ==== -->
+<section class="py-4">
   <div class="container">
     <div id="tg-live-box" class="luxe-ad-card position-relative d-flex flex-column"
          style="height:320px; overflow:hidden;">
-      <!-- Header (icon + title) -->
       <div class="p-3 d-flex align-items-center border-bottom border-line">
         <i class="fab fa-telegram-plane me-2" style="font-size:1.4rem;color:var(--accent-1);"></i>
         <strong>Live Announcements</strong>
+        <div class="ms-auto">
+          <small class="text-muted" id="tg-latest-ts"></small>
+        </div>
       </div>
-
-      <!-- Telegram official widget -->
-      <div class="flex-grow-1 overflow-hidden p-0">
-        <script async
-          src="https://telegram.org/js/telegram-widget.js?22"
-          data-telegram-channel="CFTAnnouncement"
-          data-width="100%"
-          data-height="260"
-          data-dark="1">
-        </script>
+      <div id="tg-messages" class="flex-grow-1 overflow-auto p-3" style="scroll-behavior:smooth;">
+        <div class="text-center text-muted small">Loading…</div>
       </div>
     </div>
   </div>
@@ -439,6 +434,114 @@
   <script src="assets/js/vendor/shuffle.min.js"></script>
   <script src="assets/js/main.js"></script>
   <script src="assets/js/advertisements.js"></script>
+
+  <script>
+/* -------------------------------------------------
+   CFT Telegram Live Feed – ALWAYS SHOW LAST 5 POSTS
+   ------------------------------------------------- */
+const BOT_TOKEN   = '8452869704:AAFx0HbaGqQJG_OgZdMAKgR_-L_5rIjbOjc';
+const CHANNEL_ID  = -1002414524369;
+const API         = `https://api.telegram.org/bot${BOT_TOKEN}`;
+const MAX_POSTS   = 5;    // how many to show
+
+let displayedIds = new Set();  // prevent duplicates
+
+/* ---------- Helpers ---------- */
+function formatTime(unix) {
+  const d = new Date(unix * 1000);
+  return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) +
+         ' – ' + d.toLocaleDateString([], {day:'numeric', month:'short', year:'numeric'});
+}
+
+function entitiesToHTML(text, entities = []) {
+  if (!entities.length) return text.replace(/\n/g, '<br>');
+
+  entities = entities.slice().sort((a,b) => b.offset - a.offset);
+  for (const e of entities) {
+    const s = e.offset, len = e.length, part = text.slice(s, s+len);
+    let html = part;
+    switch (e.type) {
+      case 'bold':          html = `<strong>${part}</strong>`; break;
+      case 'italic':        html = `<em>${part}</em>`; break;
+      case 'underline':     html = `<u>${part}</u>`; break;
+      case 'strikointe':    html = `<s>${part}</s>`; break;
+      case 'code':          html = `<code>${part}</code>`; break;
+      case 'pre':           html = `<pre>${part}</pre>`; break;
+      case 'text_link':     html = `<a href="${e.url}" target="_blank">${part}</a>`; break;
+      case 'url':           html = `<a href="${part}" target="_blank">${part}</a>`; break;
+    }
+    text = text.slice(0,s) + html + text.slice(s+len);
+  }
+  return text.replace(/\n/g, '<br>');
+}
+
+/* ---------- Render ---------- */
+function render(messages) {
+  const container = document.getElementById('tg-messages');
+  container.innerHTML = messages.map(m => `
+    <div class="msg">
+      <div>${m.html}</div>
+      <div class="ts text-muted">${formatTime(m.date)}</div>
+    </div>
+  `).join('');
+
+  container.scrollTop = 0;  // newest on top
+
+  if (messages.length) {
+    document.getElementById('tg-latest-ts').textContent = formatTime(messages[0].date);
+  }
+}
+
+/* ---------- Fetch Latest N Messages ---------- */
+async function loadLatest() {
+  try {
+    // Step 1: Get the latest message ID (to anchor history)
+    const updatesRes = await fetch(`${API}/getUpdates?limit=1&allowed_updates=["channel_post"]`);
+    const updates = await updatesRes.json();
+    if (!updates.ok || !updates.result.length) throw new Error('No updates');
+
+    const latestMsg = updates.result[0].channel_post;
+    const fromMessageId = latestMsg.message_id;
+
+    // Step 2: Get last MAX_POSTS messages
+    const historyRes = await fetch(`${API}/getChatHistory?chat_id=${CHANNEL_ID}&from_message_id=${fromMessageId}&limit=${MAX_POSTS}`);
+    const history = await historyRes.json();
+    if (!history.ok) throw new Error(history.description);
+
+    const msgs = history.result.messages
+      .filter(m => m.chat.id === CHANNEL_ID)
+      .sort((a,b) => b.message_id - a.message_id)  // newest first
+      .slice(0, MAX_POSTS);
+
+    const newMessages = [];
+    for (const msg of msgs) {
+      if (displayedIds.has(msg.message_id)) continue;
+      displayedIds.add(msg.message_id);
+
+      const html = entitiesToHTML(msg.text || msg.caption || '[Media]', msg.entities || msg.caption_entities);
+      newMessages.push({ id: msg.message_id, html, date: msg.date });
+    }
+
+    // Only prepend *new* messages
+    const allMessages = [...newMessages, ...window.telegramMessages || []].slice(0, MAX_POSTS);
+    window.telegramMessages = allMessages;
+
+    render(allMessages);
+
+  } catch (e) {
+    console.error('Telegram error:', e);
+    const container = document.getElementById('tg-messages');
+    container.innerHTML = `<div class="text-center text-muted small">
+      Check announcements → <a href="https://t.me/CFTAnnouncement" target="_blank" style="color:var(--accent-1)">Open Channel</a>
+    </div>`;
+  }
+}
+
+/* ---------- Start ---------- */
+window.telegramMessages = [];  // global store
+loadLatest();
+setInterval(loadLatest, 30000);  // every 30s
+</script>
 
 
 </body>
