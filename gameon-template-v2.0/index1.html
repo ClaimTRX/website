@@ -437,10 +437,10 @@
 
 <script>
 /* -------------------------------------------------
-   CFT Telegram Live Feed – WEB SCRAPING (ALWAYS SHOWS HISTORY)
+   CFT Telegram Live Feed – CORS PROXY (NO SERVER NEEDED)
    ------------------------------------------------- */
 const CHANNEL_WEB = 'https://t.me/s/CFTAnnouncement';
-const PROXY_URL = '/proxy.php?url=' + encodeURIComponent(CHANNEL_WEB);
+const PROXY_URL = 'https://corsproxy.io/?' + encodeURIComponent(CHANNEL_WEB);
 const MAX_POSTS = 5;  // how many to show
 
 let lastContentHash = '';  // detect changes
@@ -448,33 +448,40 @@ let lastContentHash = '';  // detect changes
 /* ---------- Parse Telegram Web Posts ---------- */
 function parseTelegramPosts(doc) {
   const posts = [];
-  const msgEls = doc.querySelectorAll('.tgme_widget_message:not(.tgme_widget_message_bubble)');
+  // Target the main message elements (Telegram's structure)
+  const msgEls = doc.querySelectorAll('[class*="tgme_widget_message"]');
   
   msgEls.forEach(el => {
-    const textEl = el.querySelector('.tgme_widget_message_text');
+    const textEl = el.querySelector('[class*="tgme_widget_message_text"]');
     const timeEl = el.querySelector('time');
     
     if (!textEl) return;
     
-    // Preserve formatting
-    let text = textEl.innerHTML;
+    // Preserve all formatting (bold, italic, links, etc.)
+    let text = textEl.innerHTML || textEl.textContent;
     text = text.replace(/<b>(.*?)<\/b>/gi, '<strong>$1</strong>');
     text = text.replace(/<i>(.*?)<\/i>/gi, '<em>$1</em>');
     text = text.replace(/<a[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>/gi, 
       '<a href="$1" target="_blank" style="color:var(--accent-1);text-decoration:underline">$2</a>');
     text = text.replace(/\n/g, '<br>');
 
-    const timestamp = timeEl ? timeEl.getAttribute('datetime') : Date.now() / 1000;
+    const timestamp = timeEl ? parseInt(timeEl.getAttribute('datetime')) : Date.now() / 1000;
 
     posts.push({ html: text, date: timestamp });
   });
 
-  return posts.slice(0, MAX_POSTS).reverse();  // newest first
+  // Return newest first, limit to MAX_POSTS
+  return posts.slice(-MAX_POSTS).reverse();
 }
 
 /* ---------- Render ---------- */
 function render(messages) {
   const container = document.getElementById('tg-messages');
+  if (!messages.length) {
+    container.innerHTML = '<div class="text-center text-muted small">No recent announcements</div>';
+    return;
+  }
+
   container.innerHTML = messages.map(m => `
     <div class="msg">
       <div>${m.html}</div>
@@ -484,9 +491,7 @@ function render(messages) {
 
   container.scrollTop = 0;  // newest on top
 
-  if (messages.length) {
-    document.getElementById('tg-latest-ts').textContent = formatTime(messages[0].date);
-  }
+  document.getElementById('tg-latest-ts').textContent = formatTime(messages[0].date);
 }
 
 function formatTime(unix) {
@@ -499,16 +504,16 @@ function formatTime(unix) {
 async function loadLatest() {
   try {
     const res = await fetch(PROXY_URL);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
+    const html = await res.text();
     const parser = new DOMParser();
-    const doc = parser.parseFromString(data.contents, 'text/html');
+    const doc = parser.parseFromString(html, 'text/html');
     const posts = parseTelegramPosts(doc);
 
     if (!posts.length) throw new Error('No posts found');
 
-    // Check for changes
+    // Detect changes (avoid flicker)
     const contentHash = btoa(posts.map(p => p.html.slice(0, 100)).join('|'));
     if (contentHash === lastContentHash) return;
     lastContentHash = contentHash;
