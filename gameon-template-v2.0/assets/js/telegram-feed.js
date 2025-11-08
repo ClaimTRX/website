@@ -7,7 +7,7 @@
 const BOT_TOKEN = '8452869704:AAFx0HbaGqQJG_OgZdMAKgR_-L_5rIjbOjc';
 const CHANNEL_ID = -1002414524369;  // Your numeric chat ID
 const API = `https://api.telegram.org/bot${BOT_TOKEN}`;
-const MAX_POSTS = 5;  // How many new posts to keep visible
+const MAX_POSTS = 10;  // How many new posts to keep visible
 
 let lastUpdateId = 0;
 const messages = [];  // Store new messages
