@@ -414,69 +414,69 @@
 
 <script>
 /* -------------------------------------------------
-   CFT Telegram Live-Announcement Widget (No Bot Required)
+   CFT Telegram Live-Announcement (CORS-SAFE via Proxy)
    ------------------------------------------------- */
-const CHANNEL_WEB = 'https://t.me/s/CFTAnnouncement';  // Public web preview
+const CHANNEL_WEB = 'https://t.me/s/CFTAnnouncement';
+const PROXY_URL = 'https://api.allorigins.win/fetch?url=' + encodeURIComponent(CHANNEL_WEB);
 const FALLBACK_MSG = 'Check announcements on Telegram → <a href="https://t.me/CFTAnnouncement" target="_blank" style="color:var(--accent-1)">Open Channel</a>';
 
-let lastContentHash = '';  // To detect changes
+let lastContentHash = '';
 
-// Simple HTML parser for Telegram posts (handles <b>, <a>, <br>, etc.)
-function parseTelegramPost(html) {
-  // Extract post content (Telegram wraps in <div class="tgme_widget_message_text">)
-  const textDiv = html.querySelector('.tgme_widget_message_text');
-  if (!textDiv) return null;
-  
-  // Preserve formatting: bold, links, line breaks
-  let text = textDiv.innerHTML;
-  text = text.replace(/<b>(.*?)<\/b>/g, '<strong>$1</strong>');  // Telegram bold → HTML strong
-  text = text.replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/g, '<a href="$1" target="_blank" style="color:var(--accent-1);">$2</a>');  // Links
-  text = text.replace(/\n/g, '<br>');  // Line breaks
-  
-  // Extract timestamp from <time> tag
-  const timeEl = html.querySelector('time');
-  const timestamp = timeEl ? timeEl.getAttribute('datetime') : '';
-  
+// Parse Telegram post from HTML
+function parseTelegramPost(doc) {
+  const textEl = doc.querySelector('.tgme_widget_message_text');
+  if (!textEl) return null;
+
+  let text = textEl.innerHTML;
+  text = text.replace(/<b>(.*?)<\/b>/gi, '<strong>$1</strong>');
+  text = text.replace(/<i>(.*?)<\/i>/gi, '<em>$1</em>');
+  text = text.replace(/<a[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>/gi, 
+    '<a href="$1" target="_blank" style="color:var(--accent-1);text-decoration:underline">$2</a>');
+  text = text.replace(/\n/g, '<br>');
+
+  const timeEl = doc.querySelector('time');
+  const timestamp = timeEl ? timeEl.getAttribute('datetime') : null;
+
   return { text, timestamp };
 }
 
-// Fetch and display latest message
+// Fetch via proxy
 async function loadLatestMessage() {
   try {
-    const res = await fetch(CHANNEL_WEB);
-    if (!res.ok) throw new Error('Fetch failed');
-    
-    const html = await res.text();
+    const res = await fetch(PROXY_URL);
+    if (!res.ok) throw new Error('Proxy failed');
+
+    const data = await res.json();
+    if (!data.contents) throw new Error('No content');
+
     const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    
+    const doc = parser.parseFromString(data.contents, 'text/html');
     const post = parseTelegramPost(doc);
     if (!post) throw new Error('No post found');
-    
-    // Check if it's new (avoid flicker)
-    const contentHash = btoa(post.text.slice(0, 100));  // Simple hash
+
+    const contentHash = btoa(post.text.slice(0, 100));
     if (contentHash === lastContentHash) return;
     lastContentHash = contentHash;
-    
+
     document.getElementById('tg-message').innerHTML = post.text;
-    
+
     if (post.timestamp) {
       const d = new Date(post.timestamp);
-      document.getElementById('tg-timestamp').textContent = 
+      document.getElementById('tg-timestamp').textContent =
         d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + ' – ' +
         d.toLocaleDateString([], {day:'numeric', month:'short', year:'numeric'});
     } else {
       document.getElementById('tg-timestamp').textContent = 'Just now';
     }
-    
+
   } catch (e) {
-    console.warn('Telegram scrape failed:', e);
+    console.warn('Telegram feed failed:', e);
     document.getElementById('tg-message').innerHTML = `<small class="text-muted">${FALLBACK_MSG}</small>`;
     document.getElementById('tg-timestamp').textContent = '';
   }
 }
 
-// Load on start + refresh every 30s
+// Load + refresh every 30 seconds
 loadLatestMessage();
 setInterval(loadLatestMessage, 30000);
 </script>
