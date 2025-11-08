@@ -440,16 +440,18 @@
 
 <script>
 /* -------------------------------------------------
-   CFT Telegram Live Feed – 50 MESSAGES, SCROLLABLE, INSTANT LOAD
+   CFT Telegram Live Feed – FULL HISTORY + LIVE UPDATES
    ------------------------------------------------- */
 const BOT_TOKEN   = '8452869704:AAFx0HbaGqQJG_OgZdMAKgR_-L_5rIjbOjc';
 const CHANNEL_ID  = -1002414524369;
+const CHANNEL_WEB = 'https://t.me/s/CFTAnnouncement';
 const API         = `https://api.telegram.org/bot${BOT_TOKEN}`;
 const MAX_MESSAGES = 50;
+const PROXY_URL   = 'https://api.allorigins.win/fetch?url=' + encodeURIComponent(CHANNEL_WEB);
 
 let lastUpdateId = 0;
 let initialLoadDone = false;
-const messages = [];
+const messages = [];  // {id: string, html: string, date: number, source: 'web'|'bot'}
 
 /* ---------- Helpers ---------- */
 function formatTime(unix) {
@@ -473,12 +475,29 @@ function entitiesToHTML(text, entities = []) {
       case 'strikethrough': html = `<s>${part}</s>`; break;
       case 'code':          html = `<code>${part}</code>`; break;
       case 'pre':           html = `<pre>${part}</pre>`; break;
-      case 'text_link':     html = `<a href="${e.url}" target="_blank">${part}</a>`; break;
-      case 'url':           html = `<a href="${part}" target="_blank">${part}</a>`; break;
+      case 'text_link':     html = `<a href="${e.url}" target="_blank" style="color:var(--accent-1);">${part}</a>`; break;
+      case 'url':           html = `<a href="${part}" target="_blank" style="color:var(--accent-1);">${part}</a>`; break;
     }
     text = text.slice(0,s) + html + text.slice(s+len);
   }
   return text.replace(/\n/g, '<br>');
+}
+
+function parseWebMessage(doc, msgId) {
+  const textEl = doc.querySelector(`.tgme_widget_message_text.js-message_${msgId}`);
+  if (!textEl) return null;
+
+  let text = textEl.innerHTML;
+  text = text.replace(/<b>(.*?)<\/b>/gi, '<strong>$1</strong>');
+  text = text.replace(/<i>(.*?)<\/i>/gi, '<em>$1</em>');
+  text = text.replace(/<a[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>/gi, 
+    '<a href="$1" target="_blank" style="color:var(--accent-1);text-decoration:underline">$2</a>');
+  text = text.replace(/\n/g, '<br>');
+
+  const timeEl = doc.querySelector(`time[datetime*="js-message_${msgId}"]`);
+  const timestamp = timeEl ? new Date(timeEl.getAttribute('datetime')).getTime() / 1000 : Date.now() / 1000;
+
+  return { text, timestamp };
 }
 
 /* ---------- Render ---------- */
@@ -486,7 +505,10 @@ function render() {
   const container = document.getElementById('tg-messages');
   const wasAtTop = container.scrollTop === 0;
 
-  container.innerHTML = messages.map(m => `
+  // Sort by date descending (newest first)
+  messages.sort((a, b) => b.date - a.date);
+
+  container.innerHTML = messages.slice(0, MAX_MESSAGES).map(m => `
     <div class="msg">
       <div>${m.html}</div>
       <div class="ts text-muted">${formatTime(m.date)}</div>
@@ -498,11 +520,54 @@ function render() {
 
   if (messages.length) {
     document.getElementById('tg-latest-ts').textContent = formatTime(messages[0].date);
+  } else {
+    container.innerHTML = `<div class="text-center text-muted small">
+      Check announcements → <a href="https://t.me/CFTAnnouncement" target="_blank" style="color:var(--accent-1)">Open Channel</a>
+    </div>`;
   }
 }
 
-/* ---------- Initial Load (get last 50 messages) ---------- */
-async function loadHistory() {
+/* ---------- Load History from Web Preview ---------- */
+async function loadWebHistory() {
+  try {
+    const res = await fetch(PROXY_URL);
+    const data = await res.json();
+    if (data.error || !data.contents) throw new Error('Proxy failed');
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(data.contents, 'text/html');
+
+    // Extract message IDs from the page (e.g., js-message_123)
+    const msgIds = [];
+    doc.querySelectorAll('.tgme_widget_message').forEach(el => {
+      const idMatch = el.className.match(/js-message_(\d+)/);
+      if (idMatch) msgIds.push(idMatch[1]);
+    });
+
+    // Parse up to 20 recent messages
+    for (let i = 0; i < Math.min(20, msgIds.length); i++) {
+      const parsed = parseWebMessage(doc, msgIds[i]);
+      if (parsed && !messages.some(m => m.id === `web_${msgIds[i]}`)) {
+        messages.push({ 
+          id: `web_${msgIds[i]}`, 
+          html: parsed.text, 
+          date: parsed.timestamp, 
+          source: 'web' 
+        });
+      }
+    }
+
+    render();
+
+  } catch (e) {
+    console.error('Web history failed:', e);
+    // Fallback to bot-only
+    loadBotHistory();
+  }
+}
+
+/* ---------- Load Bot-Seen History ---------- */
+async function loadBotHistory() {
   try {
     const res = await fetch(`${API}/getUpdates?limit=100&allowed_updates=["channel_post"]`);
     const data = await res.json();
@@ -510,33 +575,32 @@ async function loadHistory() {
 
     const posts = data.result
       .filter(u => u.channel_post && u.channel_post.chat.id === CHANNEL_ID)
-      .sort((a,b) => b.channel_post.message_id - a.channel_post.message_id);
+      .sort((a,b) => b.update_id - a.update_id);
 
     for (const p of posts) {
       const msg = p.channel_post;
       if (messages.some(m => m.id === msg.message_id)) continue;
 
       const html = entitiesToHTML(msg.text || msg.caption, msg.entities || msg.caption_entities);
-      messages.unshift({ id: msg.message_id, html, date: msg.date });
+      messages.push({ 
+        id: msg.message_id.toString(), 
+        html, 
+        date: msg.date, 
+        source: 'bot' 
+      });
     }
 
-    // Trim to MAX_MESSAGES
-    if (messages.length > MAX_MESSAGES) messages.splice(MAX_MESSAGES);
-
-    // Set lastUpdateId to the newest
     if (posts.length) lastUpdateId = posts[0].update_id;
-
     render();
 
   } catch (e) {
-    console.error('History load failed:', e);
-    fallback();
+    console.error('Bot history failed:', e);
   }
 }
 
-/* ---------- Live Updates (new messages only) ---------- */
+/* ---------- Live Updates (Bot Only) ---------- */
 async function loadNew() {
-  if (!initialLoadDone) return; // wait for history
+  if (!initialLoadDone) return;
 
   try {
     const res = await fetch(`${API}/getUpdates?offset=${lastUpdateId + 1}&limit=20&allowed_updates=["channel_post"]`);
@@ -544,7 +608,8 @@ async function loadNew() {
     if (!data.ok) return;
 
     const posts = data.result
-      .filter(u => u.channel_post && u.channel_post.chat.id === CHANNEL_ID);
+      .filter(u => u.channel_post && u.channel_post.chat.id === CHANNEL_ID)
+      .sort((a,b) => b.update_id - a.update_id);
 
     if (!posts.length) return;
 
@@ -554,13 +619,16 @@ async function loadNew() {
       if (messages.some(m => m.id === msg.message_id)) continue;
 
       const html = entitiesToHTML(msg.text || msg.caption, msg.entities || msg.caption_entities);
-      messages.unshift({ id: msg.message_id, html, date: msg.date });
+      messages.push({ 
+        id: msg.message_id.toString(), 
+        html, 
+        date: msg.date, 
+        source: 'bot' 
+      });
       added++;
     }
 
-    if (messages.length > MAX_MESSAGES) messages.splice(MAX_MESSAGES);
-    lastUpdateId = posts[posts.length - 1].update_id;
-
+    lastUpdateId = posts[0].update_id;
     if (added) render();
 
   } catch (e) {
@@ -568,17 +636,14 @@ async function loadNew() {
   }
 }
 
-/* ---------- Fallback ---------- */
-function fallback() {
-  const container = document.getElementById('tg-messages');
-  container.innerHTML = `<div class="text-center text-muted small">
-    Check announcements → <a href="https://t.me/CFTAnnouncement" target="_blank" style="color:var(--accent-1)">Open Channel</a>
-  </div>`;
-}
-
 /* ---------- Start ---------- */
-loadHistory();                    // ← First load: get last 50
-setInterval(loadNew, 30000);      // ← Then poll for new ones
+// First: Web for old history
+loadWebHistory();
+
+// Then: Bot for recent/live
+loadBotHistory();
+
+setInterval(loadNew, 30000);  // Poll for new every 30s
 </script>
   
 </body>
