@@ -275,12 +275,12 @@
     </div>
   </section>
 
-  <!-- ==== CFT TELEGRAM LIVE ANNOUNCEMENTS (SCROLLABLE) ==== -->
+  <!-- ==== CFT TELEGRAM LIVE ANNOUNCEMENTS (SCROLLABLE 50 MESSAGES) ==== -->
 <section class="py-4">
   <div class="container">
     <div id="tg-live-box" class="luxe-ad-card position-relative d-flex flex-column"
-         style="height:320px; overflow:hidden;">
-      <!-- Header (icon + title) -->
+         style="height:380px; overflow:hidden;">
+      <!-- Header -->
       <div class="p-3 d-flex align-items-center border-bottom border-line">
         <i class="fab fa-telegram-plane me-2" style="font-size:1.4rem;color:var(--accent-1);"></i>
         <strong>Live Announcements</strong>
@@ -289,11 +289,11 @@
         </div>
       </div>
 
-      <!-- Scrollable message area -->
+      <!-- Scrollable message list -->
       <div id="tg-messages"
            class="flex-grow-1 overflow-auto p-3"
-           style="scroll-behavior:smooth; max-height:calc(100% - 60px);">
-        <div class="text-center text-muted small">Loading…</div>
+           style="scroll-behavior:smooth;">
+        <div class="text-center text-muted small">Loading messages…</div>
       </div>
     </div>
   </div>
@@ -440,15 +440,15 @@
 
 <script>
 /* -------------------------------------------------
-   CFT Telegram Live Feed – SCROLLABLE MULTI-POST
+   CFT Telegram Live Feed – 50 MESSAGES, SCROLLABLE
    ------------------------------------------------- */
 const BOT_TOKEN   = '8452869704:AAFx0HbaGqQJG_OgZdMAKgR_-L_5rIjbOjc';
-const CHANNEL_ID  = -1002414524369;               // <-- your numeric ID
+const CHANNEL_ID  = -1002414524369;
 const API         = `https://api.telegram.org/bot${BOT_TOKEN}`;
-const MAX_POSTS   = 5;    // how many to keep visible
+const MAX_MESSAGES = 50;   // ← Change to 20, 100, etc.
 
 let lastUpdateId = 0;
-const messages   = [];   // array of {id, html, date}
+const messages   = [];     // {id, html, date}
 
 /* ---------- Helpers ---------- */
 function formatTime(unix) {
@@ -458,11 +458,10 @@ function formatTime(unix) {
 }
 
 function entitiesToHTML(text, entities = []) {
+  if (!text) return '[Media]';
   if (!entities.length) return text.replace(/\n/g, '<br>');
 
-  // sort descending
   entities = entities.slice().sort((a,b) => b.offset - a.offset);
-
   for (const e of entities) {
     const s = e.offset, len = e.length, part = text.slice(s, s+len);
     let html = part;
@@ -484,6 +483,8 @@ function entitiesToHTML(text, entities = []) {
 /* ---------- Render ---------- */
 function render() {
   const container = document.getElementById('tg-messages');
+  const wasAtTop = container.scrollTop === 0;
+
   container.innerHTML = messages.map(m => `
     <div class="msg">
       <div>${m.html}</div>
@@ -491,19 +492,19 @@ function render() {
     </div>
   `).join('');
 
-  // newest on top → scroll to top
-  container.scrollTop = 0;
+  // Auto-scroll to top only if user was already at the top
+  if (wasAtTop) container.scrollTop = 0;
 
-  // update the small timestamp in the header
+  // Update header timestamp
   if (messages.length) {
     document.getElementById('tg-latest-ts').textContent = formatTime(messages[0].date);
   }
 }
 
-/* ---------- API ---------- */
+/* ---------- API Fetch ---------- */
 async function loadLatest() {
   try {
-    const res = await fetch(`${API}/getUpdates?offset=${lastUpdateId + 1}&limit=20&allowed_updates=["channel_post"]`);
+    const res = await fetch(`${API}/getUpdates?offset=${lastUpdateId + 1}&limit=50&allowed_updates=["channel_post"]`);
     const data = await res.json();
     if (!data.ok) throw new Error(data.description || 'API error');
 
@@ -513,21 +514,23 @@ async function loadLatest() {
 
     if (!posts.length) return;
 
+    let added = 0;
     for (const p of posts) {
       const msg = p.channel_post;
-      if (msg.message_id <= (messages[0]?.id ?? 0)) continue; // already have it
+      if (messages.some(m => m.id === msg.message_id)) continue;
 
-      const html = entitiesToHTML(msg.text || msg.caption || '[Media]', msg.entities || msg.caption_entities);
+      const html = entitiesToHTML(msg.text || msg.caption, msg.entities || msg.caption_entities);
       messages.unshift({ id: msg.message_id, html, date: msg.date });
+      added++;
     }
 
-    // keep only MAX_POSTS
-    if (messages.length > MAX_POSTS) messages.splice(MAX_POSTS);
+    // Trim to MAX_MESSAGES
+    if (messages.length > MAX_MESSAGES) {
+      messages.splice(MAX_MESSAGES);
+    }
 
-    // remember last update id
     lastUpdateId = posts[0].update_id;
-
-    render();
+    if (added) render();
 
   } catch (e) {
     console.error('Telegram error:', e);
@@ -540,7 +543,7 @@ async function loadLatest() {
 
 /* ---------- Start ---------- */
 loadLatest();
-setInterval(loadLatest, 30000);   // every 30 s
+setInterval(loadLatest, 30000);   // Every 30 seconds
 </script>
   
 </body>
