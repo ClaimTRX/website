@@ -440,15 +440,14 @@
 
 <script>
 /* -------------------------------------------------
-   CFT Telegram Live Feed – SCROLLABLE MULTI-POST
+   CFT Telegram Live Feed – ALWAYS SHOW LAST 5 POSTS
    ------------------------------------------------- */
 const BOT_TOKEN   = '8452869704:AAFx0HbaGqQJG_OgZdMAKgR_-L_5rIjbOjc';
-const CHANNEL_ID  = -1002414524369;               // <-- your numeric ID
+const CHANNEL_ID  = -1002414524369;
 const API         = `https://api.telegram.org/bot${BOT_TOKEN}`;
-const MAX_POSTS   = 5;    // how many to keep visible
+const MAX_POSTS   = 5;    // how many to show
 
-let lastUpdateId = 0;
-const messages   = [];   // array of {id, html, date}
+let displayedIds = new Set();  // prevent duplicates
 
 /* ---------- Helpers ---------- */
 function formatTime(unix) {
@@ -460,9 +459,7 @@ function formatTime(unix) {
 function entitiesToHTML(text, entities = []) {
   if (!entities.length) return text.replace(/\n/g, '<br>');
 
-  // sort descending
   entities = entities.slice().sort((a,b) => b.offset - a.offset);
-
   for (const e of entities) {
     const s = e.offset, len = e.length, part = text.slice(s, s+len);
     let html = part;
@@ -470,7 +467,7 @@ function entitiesToHTML(text, entities = []) {
       case 'bold':          html = `<strong>${part}</strong>`; break;
       case 'italic':        html = `<em>${part}</em>`; break;
       case 'underline':     html = `<u>${part}</u>`; break;
-      case 'strikethrough': html = `<s>${part}</s>`; break;
+      case 'strikointe':    html = `<s>${part}</s>`; break;
       case 'code':          html = `<code>${part}</code>`; break;
       case 'pre':           html = `<pre>${part}</pre>`; break;
       case 'text_link':     html = `<a href="${e.url}" target="_blank">${part}</a>`; break;
@@ -482,7 +479,7 @@ function entitiesToHTML(text, entities = []) {
 }
 
 /* ---------- Render ---------- */
-function render() {
+function render(messages) {
   const container = document.getElementById('tg-messages');
   container.innerHTML = messages.map(m => `
     <div class="msg">
@@ -491,43 +488,48 @@ function render() {
     </div>
   `).join('');
 
-  // newest on top → scroll to top
-  container.scrollTop = 0;
+  container.scrollTop = 0;  // newest on top
 
-  // update the small timestamp in the header
   if (messages.length) {
     document.getElementById('tg-latest-ts').textContent = formatTime(messages[0].date);
   }
 }
 
-/* ---------- API ---------- */
+/* ---------- Fetch Latest N Messages ---------- */
 async function loadLatest() {
   try {
-    const res = await fetch(`${API}/getUpdates?offset=${lastUpdateId + 1}&limit=20&allowed_updates=["channel_post"]`);
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.description || 'API error');
+    // Step 1: Get the latest message ID (to anchor history)
+    const updatesRes = await fetch(`${API}/getUpdates?limit=1&allowed_updates=["channel_post"]`);
+    const updates = await updatesRes.json();
+    if (!updates.ok || !updates.result.length) throw new Error('No updates');
 
-    const posts = data.result
-      .filter(u => u.channel_post && u.channel_post.chat.id === CHANNEL_ID)
-      .sort((a,b) => b.update_id - a.update_id);
+    const latestMsg = updates.result[0].channel_post;
+    const fromMessageId = latestMsg.message_id;
 
-    if (!posts.length) return;
+    // Step 2: Get last MAX_POSTS messages
+    const historyRes = await fetch(`${API}/getChatHistory?chat_id=${CHANNEL_ID}&from_message_id=${fromMessageId}&limit=${MAX_POSTS}`);
+    const history = await historyRes.json();
+    if (!history.ok) throw new Error(history.description);
 
-    for (const p of posts) {
-      const msg = p.channel_post;
-      if (msg.message_id <= (messages[0]?.id ?? 0)) continue; // already have it
+    const msgs = history.result.messages
+      .filter(m => m.chat.id === CHANNEL_ID)
+      .sort((a,b) => b.message_id - a.message_id)  // newest first
+      .slice(0, MAX_POSTS);
+
+    const newMessages = [];
+    for (const msg of msgs) {
+      if (displayedIds.has(msg.message_id)) continue;
+      displayedIds.add(msg.message_id);
 
       const html = entitiesToHTML(msg.text || msg.caption || '[Media]', msg.entities || msg.caption_entities);
-      messages.unshift({ id: msg.message_id, html, date: msg.date });
+      newMessages.push({ id: msg.message_id, html, date: msg.date });
     }
 
-    // keep only MAX_POSTS
-    if (messages.length > MAX_POSTS) messages.splice(MAX_POSTS);
+    // Only prepend *new* messages
+    const allMessages = [...newMessages, ...window.telegramMessages || []].slice(0, MAX_POSTS);
+    window.telegramMessages = allMessages;
 
-    // remember last update id
-    lastUpdateId = posts[0].update_id;
-
-    render();
+    render(allMessages);
 
   } catch (e) {
     console.error('Telegram error:', e);
@@ -539,10 +541,10 @@ async function loadLatest() {
 }
 
 /* ---------- Start ---------- */
+window.telegramMessages = [];  // global store
 loadLatest();
-setInterval(loadLatest, 30000);   // every 30 s
+setInterval(loadLatest, 30000);  // every 30s
 </script>
-  
 </body>
 </html>
 
