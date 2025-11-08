@@ -440,15 +440,16 @@
 
 <script>
 /* -------------------------------------------------
-   CFT Telegram Live Feed – 50 MESSAGES, SCROLLABLE
+   CFT Telegram Live Feed – 50 MESSAGES, SCROLLABLE, INSTANT LOAD
    ------------------------------------------------- */
 const BOT_TOKEN   = '8452869704:AAFx0HbaGqQJG_OgZdMAKgR_-L_5rIjbOjc';
 const CHANNEL_ID  = -1002414524369;
 const API         = `https://api.telegram.org/bot${BOT_TOKEN}`;
-const MAX_MESSAGES = 10;   // ← Change to 20, 100, etc.
+const MAX_MESSAGES = 50;
 
 let lastUpdateId = 0;
-const messages   = [];     // {id, html, date}
+let initialLoadDone = false;
+const messages = [];
 
 /* ---------- Helpers ---------- */
 function formatTime(unix) {
@@ -492,25 +493,58 @@ function render() {
     </div>
   `).join('');
 
-  // Auto-scroll to top only if user was already at the top
-  if (wasAtTop) container.scrollTop = 0;
+  if (wasAtTop || !initialLoadDone) container.scrollTop = 0;
+  initialLoadDone = true;
 
-  // Update header timestamp
   if (messages.length) {
     document.getElementById('tg-latest-ts').textContent = formatTime(messages[0].date);
   }
 }
 
-/* ---------- API Fetch ---------- */
-async function loadLatest() {
+/* ---------- Initial Load (get last 50 messages) ---------- */
+async function loadHistory() {
   try {
-    const res = await fetch(`${API}/getUpdates?offset=${lastUpdateId + 1}&limit=50&allowed_updates=["channel_post"]`);
+    const res = await fetch(`${API}/getUpdates?limit=100&allowed_updates=["channel_post"]`);
     const data = await res.json();
-    if (!data.ok) throw new Error(data.description || 'API error');
+    if (!data.ok) throw new Error(data.description);
 
     const posts = data.result
       .filter(u => u.channel_post && u.channel_post.chat.id === CHANNEL_ID)
-      .sort((a,b) => b.update_id - a.update_id);
+      .sort((a,b) => b.channel_post.message_id - a.channel_post.message_id);
+
+    for (const p of posts) {
+      const msg = p.channel_post;
+      if (messages.some(m => m.id === msg.message_id)) continue;
+
+      const html = entitiesToHTML(msg.text || msg.caption, msg.entities || msg.caption_entities);
+      messages.unshift({ id: msg.message_id, html, date: msg.date });
+    }
+
+    // Trim to MAX_MESSAGES
+    if (messages.length > MAX_MESSAGES) messages.splice(MAX_MESSAGES);
+
+    // Set lastUpdateId to the newest
+    if (posts.length) lastUpdateId = posts[0].update_id;
+
+    render();
+
+  } catch (e) {
+    console.error('History load failed:', e);
+    fallback();
+  }
+}
+
+/* ---------- Live Updates (new messages only) ---------- */
+async function loadNew() {
+  if (!initialLoadDone) return; // wait for history
+
+  try {
+    const res = await fetch(`${API}/getUpdates?offset=${lastUpdateId + 1}&limit=20&allowed_updates=["channel_post"]`);
+    const data = await res.json();
+    if (!data.ok) return;
+
+    const posts = data.result
+      .filter(u => u.channel_post && u.channel_post.chat.id === CHANNEL_ID);
 
     if (!posts.length) return;
 
@@ -524,26 +558,27 @@ async function loadLatest() {
       added++;
     }
 
-    // Trim to MAX_MESSAGES
-    if (messages.length > MAX_MESSAGES) {
-      messages.splice(MAX_MESSAGES);
-    }
+    if (messages.length > MAX_MESSAGES) messages.splice(MAX_MESSAGES);
+    lastUpdateId = posts[posts.length - 1].update_id;
 
-    lastUpdateId = posts[0].update_id;
     if (added) render();
 
   } catch (e) {
-    console.error('Telegram error:', e);
-    const container = document.getElementById('tg-messages');
-    container.innerHTML = `<div class="text-center text-muted small">
-      Check announcements → <a href="https://t.me/CFTAnnouncement" target="_blank" style="color:var(--accent-1)">Open Channel</a>
-    </div>`;
+    console.error('Live update error:', e);
   }
 }
 
+/* ---------- Fallback ---------- */
+function fallback() {
+  const container = document.getElementById('tg-messages');
+  container.innerHTML = `<div class="text-center text-muted small">
+    Check announcements → <a href="https://t.me/CFTAnnouncement" target="_blank" style="color:var(--accent-1)">Open Channel</a>
+  </div>`;
+}
+
 /* ---------- Start ---------- */
-loadLatest();
-setInterval(loadLatest, 30000);   // Every 30 seconds
+loadHistory();                    // ← First load: get last 50
+setInterval(loadNew, 30000);      // ← Then poll for new ones
 </script>
   
 </body>
