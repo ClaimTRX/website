@@ -414,71 +414,82 @@
 
 <script>
 /* -------------------------------------------------
-   CFT Telegram Live-Announcement (CORS-SAFE via Proxy)
+   CFT Telegram Live Feed – OFFICIAL BOT API (BEST METHOD)
    ------------------------------------------------- */
-const CHANNEL_WEB = 'https://t.me/s/CFTAnnouncement';
-const PROXY_URL = 'https://api.allorigins.win/fetch?url=' + encodeURIComponent(CHANNEL_WEB);
-const FALLBACK_MSG = 'Check announcements on Telegram → <a href="https://t.me/CFTAnnouncement" target="_blank" style="color:var(--accent-1)">Open Channel</a>';
+const BOT_TOKEN = '8452869704:AAFx0HbaGqQJG_OgZdMAKgR_-L_5rIjbOjc';  // Your bot token
+const CHANNEL_ID = '@CFTAnnouncement';  // Your channel
+const API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
-let lastContentHash = '';
+let lastUpdateId = 0;
 
-// Parse Telegram post from HTML
-function parseTelegramPost(doc) {
-  const textEl = doc.querySelector('.tgme_widget_message_text');
-  if (!textEl) return null;
-
-  let text = textEl.innerHTML;
-  text = text.replace(/<b>(.*?)<\/b>/gi, '<strong>$1</strong>');
-  text = text.replace(/<i>(.*?)<\/i>/gi, '<em>$1</em>');
-  text = text.replace(/<a[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>/gi, 
-    '<a href="$1" target="_blank" style="color:var(--accent-1);text-decoration:underline">$2</a>');
-  text = text.replace(/\n/g, '<br>');
-
-  const timeEl = doc.querySelector('time');
-  const timestamp = timeEl ? timeEl.getAttribute('datetime') : null;
-
-  return { text, timestamp };
+// Format timestamp
+function formatTime(unix) {
+  const d = new Date(unix * 1000);
+  return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + ' – ' +
+         d.toLocaleDateString([], {day:'numeric', month:'short', year:'numeric'});
 }
 
-// Fetch via proxy
+// Convert Telegram entities to HTML
+function formatMessage(msg) {
+  let text = msg.text || msg.caption || '[Media]';
+  const entities = msg.entities || msg.caption_entities || [];
+
+  // Sort entities by offset (descending to avoid index shift)
+  entities.sort((a, b) => b.offset - a.offset);
+
+  for (const e of entities) {
+    const start = e.offset;
+    const end = start + e.length;
+    const part = text.slice(start, end);
+
+    let html = part;
+    switch (e.type) {
+      case 'bold': html = `<strong>${part}</strong>`; break;
+      case 'italic': html = `<em>${part}</em>`; break;
+      case 'underline': html = `<u>${part}</u>`; break;
+      case 'strikethrough': html = `<s>${part}</s>`; break;
+      case 'code': html = `<code>${part}</code>`; break;
+      case 'pre': html = `<pre>${part}</pre>`; break;
+      case 'text_link': html = `<a href="${e.url}" target="_blank" style="color:var(--accent-1);">${part}</a>`; break;
+      case 'url': html = `<a href="${part}" target="_blank" style="color:var(--accent-1);">${part}</a>`; break;
+    }
+    text = text.slice(0, start) + html + text.slice(end);
+  }
+
+  return text.replace(/\n/g, '<br>');
+}
+
+// Fetch latest message
 async function loadLatestMessage() {
   try {
-    const res = await fetch(PROXY_URL);
-    if (!res.ok) throw new Error('Proxy failed');
-
+    const res = await fetch(`${API}/getUpdates?offset=${lastUpdateId + 1}&allowed_updates=["channel_post"]`);
     const data = await res.json();
-    if (!data.contents) throw new Error('No content');
+    if (!data.ok) throw new Error(data.description);
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(data.contents, 'text/html');
-    const post = parseTelegramPost(doc);
-    if (!post) throw new Error('No post found');
+    const posts = data.result
+      .filter(u => u.channel_post && u.channel_post.chat.username === CHANNEL_ID.slice(1))
+      .sort((a, b) => b.update_id - a.update_id);
 
-    const contentHash = btoa(post.text.slice(0, 100));
-    if (contentHash === lastContentHash) return;
-    lastContentHash = contentHash;
+    if (!posts.length) return;
 
-    document.getElementById('tg-message').innerHTML = post.text;
+    const msg = posts[0].channel_post;
+    lastUpdateId = msg.update_id;
 
-    if (post.timestamp) {
-      const d = new Date(post.timestamp);
-      document.getElementById('tg-timestamp').textContent =
-        d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + ' – ' +
-        d.toLocaleDateString([], {day:'numeric', month:'short', year:'numeric'});
-    } else {
-      document.getElementById('tg-timestamp').textContent = 'Just now';
-    }
+    const formatted = formatMessage(msg);
+    document.getElementById('tg-message').innerHTML = formatted;
+    document.getElementById('tg-timestamp').textContent = formatTime(msg.date);
 
   } catch (e) {
-    console.warn('Telegram feed failed:', e);
-    document.getElementById('tg-message').innerHTML = `<small class="text-muted">${FALLBACK_MSG}</small>`;
+    console.warn('Telegram API error:', e);
+    document.getElementById('tg-message').innerHTML = 
+      `<small class="text-muted">Check announcements → <a href="https://t.me/CFTAnnouncement" target="_blank" style="color:var(--accent-1)">Open Channel</a></small>`;
     document.getElementById('tg-timestamp').textContent = '';
   }
 }
 
-// Load + refresh every 30 seconds
+// Start polling
 loadLatestMessage();
-setInterval(loadLatestMessage, 30000);
+setInterval(loadLatestMessage, 30000);  // Every 30s
 </script>
   
 </body>
