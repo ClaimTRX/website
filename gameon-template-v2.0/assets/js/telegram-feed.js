@@ -7,7 +7,7 @@
    which is NOT secure. Move BOT_TOKEN to a backend ASAP.
    ------------------------------------------------- */
 
-const BOT_TOKEN = 'REGENERATE_YOUR_TOKEN_AND_PUT_IT_HERE_TEMPORARILY';
+const BOT_TOKEN = '8452869704:AAFx0HbaGqQJG_OgZdMAKgR_-L_5rIjbOjc';
 const CHANNEL_ID = -1002414524369;  // Your numeric chat ID
 const API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 const MAX_POSTS = 10;
