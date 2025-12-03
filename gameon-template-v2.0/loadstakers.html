@@ -10,147 +10,141 @@
   <link rel="stylesheet" href="assets/css/style.css">
   <style>
     :root{--bg-0:#07090f;--bg-1:#0b0e17;--bg-2:#0f1321;--line:#212b46;--muted:#9aa7bd;--txt:#e9eef7;--accent-1:#62ffcf;--accent-2:#7db2ff;--danger:#ff5b73;--success:#00e095;--radius-3:18px;--shadow-1:0 10px 30px rgba(0,0,0,.55)}
-    body{background:var(--bg-0);color:var(--txt);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
-    .luxe-card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--radius-3);box-shadow:var(--shadow-1);padding:2rem}
-    table{width:100%;border-collapse:separate;border-spacing:0 .75rem}
+    body{background:var(--bg-0);color:var(--txt)}
+    .luxe-card{background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--radius-3);box-shadow:var(--shadow-1);padding:2rem}
+    table{width:100%;border-collapse:separate;border-spacing:0 0.75rem}
     th{background:var(--bg-2);padding:1rem;text-align:left}
     td{background:var(--bg-2);padding:1rem;border-radius:8px}
     .expired{color:var(--danger);font-weight:600}
-    .soon{color:#ffd166}
+    .soon{color:#ffd166;font-weight:600}
     .copy{cursor:pointer;color:var(--accent-2)}
     .copy:hover{color:var(--accent-1)}
-    @media(max-width:768px){th,td{display:block;width:100%;border-radius:8px!important}th{margin-bottom:.5rem}}
+    .progress-text{font-size:0.9rem;color:var(--muted)}
   </style>
 </head>
 <body>
 
-  <!-- Header -->
-  <header id="header" class="pt-2">
-    <nav class="navbar navbar-expand">
-      <div class="container">
-        <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" height="48" alt=""></a>
-        <ul class="navbar-nav items mx-auto">
-          <li class="nav-item"><a href="poolstaking.html" class="nav-link">Earn TRX</a></li>
-          <li class="nav-item"><a href="#" class="nav-link active">Stakers List</a></li>
-        </ul>
-        <ul class="navbar-nav action">
-          <li class="nav-item ms-2">
-            <button id="connect-button" class="btn btn-outline"><i class="icon-wallet me-md-2"></i> Wallet Connect</button>
-          </li>
-        </ul>
-      </div>
-    </nav>
-  </header>
-
-  <section class="hero-section">
-    <div class="container text-center">
-      <span class="intro-text">CFT Ecosystem</span>
-      <h1 class="display-5">All Stakers List</h1>
-      <p>Every wallet, staked amount and days since last claim (14-day timeout)</p>
-    </div>
-  </section>
-
-  <section class="py-5">
+<header id="header" class="pt-2">
+  <nav class="navbar navbar-expand">
     <div class="container">
-      <div class="luxe-card">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h3 class="m-0">Stakers <span id="total-stakers" class="text-muted">(loading...)</span></h3>
-          <button id="refresh" class="btn primary btn-sm">Refresh</button>
-        </div>
+      <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" height="48" alt=""></a>
+      <ul class="navbar-nav items mx-auto">
+        <li class="nav-item"><a href="poolstaking.html" class="nav-link">Earn TRX</a></li>
+        <li class="nav-item"><a href="stakers-list.html" class="nav-link active">Stakers List</a></li>
+      </ul>
+      <ul class="navbar-nav action">
+        <li><button id="connect-button" class="btn btn-outline"><i class="icon-wallet me-md-2"></i> Wallet Connect</button></li>
+      </ul>
+    </div>
+  </nav>
+</header>
 
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>Wallet</th>
-                <th>Staked CFT</th>
-                <th>Last Claim</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="stakers-body">
-              <tr><td colspan="4" class="text-center py-5">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
+<section class="hero-section">
+  <div class="container text-center">
+    <span class="intro-text">CFT Ecosystem</span>
+    <h1 class="display-5">All Stakers List</h1>
+    <p>Every wallet that has staked CFT • 14-day claim timeout</p>
+  </div>
+</section>
 
-        <div class="text-center mt-4 text-muted small">
-          Total Active Staked: <strong id="total-active">—</strong> CFT | 
-          Total Staked (incl. inactive): <strong id="total-all">—</strong> CFT
+<section class="py-5">
+  <div class="container">
+    <div class="luxe-card">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="m-0">Stakers <span id="total-stakers" class="text-muted">(loading...)</span></h3>
+        <button id="refresh" class="btn primary btn-sm">Refresh</button>
+      </div>
+
+      <div class="text-center my-4" id="progress" style="display:none">
+        <div class="progress" style="height:8px;background:var(--bg-2)">
+          <div class="progress-bar bg-gradient" style="background:linear-gradient(90deg,var(--accent-1),var(--accent-2));width:0%"></div>
         </div>
+        <div class="progress-text mt-2">Loading staker <span id="current">0</span> of <span id="total">0</span></div>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Wallet</th>
+              <th>Staked CFT</th>
+              <th>Last Claim</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="stakers-body">
+            <tr><td colspan="4" class="text-center py-5">Click Refresh to load...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="text-center mt-4 text-muted small">
+        Total Active Staked: <strong id="total-active">—</strong> CFT | 
+        Total Staked: <strong id="total-all">—</strong> CFT
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Footer -->
-  <footer class="footer-area py-5 mt-3">
-    <div class="container text-center">
-      <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" height="28" alt=""></a>
-      <div class="copyright-area py-2">©2025 CFT Ecosystem, All Rights Reserved</div>
-    </div>
-  </footer>
+<script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+<script>
+  const STAKING_ADDRESS = 'TCf1vY3EMuczBSmo9Cfrffu6TsGrUvrC52';
+  const TOKEN_DECIMALS = 6;
+  const DELAY_BETWEEN_CALLS = 350; // 350ms → ~170 calls/minute → well under TronGrid limits
+  let tronWeb;
 
-  <!-- TronWeb + Minimal ABI (this is the fix) -->
-  <script src="https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js"></script>
-  <script>
-    const STAKING_ADDRESS = 'TCf1vY3EMuczBSmo9Cfrffu6TsGrUvrC52';
-    const TOKEN_DECIMALS = 6;
+  // Simple sleep function
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-    // Minimal ABI – only the functions we actually call
-    const ABI = [
-      {"inputs":[],"name":"totalActiveStaked","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-      {"inputs":[],"name":"totalStaked","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-      {"inputs":[],"name":"getStakersList","outputs":[{"internalType":"address[]","name":"","type":"address[]"}],"stateMutability":"view","type":"function"},
-      {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"users","outputs":[
-        {"internalType":"uint256","name":"stakedAmount","type":"uint256"},
-        {"internalType":"bool","name":"isActive","type":"bool"},
-        {"internalType":"uint256","name":"lastClaimTimestamp","type":"uint256"},
-        {"internalType":"uint256","name":"totalClaimed","type":"uint256"},
-        {"internalType":"uint256","name":"rewards","type":"uint256"},
-        {"internalType":"uint256","name":"userRewardPerTokenPaid","type":"uint256"}
-      ],"stateMutability":"view","type":"function"}
-    ];
+  async function loadStakers() {
+    const tbody = document.getElementById('stakers-body');
+    const progress = document.getElementById('progress');
+    const progressBar = progress.querySelector('.progress-bar');
+    const currentEl = document.getElementById('current');
+    const totalEl = document.getElementById('total');
 
-    let tronWeb;
-    let contract;
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5">Connecting to blockchain...</td></tr>';
+    progress.style.display = 'block';
 
-    async function init() {
-      // Wait a bit for TronLink to inject
-      await new Promise(r => setTimeout(r, 1000));
-
-      if (!window.tronWeb || !window.tronWeb.ready) {
-        document.getElementById('connect-button').textContent = 'Install TronLink';
-        return;
+    try {
+      if (!tronWeb) {
+        if (!window.tronWeb || !window.tronWeb.ready) {
+          throw new Error('TronLink not detected or not unlocked');
+        }
+        tronWeb = window.tronWeb;
       }
 
-      tronWeb = window.tronWeb;
-      document.getElementById('connect-button').innerHTML = '<i class="icon-wallet me-md-2"></i> Connected';
+      const contract = await tronWeb.contract().at(STAKING_ADDRESS);
 
-      // Create contract instance with ABI (this is the key fix)
-      contract = await tronWeb.contract(ABI, STAKING_ADDRESS);
-      await loadStakers();
-    }
+      // Get totals first
+      const [activeBig, allBig, list] = await Promise.all([
+        contract.totalActiveStaked().call(),
+        contract.totalStaked().call(),
+        contract.getStakersList().call()
+      ]);
 
-    async function loadStakers() {
-      const tbody = document.getElementById('stakers-body');
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5">Fetching from blockchain...</td></tr>';
+      const totalActive = tronWeb.toBigNumber(activeBig).shiftedBy(-TOKEN_DECIMALS).toFixed(2);
+      const totalAll = tronWeb.toBigNumber(allBig).shiftedBy(-TOKEN_DECIMALS).toFixed(2);
 
-      try {
-        const list = await contract.getStakersList().call();
-        const totalActive = Number(await contract.totalActiveStaked().call()) / 1e6;
-        const totalAll    = Number(await contract.totalStaked().call()) / 1e6;
+      document.getElementById('total-active').textContent = totalActive;
+      document.getElementById('total-all').textContent = totalAll;
+      document.getElementById('total-stakers').textContent = `(${list.length} wallets)`;
+      totalEl.textContent = list.length;
 
-        document.getElementById('total-active').textContent = totalActive.toLocaleString(undefined, {maximumFractionDigits: 2});
-        document.getElementById('total-all').textContent    = totalAll.toLocaleString(undefined, {maximumFractionDigits: 2});
-        document.getElementById('total-stakers').textContent = `(${list.length} wallets)`;
+      let rows = '';
+      let processed = 0;
 
-        let rows = '';
-        for (const addr of list) {
-          const user = await contract.users(addr).call();
+      for (let i = 0; i < list.length; i++) {
+        const addr = list[i];
+        processed++;
+        currentEl.textContent = processed;
+        progressBar.style.width = `${(processed / list.length) * 100}%`;
 
-          const staked = Number(user.stakedAmount) / 1e6;
-          const lastClaim = Number(user.lastClaimTimestamp);
-          const isActive = user.isActive;
+        try {
+          const info = await contract.users(addr).call();
+          const staked = tronWeb.toBigNumber(info.stakedAmount).shiftedBy(-TOKEN_DECIMALS).toFixed(4);
+          const lastClaim = Number(info.lastClaimTimestamp);
+          const isActive = info.isActive;
 
           let daysAgo, status, statusClass;
           if (lastClaim === 0) {
@@ -159,8 +153,7 @@
             statusClass = '';
           } else {
             const days = Math.floor((Date.now()/1000 - lastClaim) / 86400);
-            daysAgo = days === 0 ? 'Today' : `${days} day${days>1?'s':''} ago`;
-
+            daysAgo = days === 0 ? 'Today' : `${days} day${days === 1 ? '' : 's'} ago`;
             if (!isActive) {
               status = 'EXPIRED';
               statusClass = 'expired';
@@ -173,29 +166,43 @@
             }
           }
 
-          const short = addr.slice(0,8) + '...' + addr.slice(-6);
+          const short = addr.slice(0, 6) + '...' + addr.slice(-4);
           rows += `
             <tr>
               <td><span class="copy" onclick="navigator.clipboard.writeText('${addr}');this.textContent='Copied!'">${short}</span></td>
-              <td>${staked.toFixed(4)} CFT</td>
+              <td>${staked} CFT</td>
               <td>${daysAgo}</td>
               <td class="${statusClass}">${status}</td>
             </tr>`;
+        } catch (e) {
+          console.warn(`Failed to fetch data for ${addr}:`, e.message);
+          rows += `<tr><td colspan="4">Error loading ${addr.slice(0,10)}...</td></tr>`;
         }
 
-        tbody.innerHTML = rows || '<tr><td colspan="4" class="text-center py-5 text-muted">No stakers found</td></tr>';
-
-      } catch (e) {
-        console.error(e);
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Error: ${e.message}</td></tr>`;
+        // Critical: wait between calls
+        if (i < list.length - 1) await sleep(DELAY_BETWEEN_CALLS);
       }
-    }
 
-    document.getElementById('connect-button').onclick = () => {
-      if (!window.tronWeb) alert('Please install TronLink wallet');
-    };
-    document.getElementById('refresh').onclick = loadStakers;
-    window.onload = init;
-  </script>
+      tbody.innerHTML = rows || '<tr><td colspan="4" class="text-center py-5">No stakers found</td></tr>';
+      progress.style.display = 'none';
+
+    } catch (err) {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-5">Error: ${err.message}</td></tr>`;
+      progress.style.display = 'none';
+    }
+  }
+
+  // Auto-connect if possible
+  window.addEventListener('load', () => {
+    if (window.tronWeb && window.tronWeb.ready) {
+      tronWeb = window.tronWeb;
+      document.getElementById('connect-button').innerHTML = '<i class="icon-wallet me-md-2"></i> Connected';
+    }
+    loadStakers();
+  });
+
+  document.getElementById('refresh').addEventListener('click', loadStakers);
+</script>
 </body>
 </html>
