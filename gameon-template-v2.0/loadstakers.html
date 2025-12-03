@@ -1,5 +1,5 @@
 <!doctype html>
-<html class="no-js" lang="en">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,29 +9,29 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
   <style>
-    :root{--bg-0:#07090f;--bg-1:#0b0e17;--bg-2:#0f1321;--surface:#12172a;--line:#212b46;--muted:#9aa7bd;--txt:#e9eef7;--accent-1:#62ffcf;--accent-2:#7db2ff;--danger:#ff5b73;--success:#00e095;--radius-3:18px;--shadow-1:0 10px 30px rgba(0,0,0,.55)}
+    :root{--bg-0:#07090f;--bg-1:#0b0e17;--bg-2:#0f1321;--line:#212b46;--muted:#9aa7bd;--txt:#e9eef7;--accent-1:#62ffcf;--accent-2:#7db2ff;--danger:#ff5b73;--success:#00e095;--radius-3:18px;--shadow-1:0 10px 30px rgba(0,0,0,.55)}
     body{background:var(--bg-0);color:var(--txt);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
-    .luxe-card{background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--radius-3);box-shadow:var(--shadow-1);padding:2rem}
-    table{width:100%;border-collapse:separate;border-spacing:0 0.75rem}
-    th{background:var(--bg-2);padding:1rem;text-align:left;border-bottom:2px solid var(--accent-1)}
+    .luxe-card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--radius-3);box-shadow:var(--shadow-1);padding:2rem}
+    table{width:100%;border-collapse:separate;border-spacing:0 .75rem}
+    th{background:var(--bg-2);padding:1rem;text-align:left}
     td{background:var(--bg-2);padding:1rem;border-radius:8px}
     .expired{color:var(--danger);font-weight:600}
     .soon{color:#ffd166}
-    .copy{cursor:pointer;color:var(--accent-2);font-size:0.9rem}
+    .copy{cursor:pointer;color:var(--accent-2)}
     .copy:hover{color:var(--accent-1)}
-    @media(max-width:768px){th,td{display:block;width:100%;border-radius:8px!important}th{margin-bottom:0.5rem}}
+    @media(max-width:768px){th,td{display:block;width:100%;border-radius:8px!important}th{margin-bottom:.5rem}}
   </style>
 </head>
 <body>
-  <!-- Header (same as your site) -->
+
+  <!-- Header -->
   <header id="header" class="pt-2">
     <nav class="navbar navbar-expand">
       <div class="container">
         <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" height="48" alt=""></a>
-        <div class="ms-auto"></div>
         <ul class="navbar-nav items mx-auto">
           <li class="nav-item"><a href="poolstaking.html" class="nav-link">Earn TRX</a></li>
-          <li class="nav-item"><a href="stakers-list.html" class="nav-link active">Stakers List</a></li>
+          <li class="nav-item"><a href="#" class="nav-link active">Stakers List</a></li>
         </ul>
         <ul class="navbar-nav action">
           <li class="nav-item ms-2">
@@ -46,7 +46,7 @@
     <div class="container text-center">
       <span class="intro-text">CFT Ecosystem</span>
       <h1 class="display-5">All Stakers List</h1>
-      <p class="mb-0">See every wallet, staked amount, and days since last claim (14-day timeout)</p>
+      <p>Every wallet, staked amount and days since last claim (14-day timeout)</p>
     </div>
   </section>
 
@@ -55,8 +55,9 @@
       <div class="luxe-card">
         <div class="d-flex justify-content-between align-items-center mb-4">
           <h3 class="m-0">Stakers <span id="total-stakers" class="text-muted">(loading...)</span></h3>
-          <button id="refresh" class="btn primary btn-sm">Refresh List</button>
+          <button id="refresh" class="btn primary btn-sm">Refresh</button>
         </div>
+
         <div class="table-responsive">
           <table>
             <thead>
@@ -68,10 +69,11 @@
               </tr>
             </thead>
             <tbody id="stakers-body">
-              <tr><td colspan="4" class="text-center py-5">Loading stakers...</td></tr>
+              <tr><td colspan="4" class="text-center py-5">Loading...</td></tr>
             </tbody>
           </table>
         </div>
+
         <div class="text-center mt-4 text-muted small">
           Total Active Staked: <strong id="total-active">—</strong> CFT | 
           Total Staked (incl. inactive): <strong id="total-all">—</strong> CFT
@@ -80,49 +82,76 @@
     </div>
   </section>
 
-  <!-- Footer (same as your site) -->
+  <!-- Footer -->
   <footer class="footer-area py-5 mt-3">
     <div class="container text-center">
       <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" height="28" alt=""></a>
-      <div class="copyright-area py-2">&copy;2025 CFT Ecosystem, All Rights Reserved</div>
+      <div class="copyright-area py-2">©2025 CFT Ecosystem, All Rights Reserved</div>
     </div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+  <!-- TronWeb + Minimal ABI (this is the fix) -->
+  <script src="https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js"></script>
   <script>
     const STAKING_ADDRESS = 'TVueBekdKYsUZA18sfcyejvXBMivZkmf4u';
     const TOKEN_DECIMALS = 6;
+
+    // Minimal ABI – only the functions we actually call
+    const ABI = [
+      {"inputs":[],"name":"totalActiveStaked","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+      {"inputs":[],"name":"totalStaked","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+      {"inputs":[],"name":"getStakersList","outputs":[{"internalType":"address[]","name":"","type":"address[]"}],"stateMutability":"view","type":"function"},
+      {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"users","outputs":[
+        {"internalType":"uint256","name":"stakedAmount","type":"uint256"},
+        {"internalType":"bool","name":"isActive","type":"bool"},
+        {"internalType":"uint256","name":"lastClaimTimestamp","type":"uint256"},
+        {"internalType":"uint256","name":"totalClaimed","type":"uint256"},
+        {"internalType":"uint256","name":"rewards","type":"uint256"},
+        {"internalType":"uint256","name":"userRewardPerTokenPaid","type":"uint256"}
+      ],"stateMutability":"view","type":"function"}
+    ];
+
     let tronWeb;
+    let contract;
 
     async function init() {
-      if (window.tronWeb && window.tronWeb.ready) {
-        tronWeb = window.tronWeb;
-        document.getElementById('connect-button').innerHTML = '<i class="icon-wallet me-md-2"></i> Wallet Connected';
+      // Wait a bit for TronLink to inject
+      await new Promise(r => setTimeout(r, 1000));
+
+      if (!window.tronWeb || !window.tronWeb.ready) {
+        document.getElementById('connect-button').textContent = 'Install TronLink';
+        return;
       }
+
+      tronWeb = window.tronWeb;
+      document.getElementById('connect-button').innerHTML = '<i class="icon-wallet me-md-2"></i> Connected';
+
+      // Create contract instance with ABI (this is the key fix)
+      contract = await tronWeb.contract(ABI, STAKING_ADDRESS);
       await loadStakers();
     }
 
     async function loadStakers() {
       const tbody = document.getElementById('stakers-body');
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5">Fetching data from blockchain...</td></tr>';
-      
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5">Fetching from blockchain...</td></tr>';
+
       try {
-        const contract = await tronWeb.contract().at(STAKING_ADDRESS);
         const list = await contract.getStakersList().call();
-        const totalActive = tronWeb.toBigNumber(await contract.totalActiveStaked().call()).shiftedBy(-TOKEN_DECIMALS).toFixed(2);
-        const totalAll = tronWeb.toBigNumber(await contract.totalStaked().call()).shiftedBy(-TOKEN_DECIMALS).toFixed(2);
-        
-        document.getElementById('total-active').textContent = totalActive;
-        document.getElementById('total-all').textContent = totalAll;
+        const totalActive = Number(await contract.totalActiveStaked().call()) / 1e6;
+        const totalAll    = Number(await contract.totalStaked().call()) / 1e6;
+
+        document.getElementById('total-active').textContent = totalActive.toLocaleString(undefined, {maximumFractionDigits: 2});
+        document.getElementById('total-all').textContent    = totalAll.toLocaleString(undefined, {maximumFractionDigits: 2});
         document.getElementById('total-stakers').textContent = `(${list.length} wallets)`;
 
         let rows = '';
-        for (let addr of list) {
-          const info = await contract.users(addr).call();
-          const staked = tronWeb.toBigNumber(info.stakedAmount).shiftedBy(-TOKEN_DECIMALS).toFixed(4);
-          const lastClaim = Number(info.lastClaimTimestamp);
-          const isActive = info.isActive;
-          
+        for (const addr of list) {
+          const user = await contract.users(addr).call();
+
+          const staked = Number(user.stakedAmount) / 1e6;
+          const lastClaim = Number(user.lastClaimTimestamp);
+          const isActive = user.isActive;
+
           let daysAgo, status, statusClass;
           if (lastClaim === 0) {
             daysAgo = 'Never';
@@ -130,7 +159,8 @@
             statusClass = '';
           } else {
             const days = Math.floor((Date.now()/1000 - lastClaim) / 86400);
-            daysAgo = days === 0 ? 'Today' : days === 1 ? '1 day ago' : `${days} days ago`;
+            daysAgo = days === 0 ? 'Today' : `${days} day${days>1?'s':''} ago`;
+
             if (!isActive) {
               status = 'EXPIRED';
               statusClass = 'expired';
@@ -143,27 +173,29 @@
             }
           }
 
-          const shortAddr = addr.slice(0,6) + '...' + addr.slice(-4);
+          const short = addr.slice(0,8) + '...' + addr.slice(-6);
           rows += `
             <tr>
-              <td><span class="copy" onclick="navigator.clipboard.writeText('${addr}')">${shortAddr}</span></td>
-              <td>${staked} CFT</td>
+              <td><span class="copy" onclick="navigator.clipboard.writeText('${addr}');this.textContent='Copied!'">${short}</span></td>
+              <td>${staked.toFixed(4)} CFT</td>
               <td>${daysAgo}</td>
               <td class="${statusClass}">${status}</td>
             </tr>`;
         }
-        tbody.innerHTML = rows || '<tr><td colspan="4" class="text-center py-5">No stakers found</td></tr>';
-      } catch (err) {
-        console.error(err);
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Error loading data: ${err.message}</td></tr>`;
+
+        tbody.innerHTML = rows || '<tr><td colspan="4" class="text-center py-5 text-muted">No stakers found</td></tr>';
+
+      } catch (e) {
+        console.error(e);
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Error: ${e.message}</td></tr>`;
       }
     }
 
-    document.getElementById('connect-button').addEventListener('click', async () => {
-      if (!window.tronWeb) alert('Please install TronLink');
-    });
-    document.getElementById('refresh').addEventListener('click', loadStakers);
-    window.addEventListener('load', init);
+    document.getElementById('connect-button').onclick = () => {
+      if (!window.tronWeb) alert('Please install TronLink wallet');
+    };
+    document.getElementById('refresh').onclick = loadStakers;
+    window.onload = init;
   </script>
 </body>
 </html>
