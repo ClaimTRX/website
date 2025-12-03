@@ -81,7 +81,8 @@
 
       <div class="text-center mt-4 text-muted small">
         Total Active Staked: <strong id="total-active">—</strong> CFT | 
-        Total Staked (all): <strong id="total-all">—</strong> CFT
+        Total Expired: <strong id="total-expired">—</strong> CFT | 
+        Total Staked: <strong id="total-all">—</strong> CFT
       </div>
     </div>
   </div>
@@ -120,30 +121,36 @@
       tronWeb = tronWeb || window.tronWeb;
 
       const contract = await tronWeb.contract().at(STAKING_ADDRESS);
-      const [activeBN, totalBN, list] = await Promise.all([
+      const [activeBig, totalBig, list] = await Promise.all([
         contract.totalActiveStaked().call(),
         contract.totalStaked().call(),
         contract.getStakersList().call()
       ]);
 
-      const totalActive = tronWeb.toBigNumber(activeBN).shiftedBy(-6).toNumber().toLocaleString();
-      const totalAll = tronWeb.toBigNumber(totalBN).shiftedBy(-6).toNumber().toLocaleString();
+      const totalActiveNum = tronWeb.toBigNumber(activeBig).shiftedBy(-TOKEN_DECIMALS).toNumber();
+      const totalAllNum = tronWeb.toBigNumber(totalBig).shiftedBy(-TOKEN_DECIMALS).toNumber();
+      const totalExpiredNum = totalAllNum - totalActiveNum;
 
-      document.getElementById('total-active').textContent = totalActive;
-      document.getElementById('total-all').textContent = totalAll;
+      document.getElementById('total-active').textContent = totalActiveNum.toLocaleString(undefined, {maximumFractionDigits: 2});
+      document.getElementById('total-expired').textContent = totalExpiredNum.toLocaleString(undefined, {maximumFractionDigits: 2});
+      document.getElementById('total-all').textContent = totalAllNum.toLocaleString(undefined, {maximumFractionDigits: 2});
       document.getElementById('total-stakers').textContent = `(${list.length} wallets)`;
       totalEl.textContent = list.length;
 
       const stakerData = [];
 
       for (let i = 0; i < list.length; i++) {
-        const addr = list[i];
+        let addr = list[i];
+        if (addr.startsWith('41') && addr.length === 42) {
+          addr = tronWeb.address.fromHex(addr);
+        }
+
         currentEl.textContent = i + 1;
         progressBar.style.width = `${((i + 1) / list.length) * 100}%`;
 
         try {
           const info = await contract.users(addr).call();
-          const staked = tronWeb.toBigNumber(info.stakedAmount).shiftedBy(-6).toNumber();
+          const stakedNum = tronWeb.toBigNumber(info.stakedAmount).shiftedBy(-TOKEN_DECIMALS).toNumber();
           const lastClaim = Number(info.lastClaimTimestamp);
           const isActive = info.isActive;
 
@@ -154,7 +161,7 @@
           if (lastClaim === 0) {
             status = 'Never claimed';
             statusClass = 'text-muted';
-          } else if (daysSinceClaim > 14) {
+          } else if (!isActive || daysSinceClaim > 14) {
             status = 'EXPIRED';
             statusClass = 'expired';
           } else if (daysSinceClaim >= 10) {
@@ -169,7 +176,7 @@
             daysSinceClaim === 0 ? 'Today' :
             daysSinceClaim === 1 ? '1 day ago' : `${daysSinceClaim} days ago`;
 
-          stakerData.push({ addr, staked, lastClaimText, status, statusClass });
+          stakerData.push({ addr, stakedNum, lastClaimText, status, statusClass });
         } catch (e) {
           console.warn('Failed for', addr, e.message);
         }
@@ -177,8 +184,8 @@
         if (i < list.length - 1) await sleep(DELAY_MS);
       }
 
-      // Sort by staked amount descending
-      stakerData.sort((a, b) => b.staked - a.staked);
+      // Sort by staked descending
+      stakerData.sort((a, b) => b.stakedNum - a.stakedNum);
 
       // Build rows
       let rows = '';
@@ -190,7 +197,7 @@
                 ${s.addr}
               </span>
             </td>
-            <td><strong>${s.staked.toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 4})}</strong> CFT</td>
+            <td><strong>${s.stakedNum.toLocaleString(undefined, {maximumFractionDigits: 4})}</strong> CFT</td>
             <td>${s.lastClaimText}</td>
             <td class="${s.statusClass}">${s.status}</td>
           </tr>`;
