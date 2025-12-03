@@ -9,17 +9,18 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
   <style>
-    :root{--bg-0:#07090f;--bg-1:#0b0e17;--bg-2:#0f1321;--line:#212b46;--muted:#9aa7bd;--txt:#e9eef7;--accent-1:#62ffcf;--accent-2:#7db2ff;--danger:#ff5b73;--success:#00e095;--radius-3:18px;--shadow-1:0 10px 30px rgba(0,0,0,.55)}
-    body{background:var(--bg-0);color:var(--txt)}
+    :root{--bg-0:#07090f;--bg-1:#0b0e17;--bg-2:#0f1321;--line:#212b46;--muted:#9aa7bd;--txt:#e9eef7;--accent-1:#62ffcf;--accent-2:#7db2ff;--danger:#ff5b73;--warning:#ffd166;--success:#00e095;--radius-3:18px;--shadow-1:0 10px 30px rgba(0,0,0,.55)}
+    body{background:var(--bg-0);color:var(--txt);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
     .luxe-card{background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--radius-3);box-shadow:var(--shadow-1);padding:2rem}
     table{width:100%;border-collapse:separate;border-spacing:0 0.75rem}
-    th{background:var(--bg-2);padding:1rem;text-align:left}
+    th{background:var(--bg-2);padding:1rem;text-align:left;font-weight:700}
     td{background:var(--bg-2);padding:1rem;border-radius:8px}
-    .expired{color:var(--danger);font-weight:600}
-    .soon{color:#ffd166;font-weight:600}
-    .copy{cursor:pointer;color:var(--accent-2)}
-    .copy:hover{color:var(--accent-1)}
+    .addr{font-family:ui-monospace,monospace;font-size:0.92rem;color:var(--accent-2);cursor:pointer}
+    .addr:hover{color:var(--accent-1)}
+    .expired{color:var(--danger);font-weight:700}
+    .soon{color:var(--warning);font-weight:700}
     .progress-text{font-size:0.9rem;color:var(--muted)}
+    .progress-bar{background:linear-gradient(90deg,var(--accent-1),var(--accent-2))}
   </style>
 </head>
 <body>
@@ -43,7 +44,7 @@
   <div class="container text-center">
     <span class="intro-text">CFT Ecosystem</span>
     <h1 class="display-5">All Stakers List</h1>
-    <p>Every wallet that has staked CFT • 14-day claim timeout</p>
+    <p>14-day claim timeout • Sorted by staked amount</p>
   </div>
 </section>
 
@@ -52,12 +53,12 @@
     <div class="luxe-card">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="m-0">Stakers <span id="total-stakers" class="text-muted">(loading...)</span></h3>
-        <button id="refresh" class="btn primary btn-sm">Refresh</button>
+        <button id="refresh" class="btn primary btn-sm">Refresh List</button>
       </div>
 
       <div class="text-center my-4" id="progress" style="display:none">
         <div class="progress" style="height:8px;background:var(--bg-2)">
-          <div class="progress-bar bg-gradient" style="background:linear-gradient(90deg,var(--accent-1),var(--accent-2));width:0%"></div>
+          <div class="progress-bar" style="width:0%"></div>
         </div>
         <div class="progress-text mt-2">Loading staker <span id="current">0</span> of <span id="total">0</span></div>
       </div>
@@ -66,34 +67,40 @@
         <table>
           <thead>
             <tr>
-              <th>Wallet</th>
+              <th>Wallet Address</th>
               <th>Staked CFT</th>
               <th>Last Claim</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody id="stakers-body">
-            <tr><td colspan="4" class="text-center py-5">Click Refresh to load...</td></tr>
+            <tr><td colspan="4" class="text-center py-5">Click Refresh to load data...</td></tr>
           </tbody>
         </table>
       </div>
 
       <div class="text-center mt-4 text-muted small">
         Total Active Staked: <strong id="total-active">—</strong> CFT | 
-        Total Staked: <strong id="total-all">—</strong> CFT
+        Total Staked (all): <strong id="total-all">—</strong> CFT
       </div>
     </div>
   </div>
 </section>
 
+<footer class="footer-area py-5 mt-3">
+  <div class="container text-center">
+    <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" height="28" alt=""></a>
+    <div class="copyright-area py-2">&copy;2025 CFT Ecosystem</div>
+  </div>
+</footer>
+
 <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
 <script>
   const STAKING_ADDRESS = 'TCf1vY3EMuczBSmo9Cfrffu6TsGrUvrC52';
   const TOKEN_DECIMALS = 6;
-  const DELAY_BETWEEN_CALLS = 350; // 350ms → ~170 calls/minute → well under TronGrid limits
+  const DELAY_MS = 380;
   let tronWeb;
 
-  // Simple sleep function
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   async function loadStakers() {
@@ -103,97 +110,112 @@
     const currentEl = document.getElementById('current');
     const totalEl = document.getElementById('total');
 
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5">Connecting to blockchain...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5">Connecting...</td></tr>';
     progress.style.display = 'block';
 
     try {
-      if (!tronWeb) {
-        if (!window.tronWeb || !window.tronWeb.ready) {
-          throw new Error('TronLink not detected or not unlocked');
-        }
-        tronWeb = window.tronWeb;
+      if (!tronWeb && (!window.tronWeb || !window.tronWeb.ready)) {
+        throw new Error('Please unlock TronLink');
       }
+      tronWeb = tronWeb || window.tronWeb;
 
       const contract = await tronWeb.contract().at(STAKING_ADDRESS);
-
-      // Get totals first
-      const [activeBig, allBig, list] = await Promise.all([
+      const [activeBN, totalBN, list] = await Promise.all([
         contract.totalActiveStaked().call(),
         contract.totalStaked().call(),
         contract.getStakersList().call()
       ]);
 
-      const totalActive = tronWeb.toBigNumber(activeBig).shiftedBy(-TOKEN_DECIMALS).toFixed(2);
-      const totalAll = tronWeb.toBigNumber(allBig).shiftedBy(-TOKEN_DECIMALS).toFixed(2);
+      const totalActive = tronWeb.toBigNumber(activeBN).shiftedBy(-6).toNumber().toLocaleString();
+      const totalAll = tronWeb.toBigNumber(totalBN).shiftedBy(-6).toNumber().toLocaleString();
 
       document.getElementById('total-active').textContent = totalActive;
       document.getElementById('total-all').textContent = totalAll;
       document.getElementById('total-stakers').textContent = `(${list.length} wallets)`;
       totalEl.textContent = list.length;
 
-      let rows = '';
-      let processed = 0;
+      const stakerData = [];
 
       for (let i = 0; i < list.length; i++) {
         const addr = list[i];
-        processed++;
-        currentEl.textContent = processed;
-        progressBar.style.width = `${(processed / list.length) * 100}%`;
+        currentEl.textContent = i + 1;
+        progressBar.style.width = `${((i + 1) / list.length) * 100}%`;
 
         try {
           const info = await contract.users(addr).call();
-          const staked = tronWeb.toBigNumber(info.stakedAmount).shiftedBy(-TOKEN_DECIMALS).toFixed(4);
+          const staked = tronWeb.toBigNumber(info.stakedAmount).shiftedBy(-6).toNumber();
           const lastClaim = Number(info.lastClaimTimestamp);
           const isActive = info.isActive;
 
-          let daysAgo, status, statusClass;
+          const now = Math.floor(Date.now() / 1000);
+          let daysSinceClaim = lastClaim === 0 ? Infinity : Math.floor((now - lastClaim) / 86400);
+
+          let status, statusClass;
           if (lastClaim === 0) {
-            daysAgo = 'Never';
             status = 'Never claimed';
-            statusClass = '';
+            statusClass = 'text-muted';
+          } else if (daysSinceClaim > 14) {
+            status = 'EXPIRED';
+            statusClass = 'expired';
+          } else if (daysSinceClaim >= 10) {
+            status = 'Expire Soon';
+            statusClass = 'soon';
           } else {
-            const days = Math.floor((Date.now()/1000 - lastClaim) / 86400);
-            daysAgo = days === 0 ? 'Today' : `${days} day${days === 1 ? '' : 's'} ago`;
-            if (!isActive) {
-              status = 'EXPIRED';
-              statusClass = 'expired';
-            } else if (days >= 12) {
-              status = 'Expires soon';
-              statusClass = 'soon';
-            } else {
-              status = 'Active';
-              statusClass = 'text-success';
-            }
+            status = 'Active';
+            statusClass = 'text-success';
           }
 
-          const short = addr.slice(0, 6) + '...' + addr.slice(-4);
-          rows += `
-            <tr>
-              <td><span class="copy" onclick="navigator.clipboard.writeText('${addr}');this.textContent='Copied!'">${short}</span></td>
-              <td>${staked} CFT</td>
-              <td>${daysAgo}</td>
-              <td class="${statusClass}">${status}</td>
-            </tr>`;
+          const lastClaimText = lastClaim === 0 ? 'Never' : 
+            daysSinceClaim === 0 ? 'Today' :
+            daysSinceClaim === 1 ? '1 day ago' : `${daysSinceClaim} days ago`;
+
+          stakerData.push({ addr, staked, lastClaimText, status, statusClass });
         } catch (e) {
-          console.warn(`Failed to fetch data for ${addr}:`, e.message);
-          rows += `<tr><td colspan="4">Error loading ${addr.slice(0,10)}...</td></tr>`;
+          console.warn('Failed for', addr, e.message);
         }
 
-        // Critical: wait between calls
-        if (i < list.length - 1) await sleep(DELAY_BETWEEN_CALLS);
+        if (i < list.length - 1) await sleep(DELAY_MS);
       }
+
+      // Sort by staked amount descending
+      stakerData.sort((a, b) => b.staked - a.staked);
+
+      // Build rows
+      let rows = '';
+      stakerData.forEach(s => {
+        rows += `
+          <tr>
+            <td>
+              <span class="addr" onclick="copyAddr(this, '${s.addr}')">
+                ${s.addr}
+              </span>
+            </td>
+            <td><strong>${s.staked.toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 4})}</strong> CFT</td>
+            <td>${s.lastClaimText}</td>
+            <td class="${s.statusClass}">${s.status}</td>
+          </tr>`;
+      });
 
       tbody.innerHTML = rows || '<tr><td colspan="4" class="text-center py-5">No stakers found</td></tr>';
       progress.style.display = 'none';
 
     } catch (err) {
-      console.error(err);
       tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-5">Error: ${err.message}</td></tr>`;
       progress.style.display = 'none';
     }
   }
 
-  // Auto-connect if possible
+  function copyAddr(el, addr) {
+    navigator.clipboard.writeText(addr);
+    const original = el.textContent;
+    el.textContent = 'Copied!';
+    el.style.color = '#62ffcf';
+    setTimeout(() => {
+      el.textContent = original;
+      el.style.color = '';
+    }, 1500);
+  }
+
   window.addEventListener('load', () => {
     if (window.tronWeb && window.tronWeb.ready) {
       tronWeb = window.tronWeb;
