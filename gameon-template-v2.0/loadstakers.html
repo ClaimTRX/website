@@ -11,7 +11,7 @@
   <style>
     :root{--bg-0:#07090f;--bg-1:#0b0e17;--bg-2:#0f1321;--line:#212b46;--muted:#9aa7bd;--txt:#e9eef7;--accent-1:#62ffcf;--accent-2:#7db2ff;--danger:#ff5b73;--warning:#ffd166;--success:#00e095;--radius-3:18px;--shadow-1:0 10px 30px rgba(0,0,0,.55)}
     body{background:var(--bg-0);color:var(--txt);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
-    .luxe-card{background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--radius-3);box-shadow:var(--shadow-1);padding:2rem}
+    .luxe-card{background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--radius-3);box-shadow:var(--shadow-1);padding:2rem;margin-bottom:2rem}
     table{width:100%;border-collapse:separate;border-spacing:0 0.75rem}
     th{background:var(--bg-2);padding:1rem;text-align:left;font-weight:700}
     td{background:var(--bg-2);padding:1rem;border-radius:8px}
@@ -21,6 +21,8 @@
     .soon{color:var(--warning);font-weight:700}
     .progress-text{font-size:0.9rem;color:var(--muted)}
     .progress-bar{background:linear-gradient(90deg,var(--accent-1),var(--accent-2))}
+    .section-title{font-size:1.5rem;margin-bottom:1rem}
+    .section-total{text-align:right;color:var(--muted);font-size:0.95rem;margin-top:1rem}
   </style>
 </head>
 <body>
@@ -50,19 +52,20 @@
 
 <section class="py-5">
   <div class="container">
-    <div class="luxe-card">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="m-0">Stakers <span id="total-stakers" class="text-muted">(loading...)</span></h3>
-        <button id="refresh" class="btn primary btn-sm">Refresh List</button>
-      </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h3 class="m-0">Stakers <span id="total-stakers" class="text-muted">(loading...)</span></h3>
+      <button id="refresh" class="btn primary btn-sm">Refresh List</button>
+    </div>
 
-      <div class="text-center my-4" id="progress" style="display:none">
-        <div class="progress" style="height:8px;background:var(--bg-2)">
-          <div class="progress-bar" style="width:0%"></div>
-        </div>
-        <div class="progress-text mt-2">Loading staker <span id="current">0</span> of <span id="total">0</span></div>
+    <div class="text-center my-4" id="progress" style="display:none">
+      <div class="progress" style="height:8px;background:var(--bg-2)">
+        <div class="progress-bar" style="width:0%"></div>
       </div>
+      <div class="progress-text mt-2">Loading staker <span id="current">0</span> of <span id="total">0</span></div>
+    </div>
 
+    <div id="active-section" class="luxe-card">
+      <h4 class="section-title">Active Stakers</h4>
       <div class="table-responsive">
         <table>
           <thead>
@@ -73,17 +76,46 @@
               <th>Status</th>
             </tr>
           </thead>
-          <tbody id="stakers-body">
-            <tr><td colspan="4" class="text-center py-5">Click Refresh to load data...</td></tr>
-          </tbody>
+          <tbody id="active-body"></tbody>
         </table>
       </div>
+      <div class="section-total" id="active-total">Total Active: — CFT</div>
+    </div>
 
-      <div class="text-center mt-4 text-muted small">
-        Total Active Staked: <strong id="total-active">—</strong> CFT | 
-        Total Expired: <strong id="total-expired">—</strong> CFT | 
-        Total Staked: <strong id="total-all">—</strong> CFT
+    <div id="soon-section" class="luxe-card">
+      <h4 class="section-title">Expire Soon</h4>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Wallet Address</th>
+              <th>Staked CFT</th>
+              <th>Last Claim</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="soon-body"></tbody>
+        </table>
       </div>
+      <div class="section-total" id="soon-total">Total Expire Soon: — CFT</div>
+    </div>
+
+    <div id="expired-section" class="luxe-card">
+      <h4 class="section-title">Expired</h4>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Wallet Address</th>
+              <th>Staked CFT</th>
+              <th>Last Claim</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="expired-body"></tbody>
+        </table>
+      </div>
+      <div class="section-total" id="expired-total">Total Expired: — CFT</div>
     </div>
   </div>
 </section>
@@ -105,13 +137,17 @@
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   async function loadStakers() {
-    const tbody = document.getElementById('stakers-body');
+    const activeBody = document.getElementById('active-body');
+    const soonBody = document.getElementById('soon-body');
+    const expiredBody = document.getElementById('expired-body');
     const progress = document.getElementById('progress');
     const progressBar = progress.querySelector('.progress-bar');
     const currentEl = document.getElementById('current');
     const totalEl = document.getElementById('total');
 
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5">Connecting...</td></tr>';
+    activeBody.innerHTML = '<tr><td colspan="4" class="text-center py-5">Connecting...</td></tr>';
+    soonBody.innerHTML = '';
+    expiredBody.innerHTML = '';
     progress.style.display = 'block';
 
     try {
@@ -121,23 +157,14 @@
       tronWeb = tronWeb || window.tronWeb;
 
       const contract = await tronWeb.contract().at(STAKING_ADDRESS);
-      const [activeBig, totalBig, list] = await Promise.all([
-        contract.totalActiveStaked().call(),
-        contract.totalStaked().call(),
-        contract.getStakersList().call()
-      ]);
+      const list = await contract.getStakersList().call();
 
-      const totalActiveNum = tronWeb.toBigNumber(activeBig).shiftedBy(-TOKEN_DECIMALS).toNumber();
-      const totalAllNum = tronWeb.toBigNumber(totalBig).shiftedBy(-TOKEN_DECIMALS).toNumber();
-      const totalExpiredNum = totalAllNum - totalActiveNum;
-
-      document.getElementById('total-active').textContent = totalActiveNum.toLocaleString(undefined, {maximumFractionDigits: 2});
-      document.getElementById('total-expired').textContent = totalExpiredNum.toLocaleString(undefined, {maximumFractionDigits: 2});
-      document.getElementById('total-all').textContent = totalAllNum.toLocaleString(undefined, {maximumFractionDigits: 2});
       document.getElementById('total-stakers').textContent = `(${list.length} wallets)`;
       totalEl.textContent = list.length;
 
-      const stakerData = [];
+      const activeData = [];
+      const soonData = [];
+      const expiredData = [];
 
       for (let i = 0; i < list.length; i++) {
         let addr = list[i];
@@ -157,26 +184,34 @@
           const now = Math.floor(Date.now() / 1000);
           let daysSinceClaim = lastClaim === 0 ? Infinity : Math.floor((now - lastClaim) / 86400);
 
-          let status, statusClass;
+          let status, statusClass, category;
           if (lastClaim === 0) {
             status = 'Never claimed';
             statusClass = 'text-muted';
+            category = 'active'; // or 'expired' if you prefer
           } else if (!isActive || daysSinceClaim > 14) {
             status = 'EXPIRED';
             statusClass = 'expired';
+            category = 'expired';
           } else if (daysSinceClaim >= 10) {
             status = 'Expire Soon';
             statusClass = 'soon';
+            category = 'soon';
           } else {
             status = 'Active';
             statusClass = 'text-success';
+            category = 'active';
           }
 
           const lastClaimText = lastClaim === 0 ? 'Never' : 
             daysSinceClaim === 0 ? 'Today' :
             daysSinceClaim === 1 ? '1 day ago' : `${daysSinceClaim} days ago`;
 
-          stakerData.push({ addr, stakedNum, lastClaimText, status, statusClass });
+          const data = { addr, stakedNum, lastClaimText, status, statusClass };
+
+          if (category === 'active') activeData.push(data);
+          else if (category === 'soon') soonData.push(data);
+          else expiredData.push(data);
         } catch (e) {
           console.warn('Failed for', addr, e.message);
         }
@@ -184,30 +219,43 @@
         if (i < list.length - 1) await sleep(DELAY_MS);
       }
 
-      // Sort by staked descending
-      stakerData.sort((a, b) => b.stakedNum - a.stakedNum);
+      // Sort each category by staked descending
+      activeData.sort((a, b) => b.stakedNum - a.stakedNum);
+      soonData.sort((a, b) => b.stakedNum - a.stakedNum);
+      expiredData.sort((a, b) => b.stakedNum - a.stakedNum);
 
-      // Build rows
-      let rows = '';
-      stakerData.forEach(s => {
-        rows += `
-          <tr>
-            <td>
-              <span class="addr" onclick="copyAddr(this, '${s.addr}')">
-                ${s.addr}
-              </span>
-            </td>
-            <td><strong>${s.stakedNum.toLocaleString(undefined, {maximumFractionDigits: 4})}</strong> CFT</td>
-            <td>${s.lastClaimText}</td>
-            <td class="${s.statusClass}">${s.status}</td>
-          </tr>`;
-      });
+      // Build rows function
+      const buildRows = (data) => {
+        let rows = '';
+        data.forEach(s => {
+          rows += `
+            <tr>
+              <td><span class="addr" onclick="copyAddr(this, '${s.addr}')">${s.addr}</span></td>
+              <td><strong>${s.stakedNum.toLocaleString(undefined, {maximumFractionDigits: 4})}</strong> CFT</td>
+              <td>${s.lastClaimText}</td>
+              <td class="${s.statusClass}">${s.status}</td>
+            </tr>`;
+        });
+        return rows || '<tr><td colspan="4" class="text-center py-3">None</td></tr>';
+      };
 
-      tbody.innerHTML = rows || '<tr><td colspan="4" class="text-center py-5">No stakers found</td></tr>';
+      // Set bodies
+      activeBody.innerHTML = buildRows(activeData);
+      soonBody.innerHTML = buildRows(soonData);
+      expiredBody.innerHTML = buildRows(expiredData);
+
+      // Calculate and set totals
+      const sum = (arr) => arr.reduce((total, s) => total + s.stakedNum, 0);
+      document.getElementById('active-total').textContent = `Total Active: ${sum(activeData).toLocaleString(undefined, {maximumFractionDigits: 2})} CFT`;
+      document.getElementById('soon-total').textContent = `Total Expire Soon: ${sum(soonData).toLocaleString(undefined, {maximumFractionDigits: 2})} CFT`;
+      document.getElementById('expired-total').textContent = `Total Expired: ${sum(expiredData).toLocaleString(undefined, {maximumFractionDigits: 2})} CFT`;
+
       progress.style.display = 'none';
 
     } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-5">Error: ${err.message}</td></tr>`;
+      activeBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-5">Error: ${err.message}</td></tr>`;
+      soonBody.innerHTML = '';
+      expiredBody.innerHTML = '';
       progress.style.display = 'none';
     }
   }
