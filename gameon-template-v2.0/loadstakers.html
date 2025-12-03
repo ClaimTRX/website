@@ -27,8 +27,8 @@
       table,thead,tbody,th,td,tr{display:block}
       thead tr{position:absolute;top:-9999px;left:-9999px}
       tr{margin-bottom:1rem;border:1px solid var(--line);border-radius:8px;padding:0.5rem;background:var(--bg-2)}
-      td{border:none;position:relative;padding:0.5rem 1rem 0.5rem 42%;text-align:right;min-height:2.5rem}
-      td:before{position:absolute;top:50%;left:1rem;width:35%;white-space:nowrap;transform:translateY(-50%);font-weight:700;content:attr(data-label);text-align:left;color:var(--muted)}
+      td{border:none;position:relative;padding:0.5rem 1rem 0.5rem 50%;text-align:right;min-height:2.5rem}
+      td:before{position:absolute;top:50%;left:1rem;width:45%;white-space:nowrap;transform:translateY(-50%);font-weight:700;content:attr(data-label);text-align:left;color:var(--muted)}
       .addr{max-width:calc(100% - 2rem)}
     }
   </style>
@@ -238,8 +238,8 @@
         data.forEach(s => {
           rows += `
             <tr>
-              <td data-label="Wallet Address"><span class="addr" onclick="copyAddr(this, '${s.addr}')">${s.addr}</span></td>
-              <td data-label="Staked CFT"><strong>${s.stakedNum.toLocaleString(undefined, {maximumFractionDigits: 4})}</strong> CFT</td>
+              <td data-label="Wallet"><span class="addr" onclick="copyAddr(this, '${s.addr}')">${s.addr}</span></td>
+              <td data-label="Staked">${s.stakedNum.toLocaleString(undefined, {maximumFractionDigits: 4})} CFT</td>
               <td data-label="Last Claim">${s.lastClaimText}</td>
               <td data-label="Status" class="${s.statusClass}">${s.status}</td>
             </tr>`;
