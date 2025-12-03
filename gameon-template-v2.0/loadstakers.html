@@ -23,13 +23,34 @@
     .progress-bar{background:linear-gradient(90deg,var(--accent-1),var(--accent-2))}
     .section-title{font-size:1.5rem;margin-bottom:1rem}
     .section-total{text-align:right;color:var(--muted);font-size:0.95rem;margin-top:1rem}
+
+    /* Mobile card layout - perfect spacing */
     @media (max-width:768px){
       table,thead,tbody,th,td,tr{display:block}
       thead tr{position:absolute;top:-9999px;left:-9999px}
-      tr{margin-bottom:1rem;border:1px solid var(--line);border-radius:8px;padding:0.5rem;background:var(--bg-2)}
-      td{border:none;position:relative;padding:0.5rem 1rem 0.5rem 50%;text-align:right;min-height:2.5rem}
-      td:before{position:absolute;top:50%;left:1rem;width:45%;white-space:nowrap;transform:translateY(-50%);font-weight:700;content:attr(data-label);text-align:left;color:var(--muted)}
-      .addr{max-width:calc(100% - 2rem)}
+      tr{margin-bottom:1.2rem;border:1px solid var(--line);border-radius:12px;padding:1rem;background:var(--bg-2);box-shadow:0 4px 15px rgba(0,0,0,0.3)}
+      
+      td{border:none;position:relative;padding:0.4rem 0 0.4rem 0;text-align:left !important}
+      td:first-child{padding-top:0}
+      td:last-child{padding-bottom:0}
+      
+      td:before{
+        content:attr(data-label);
+        display:block;
+        font-weight:700;
+        color:var(--muted);
+        margin-bottom:0.35rem;
+        font-size:0.95rem;
+      }
+      
+      /* Special: make wallet address appear below the label */
+      td[data-label="Wallet"]{
+        padding-top:0.6rem;
+      }
+      td[data-label="Wallet"] .addr{
+        margin-top:0.4rem;
+        font-size:1rem;
+      }
     }
   </style>
 </head>
@@ -44,7 +65,7 @@
         <li class="nav-item"><a href="stakers-list.html" class="nav-link active">Stakers List</a></li>
       </ul>
       <ul class="navbar-nav action">
-        <li><button id="connect-button" class="btn btn-outline"><i class="icon-wallet me-md-2"></i> Wallet Connect</button></li>
+        <li><button id="connect-button" class="btn btn-outline">Wallet Connect</button></li>
       </ul>
     </div>
   </nav>
@@ -78,7 +99,7 @@
         <table>
           <thead>
             <tr>
-              <th>Wallet Address</th>
+              <th>Wallet</th>
               <th>Staked CFT</th>
               <th>Last Claim</th>
               <th>Status</th>
@@ -96,7 +117,7 @@
         <table>
           <thead>
             <tr>
-              <th>Wallet Address</th>
+              <th>Wallet</th>
               <th>Staked CFT</th>
               <th>Last Claim</th>
               <th>Status</th>
@@ -114,7 +135,7 @@
         <table>
           <thead>
             <tr>
-              <th>Wallet Address</th>
+              <th>Wallet</th>
               <th>Staked CFT</th>
               <th>Last Claim</th>
               <th>Status</th>
@@ -131,7 +152,7 @@
 <footer class="footer-area py-5 mt-3">
   <div class="container text-center">
     <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" height="28" alt=""></a>
-    <div class="copyright-area py-2">&copy;2025 CFT Ecosystem</div>
+    <div class="copyright-area py-2">©2025 CFT Ecosystem</div>
   </div>
 </footer>
 
@@ -170,9 +191,7 @@
       document.getElementById('total-stakers').textContent = `(${list.length} wallets)`;
       totalEl.textContent = list.length;
 
-      const activeData = [];
-      const soonData = [];
-      const expiredData = [];
+      const activeData = [], soonData = [], expiredData = [];
 
       for (let i = 0; i < list.length; i++) {
         let addr = list[i];
@@ -194,24 +213,16 @@
 
           let status, statusClass, category;
           if (lastClaim === 0) {
-            status = 'Never claimed';
-            statusClass = 'text-muted';
-            category = 'active'; // or 'expired' if you prefer
+            status = 'Never claimed'; statusClass = 'text-muted'; category = 'active';
           } else if (!isActive || daysSinceClaim > 14) {
-            status = 'EXPIRED';
-            statusClass = 'expired';
-            category = 'expired';
+            status = 'EXPIRED'; statusClass = 'expired'; category = 'expired';
           } else if (daysSinceClaim >= 10) {
-            status = 'Expire Soon';
-            statusClass = 'soon';
-            category = 'soon';
+            status = 'Expire Soon'; statusClass = 'soon'; category = 'soon';
           } else {
-            status = 'Active';
-            statusClass = 'text-success';
-            category = 'active';
+            status = 'Active'; statusClass = 'text-success'; category = 'active';
           }
 
-          const lastClaimText = lastClaim === 0 ? 'Never' : 
+          const lastClaimText = lastClaim === 0 ? 'Never' :
             daysSinceClaim === 0 ? 'Today' :
             daysSinceClaim === 1 ? '1 day ago' : `${daysSinceClaim} days ago`;
 
@@ -220,69 +231,57 @@
           if (category === 'active') activeData.push(data);
           else if (category === 'soon') soonData.push(data);
           else expiredData.push(data);
-        } catch (e) {
-          console.warn('Failed for', addr, e.message);
-        }
+        } catch (e) { console.warn('Failed for', addr, e.message); }
 
         if (i < list.length - 1) await sleep(DELAY_MS);
       }
 
-      // Sort each category by staked descending
       activeData.sort((a, b) => b.stakedNum - a.stakedNum);
       soonData.sort((a, b) => b.stakedNum - a.stakedNum);
       expiredData.sort((a, b) => b.stakedNum - a.stakedNum);
 
-      // Build rows function
       const buildRows = (data) => {
         let rows = '';
         data.forEach(s => {
           rows += `
             <tr>
               <td data-label="Wallet"><span class="addr" onclick="copyAddr(this, '${s.addr}')">${s.addr}</span></td>
-              <td data-label="Staked">${s.stakedNum.toLocaleString(undefined, {maximumFractionDigits: 4})} CFT</td>
+              <td data-label="Staked CFT"><strong>${s.stakedNum.toLocaleString(undefined, {maximumFractionDigits: 4})}</strong> CFT</td>
               <td data-label="Last Claim">${s.lastClaimText}</td>
               <td data-label="Status" class="${s.statusClass}">${s.status}</td>
             </tr>`;
         });
-        return rows || '<tr><td colspan="4" class="text-center py-3">None</td></tr>';
+        return rows || '<tr><td colspan="4" class="text-center py-4">None</td></tr>';
       };
 
-      // Set bodies
       activeBody.innerHTML = buildRows(activeData);
       soonBody.innerHTML = buildRows(soonData);
       expiredBody.innerHTML = buildRows(expiredData);
 
-      // Calculate and set totals
-      const sum = (arr) => arr.reduce((total, s) => total + s.stakedNum, 0);
+      const sum = arr => arr.reduce((t, s) => t + s.stakedNum, 0);
       document.getElementById('active-total').textContent = `Total Active: ${sum(activeData).toLocaleString(undefined, {maximumFractionDigits: 2})} CFT`;
       document.getElementById('soon-total').textContent = `Total Expire Soon: ${sum(soonData).toLocaleString(undefined, {maximumFractionDigits: 2})} CFT`;
       document.getElementById('expired-total').textContent = `Total Expired: ${sum(expiredData).toLocaleString(undefined, {maximumFractionDigits: 2})} CFT`;
 
       progress.style.display = 'none';
-
     } catch (err) {
       activeBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-5">Error: ${err.message}</td></tr>`;
-      soonBody.innerHTML = '';
-      expiredBody.innerHTML = '';
       progress.style.display = 'none';
     }
   }
 
   function copyAddr(el, addr) {
     navigator.clipboard.writeText(addr);
-    const original = el.textContent;
+    const orig = el.textContent;
     el.textContent = 'Copied!';
     el.style.color = '#62ffcf';
-    setTimeout(() => {
-      el.textContent = original;
-      el.style.color = '';
-    }, 1500);
+    setTimeout(() => { el.textContent = orig; el.style.color = ''; }, 1500);
   }
 
   window.addEventListener('load', () => {
     if (window.tronWeb && window.tronWeb.ready) {
       tronWeb = window.tronWeb;
-      document.getElementById('connect-button').innerHTML = '<i class="icon-wallet me-md-2"></i> Connected';
+      document.getElementById('connect-button').innerHTML = 'Connected';
     }
     loadStakers();
   });
