@@ -15,7 +15,7 @@
     table{width:100%;border-collapse:separate;border-spacing:0 0.75rem}
     th{background:var(--bg-2);padding:1rem;text-align:left;font-weight:700}
     td{background:var(--bg-2);padding:1rem;border-radius:8px}
-    .addr{font-family:ui-monospace,monospace;font-size:0.92rem;color:var(--accent-2);cursor:pointer}
+    .addr{font-family:ui-monospace,monospace;font-size:0.92rem;color:var(--accent-2);cursor:pointer;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .addr:hover{color:var(--accent-1)}
     .expired{color:var(--danger);font-weight:700}
     .soon{color:var(--warning);font-weight:700}
@@ -23,6 +23,14 @@
     .progress-bar{background:linear-gradient(90deg,var(--accent-1),var(--accent-2))}
     .section-title{font-size:1.5rem;margin-bottom:1rem}
     .section-total{text-align:right;color:var(--muted);font-size:0.95rem;margin-top:1rem}
+    @media (max-width:768px){
+      table,thead,tbody,th,td,tr{display:block}
+      thead tr{position:absolute;top:-9999px;left:-9999px}
+      tr{margin-bottom:1rem;border:1px solid var(--line);border-radius:8px;padding:0.5rem;background:var(--bg-2)}
+      td{border:none;position:relative;padding:0.5rem 1rem 0.5rem 50%;text-align:right}
+      td:before{position:absolute;top:50%;left:1rem;width:45%;white-space:nowrap;transform:translateY(-50%);font-weight:700;content:attr(data-label);text-align:left;color:var(--muted)}
+      .addr{max-width:calc(100% - 2rem)}
+    }
   </style>
 </head>
 <body>
@@ -230,10 +238,10 @@
         data.forEach(s => {
           rows += `
             <tr>
-              <td><span class="addr" onclick="copyAddr(this, '${s.addr}')">${s.addr}</span></td>
-              <td><strong>${s.stakedNum.toLocaleString(undefined, {maximumFractionDigits: 4})}</strong> CFT</td>
-              <td>${s.lastClaimText}</td>
-              <td class="${s.statusClass}">${s.status}</td>
+              <td data-label="Wallet Address"><span class="addr" onclick="copyAddr(this, '${s.addr}')">${s.addr}</span></td>
+              <td data-label="Staked CFT"><strong>${s.stakedNum.toLocaleString(undefined, {maximumFractionDigits: 4})}</strong> CFT</td>
+              <td data-label="Last Claim">${s.lastClaimText}</td>
+              <td data-label="Status" class="${s.statusClass}">${s.status}</td>
             </tr>`;
         });
         return rows || '<tr><td colspan="4" class="text-center py-3">None</td></tr>';
