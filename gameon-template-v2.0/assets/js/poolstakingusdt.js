@@ -619,13 +619,13 @@ async function updateTopBarUI(token, first = false, userData) {
     updateElement(`staked-amount-${token}`, fmt(cacheData.data.stakedUnits), `staked-amount-${token}`);
     updateElement(`projected-rewards-${token}`, fmtPct(cacheData.data.apyPct), `projected-rewards-${token}`);
     updateElement(`roi-cft`, fmtPct(cacheData.data.roiPct), `roi-cft`);
-    updateElement(`user-total-claimed-cft`, `${fmt(cacheData.data.userTotalClaimed)} USDT`, `user-total-claimed-cft`);
+    updateElement(`user-total-claimed-cft_usdt`, `${fmt(cacheData.data.userTotalClaimed)} USDT`, `user-total-claimed-cft_usdt`);
     return;
   }
 
   try {
     if (first) {
-      ['staked-amount-cft_usdt', 'projected-rewards-cft_usdt', 'roi-cft', 'user-total-claimed-cft']
+      ['staked-amount-cft_usdt', 'projected-rewards-cft_usdt', 'roi-cft', 'user-total-claimed-cft_usdt']
         .forEach(id => setSkeleton(id, true));
     }
 
