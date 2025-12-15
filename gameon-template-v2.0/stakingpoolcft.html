@@ -177,6 +177,14 @@
 </head>
 <body>
   <div id="header-placeholder"></div>
+
+<script>
+  fetch('assets/includes/header.html')
+    .then(response => response.text())
+    .then(data => {
+      document.getElementById('header-placeholder').innerHTML = data;
+    });
+</script>
   <!-- Hero -->
   <section class="hero-section">
     <div class="container text-center">
@@ -374,13 +382,7 @@
   <script src="assets/js/vendor/slider.min.js"></script>
   <script src="assets/js/vendor/countdown.min.js"></script>
   <script src="assets/js/vendor/shuffle.min.js"></script>
-  <script>
-  fetch('assets/includes/header.html')
-    .then(response => response.text())
-    .then(data => {
-      document.getElementById('header-placeholder').innerHTML = data;
-    });
-</script>
+  
   <script src="assets/js/main.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
   <!-- App JS -->
