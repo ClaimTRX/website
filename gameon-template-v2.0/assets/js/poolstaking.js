@@ -856,8 +856,8 @@ async function updateUI(token, first = false, userData) {
 function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, initialRewards = '0', initialBalance = '0') {
   const timerEl = document.getElementById('next-claim-timer');
   const claimBtn = document.getElementById('claim-rewards-button-cft');
-  const activateBtn = document.getElementById('activate-tokens-button-cft');
-  if (!timerEl || !claimBtn || !activateBtn) return;
+  const rewardsDisplay = document.getElementById('claimable-rewards-cft'); // Add this for expired message
+  if (!timerEl || !claimBtn) return;
   if (timerEl._claimInterval) {
     clearInterval(timerEl._claimInterval);
     timerEl._claimInterval = null;
@@ -1320,6 +1320,18 @@ document.addEventListener('DOMContentLoaded', () => {
   
   initialize();
 });
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
