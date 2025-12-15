@@ -176,59 +176,7 @@
 </style>
 </head>
 <body>
-  <!-- Header -->
-  <header id="header" class="pt-2">
-    <nav data-aos="zoom-out" data-aos-delay="800" class="navbar gameon-navbar navbar-expand">
-      <div class="container">
-        <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt=""/></a>
-        <div class="ms-auto"></div>
-        <ul class="navbar-nav items mx-auto">
-          <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
-          <li class="nav-item dropdown">
-            <a href="#" class="nav-link">CFT<i class="icon-arrow-down"></i></a>
-            <ul class="dropdown-menu">
-              <li class="nav-item"><a href="poolstaking.html" class="nav-link">Earn CFT</a></li>
-              <li class="nav-item"><a href="staking.html" class="nav-link">Staking</a></li>
-              <li class="nav-item"><a href="lockstaking.html" class="nav-link">Locked Staking</a></li>
-              <li class="nav-item"><a href="sellcft.html" class="nav-link">Trading</a></li>
-            </ul>
-          </li>
-          <li class="nav-item dropdown">
-            <a href="#" class="nav-link">StableX<i class="icon-arrow-down"></i></a>
-            <ul class="dropdown-menu">
-              <li class="nav-item"><a href="buystablex.html" class="nav-link">Buy StableX</a></li>
-              <li class="nav-item"><a href="sellstablex.html" class="nav-link">Sell StableX</a></li>
-              <li class="nav-item"><a href="stablexstaking.html" class="nav-link">Stake StableX</a></li>
-            </ul>
-          </li>
-         
-          <li class="nav-item dropdown">
-            <a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
-            <ul class="dropdown-menu">
-              <li class="nav-item"><a href="feb.html" class="nav-link">FEB</a></li>
-              <li class="nav-item"><a href="energy.html" class="nav-link">Rent Energy</a></li>
-            </ul>
-          </li>
-          <li class="nav-item"><a href="swap.html" class="nav-link">Swap</a></li>
-          <li class="nav-item"><a href="https://cftguardians.com/" class="nav-link">CFT Guardians</a></li>
-          <li class="nav-item"><a href="promote.html" class="nav-link">Communities</a></li>
-        </ul>
-       
-        <ul class="navbar-nav toggle">
-          <li class="nav-item">
-            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
-              <i class="icon-menu m-0"></i>
-            </a>
-          </li>
-        </ul>
-        <ul class="navbar-nav action">
-          <li class="nav-item ms-2">
-            <button id="connect-button" class="btn btn-outline"><i class="icon-wallet me-md-2"></i> Wallet Connect</button>
-          </li>
-        </ul>
-      </div>
-    </nav>
-  </header>
+  <div id="header-placeholder"></div>
   <!-- Hero -->
   <section class="hero-section">
     <div class="container text-center">
@@ -426,6 +374,13 @@
   <script src="assets/js/vendor/slider.min.js"></script>
   <script src="assets/js/vendor/countdown.min.js"></script>
   <script src="assets/js/vendor/shuffle.min.js"></script>
+  <script>
+  fetch('assets/includes/header.html')
+    .then(response => response.text())
+    .then(data => {
+      document.getElementById('header-placeholder').innerHTML = data;
+    });
+</script>
   <script src="assets/js/main.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
   <!-- App JS -->
