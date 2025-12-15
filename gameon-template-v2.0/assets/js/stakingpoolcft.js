@@ -752,17 +752,20 @@ async function updateActionGridUI(token, first = false, userData) {
     };
     updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
     updateElement(`claimable-rewards-${token}`, `${Number(isExpired ? 0 : rewardUnits).toFixed(2)} ${d.rewardDisplayName}`);
-    const activateButton = document.getElementById(`activate-tokens-button-${token}`);
-    const claimButton = document.getElementById(`claim-rewards-button-${token}`);
-    if (activateButton && claimButton) {
-      if (isExpired || (!userData.isActive && Number(userData.stakedAmount) > 0)) {
-        activateButton.style.display = 'block';
+      const claimButton = document.getElementById(`claim-rewards-button-${token}`);
+    const rewardsDisplay = document.getElementById(`claimable-rewards-${token}`);
+    const energyHint = document.querySelector('#claimable-rewards-cft + span');
+
+    if (rewardsDisplay && claimButton) {
+      if (isExpired) {
+        rewardsDisplay.innerHTML = `<strong>0.00 ${d.rewardDisplayName}</strong><br><small style="color:#ff5b73; font-weight:600;">Rewards Expired – Stake more CFT to start earning again.</small>`;
         claimButton.style.display = 'none';
-        claimButton.disabled = true;
+        if (energyHint) energyHint.style.display = 'none';
       } else {
-        activateButton.style.display = 'none';
+        rewardsDisplay.textContent = `${Number(rewardUnits).toFixed(2)} ${d.rewardDisplayName}`;
         claimButton.style.display = 'block';
         claimButton.disabled = Number(pendingRewardsRaw) === 0 || toUnits(contractBalanceRaw, d.rewardDecimals) < rewardUnits;
+        if (energyHint) energyHint.style.display = 'block';
       }
     }
     updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp), userData.isActive, isWhitelisted, rewardUnits, toUnits(contractBalanceRaw, d.rewardDecimals));
@@ -852,8 +855,8 @@ async function updateUI(token, first = false, userData) {
 function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, initialRewards = '0', initialBalance = '0') {
   const timerEl = document.getElementById('next-claim-timer');
   const claimBtn = document.getElementById('claim-rewards-button-cft');
-  const activateBtn = document.getElementById('activate-tokens-button-cft');
-  if (!timerEl || !claimBtn || !activateBtn) return;
+  const rewardsDisplay = document.getElementById('claimable-rewards-cft');
+  if (!timerEl || !claimBtn) return;
   if (timerEl._claimInterval) {
     clearInterval(timerEl._claimInterval);
     timerEl._claimInterval = null;
@@ -916,18 +919,19 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
       cachedBalance = contractBalanceRaw;
       cacheTimestamp = Date.now();
     }
-    if (rem === 0 || !isActive) {
+        if (rem === 0 || !isActive) {
       clearInterval(timerEl._claimInterval);
       timerEl._claimInterval = null;
       timerEl.textContent = 'Expired';
       timerEl.classList.add('inactive');
-      claimBtn.disabled = true;
       claimBtn.style.display = 'none';
-      activateBtn.style.display = 'block';
+
+      if (rewardsDisplay) {
+        rewardsDisplay.innerHTML = `<strong>0.00 CFT</strong><br><small style="color:#ff5b73; font-weight:600;">Rewards Expired – Stake more CFT to start earning again.</small>`;
+      }
+
       const apyEl = document.getElementById('projected-rewards-cft');
       if (apyEl) apyEl.textContent = '0.00%';
-      const claimableEl = document.getElementById('claimable-rewards-cft');
-      if (claimableEl) claimableEl.textContent = '0.00 CFT';
       const yourNextPayoutEl = document.getElementById('your-next-payout');
       if (yourNextPayoutEl) yourNextPayoutEl.textContent = '0 CFT';
     } else {
@@ -1285,92 +1289,7 @@ async function claimRewards(token) {
   };
   return withLoading(btn, 'Claiming...', run)();
 }
-async function activateTokens(token) {
-  let processingModal = null;
-  const btn = document.getElementById(`activate-tokens-button-${token}`);
-  const timerEl = document.getElementById('next-claim-timer');
-  const run = async () => {
-    try {
-      if (timerEl) timerEl._paused = true;
-      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
-      if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
-      const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'activateTokens');
-      if (shortfall > 0) {
-        const totalRequired = shortfall + SAFETY_ENERGY;
-        if (await checkDelegatorEnergy(totalRequired)) {
-          const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy);
-          if (modalResult.rent) {
-            processingModal = showProcessingModal('(1/2)');
-            await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
-            await delay(5000);
-            hideProcessingModal(processingModal);
-          }
-        }
-      }
-      processingModal = showProcessingModal('(2/2)');
-      const stakingContract = stakingContracts[token];
-      const userData = await retryWithBackoff(() => stakingContract.methods.users(userAddress).call());
-      await delay(CONTRACT_CALL_DELAY_MS);
-      if (userData.isActive || BigInt(userData.stakedAmount) === 0n) throw new Error('No inactive tokens to activate.');
-      const activateTx = await tronWeb.transactionBuilder.triggerSmartContract(
-        tokenDetails[token].stakingAddress,
-        'activateTokens()',
-        {},
-        [],
-        userAddress
-      );
-      if (!activateTx.result || !activateTx.transaction) throw new Error('Failed to create activation transaction');
-      const signedActivateTx = await tronWeb.trx.sign(activateTx.transaction);
-      const broadcastActivate = await tronWeb.trx.sendRawTransaction(signedActivateTx);
-      if (!broadcastActivate.result) throw new Error('Failed to broadcast activation transaction');
-      showToast({
-        title: 'Activation submitted',
-        body: `<a href="https://tronscan.org/#/transaction/${broadcastActivate.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
-      });
-      hideProcessingModal(processingModal);
-      // Clear caches and fetch fresh user data
-      ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
-      let newUserData;
-      try {
-        newUserData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
-        console.debug('activateTokens: new userData fetched:', newUserData);
-      } catch (error) {
-        console.error('activateTokens: failed to fetch new userData:', error);
-        newUserData = {
-          stakedAmount: '0',
-          isActive: false,
-          lastClaimTimestamp: '0',
-          totalClaimed: '0',
-          rewards: '0',
-          userRewardPerTokenPaid: '0'
-        };
-        showToast({ title: 'Data Fetch Error', body: 'Failed to fetch updated user data; using fallback.', variant: 'warning' });
-      }
-      // Update cache with new user data
-      const updatedCache = {
-        data: {
-          stakedAmount: newUserData.stakedAmount,
-          isActive: newUserData.isActive,
-          lastClaimTimestamp: newUserData.lastClaimTimestamp,
-          totalClaimed: newUserData.totalClaimed,
-          rewards: newUserData.rewards,
-          userRewardPerTokenPaid: newUserData.userRewardPerTokenPaid
-        },
-        timestamp: Date.now()
-      };
-      localStorage.setItem(`tokenUI_user_${token}_${userAddress}`, JSON.stringify(serializeBigInt(updatedCache)));
-      // Force UI refresh after delay
-      await delay(UI_REFRESH_DELAY_MS);
-      await updateUI(token, true, newUserData);
-    } catch (e) {
-      hideProcessingModal(processingModal);
-      showToast({ title: 'Activation error', body: e.message, variant: 'danger' });
-    } finally {
-      if (timerEl) timerEl._paused = false;
-    }
-  };
-  return withLoading(btn, 'Activating...', run)();
-}
+
 /* ===================== Events ===================== */
 document.addEventListener('DOMContentLoaded', () => {
   const key = 'cft';
@@ -1396,12 +1315,6 @@ document.addEventListener('DOMContentLoaded', () => {
       await claimRewards(key);
     });
   }
-  const activateButton = document.getElementById(`activate-tokens-button-${key}`);
-  if (activateButton) {
-    activateButton.addEventListener('click', async (e) => {
-      e.preventDefault();
-      await activateTokens(key);
-    });
-  }
+  
   initialize();
 });
