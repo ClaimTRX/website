@@ -41,7 +41,7 @@ const tokenDetails = {
   cft_usdt: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',        // CFT - staking token
     rewardTokenAddress: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', // USDT TRC20
-    stakingAddress: 'TVC6sNxhm81hkMeSrxn41YLPzG5qvyPutP',        // your staking contract
+    stakingAddress: 'TAbu6yKiVRbs3c7tcwFnreupEfVW9t8d9K',        // your staking contract
     decimals: 6,
     rewardDecimals: 6,
     displayName: 'CFT',
@@ -948,7 +948,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
       } catch {
         pendingRewards = '0';
       }
-      contractBalanceRaw = await retryWithBackoff(() => tokenContracts['cft'].methods.balanceOf(tokenDetails['cft'].stakingAddress).call().catch(() => '0'));
+      contractBalanceRaw = await retryWithBackoff(() => tokenContracts['token'].methods.balanceOf(tokenDetails['token'].stakingAddress).call().catch(() => '0'));
       cachedRewards = pendingRewards;
       cachedBalance = contractBalanceRaw;
       cacheTimestamp = Date.now();
@@ -988,8 +988,8 @@ async function initialize() {
   document.querySelectorAll('[data-fill]')?.forEach(btn => {
     btn.addEventListener('click', () => {
       const pct = Number(btn.dataset.fill || '0');
-      const availEl = document.getElementById('available-tokens-cft');
-      const input = document.getElementById('stake-amount-cft');
+      const availEl = document.getElementById('available-tokens-cft_usdt');
+      const input = document.getElementById('stake-amount-cft_usdt');
       const available = Number((availEl?.dataset.raw) || availEl?.textContent?.replace(/[^0-9.]/g,'') || '0');
       if (input) input.value = (available * pct).toFixed(6);
     });
