@@ -41,7 +41,7 @@ const tokenDetails = {
   cft_usdt: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',        // CFT - staking token
     rewardTokenAddress: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', // USDT TRC20
-    stakingAddress: 'TAbu6yKiVRbs3c7tcwFnreupEfVW9t8d9K',        // your staking contract
+    stakingAddress: 'TVC6sNxhm81hkMeSrxn41YLPzG5qvyPutP',        // your staking contract
     decimals: 6,
     rewardDecimals: 6,
     displayName: 'CFT',
