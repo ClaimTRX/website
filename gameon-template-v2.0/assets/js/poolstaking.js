@@ -870,7 +870,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.remove('inactive');
     claimBtn.disabled = Number(cachedRewards) === 0 || Number(cachedBalance) < Number(cachedRewards);
     claimBtn.style.display = 'block';
-    activateBtn.style.display = 'none';
+    
     return;
   }
   if (!isActive) {
@@ -878,7 +878,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.add('inactive');
     claimBtn.disabled = true;
     claimBtn.style.display = 'none';
-    activateBtn.style.display = 'block';
+    
     return;
   }
   if (!timeoutSec) {
@@ -886,7 +886,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.add('inactive');
     claimBtn.disabled = true;
     claimBtn.style.display = 'none';
-    activateBtn.style.display = 'block';
+    
     return;
   }
   const next = (lastClaimTs || 0) + timeoutSec;
@@ -941,7 +941,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
       timerEl.classList.remove('inactive');
       claimBtn.disabled = Number(pendingRewards) === 0 || Number(contractBalanceRaw) < Number(pendingRewards);
       claimBtn.style.display = 'block';
-      activateBtn.style.display = 'none';
+      
     }
   };
   tick();
@@ -1320,6 +1320,17 @@ document.addEventListener('DOMContentLoaded', () => {
   
   initialize();
 });
+
+
+
+
+
+
+
+
+
+
+
 
 
 
