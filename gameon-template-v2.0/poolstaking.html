@@ -83,8 +83,8 @@
     .btn.primary:hover{filter:brightness(1.05)}
     .btn.ghost{border:1px solid var(--line);color:#eaf2ff;background:transparent}
     .btn.ghost:hover{border-color:rgba(125,178,255,.55)}
-    /* Claim/Activate default hidden to avoid wrong state flash; JS will show correct one */
-    #activate-tokens-button-cft,#claim-rewards-button-cft{width:100%;height:48px;font-size:1rem;display:none}
+    /* Only Claim button now */
+    #claim-rewards-button-cft{width:100%;height:48px;font-size:1rem;display:none}
     /* Pool Stats */
     .stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
     .stat-tile{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
@@ -119,15 +119,12 @@
    /* ≤992px: center panels perfectly */
 /* make 100%-width controls actually fit inside on iOS */
 *, *::before, *::after { box-sizing: border-box; }
-
 /* Make 100%-width controls actually fit inside on iOS */
 *, *::before, *::after { box-sizing: border-box; }
-
 /* KPI: allow long numbers to wrap and not push edges */
 .kpis > .kpi{ min-width:0; }
 .kpi span{ text-align:center; white-space:normal; }
 .kpi span:first-child{ overflow-wrap:anywhere; }
-
 /* <= 992px: center panels AND guarantee inner fit */
 @media (max-width:992px){
   /* KPIs: 2 cols and matching gutters */
@@ -135,7 +132,6 @@
     grid-template-columns:repeat(2, minmax(0,1fr));
     padding:0 20px 20px;
   }
-
   .action-grid{
     display:flex;
     flex-direction:column;
@@ -144,7 +140,6 @@
     padding:0 20px 28px;
     width:100%;
   }
-
   /* cap to container width minus a small gutter so nothing touches the edge */
   .action-grid .panel{
     width:100%;
@@ -152,7 +147,6 @@
     margin-inline:auto;
     padding:16px; /* a touch more breathing room */
   }
-
   /* ensure children never overflow */
   .action-grid .panel > *{ max-width:100%; }
   .form-control.luxe{ width:100%; }
@@ -160,33 +154,25 @@
   .quick-fills .btn{ width:100%; }
   #stake-button-cft,
   #unstake-button-cft,
-  #activate-tokens-button-cft,
   #claim-rewards-button-cft { width:100%; }
-
   /* stats grid: 2 cols on tablets */
   .stats-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
 }
-
 /* <= 576px: single-column KPIs and tighter gutters */
 @media (max-width:576px){
   .kpis{
     grid-template-columns:1fr;
     padding:0 12px 16px;
   }
-
   .action-grid{ padding:0 12px 24px; }
   .panel{ padding:16px; } /* keep the same padding on xs as well */
-
   .stats-grid{ grid-template-columns:1fr; }
   .kpi span:first-child{ font-size:1rem; } /* avoid crowding on small phones */
 }
-
 /* >= 992px: keep desktop card height */
 @media (min-width:992px){
   .panel{ min-height:260px; }
 }
-
-
 </style>
 </head>
 <body>
@@ -215,7 +201,7 @@
               <li class="nav-item"><a href="stablexstaking.html" class="nav-link">Stake StableX</a></li>
             </ul>
           </li>
-          
+         
           <li class="nav-item dropdown">
             <a href="#" class="nav-link">Energy<i class="icon-arrow-down"></i></a>
             <ul class="dropdown-menu">
@@ -227,7 +213,7 @@
           <li class="nav-item"><a href="https://cftguardians.com/" class="nav-link">CFT Guardians</a></li>
           <li class="nav-item"><a href="promote.html" class="nav-link">Communities</a></li>
         </ul>
-        
+       
         <ul class="navbar-nav toggle">
           <li class="nav-item">
             <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
@@ -310,8 +296,6 @@
             </div>
             <div></div>
             <div>
-              <!-- Start hidden; JS will show the correct one immediately -->
-              <a href="#" class="btn ghost w-100" id="activate-tokens-button-cft" style="display:none">Activate Tokens</a>
               <a href="#" class="btn primary w-100" id="claim-rewards-button-cft" style="display:none"><i class="fa-solid fa-lock me-1"></i> Claim</a>
             </div>
           </div>
@@ -324,10 +308,10 @@
       <div class="stats-grid">
         <div class="stat-tile"><span class="item-title">Pool Size</span><strong id="pool-size">—</strong></div>
         <div class="stat-tile"><span class="item-title">Daily Payout</span>1%</strong></div>
-        
+       
         <div class="stat-tile"><span class="item-title">Your Next Payout</span><strong id="your-next-payout">—</strong></div>
-        
-        
+       
+       
       </div>
       <!-- Claim before box -->
       <div class="countdown-tile" id="next-claim-box">
@@ -426,7 +410,7 @@
       <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt="" style="height:28px"></a>
       <div class="social-icons d-flex justify-content-center my-3 gap-3">
         <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
-        
+       
         <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
       </div>
       <div class="copyright-area py-2">&copy;2025 CFT Ecosystem, All Rights Reserved</div>
@@ -449,7 +433,6 @@
   <script src="assets/js/advertisements.js" type="module"></script>
 </body>
 </html>
-
 
 
 
