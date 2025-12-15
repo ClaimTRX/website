@@ -83,8 +83,8 @@
     .btn.primary:hover{filter:brightness(1.05)}
     .btn.ghost{border:1px solid var(--line);color:#eaf2ff;background:transparent}
     .btn.ghost:hover{border-color:rgba(125,178,255,.55)}
-    /* Claim/Activate default hidden to avoid wrong state flash; JS will show correct one */
-    #activate-tokens-button-cft,#claim-rewards-button-cft{width:100%;height:48px;font-size:1rem;display:none}
+        /* Claim button default hidden; JS will show when needed */
+    #claim-rewards-button-cft{width:100%;height:48px;font-size:1rem;display:none}
     /* Pool Stats */
     .stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
     .stat-tile{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
@@ -152,9 +152,8 @@
   .form-control.luxe{ width:100%; }
   .quick-fills{ grid-template-columns:repeat(3, minmax(0,1fr)); }
   .quick-fills .btn{ width:100%; }
-  #stake-button-cft,
+    #stake-button-cft,
   #unstake-button-cft,
-  #activate-tokens-button-cft,
   #claim-rewards-button-cft { width:100%; }
   /* stats grid: 2 cols on tablets */
   .stats-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
@@ -296,9 +295,7 @@
               <span class="mt-2 d-block" style="color:#9fb0cc" id="energy-hint">TRON energy fee required</span>
             </div>
             <div></div>
-            <div>
-              <!-- Start hidden; JS will show the correct one immediately -->
-              <a href="#" class="btn ghost w-100" id="activate-tokens-button-cft" style="display:none">Activate Tokens</a>
+                        <div>
               <a href="#" class="btn primary w-100" id="claim-rewards-button-cft" style="display:none"><i class="fa-solid fa-lock me-1"></i> Claim</a>
             </div>
           </div>
