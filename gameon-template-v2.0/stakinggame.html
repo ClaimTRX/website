@@ -358,6 +358,47 @@
       </div>
     </div>
   </section>
+
+    <!-- Buy Game Token Section -->
+  <section class="py-4">
+    <div class="container">
+      <div class="luxe-card">
+        <div class="staking-header text-center">
+          <h4 class="m-0">Buy Game Token Instantly</h4>
+          <p class="staking-sub mb-0 mt-2">Swap CFT or TRX directly for Game (1:1 ratio)</p>
+        </div>
+        <div class="row g-4 justify-content-center px-4 pb-4">
+          <!-- Swap CFT → Game -->
+          <div class="col-lg-5 col-md-6">
+            <div class="panel h-100 d-flex flex-column">
+              <div class="text-center mb-3">
+                <img src="assets/img/content/cftlogo518.png" alt="CFT" style="width:48px;height:48px;">
+                <i class="fa-solid fa-arrow-right mx-3 text-primary"></i>
+                <img src="assets/img/content/cftlogo518.png" alt="Game" style="width:48px;height:48px;">
+              </div>
+              <h5 class="text-center mb-3">Swap CFT → Game (1:1)</h5>
+              <input type="number" inputmode="decimal" min="0" step="any" placeholder="Amount of CFT" id="swap-cft-amount" class="form-control luxe mb-3">
+              <button class="btn primary w-100 mt-auto" id="swap-cft-button">Swap CFT for Game</button>
+            </div>
+          </div>
+
+          <!-- Swap TRX → Game -->
+          <div class="col-lg-5 col-md-6">
+            <div class="panel h-100 d-flex flex-column">
+              <div class="text-center mb-3">
+                <img src="assets/img/content/trx.png" alt="TRX" style="width:48px;height:48px;border-radius:50%;">
+                <i class="fa-solid fa-arrow-right mx-3 text-primary"></i>
+                <img src="assets/img/content/cftlogo518.png" alt="Game" style="width:48px;height:48px;">
+              </div>
+              <h5 class="text-center mb-3">Swap TRX → Game (1:1)</h5>
+              <input type="number" inputmode="decimal" min="0" step="any" placeholder="Amount of TRX" id="swap-trx-amount" class="form-control luxe mb-3">
+              <button class="btn primary w-100 mt-auto" id="swap-trx-button">Swap TRX for Game</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
   <!-- ***** Energy Rental Modal Start ***** -->
   <div class="modal fade" id="energy-rental-modal" tabindex="-1" aria-labelledby="energyRentalModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
