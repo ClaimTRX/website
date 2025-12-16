@@ -11,7 +11,7 @@ const TRONGRID_API_URL = 'https://api.trongrid.io';
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
 const SAFETY_ENERGY = 20000; // Extra energy for safety
-const ENERGY_PRICE_SUN = 10; // Price per energy unit in SUN
+const ENERGY_PRICE_SUN = 30; // Price per energy unit in SUN
 const SUN_PER_TRX = 1000000; // 1 TRX = 1,000,000 SUN
 const ENERGY_RENTAL_DURATION = 2; // Duration in minutes
 
