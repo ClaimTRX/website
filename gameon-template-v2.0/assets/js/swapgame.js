@@ -94,12 +94,11 @@ async function performSwap(type) {
         const amountSunStr = amountSun.toString();
         console.log('Amount string (TRX):', amountSunStr);
         
-        if (!amountSunStr || amountSunStr === '') {
-          throw new Error('Invalid amount string - empty');
-        }
+        // Use BigInt to avoid any parsing issues
+        const callValueBigInt = BigInt(amountSunStr);
         
         tx = await swapContracts.trx.swap().send({
-          callValue: amountSunStr
+          callValue: callValueBigInt
         });
         console.log('TRX Swap TX:', tx);
       }
