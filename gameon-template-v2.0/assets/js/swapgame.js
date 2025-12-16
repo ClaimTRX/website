@@ -3,7 +3,6 @@ const swapAbi = [
   {"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"swap","outputs":[],"stateMutability":"nonpayable","type":"function"},
   {"inputs":[],"name":"swap","outputs":[],"stateMutability":"payable","type":"function"}
 ];
-
 const swapDetails = {
   cft: {
     contractAddress: 'YOUR_CFT_TO_GAME_SWAP_ADDRESS_HERE',
@@ -18,10 +17,8 @@ const swapDetails = {
     buttonId: 'swap-trx-button'
   }
 };
-
 async function initializeSwap() {
   if (!tronWeb || !tronWeb.defaultAddress.base58) return;
-
   for (const key of ['cft', 'trx']) {
     const details = swapDetails[key];
     try {
@@ -32,72 +29,88 @@ async function initializeSwap() {
     }
   }
 }
-
 async function performSwap(type) {
+  console.log(`Starting swap for type: ${type}`);
+  
   const details = swapDetails[type];
   const amountInput = document.getElementById(details.inputId);
+  if (!amountInput) {
+    console.error('Input element not found');
+    showToast({ title: 'Error', body: 'Input field not found.', variant: 'danger' });
+    return;
+  }
+  
   const rawInput = amountInput.value.trim();
-
-  // === Strict validation first ===
+  console.log('Raw input value:', rawInput);
+  
   if (!rawInput) {
+    console.log('Validation failed: Empty input');
     showToast({ title: 'Error', body: 'Please enter an amount.', variant: 'danger' });
     return;
   }
-
-  // Handle comma as decimal separator (common in some regions)
+  
   const cleanedInput = rawInput.replace(',', '.');
-
+  console.log('Cleaned input:', cleanedInput);
+  
   const amount = parseFloat(cleanedInput);
-
+  console.log('Parsed amount:', amount);
+  
   if (isNaN(amount) || amount <= 0) {
+    console.log('Validation failed: Invalid or non-positive amount');
     showToast({ title: 'Invalid Amount', body: 'Enter a valid positive number (e.g., 5 or 5.5).', variant: 'danger' });
     return;
   }
-
+  
   const button = document.getElementById(details.buttonId);
   withLoading(button, 'Swapping...', async () => {
     try {
       let tx;
-
       if (type === 'cft') {
-        // CFT → Game
-        const amountSun = Math.round(amount * 1000000); // 6 decimals
+        console.log('Processing CFT swap');
+        const amountSun = Math.round(amount * 1000000);
+        console.log('Amount SUN (CFT):', amountSun);
         if (amountSun <= 0) throw new Error('Amount too small');
-
+        
         const amountStr = amountSun.toString();
-
-        const cftTokenContract = await tronWeb.contract().at('YOUR_CFT_TOKEN_ADDRESS_HERE'); // ← Replace!
-
+        console.log('Amount string (CFT):', amountStr);
+        
+        const cftTokenContract = await tronWeb.contract().at('YOUR_CFT_TOKEN_ADDRESS_HERE');
+        console.log('CFT contract loaded');
+        
         // Approve
         await cftTokenContract.approve(details.contractAddress, amountStr).send();
-        await delay(5000); // Wait longer for confirmation
-
+        console.log('Approve sent');
+        await delay(5000);
+        
         // Swap
         tx = await swapContracts.cft.swap(amountStr).send();
-
+        console.log('CFT Swap TX:', tx);
       } else { // TRX → Game
-        // Manual SUN calculation — safest way
-        const amountSun = Math.round(amount * 1000000); // 1 TRX = 1e6 SUN
+        console.log('Processing TRX swap');
+        const amountSun = Math.round(amount * 1000000);
+        console.log('Amount SUN (TRX):', amountSun);
         if (amountSun <= 0) throw new Error('Amount too small');
-
-        const amountSunStr = amountSun.toString(); // Guaranteed valid string
-
-        console.log('Sending callValue:', amountSunStr); // Debug line — check browser console
-
+        
+        const amountSunStr = amountSun.toString();
+        console.log('Amount string (TRX):', amountSunStr);
+        
+        if (!amountSunStr || amountSunStr === '') {
+          throw new Error('Invalid amount string - empty');
+        }
+        
         tx = await swapContracts.trx.swap().send({
           callValue: amountSunStr
         });
+        console.log('TRX Swap TX:', tx);
       }
-
+      
       showToast({
         title: 'Swap Complete!',
         body: `You received ${amount.toFixed(6)} Game tokens.<br>
                <a href="https://tronscan.org/#/transaction/${tx}" target="_blank" rel="noopener">View Transaction</a>`,
         variant: 'success'
       });
-
-      amountInput.value = ''; // Clear input
-
+      amountInput.value = '';
     } catch (err) {
       console.error('Swap error details:', err);
       let msg = 'Transaction failed.';
@@ -105,13 +118,13 @@ async function performSwap(type) {
         if (err.message.includes('balance')) msg = 'Insufficient TRX balance.';
         else if (err.message.includes('energy')) msg = 'Not enough energy. Rent energy or try later.';
         else if (err.message.includes('REVERT')) msg = 'Contract reverted. Check balance or approval.';
+        else if (err.message.includes('BigNumberish')) msg = 'Invalid amount format - please check input.';
         else msg = err.message;
       }
       showToast({ title: 'Swap Failed', body: msg, variant: 'danger' });
     }
   })();
 }
-
 // Reuse existing helpers
 function showToast({ title, body, variant = 'dark' }) {
   const el = document.getElementById('app-toast');
@@ -120,7 +133,6 @@ function showToast({ title, body, variant = 'dark' }) {
   el.innerHTML = `<div class="toast-header"><strong class="me-auto">${title}</strong><button type="button" class="btn-close" data-bs-dismiss="toast"></button></div><div class="toast-body">${body}</div>`;
   new bootstrap.Toast(el, { delay: 6000 }).show();
 }
-
 function withLoading(btn, label, fn) {
   return async () => {
     btn.disabled = true;
@@ -130,8 +142,6 @@ function withLoading(btn, label, fn) {
     finally { btn.disabled = false; btn.innerHTML = old; }
   };
 }
-
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', initializeSwap);
