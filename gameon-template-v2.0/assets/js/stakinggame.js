@@ -742,30 +742,30 @@ if (claimButton) {
     cacheData.timestamp = Date.now();
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
     const updateElement = (id, value, skeletonId) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.textContent = value;
-        if (id === `available-tokens-${token}`) el.dataset.raw = String(cacheData.data.balanceUnits);
-        if (skeletonId) setSkeleton(skeletonId, false);
-      }
-    };
-    updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
-    updateElement(`claimable-rewards-${token}`, `${Number(isExpired ? 0 : rewardUnits).toFixed(2)} ${d.rewardDisplayName}`);
-    const claimButton = document.getElementById(`claim-rewards-button-${token}`);
-    if (claimButton) {
-      if (isExpired) {
-  // Show claim button with warning — user can still claim if rewards remain
-  
-  claimButton.style.display = 'block';
-  claimButton.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
-  // Optional: change button text to "Claim Before Forfeiture" — but not required
-} else {
-  
-  claimButton.style.display = 'block';
-  claimButton.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
+  const el = document.getElementById(id);
+  if (el) {
+    el.textContent = value;
+    if (id === `available-tokens-${token}`) el.dataset.raw = String(cacheData.data.balanceUnits);
+    if (skeletonId) setSkeleton(skeletonId, false);
+  }
+};
+updateElement(`available-tokens-${token}`, fmt(cacheData.data.balanceUnits), `available-tokens-${token}`);
+updateElement(`claimable-rewards-${token}`, `${Number(cacheData.data.isExpired ? 0 : cacheData.data.rewardUnits).toFixed(2)} ${tokenDetails[token].rewardDisplayName}`);
+const claimButton = document.getElementById(`claim-rewards-button-${token}`);
+if (claimButton) {
+  const pendingRewardsRaw = String(cacheData.data.rewardUnits * SUN_PER_TRX);
+  const contractBalanceRaw = String(cacheData.data.contractBalance * SUN_PER_TRX);
+  if (cacheData.data.isExpired) {
+    // Show claim button with warning — user can still claim if rewards remain
+    claimButton.style.display = 'block';
+    claimButton.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
+    // Optional: change button text to "Claim Before Forfeiture" — but not required
+  } else {
+    claimButton.style.display = 'block';
+    claimButton.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
+  }
 }
-    }
-    updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp), userData.isActive, isWhitelisted, rewardUnits, contractBalanceRaw / SUN_PER_TRX);
+updateClaimTimer(cacheData.data.timeoutSec, cacheData.data.lastClaimTimestamp, cacheData.data.isActive, cacheData.data.isWhitelisted, cacheData.data.rewardUnits, cacheData.data.contractBalance);
   } catch (e) {
     console.error('updateActionGridUI error:', e);
     showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
