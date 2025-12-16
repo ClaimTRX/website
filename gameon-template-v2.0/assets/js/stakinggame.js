@@ -716,7 +716,7 @@ async function updateActionGridUI(token, first = false, userData) {
       showToast({ title: 'Contract Error', body: 'Failed to fetch earned rewards; using fallback data.', variant: 'warning' });
     }
     const [timeout, contractBalanceRaw, isWhitelisted, balanceRaw] = await Promise.all([
-      retryWithBackoff(() => stakingContracts[token].methods.claimTimeout().call().catch(() => '1209600')),
+  retryWithBackoff(() => stakingContracts[token].methods.claimTimeout().call().catch(() => '604800')), // 7 days
       retryWithBackoff(() => tronWeb.trx.getBalance(tokenDetails[token].stakingAddress).catch(() => '0')),
       retryWithBackoff(() => stakingContracts[token].methods.whitelist(userAddress).call().catch(() => false)),
       retryWithBackoff(() => tokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0'))
@@ -726,7 +726,7 @@ async function updateActionGridUI(token, first = false, userData) {
     let rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX;
     const now = Math.floor(Date.now() / 1000);
     const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + Number(timeout);
-    const isExpired = timeout && nextClaim <= now && !userData.isActive && !isWhitelisted;
+    const isExpired = timeout && nextClaim <= now && !isWhitelisted;
     if (isExpired) {
       rewardUnits = 0;
     }
@@ -755,15 +755,17 @@ async function updateActionGridUI(token, first = false, userData) {
     const activateButton = document.getElementById(`activate-tokens-button-${token}`);
     const claimButton = document.getElementById(`claim-rewards-button-${token}`);
     if (activateButton && claimButton) {
-      if (isExpired || (!userData.isActive && Number(userData.stakedAmount) > 0)) {
-        activateButton.style.display = 'block';
-        claimButton.style.display = 'none';
-        claimButton.disabled = true;
-      } else {
-        activateButton.style.display = 'none';
-        claimButton.style.display = 'block';
-        claimButton.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
-      }
+      if (isExpired) {
+  // Show claim button with warning — user can still claim if rewards remain
+  activateButton.style.display = 'none';
+  claimButton.style.display = 'block';
+  claimButton.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
+  // Optional: change button text to "Claim Before Forfeiture" — but not required
+} else {
+  activateButton.style.display = 'none';
+  claimButton.style.display = 'block';
+  claimButton.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
+}
     }
     updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp), userData.isActive, isWhitelisted, rewardUnits, contractBalanceRaw / SUN_PER_TRX);
   } catch (e) {
@@ -916,14 +918,15 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
       cachedBalance = contractBalanceRaw;
       cacheTimestamp = Date.now();
     }
-    if (rem === 0 || !isActive) {
-      clearInterval(timerEl._claimInterval);
-      timerEl._claimInterval = null;
-      timerEl.textContent = 'Expired';
-      timerEl.classList.add('inactive');
-      claimBtn.disabled = true;
-      claimBtn.style.display = 'none';
-      activateBtn.style.display = 'block';
+    if (rem === 0) {
+  clearInterval(timerEl._claimInterval);
+  timerEl._claimInterval = null;
+  timerEl.textContent = 'Expired';
+  timerEl.classList.add('inactive');
+  // Keep claim button visible until actual forfeiture
+  claimBtn.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
+  claimBtn.style.display = 'block';
+  activateBtn.style.display = 'none';
       const apyEl = document.getElementById('projected-rewards-game');
       if (apyEl) apyEl.textContent = '0.00%';
       const claimableEl = document.getElementById('claimable-rewards-game');
@@ -1396,12 +1399,6 @@ document.addEventListener('DOMContentLoaded', () => {
       await claimRewards(key);
     });
   }
-  const activateButton = document.getElementById(`activate-tokens-button-${key}`);
-  if (activateButton) {
-    activateButton.addEventListener('click', async (e) => {
-      e.preventDefault();
-      await activateTokens(key);
-    });
-  }
+  
   initialize();
 });
