@@ -37,7 +37,7 @@
         <li class="nav-item"><a href="promote.html" class="nav-link">Communities</a></li>
       </ul>
 
-      <!-- Hamburger -->
+      <!-- Hamburger Icon -->
       <ul class="navbar-nav toggle">
         <li class="nav-item">
           <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
@@ -46,7 +46,7 @@
         </li>
       </ul>
 
-      <!-- Desktop Connect Button -->
+      <!-- Desktop Wallet Connect -->
       <ul class="navbar-nav action">
         <li class="nav-item ms-2">
           <button id="connect-button" class="btn btn-outline"><i class="icon-wallet me-md-2"></i> Wallet Connect</button>
@@ -56,7 +56,7 @@
   </nav>
 </header>
 
-<!-- Mobile Menu Modal (Fixed for Mobile Navigation) -->
+<!-- Mobile Menu Modal -->
 <div class="modal fade p-0" id="menu" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content" style="background:var(--bg-1);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-2)">
@@ -66,13 +66,10 @@
       </div>
       <div class="modal-body" style="padding:0">
         <div class="items">
-          <!-- Simple Links -->
-          <a href="index.html" class="nav-link" data-bs-dismiss="modal">Home</a>
-          <a href="swap.html" class="nav-link" data-bs-dismiss="modal">Swap</a>
-          <a href="https://cftguardians.com/" class="nav-link" data-bs-dismiss="modal">CFT Guardians</a>
-          <a href="promote.html" class="nav-link" data-bs-dismiss="modal">Communities</a>
+          <!-- Home -->
+          <a href="index.html" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">Home</a>
 
-          <!-- Dropdown: CFT -->
+          <!-- CFT Dropdown -->
           <div class="dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="event.stopPropagation();">
               CFT
@@ -86,7 +83,7 @@
             </ul>
           </div>
 
-          <!-- Dropdown: StableX -->
+          <!-- StableX Dropdown -->
           <div class="dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="event.stopPropagation();">
               StableX
@@ -98,7 +95,7 @@
             </ul>
           </div>
 
-          <!-- Dropdown: Energy -->
+          <!-- Energy Dropdown -->
           <div class="dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="event.stopPropagation();">
               Energy
@@ -109,7 +106,12 @@
             </ul>
           </div>
 
-          <!-- Wallet Connect Button -->
+          <!-- Simple Links (continued) -->
+          <a href="swap.html" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">Swap</a>
+          <a href="https://cftguardians.com/" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">CFT Guardians</a>
+          <a href="promote.html" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">Communities</a>
+
+          <!-- Mobile Wallet Connect Button -->
           <div style="padding:1.5rem 1.25rem 1rem">
             <button id="connect-button-mobile" class="btn primary w-100" style="height:50px;font-weight:800">
               <i class="icon-wallet me-2"></i> Wallet Connect
@@ -121,18 +123,10 @@
   </div>
 </div>
 
-<!-- Sync mobile connect button -->
+<!-- Sync Mobile Wallet Button with Desktop -->
 <script>
   document.getElementById('connect-button-mobile')?.addEventListener('click', (e) => {
     e.preventDefault();
-    document.getElementById('connect-button')?.click();
-    bootstrap.Modal.getInstance(document.getElementById('menu'))?.hide();
-  });
-</script>
-
-<!-- Sync mobile connect button with desktop one -->
-<script>
-  document.getElementById('connect-button-mobile')?.addEventListener('click', () => {
     document.getElementById('connect-button')?.click();
     bootstrap.Modal.getInstance(document.getElementById('menu'))?.hide();
   });
