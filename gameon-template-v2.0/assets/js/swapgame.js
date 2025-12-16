@@ -12,7 +12,7 @@ const swapDetails = {
     buttonId: 'swap-cft-button'
   },
   trx: {
-    contractAddress: 'YOUR_TRX_TO_GAME_SWAP_ADDRESS_HERE',
+    contractAddress: 'TDyLmpoX2aBrpdfmQr7mXvXCY2AX7D8Mje',
     tokenName: 'TRX',
     inputId: 'swap-trx-amount',
     buttonId: 'swap-trx-button'
