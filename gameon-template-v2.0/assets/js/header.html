@@ -56,57 +56,59 @@
   </nav>
 </header>
 
-<!-- Mobile Menu Modal (Luxe Style) -->
+<!-- Mobile Menu Modal (Fixed for Mobile Navigation) -->
 <div class="modal fade p-0" id="menu" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content" style="background:var(--bg-1);border:1px solid var(--line);border-radius:16px;overflow:hidden">
+    <div class="modal-content" style="background:var(--bg-1);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-2)">
       <div class="modal-header" style="border-bottom:1px solid var(--line);padding:1.25rem">
         <h5 class="modal-title m-0">Menu</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter:invert(1)"></button>
       </div>
       <div class="modal-body" style="padding:0">
         <div class="items">
-          <!-- Main Links -->
+          <!-- Simple Links -->
           <a href="index.html" class="nav-link" data-bs-dismiss="modal">Home</a>
-          
-          <div class="dropdown">
-            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-              CFT
-            </a>
-            <ul class="dropdown-menu" style="background:var(--bg-2);border:1px solid var(--line);width:100%;border-radius:var(--radius-3);margin-top:0">
-              <li><a href="poolstaking.html" class="nav-link" data-bs-dismiss="modal">Earn TRX</a></li>
-              <li><a href="poolstakingusdt.html" class="nav-link" data-bs-dismiss="modal">Earn USDT</a></li>
-              <li><a href="staking.html" class="nav-link" data-bs-dismiss="modal">Staking</a></li>
-              <li><a href="lockstaking.html" class="nav-link" data-bs-dismiss="modal">Locked Staking</a></li>
-              <li><a href="sellcft.html" class="nav-link" data-bs-dismiss="modal">Trading</a></li>
-            </ul>
-          </div>
-          
-          <div class="dropdown">
-            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-              StableX
-            </a>
-            <ul class="dropdown-menu" style="background:var(--bg-2);border:1px solid var(--line);width:100%;border-radius:var(--radius-3)">
-              <li><a href="buystablex.html" class="nav-link" data-bs-dismiss="modal">Buy StableX</a></li>
-              <li><a href="sellstablex.html" class="nav-link" data-bs-dismiss="modal">Sell StableX</a></li>
-              <li><a href="stablexstaking.html" class="nav-link" data-bs-dismiss="modal">Stake StableX</a></li>
-            </ul>
-          </div>
-          
-          <div class="dropdown">
-            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-              Energy
-            </a>
-            <ul class="dropdown-menu" style="background:var(--bg-2);border:1px solid var(--line);width:100%;border-radius:var(--radius-3)">
-              <li><a href="feb.html" class="nav-link" data-bs-dismiss="modal">FEB</a></li>
-              <li><a href="energy.html" class="nav-link" data-bs-dismiss="modal">Rent Energy</a></li>
-            </ul>
-          </div>
-          
           <a href="swap.html" class="nav-link" data-bs-dismiss="modal">Swap</a>
           <a href="https://cftguardians.com/" class="nav-link" data-bs-dismiss="modal">CFT Guardians</a>
           <a href="promote.html" class="nav-link" data-bs-dismiss="modal">Communities</a>
-          
+
+          <!-- Dropdown: CFT -->
+          <div class="dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="event.stopPropagation();">
+              CFT
+            </a>
+            <ul class="dropdown-menu" style="background:var(--bg-2);border:1px solid var(--line);width:100%;border-radius:var(--radius-3);margin-top:0">
+              <li><a href="poolstaking.html" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">Earn TRX</a></li>
+              <li><a href="poolstakingusdt.html" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">Earn USDT</a></li>
+              <li><a href="staking.html" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">Staking</a></li>
+              <li><a href="lockstaking.html" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">Locked Staking</a></li>
+              <li><a href="sellcft.html" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">Trading</a></li>
+            </ul>
+          </div>
+
+          <!-- Dropdown: StableX -->
+          <div class="dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="event.stopPropagation();">
+              StableX
+            </a>
+            <ul class="dropdown-menu" style="background:var(--bg-2);border:1px solid var(--line);width:100%;border-radius:var(--radius-3)">
+              <li><a href="buystablex.html" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">Buy StableX</a></li>
+              <li><a href="sellstablex.html" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">Sell StableX</a></li>
+              <li><a href="stablexstaking.html" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">Stake StableX</a></li>
+            </ul>
+          </div>
+
+          <!-- Dropdown: Energy -->
+          <div class="dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="event.stopPropagation();">
+              Energy
+            </a>
+            <ul class="dropdown-menu" style="background:var(--bg-2);border:1px solid var(--line);width:100%;border-radius:var(--radius-3)">
+              <li><a href="feb.html" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">FEB</a></li>
+              <li><a href="energy.html" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">Rent Energy</a></li>
+            </ul>
+          </div>
+
           <!-- Wallet Connect Button -->
           <div style="padding:1.5rem 1.25rem 1rem">
             <button id="connect-button-mobile" class="btn primary w-100" style="height:50px;font-weight:800">
@@ -118,6 +120,15 @@
     </div>
   </div>
 </div>
+
+<!-- Sync mobile connect button -->
+<script>
+  document.getElementById('connect-button-mobile')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    document.getElementById('connect-button')?.click();
+    bootstrap.Modal.getInstance(document.getElementById('menu'))?.hide();
+  });
+</script>
 
 <!-- Sync mobile connect button with desktop one -->
 <script>
