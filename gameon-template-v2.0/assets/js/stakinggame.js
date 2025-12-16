@@ -681,15 +681,12 @@ async function updateActionGridUI(token, first = false, userData) {
     updateElement(`claimable-rewards-${token}`, `${Number(cacheData.data.isExpired ? 0 : cacheData.data.rewardUnits).toFixed(2)} ${tokenDetails[token].rewardDisplayName}`);
     const claimButton = document.getElementById(`claim-rewards-button-${token}`);
 if (claimButton) {
-    if (isExpired) {
-        // Show claim button with warning — user can still claim if rewards remain
-        claimButton.style.display = 'block';
-        claimButton.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
-        // Optional: change button text to "Claim Before Forfeiture" — but not required
-    } else {
-        claimButton.style.display = 'block';
-        claimButton.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
-    }
+  // Reconstruct values from cache (they are stored in TRX units)
+  const pendingRewardsInSun = cacheData.data.rewardUnits * SUN_PER_TRX;
+  const contractBalanceInSun = cacheData.data.contractBalance * SUN_PER_TRX;
+
+  claimButton.style.display = 'block';
+  claimButton.disabled = pendingRewardsInSun === 0 || contractBalanceInSun < pendingRewardsInSun;
 }
     updateClaimTimer(cacheData.data.timeoutSec, cacheData.data.lastClaimTimestamp, cacheData.data.isActive, cacheData.data.isWhitelisted, cacheData.data.rewardUnits, cacheData.data.contractBalance);
     return;
@@ -922,7 +919,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
   timerEl.textContent = 'Expired';
   timerEl.classList.add('inactive');
   // Keep claim button visible until actual forfeiture
-  claimBtn.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
+  claimBtn.disabled = Number(pendingRewards) === 0 || Number(contractBalanceRaw) < Number(pendingRewards);
   claimBtn.style.display = 'block';
   
       const apyEl = document.getElementById('projected-rewards-game');
