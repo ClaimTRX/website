@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CFT Staking - All Stakers List</title>
+  <link rel="icon" href="assets/img/favicon.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    :root{--bg-0:#07090f;--bg-1:#0b0e17;--bg-2:#0f1321;--line:#212b46;--muted:#9aa7bd;--txt:#e9eef7;--accent-1:#62ffcf;--accent-2:#7db2ff;--danger:#ff5b73;--warning:#ffd166;--success:#00e095;--radius-3:18px;--shadow-1:0 10px 30px rgba(0,0,0,.55)}
+    body{background:var(--bg-0);color:var(--txt);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    .luxe-card{background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--radius-3);box-shadow:var(--shadow-1);padding:2rem;margin-bottom:2rem}
+    table{width:100%;border-collapse:separate;border-spacing:0 0.75rem}
+    th{background:var(--bg-2);padding:1rem;text-align:left;font-weight:700}
+    td{background:var(--bg-2);padding:1rem;border-radius:8px}
+    .addr{font-family:ui-monospace,monospace;font-size:0.92rem;color:var(--accent-2);cursor:pointer;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .addr:hover{color:var(--accent-1)}
+    .expired{color:var(--danger);font-weight:700}
+    .soon{color:var(--warning);font-weight:700}
+    .progress-text{font-size:0.9rem;color:var(--muted)}
+    .progress-bar{background:linear-gradient(90deg,var(--accent-1),var(--accent-2))}
+    .section-title{font-size:1.5rem;margin-bottom:1rem}
+    .section-total{text-align:right;color:var(--muted);font-size:0.95rem;margin-top:1rem}
+
+    /* Mobile card layout - perfect spacing */
+    @media (max-width:768px){
+      table,thead,tbody,th,td,tr{display:block}
+      thead tr{position:absolute;top:-9999px;left:-9999px}
+      tr{margin-bottom:1.2rem;border:1px solid var(--line);border-radius:12px;padding:1rem;background:var(--bg-2);box-shadow:0 4px 15px rgba(0,0,0,0.3)}
+      
+      td{border:none;position:relative;padding:0.4rem 0 0.4rem 0;text-align:left !important}
+      td:first-child{padding-top:0}
+      td:last-child{padding-bottom:0}
+      
+      td:before{
+        content:attr(data-label);
+        display:block;
+        font-weight:700;
+        color:var(--muted);
+        margin-bottom:0.35rem;
+        font-size:0.95rem;
+      }
+      
+      /* Special: make wallet address appear below the label */
+      td[data-label="Wallet"]{
+        padding-top:0.6rem;
+      }
+      td[data-label="Wallet"] .addr{
+        margin-top:0.4rem;
+        font-size:1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header id="header" class="pt-2">
+  <nav class="navbar navbar-expand">
+    <div class="container">
+      <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" height="48" alt=""></a>
+      <ul class="navbar-nav items mx-auto">
+        <li class="nav-item"><a href="poolstaking.html" class="nav-link">Earn TRX</a></li>
+        <li class="nav-item"><a href="stakers-list.html" class="nav-link active">Stakers List</a></li>
+      </ul>
+      <ul class="navbar-nav action">
+        <li><button id="connect-button" class="btn btn-outline">Wallet Connect</button></li>
+      </ul>
+    </div>
+  </nav>
+</header>
+
+<section class="hero-section">
+  <div class="container text-center">
+    <span class="intro-text">CFT Ecosystem</span>
+    <h1 class="display-5">All Stakers List</h1>
+    <p>14-day claim timeout • Sorted by staked amount</p>
+  </div>
+</section>
+
+<section class="py-5">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h3 class="m-0">Stakers <span id="total-stakers" class="text-muted">(loading...)</span></h3>
+      <button id="refresh" class="btn primary btn-sm">Refresh List</button>
+    </div>
+
+    <div class="text-center my-4" id="progress" style="display:none">
+      <div class="progress" style="height:8px;background:var(--bg-2)">
+        <div class="progress-bar" style="width:0%"></div>
+      </div>
+      <div class="progress-text mt-2">Loading staker <span id="current">0</span> of <span id="total">0</span></div>
+    </div>
+
+    <div id="active-section" class="luxe-card">
+      <h4 class="section-title">Active Stakers</h4>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Wallet</th>
+              <th>Staked CFT</th>
+              <th>Last Claim</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="active-body"></tbody>
+        </table>
+      </div>
+      <div class="section-total" id="active-total">Total Active: — CFT</div>
+    </div>
+
+    <div id="soon-section" class="luxe-card">
+      <h4 class="section-title">Expire Soon</h4>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Wallet</th>
+              <th>Staked CFT</th>
+              <th>Last Claim</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="soon-body"></tbody>
+        </table>
+      </div>
+      <div class="section-total" id="soon-total">Total Expire Soon: — CFT</div>
+    </div>
+
+    <div id="expired-section" class="luxe-card">
+      <h4 class="section-title">Expired</h4>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Wallet</th>
+              <th>Staked CFT</th>
+              <th>Last Claim</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="expired-body"></tbody>
+        </table>
+      </div>
+      <div class="section-total" id="expired-total">Total Expired: — CFT</div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer-area py-5 mt-3">
+  <div class="container text-center">
+    <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" height="28" alt=""></a>
+    <div class="copyright-area py-2">©2025 CFT Ecosystem</div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+<script>
+  const STAKING_ADDRESS = 'TWdkKsk6nvgLqGUv64WHLsYfh5ABHHtkJZ';
+  const TOKEN_DECIMALS = 6;
+  const DELAY_MS = 380;
+  let tronWeb;
+
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  async function loadStakers() {
+    const activeBody = document.getElementById('active-body');
+    const soonBody = document.getElementById('soon-body');
+    const expiredBody = document.getElementById('expired-body');
+    const progress = document.getElementById('progress');
+    const progressBar = progress.querySelector('.progress-bar');
+    const currentEl = document.getElementById('current');
+    const totalEl = document.getElementById('total');
+
+    activeBody.innerHTML = '<tr><td colspan="4" class="text-center py-5">Connecting...</td></tr>';
+    soonBody.innerHTML = '';
+    expiredBody.innerHTML = '';
+    progress.style.display = 'block';
+
+    try {
+      if (!tronWeb && (!window.tronWeb || !window.tronWeb.ready)) {
+        throw new Error('Please unlock TronLink');
+      }
+      tronWeb = tronWeb || window.tronWeb;
+
+      const contract = await tronWeb.contract().at(STAKING_ADDRESS);
+      const list = await contract.getStakersList().call();
+
+      document.getElementById('total-stakers').textContent = `(${list.length} wallets)`;
+      totalEl.textContent = list.length;
+
+      const activeData = [], soonData = [], expiredData = [];
+
+      for (let i = 0; i < list.length; i++) {
+        let addr = list[i];
+        if (addr.startsWith('41') && addr.length === 42) {
+          addr = tronWeb.address.fromHex(addr);
+        }
+
+        currentEl.textContent = i + 1;
+        progressBar.style.width = `${((i + 1) / list.length) * 100}%`;
+
+        try {
+          const info = await contract.users(addr).call();
+          const stakedNum = tronWeb.toBigNumber(info.stakedAmount).shiftedBy(-TOKEN_DECIMALS).toNumber();
+          const lastClaim = Number(info.lastClaimTimestamp);
+          const isActive = info.isActive;
+
+          const now = Math.floor(Date.now() / 1000);
+          let daysSinceClaim = lastClaim === 0 ? Infinity : Math.floor((now - lastClaim) / 86400);
+
+          let status, statusClass, category;
+          if (lastClaim === 0) {
+            status = 'Never claimed'; statusClass = 'text-muted'; category = 'active';
+          } else if (!isActive || daysSinceClaim > 14) {
+            status = 'EXPIRED'; statusClass = 'expired'; category = 'expired';
+          } else if (daysSinceClaim >= 10) {
+            status = 'Expire Soon'; statusClass = 'soon'; category = 'soon';
+          } else {
+            status = 'Active'; statusClass = 'text-success'; category = 'active';
+          }
+
+          const lastClaimText = lastClaim === 0 ? 'Never' :
+            daysSinceClaim === 0 ? 'Today' :
+            daysSinceClaim === 1 ? '1 day ago' : `${daysSinceClaim} days ago`;
+
+          const data = { addr, stakedNum, lastClaimText, status, statusClass };
+
+          if (category === 'active') activeData.push(data);
+          else if (category === 'soon') soonData.push(data);
+          else expiredData.push(data);
+        } catch (e) { console.warn('Failed for', addr, e.message); }
+
+        if (i < list.length - 1) await sleep(DELAY_MS);
+      }
+
+      activeData.sort((a, b) => b.stakedNum - a.stakedNum);
+      soonData.sort((a, b) => b.stakedNum - a.stakedNum);
+      expiredData.sort((a, b) => b.stakedNum - a.stakedNum);
+
+      const buildRows = (data) => {
+        let rows = '';
+        data.forEach(s => {
+          rows += `
+            <tr>
+              <td data-label="Wallet"><span class="addr" onclick="copyAddr(this, '${s.addr}')">${s.addr}</span></td>
+              <td data-label="Staked CFT"><strong>${s.stakedNum.toLocaleString(undefined, {maximumFractionDigits: 4})}</strong> CFT</td>
+              <td data-label="Last Claim">${s.lastClaimText}</td>
+              <td data-label="Status" class="${s.statusClass}">${s.status}</td>
+            </tr>`;
+        });
+        return rows || '<tr><td colspan="4" class="text-center py-4">None</td></tr>';
+      };
+
+      activeBody.innerHTML = buildRows(activeData);
+      soonBody.innerHTML = buildRows(soonData);
+      expiredBody.innerHTML = buildRows(expiredData);
+
+      const sum = arr => arr.reduce((t, s) => t + s.stakedNum, 0);
+      document.getElementById('active-total').textContent = `Total Active: ${sum(activeData).toLocaleString(undefined, {maximumFractionDigits: 2})} CFT`;
+      document.getElementById('soon-total').textContent = `Total Expire Soon: ${sum(soonData).toLocaleString(undefined, {maximumFractionDigits: 2})} CFT`;
+      document.getElementById('expired-total').textContent = `Total Expired: ${sum(expiredData).toLocaleString(undefined, {maximumFractionDigits: 2})} CFT`;
+
+      progress.style.display = 'none';
+    } catch (err) {
+      activeBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-5">Error: ${err.message}</td></tr>`;
+      progress.style.display = 'none';
+    }
+  }
+
+  function copyAddr(el, addr) {
+    navigator.clipboard.writeText(addr);
+    const orig = el.textContent;
+    el.textContent = 'Copied!';
+    el.style.color = '#62ffcf';
+    setTimeout(() => { el.textContent = orig; el.style.color = ''; }, 1500);
+  }
+
+  window.addEventListener('load', () => {
+    if (window.tronWeb && window.tronWeb.ready) {
+      tronWeb = window.tronWeb;
+      document.getElementById('connect-button').innerHTML = 'Connected';
+    }
+    loadStakers();
+  });
+
+  document.getElementById('refresh').addEventListener('click', loadStakers);
+</script>
+</body>
+</html>
