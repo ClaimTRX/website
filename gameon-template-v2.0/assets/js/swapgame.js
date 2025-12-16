@@ -1,146 +1,173 @@
+// swapgame.js - Full working version for Game Token swaps (CFT → Game & TRX → Game)
+
 let swapContracts = {};
 const swapAbi = [
-  {"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"swap","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[],"name":"swap","outputs":[],"stateMutability":"payable","type":"function"}
+  {
+    "inputs": [{"internalType":"uint256","name":"amount","type":"uint256"}],
+    "name":"swap",
+    "outputs":[],
+    "stateMutability":"nonpayable",
+    "type":"function"
+  },
+  {
+    "inputs": [],
+    "name":"swap",
+    "outputs":[],
+    "stateMutability":"payable",
+    "type":"function"
+  }
 ];
+
 const swapDetails = {
   cft: {
-    contractAddress: 'TDqRsqMaxsjMAwx4VLR6xvYDM8RRfiL83r',
+    contractAddress: 'TDqRsqMaxsjMAwx4VLR6xvYDM8RRfiL83r',     // ← Replace with your deployed CFT→Game contract
+    cftTokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',            // ← Replace with actual CFT token address
     tokenName: 'CFT',
     inputId: 'swap-cft-amount',
     buttonId: 'swap-cft-button'
   },
   trx: {
-    contractAddress: 'TDyLmpoX2aBrpdfmQr7mXvXCY2AX7D8Mje',
+    contractAddress: 'TDyLmpoX2aBrpdfmQr7mXvXCY2AX7D8Mje',     // Your deployed TRX→Game contract
     tokenName: 'TRX',
     inputId: 'swap-trx-amount',
     buttonId: 'swap-trx-button'
   }
 };
+
 async function initializeSwap() {
-  if (!tronWeb || !tronWeb.defaultAddress.base58) return;
+  if (!window.tronWeb || !window.tronWeb.defaultAddress.base58) {
+    console.log('TronWeb not ready yet');
+    return;
+  }
+
   for (const key of ['cft', 'trx']) {
     const details = swapDetails[key];
     try {
       swapContracts[key] = await tronWeb.contract(swapAbi, details.contractAddress);
-      document.getElementById(details.buttonId).addEventListener('click', () => performSwap(key));
+      const button = document.getElementById(details.buttonId);
+      if (button) {
+        button.addEventListener('click', () => performSwap(key));
+      }
     } catch (e) {
-      console.error(`Failed to load ${key} swap contract:`, e);
+      console.error(`Failed to initialize ${key} swap contract:`, e);
     }
   }
 }
+
 async function performSwap(type) {
   console.log(`Starting swap for type: ${type}`);
-  
+
   const details = swapDetails[type];
   const amountInput = document.getElementById(details.inputId);
   if (!amountInput) {
-    console.error('Input element not found');
-    showToast({ title: 'Error', body: 'Input field not found.', variant: 'danger' });
+    showToast({ title: 'Error', body: 'Input field missing.', variant: 'danger' });
     return;
   }
-  
+
   const rawInput = amountInput.value.trim();
-  console.log('Raw input value:', rawInput);
-  
   if (!rawInput) {
-    console.log('Validation failed: Empty input');
     showToast({ title: 'Error', body: 'Please enter an amount.', variant: 'danger' });
     return;
   }
-  
+
   const cleanedInput = rawInput.replace(',', '.');
-  console.log('Cleaned input:', cleanedInput);
-  
   const amount = parseFloat(cleanedInput);
-  console.log('Parsed amount:', amount);
-  
+
   if (isNaN(amount) || amount <= 0) {
-    console.log('Validation failed: Invalid or non-positive amount');
-    showToast({ title: 'Invalid Amount', body: 'Enter a valid positive number (e.g., 5 or 5.5).', variant: 'danger' });
+    showToast({ title: 'Invalid Amount', body: 'Enter a valid positive number (e.g. 5 or 5.5).', variant: 'danger' });
     return;
   }
-  
+
   const button = document.getElementById(details.buttonId);
   withLoading(button, 'Swapping...', async () => {
     try {
       let tx;
+
       if (type === 'cft') {
-        console.log('Processing CFT swap');
-        const amountSun = Math.round(amount * 1000000);
-        console.log('Amount SUN (CFT):', amountSun);
-        if (amountSun <= 0) throw new Error('Amount too small');
-        
+        // CFT → Game (requires approval)
+        const amountSun = Math.round(amount * 1_000_000); // 6 decimals
         const amountStr = amountSun.toString();
-        console.log('Amount string (CFT):', amountStr);
-        
-        const cftTokenContract = await tronWeb.contract().at('YOUR_CFT_TOKEN_ADDRESS_HERE');
-        console.log('CFT contract loaded');
-        
-        // Approve
-        await cftTokenContract.approve(details.contractAddress, amountStr).send();
-        console.log('Approve sent');
-        await delay(5000);
-        
-        // Swap
-        tx = await swapContracts.cft.swap(amountStr).send();
-        console.log('CFT Swap TX:', tx);
-      } else { // TRX → Game
-        console.log('Processing TRX swap');
-        const amountSun = Math.round(amount * 1000000);
-        console.log('Amount SUN (TRX):', amountSun);
-        if (amountSun <= 0) throw new Error('Amount too small');
-        
-        const amountSunStr = amountSun.toString();
-        console.log('Amount string (TRX):', amountSunStr);
-        
-        // Use BigInt to avoid any parsing issues
-        const callValueBigInt = BigInt(amountSunStr);
-        
-        tx = await swapContracts.trx.swap().send({
-          callValue: callValueBigInt
+
+        const cftTokenContract = await tronWeb.contract().at(details.cftTokenAddress);
+
+        // Step 1: Approve
+        showToast({ title: 'Step 1/2', body: 'Approve CFT spending... Confirm in wallet.', variant: 'info' });
+        await cftTokenContract.approve(details.contractAddress, amountStr).send({
+          feeLimit: 100_000_000
         });
-        console.log('TRX Swap TX:', tx);
+        await delay(6000); // Wait for confirmation
+
+        // Step 2: Swap
+        showToast({ title: 'Step 2/2', body: 'Swapping CFT → Game... Confirm.', variant: 'info' });
+        tx = await swapContracts.cft.swap(amountStr).send({
+          feeLimit: 100_000_000
+        });
+
+      } else {
+        // TRX → Game
+        const amountSun = Math.round(amount * 1_000_000);
+        const amountSunStr = amountSun.toString();
+
+        tx = await swapContracts.trx.swap().send({
+          callValue: amountSunStr,
+          feeLimit: 80_000_000
+        });
       }
-      
+
       showToast({
-        title: 'Swap Complete!',
-        body: `You received ${amount.toFixed(6)} Game tokens.<br>
-               <a href="https://tronscan.org/#/transaction/${tx}" target="_blank" rel="noopener">View Transaction</a>`,
+        title: 'Swap Successful!',
+        body: `You received ${amount.toFixed(6)} Game tokens!<br>
+               <a href="https://tronscan.org/#/transaction/${tx}" target="_blank" rel="noopener">View on Tronscan</a>`,
         variant: 'success'
       });
+
       amountInput.value = '';
+
     } catch (err) {
-      console.error('Swap error details:', err);
-      let msg = 'Transaction failed.';
+      console.error('Swap error:', err);
+      let msg = 'Transaction failed or rejected.';
       if (err.message) {
-        if (err.message.includes('balance')) msg = 'Insufficient TRX balance.';
-        else if (err.message.includes('energy')) msg = 'Not enough energy. Rent energy or try later.';
-        else if (err.message.includes('REVERT')) msg = 'Contract reverted. Check balance or approval.';
-        else if (err.message.includes('BigNumberish')) msg = 'Invalid amount format - please check input.';
+        if (err.message.includes('balance') || err.message.includes('insufficient')) msg = 'Insufficient balance.';
+        else if (err.message.includes('energy')) msg = 'Not enough energy. Rent energy and try again.';
+        else if (err.message.includes('REVERT')) msg = 'Contract reverted. Check balance/allowance.';
         else msg = err.message;
       }
       showToast({ title: 'Swap Failed', body: msg, variant: 'danger' });
     }
   })();
 }
-// Reuse existing helpers
+
+// Helper functions (reuse from your existing code)
 function showToast({ title, body, variant = 'dark' }) {
   const el = document.getElementById('app-toast');
   if (!el) return;
   el.className = `toast text-bg-${variant}`;
-  el.innerHTML = `<div class="toast-header"><strong class="me-auto">${title}</strong><button type="button" class="btn-close" data-bs-dismiss="toast"></button></div><div class="toast-body">${body}</div>`;
-  new bootstrap.Toast(el, { delay: 6000 }).show();
+  el.innerHTML = `
+    <div class="toast-header">
+      <strong class="me-auto">${title}</strong>
+      <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+    </div>
+    <div class="toast-body">${body}</div>`;
+  new bootstrap.Toast(el, { delay: 8000 }).show();
 }
+
 function withLoading(btn, label, fn) {
   return async () => {
     btn.disabled = true;
-    const old = btn.innerHTML;
+    const oldHTML = btn.innerHTML;
     btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>${label}`;
-    try { await fn(); }
-    finally { btn.disabled = false; btn.innerHTML = old; }
+    try {
+      await fn();
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = oldHTML;
+    }
   };
 }
-function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-// Initialize when page loads
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', initializeSwap);
