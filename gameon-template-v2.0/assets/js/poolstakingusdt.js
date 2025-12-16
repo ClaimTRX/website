@@ -684,13 +684,13 @@ async function updateTopBarUI(token, first = false, userData) {
     updateElement(`staked-amount-${token}`, fmt(stakedUnits), `staked-amount-${token}`);
     updateElement(`projected-rewards-${token}`, fmtPct(apyPct), `projected-rewards-${token}`);
     updateElement(`roi-cft`, fmtPct(roiPct), `roi-cft`);
-    updateElement(`user-total-claimed-cft`, `${fmt(userTotalClaimedUSDT)} USDT`, `user-total-claimed-cft`);
+    updateElement(`user-total-claimed-cft_usdt`, `${fmt(userTotalClaimedUSDT)} USDT`, `user-total-claimed-cft_usdt`);
 
   } catch (e) {
     console.error('updateTopBarUI error:', e);
     showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
 
-    ['staked-amount-cft_usdt', 'projected-rewards-cft_usdt', 'roi-cft', 'user-total-claimed-cft']
+    ['staked-amount-cft_usdt', 'projected-rewards-cft_usdt', 'roi-cft', 'user-total-claimed-cft_usdt']
       .forEach(id => {
         setSkeleton(id, false);
         const el = document.getElementById(id);
