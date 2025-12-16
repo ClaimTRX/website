@@ -36,17 +36,18 @@ async function initializeSwap() {
 async function performSwap(type) {
   const details = swapDetails[type];
   const amountInput = document.getElementById(details.inputId);
-  const amount = amountInput.value.trim();
+  let amountStr = amountInput.value.trim();
 
-  // Early validation: prevent empty or invalid input
-  if (!amount || isNaN(amount) || Number(amount) <= 0) {
-    showToast({ title: 'Invalid Amount', body: 'Please enter a valid positive number.', variant: 'danger' });
+  if (!amountStr || isNaN(amountStr) || Number(amountStr) <= 0) {
+    showToast({ title: 'Invalid Amount', body: 'Please enter a valid positive number (e.g., 5 or 5.5).', variant: 'danger' });
     return;
   }
 
-  // Convert to number and check again (extra safety)
-  const numericAmount = Number(amount);
-  if (isNaN(numericAmount) || numericAmount <= 0) {
+  // Clean input: replace comma with dot for locales
+  amountStr = amountStr.replace(',', '.');
+
+  const amount = parseFloat(amountStr);
+  if (isNaN(amount) || amount <= 0) {
     showToast({ title: 'Invalid Amount', body: 'Amount must be a positive number.', variant: 'danger' });
     return;
   }
@@ -56,26 +57,39 @@ async function performSwap(type) {
     try {
       let tx;
       if (type === 'cft') {
-        const amountWei = tronWeb.toSun(amount); // Safe now
-        const tokenContract = await tronWeb.contract().at('CFT_TOKEN_ADDRESS_HERE');
-        await tokenContract.approve(details.contractAddress, amountWei).send();
-        await delay(3000);
-        tx = await swapContracts.cft.swap(amountWei).send();
-      } else { // trx
-        const trxAmountSun = tronWeb.toSun(amount); // Safe now
+        // For CFT → Game: Use toSun (CFT is TRC20 with 6 decimals)
+        const amountSun = tronWeb.toSun(amount);
+        const cftTokenContract = await tronWeb.contract().at('YOUR_CFT_TOKEN_ADDRESS_HERE'); // Replace!
+        // Approve
+        const approveTx = await cftTokenContract.approve(details.contractAddress, amountSun).send();
+        await delay(4000); // Wait for approval confirmation
+        // Swap
+        tx = await swapContracts.cft.swap(amountSun).send();
+      } else { // TRX → Game
+        // Manual conversion: 1 TRX = 1,000,000 SUN → multiply by 1e6
+        const amountSun = Math.round(amount * 1000000); // Round to avoid float issues
+        if (amountSun <= 0) throw new Error('Amount too small');
+
+        const amountSunStr = amountSun.toString(); // Safe string
+
         tx = await swapContracts.trx.swap().send({
-          callValue: trxAmountSun
+          callValue: amountSunStr // Pass as string to avoid BigNumber parsing issues
         });
       }
 
       showToast({
         title: 'Swap Successful!',
-        body: `<a href="https://tronscan.org/#/transaction/${tx}" target="_blank">View on Tronscan</a>`,
+        body: `You received ${amount} Game!<br><a href="https://tronscan.org/#/transaction/${tx}" target="_blank" rel="noopener">View on Tronscan</a>`,
         variant: 'success'
       });
       amountInput.value = '';
     } catch (err) {
-      showToast({ title: 'Swap Failed', body: err.message || 'Transaction rejected', variant: 'danger' });
+      console.error('Swap error:', err);
+      showToast({ 
+        title: 'Swap Failed', 
+        body: err.message || 'Transaction rejected or failed. Check energy/balance.', 
+        variant: 'danger' 
+      });
     }
   })();
 }
