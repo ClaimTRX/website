@@ -679,19 +679,18 @@ async function updateActionGridUI(token, first = false, userData) {
     };
     updateElement(`available-tokens-${token}`, fmt(cacheData.data.balanceUnits), `available-tokens-${token}`);
     updateElement(`claimable-rewards-${token}`, `${Number(cacheData.data.isExpired ? 0 : cacheData.data.rewardUnits).toFixed(2)} ${tokenDetails[token].rewardDisplayName}`);
-    const activateButton = document.getElementById(`activate-tokens-button-${token}`);
     const claimButton = document.getElementById(`claim-rewards-button-${token}`);
-    if (activateButton && claimButton) {
-      if (cacheData.data.isExpired || (!cacheData.data.isActive && Number(cacheData.data.stakedUnits) > 0)) {
-        activateButton.style.display = 'block';
-        claimButton.style.display = 'none';
-        claimButton.disabled = true;
-      } else {
-        activateButton.style.display = 'none';
+if (claimButton) {
+    if (isExpired) {
+        // Show claim button with warning — user can still claim if rewards remain
         claimButton.style.display = 'block';
-        claimButton.disabled = Number(cacheData.data.rewardUnits) === 0 || Number(cacheData.data.contractBalance) < Number(cacheData.data.rewardUnits);
-      }
+        claimButton.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
+        // Optional: change button text to "Claim Before Forfeiture" — but not required
+    } else {
+        claimButton.style.display = 'block';
+        claimButton.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
     }
+}
     updateClaimTimer(cacheData.data.timeoutSec, cacheData.data.lastClaimTimestamp, cacheData.data.isActive, cacheData.data.isWhitelisted, cacheData.data.rewardUnits, cacheData.data.contractBalance);
     return;
   }
@@ -752,17 +751,16 @@ async function updateActionGridUI(token, first = false, userData) {
     };
     updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
     updateElement(`claimable-rewards-${token}`, `${Number(isExpired ? 0 : rewardUnits).toFixed(2)} ${d.rewardDisplayName}`);
-    const activateButton = document.getElementById(`activate-tokens-button-${token}`);
     const claimButton = document.getElementById(`claim-rewards-button-${token}`);
-    if (activateButton && claimButton) {
+    if (claimButton) {
       if (isExpired) {
   // Show claim button with warning — user can still claim if rewards remain
-  activateButton.style.display = 'none';
+  
   claimButton.style.display = 'block';
   claimButton.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
   // Optional: change button text to "Claim Before Forfeiture" — but not required
 } else {
-  activateButton.style.display = 'none';
+  
   claimButton.style.display = 'block';
   claimButton.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
 }
@@ -854,8 +852,8 @@ async function updateUI(token, first = false, userData) {
 function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, initialRewards = '0', initialBalance = '0') {
   const timerEl = document.getElementById('next-claim-timer');
   const claimBtn = document.getElementById('claim-rewards-button-game');
-  const activateBtn = document.getElementById('activate-tokens-button-game');
-  if (!timerEl || !claimBtn || !activateBtn) return;
+  
+  if (!timerEl || !claimBtn) return;
   if (timerEl._claimInterval) {
     clearInterval(timerEl._claimInterval);
     timerEl._claimInterval = null;
@@ -868,7 +866,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.remove('inactive');
     claimBtn.disabled = Number(cachedRewards) === 0 || Number(cachedBalance) < Number(cachedRewards);
     claimBtn.style.display = 'block';
-    activateBtn.style.display = 'none';
+    
     return;
   }
   if (!isActive) {
@@ -876,7 +874,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.add('inactive');
     claimBtn.disabled = true;
     claimBtn.style.display = 'none';
-    activateBtn.style.display = 'block';
+    
     return;
   }
   if (!timeoutSec) {
@@ -884,7 +882,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.add('inactive');
     claimBtn.disabled = true;
     claimBtn.style.display = 'none';
-    activateBtn.style.display = 'block';
+    
     return;
   }
   const next = (lastClaimTs || 0) + timeoutSec;
@@ -926,7 +924,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
   // Keep claim button visible until actual forfeiture
   claimBtn.disabled = Number(pendingRewardsRaw) === 0 || Number(contractBalanceRaw) < Number(pendingRewardsRaw);
   claimBtn.style.display = 'block';
-  activateBtn.style.display = 'none';
+  
       const apyEl = document.getElementById('projected-rewards-game');
       if (apyEl) apyEl.textContent = '0.00%';
       const claimableEl = document.getElementById('claimable-rewards-game');
@@ -938,7 +936,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
       timerEl.classList.remove('inactive');
       claimBtn.disabled = Number(pendingRewards) === 0 || Number(contractBalanceRaw) < Number(pendingRewards);
       claimBtn.style.display = 'block';
-      activateBtn.style.display = 'none';
+      
     }
   };
   tick();
