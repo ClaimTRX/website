@@ -38,8 +38,16 @@ async function performSwap(type) {
   const amountInput = document.getElementById(details.inputId);
   const amount = amountInput.value.trim();
 
+  // Early validation: prevent empty or invalid input
   if (!amount || isNaN(amount) || Number(amount) <= 0) {
-    showToast({ title: 'Invalid Amount', body: 'Please enter a valid amount.', variant: 'danger' });
+    showToast({ title: 'Invalid Amount', body: 'Please enter a valid positive number.', variant: 'danger' });
+    return;
+  }
+
+  // Convert to number and check again (extra safety)
+  const numericAmount = Number(amount);
+  if (isNaN(numericAmount) || numericAmount <= 0) {
+    showToast({ title: 'Invalid Amount', body: 'Amount must be a positive number.', variant: 'danger' });
     return;
   }
 
@@ -48,13 +56,13 @@ async function performSwap(type) {
     try {
       let tx;
       if (type === 'cft') {
-        const amountWei = tronWeb.toSun(amount); // CFT has 6 decimals
-        const tokenContract = await tronWeb.contract().at('CFT_TOKEN_ADDRESS_HERE'); // Replace with actual CFT address
+        const amountWei = tronWeb.toSun(amount); // Safe now
+        const tokenContract = await tronWeb.contract().at('CFT_TOKEN_ADDRESS_HERE');
         await tokenContract.approve(details.contractAddress, amountWei).send();
         await delay(3000);
         tx = await swapContracts.cft.swap(amountWei).send();
       } else { // trx
-        const trxAmountSun = tronWeb.toSun(amount);
+        const trxAmountSun = tronWeb.toSun(amount); // Safe now
         tx = await swapContracts.trx.swap().send({
           callValue: trxAmountSun
         });
