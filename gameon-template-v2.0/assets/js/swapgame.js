@@ -43,7 +43,7 @@ async function initializeSwap() {
   for (const key of ['cft', 'trx']) {
     const details = swapDetails[key];
     try {
-      swapContracts[key] = await tronWeb.contract(swapAbi, details.contractAddress);
+      swapContracts[key] = await window.tronWeb.contract(swapAbi, details.contractAddress);
       const button = document.getElementById(details.buttonId);
       if (button) {
         button.addEventListener('click', () => performSwap(key));
@@ -85,37 +85,35 @@ async function performSwap(type) {
 
       if (type === 'cft') {
         // CFT → Game (requires approval)
-        const amountSun = Math.round(amount * 1_000_000); // 6 decimals
-        const amountStr = amountSun.toString();
+        const amountSun = Math.round(amount * 1_000_000); // 6 decimals, as number
 
-        const cftTokenContract = await tronWeb.contract().at(details.cftTokenAddress);
+        const cftTokenContract = await window.tronWeb.contract().at(details.cftTokenAddress);
 
         // Step 1: Approve
         showToast({ title: 'Step 1/2', body: 'Approve CFT spending... Confirm in wallet.', variant: 'info' });
-        await cftTokenContract.approve(details.contractAddress, amountStr).send({
+        await cftTokenContract.approve(details.contractAddress, amountSun).send({
           feeLimit: 100_000_000
         });
         await delay(6000); // Wait for confirmation
 
         // Step 2: Swap
         showToast({ title: 'Step 2/2', body: 'Swapping CFT → Game... Confirm.', variant: 'info' });
-        tx = await swapContracts.cft.swap(amountStr).send({
+        tx = await swapContracts.cft.swap(amountSun).send({
           feeLimit: 100_000_000
         });
 
       } else {
         // TRX → Game
-        const amountSun = Math.round(amount * 1_000_000);
-        const amountSunStr = amountSun.toString();
+        const amountSun = Math.round(amount * 1_000_000); // Number
 
         tx = await swapContracts.trx.swap().send({
-          callValue: amountSunStr,
+          callValue: amountSun, // Pass as number
           feeLimit: 80_000_000
         });
       }
 
       showToast({
-        title: 'Swap Successful!',
+        title: 'Swap Complete!',
         body: `You received ${amount.toFixed(6)} Game tokens!<br>
                <a href="https://tronscan.org/#/transaction/${tx}" target="_blank" rel="noopener">View on Tronscan</a>`,
         variant: 'success'
@@ -137,7 +135,7 @@ async function performSwap(type) {
   })();
 }
 
-// Helper functions (reuse from your existing code)
+// Helper functions
 function showToast({ title, body, variant = 'dark' }) {
   const el = document.getElementById('app-toast');
   if (!el) return;
@@ -169,5 +167,5 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Initialize when DOM is ready
+// Initialize
 document.addEventListener('DOMContentLoaded', initializeSwap);
