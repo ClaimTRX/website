@@ -37,7 +37,7 @@ const DAILY_PAYOUT_PERCENTAGE = 1; // 1% daily payout as per requirement
 const tokenDetails = {
   game: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // Placeholder; replace with actual Game token address
-    stakingAddress: 'TYVeSm3dWNTS7ovjwJg1eSsEv5SbRa6d45', // Provided new contract address
+    stakingAddress: 'THe8NgMMwb5j7pfeHfKgec7eGoQCQs2XLN', // Provided new contract address
     decimals: 6,
     displayName: 'Game',
     rewardDisplayName: 'TRX',
