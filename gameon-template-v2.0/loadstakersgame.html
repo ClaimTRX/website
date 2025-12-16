@@ -100,7 +100,7 @@
           <thead>
             <tr>
               <th>Wallet</th>
-              <th>Staked CFT</th>
+              <th>Staked CFTG</th>
               <th>Last Claim</th>
               <th>Status</th>
             </tr>
@@ -108,7 +108,7 @@
           <tbody id="active-body"></tbody>
         </table>
       </div>
-      <div class="section-total" id="active-total">Total Active: — CFT</div>
+      <div class="section-total" id="active-total">Total Active: — CFTG</div>
     </div>
 
     <div id="soon-section" class="luxe-card">
@@ -118,7 +118,7 @@
           <thead>
             <tr>
               <th>Wallet</th>
-              <th>Staked CFT</th>
+              <th>Staked CFTG</th>
               <th>Last Claim</th>
               <th>Status</th>
             </tr>
@@ -126,7 +126,7 @@
           <tbody id="soon-body"></tbody>
         </table>
       </div>
-      <div class="section-total" id="soon-total">Total Expire Soon: — CFT</div>
+      <div class="section-total" id="soon-total">Total Expire Soon: — CFTG</div>
     </div>
 
     <div id="expired-section" class="luxe-card">
@@ -136,7 +136,7 @@
           <thead>
             <tr>
               <th>Wallet</th>
-              <th>Staked CFT</th>
+              <th>Staked CFTG</th>
               <th>Last Claim</th>
               <th>Status</th>
             </tr>
@@ -144,7 +144,7 @@
           <tbody id="expired-body"></tbody>
         </table>
       </div>
-      <div class="section-total" id="expired-total">Total Expired: — CFT</div>
+      <div class="section-total" id="expired-total">Total Expired: — CFTG</div>
     </div>
   </div>
 </section>
@@ -214,9 +214,9 @@
           let status, statusClass, category;
           if (lastClaim === 0) {
             status = 'Never claimed'; statusClass = 'text-muted'; category = 'active';
-          } else if (!isActive || daysSinceClaim > 14) {
+          } else if (!isActive || daysSinceClaim > 7) {
             status = 'EXPIRED'; statusClass = 'expired'; category = 'expired';
-          } else if (daysSinceClaim >= 10) {
+          } else if (daysSinceClaim >= 4) {
             status = 'Expire Soon'; statusClass = 'soon'; category = 'soon';
           } else {
             status = 'Active'; statusClass = 'text-success'; category = 'active';
@@ -246,7 +246,7 @@
           rows += `
             <tr>
               <td data-label="Wallet"><span class="addr" onclick="copyAddr(this, '${s.addr}')">${s.addr}</span></td>
-              <td data-label="Staked CFT"><strong>${s.stakedNum.toLocaleString(undefined, {maximumFractionDigits: 4})}</strong> CFT</td>
+              <td data-label="Staked CFT"><strong>${s.stakedNum.toLocaleString(undefined, {maximumFractionDigits: 4})}</strong> CFTG</td>
               <td data-label="Last Claim">${s.lastClaimText}</td>
               <td data-label="Status" class="${s.statusClass}">${s.status}</td>
             </tr>`;
