@@ -37,7 +37,7 @@
         <li class="nav-item"><a href="promote.html" class="nav-link">Communities</a></li>
       </ul>
 
-      <!-- Hamburger Toggle -->
+      <!-- Hamburger -->
       <ul class="navbar-nav toggle">
         <li class="nav-item">
           <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#menu">
@@ -46,7 +46,7 @@
         </li>
       </ul>
 
-      <!-- Connect Button (Desktop) -->
+      <!-- Desktop Connect Button -->
       <ul class="navbar-nav action">
         <li class="nav-item ms-2">
           <button id="connect-button" class="btn btn-outline"><i class="icon-wallet me-md-2"></i> Wallet Connect</button>
@@ -56,58 +56,73 @@
   </nav>
 </header>
 
-<!-- Mobile Menu Modal - Now inside header.html -->
-<div class="modal fade p-0" id="menu" tabindex="-1" aria-labelledby="menuLabel" aria-hidden="true">
-  <div class="modal-dialog dialog-animated modal-fullscreen-sm-down">
-    <div class="modal-content h-100 bg-dark text-light">
-      <div class="modal-header border-bottom border-light-subtle">
-        <h5 class="modal-title">Menu</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+<!-- Mobile Menu Modal (Luxe Style) -->
+<div class="modal fade p-0" id="menu" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content" style="background:var(--bg-1);border:1px solid var(--line);border-radius:16px;overflow:hidden">
+      <div class="modal-header" style="border-bottom:1px solid var(--line);padding:1.25rem">
+        <h5 class="modal-title m-0">Menu</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter:invert(1)"></button>
       </div>
-      <div class="modal-body py-4">
-        <ul class="navbar-nav">
-          <li class="nav-item"><a href="index.html" class="nav-link py-3" data-bs-dismiss="modal">Home</a></li>
+      <div class="modal-body" style="padding:0">
+        <div class="items">
+          <!-- Main Links -->
+          <a href="index.html" class="nav-link" data-bs-dismiss="modal">Home</a>
           
-          <li class="nav-item dropdown">
-            <a href="#" class="nav-link dropdown-toggle py-3" data-bs-toggle="dropdown" data-bs-dismiss="modal">CFT</a>
-            <ul class="dropdown-menu">
-              <li><a href="poolstaking.html" class="dropdown-item" data-bs-dismiss="modal">Earn TRX</a></li>
-              <li><a href="poolstakingusdt.html" class="dropdown-item" data-bs-dismiss="modal">Earn USDT</a></li>
-              <li><a href="staking.html" class="dropdown-item" data-bs-dismiss="modal">Staking</a></li>
-              <li><a href="lockstaking.html" class="dropdown-item" data-bs-dismiss="modal">Locked Staking</a></li>
-              <li><a href="sellcft.html" class="dropdown-item" data-bs-dismiss="modal">Trading</a></li>
+          <div class="dropdown">
+            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+              CFT
+            </a>
+            <ul class="dropdown-menu" style="background:var(--bg-2);border:1px solid var(--line);width:100%;border-radius:var(--radius-3);margin-top:0">
+              <li><a href="poolstaking.html" class="nav-link" data-bs-dismiss="modal">Earn TRX</a></li>
+              <li><a href="poolstakingusdt.html" class="nav-link" data-bs-dismiss="modal">Earn USDT</a></li>
+              <li><a href="staking.html" class="nav-link" data-bs-dismiss="modal">Staking</a></li>
+              <li><a href="lockstaking.html" class="nav-link" data-bs-dismiss="modal">Locked Staking</a></li>
+              <li><a href="sellcft.html" class="nav-link" data-bs-dismiss="modal">Trading</a></li>
             </ul>
-          </li>
+          </div>
           
-          <li class="nav-item dropdown">
-            <a href="#" class="nav-link dropdown-toggle py-3" data-bs-toggle="dropdown" data-bs-dismiss="modal">StableX</a>
-            <ul class="dropdown-menu">
-              <li><a href="buystablex.html" class="dropdown-item" data-bs-dismiss="modal">Buy StableX</a></li>
-              <li><a href="sellstablex.html" class="dropdown-item" data-bs-dismiss="modal">Sell StableX</a></li>
-              <li><a href="stablexstaking.html" class="dropdown-item" data-bs-dismiss="modal">Stake StableX</a></li>
+          <div class="dropdown">
+            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+              StableX
+            </a>
+            <ul class="dropdown-menu" style="background:var(--bg-2);border:1px solid var(--line);width:100%;border-radius:var(--radius-3)">
+              <li><a href="buystablex.html" class="nav-link" data-bs-dismiss="modal">Buy StableX</a></li>
+              <li><a href="sellstablex.html" class="nav-link" data-bs-dismiss="modal">Sell StableX</a></li>
+              <li><a href="stablexstaking.html" class="nav-link" data-bs-dismiss="modal">Stake StableX</a></li>
             </ul>
-          </li>
+          </div>
           
-          <li class="nav-item dropdown">
-            <a href="#" class="nav-link dropdown-toggle py-3" data-bs-toggle="dropdown" data-bs-dismiss="modal">Energy</a>
-            <ul class="dropdown-menu">
-              <li><a href="feb.html" class="dropdown-item" data-bs-dismiss="modal">FEB</a></li>
-              <li><a href="energy.html" class="dropdown-item" data-bs-dismiss="modal">Rent Energy</a></li>
+          <div class="dropdown">
+            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+              Energy
+            </a>
+            <ul class="dropdown-menu" style="background:var(--bg-2);border:1px solid var(--line);width:100%;border-radius:var(--radius-3)">
+              <li><a href="feb.html" class="nav-link" data-bs-dismiss="modal">FEB</a></li>
+              <li><a href="energy.html" class="nav-link" data-bs-dismiss="modal">Rent Energy</a></li>
             </ul>
-          </li>
+          </div>
           
-          <li class="nav-item"><a href="swap.html" class="nav-link py-3" data-bs-dismiss="modal">Swap</a></li>
-          <li class="nav-item"><a href="https://cftguardians.com/" class="nav-link py-3" data-bs-dismiss="modal">CFT Guardians</a></li>
-          <li class="nav-item"><a href="promote.html" class="nav-link py-3" data-bs-dismiss="modal">Communities</a></li>
-        </ul>
-
-        <hr class="border-light-subtle my-4">
-
-        <!-- Connect Button (Mobile) -->
-        <button id="connect-button-mobile" class="btn btn-outline-light w-100 py-3">
-          <i class="icon-wallet me-2"></i> Wallet Connect
-        </button>
+          <a href="swap.html" class="nav-link" data-bs-dismiss="modal">Swap</a>
+          <a href="https://cftguardians.com/" class="nav-link" data-bs-dismiss="modal">CFT Guardians</a>
+          <a href="promote.html" class="nav-link" data-bs-dismiss="modal">Communities</a>
+          
+          <!-- Wallet Connect Button -->
+          <div style="padding:1.5rem 1.25rem 1rem">
+            <button id="connect-button-mobile" class="btn primary w-100" style="height:50px;font-weight:800">
+              <i class="icon-wallet me-2"></i> Wallet Connect
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Sync mobile connect button with desktop one -->
+<script>
+  document.getElementById('connect-button-mobile')?.addEventListener('click', () => {
+    document.getElementById('connect-button')?.click();
+    bootstrap.Modal.getInstance(document.getElementById('menu'))?.hide();
+  });
+</script>
