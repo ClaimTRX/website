@@ -5,7 +5,7 @@ const swapAbi = [
 ];
 const swapDetails = {
   cft: {
-    contractAddress: 'YOUR_CFT_TO_GAME_SWAP_ADDRESS_HERE',
+    contractAddress: 'TDqRsqMaxsjMAwx4VLR6xvYDM8RRfiL83r',
     tokenName: 'CFT',
     inputId: 'swap-cft-amount',
     buttonId: 'swap-cft-button'
