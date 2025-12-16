@@ -58,6 +58,14 @@ A TRON DAO HackaTRON Season 7 winner, TronsCore makes community engagement and d
     icon: "icon-stake"
   },
   {
+    title: "New CFT-USDT Staking",
+    description: "New USDT reward pool live. Stake your CFT for daily USDT rewards",
+    image: "assets/img/content/usdt.png",
+    link: "https://www.cftecosystem.com/poolstakingusdt",
+    linkText: "Stake Now",
+    icon: "icon-stake"
+  },
+  {
     title: "Advertise Your Project Here",
     description: "Want to showcase your project to our audience? Contact us to discuss advertising opportunities!",
     image: "assets/img/content/cftlogo300.png",
