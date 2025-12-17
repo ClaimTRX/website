@@ -23,7 +23,7 @@ const TRONGRID_API_URL = 'https://api.trongrid.io';
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
 const SAFETY_ENERGY = 50000;
-const ENERGY_PRICE_SUN = 10;
+const ENERGY_PRICE_SUN = 30;
 const SUN_PER_TRX = 1_000_000;
 const ENERGY_RENTAL_DURATION = 2;
 const CACHE_TIMEOUT_MS = 120_000; // 120s cache for runtime updates
@@ -43,9 +43,9 @@ const tokenDetails = {
     rewardDisplayName: 'TRX',
     rewardDecimals: 6,
     energyCosts: {
-      stake: 120000,
+      stake: 150000,
       unstake: 75000,
-      claimRewards: 100000,
+      claimRewards: 70000,
       activateTokens: 100000,
       setPoolSize: 60000,
       addToPool: 70000,
