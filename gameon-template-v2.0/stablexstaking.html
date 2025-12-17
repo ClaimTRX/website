@@ -1,400 +1,291 @@
 <!doctype html>
 <html class="no-js" lang="en">
-
 <head>
-	<meta charset="UTF-8">
-	<meta name="description" content="">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-
-	<!-- The above 4 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-
-	<!-- Title  -->
-	<title>CFT Ecosystem. The first treasury VC on Tron</title>
-
-	<!-- Favicon  -->
-	<link rel="icon" href="assets/img/favicon.png">
-
-	<!-- ***** All CSS Files ***** -->
-
-	<!-- Style css -->
-	<link rel="stylesheet" href="assets/css/style.css">
-	
+  <meta charset="UTF-8">
+  <meta name="description" content="StableX Staking - CFT Ecosystem">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>StableX Staking - CFT Ecosystem</title>
+  <link rel="icon" href="assets/img/favicon.png">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    :root {
+      --bg-0:#07090f; --bg-1:#0b0e17; --bg-2:#0f1321; --surface:#12172a; --line:#212b46;
+      --muted:#9aa7bd; --txt:#e9eef7;
+      --accent-1:#62ffcf; --accent-2:#7db2ff; --accent-3:#b37cff;
+      --success:#00e095; --danger:#ff5b73; --warning:#ffd166;
+      --radius-2:12px; --radius-3:18px; --radius-4:28px;
+      --shadow-1:0 10px 30px rgba(0,0,0,.55); --shadow-2:0 12px 40px rgba(0,0,0,.6);
+      --glass:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      --focus-ring:0 0 0 3px rgba(125,178,255,.35);
+    }
+    html,body { background:var(--bg-0); color:var(--txt); font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial }
+    header#header { padding:1.5rem 0 }
+    .navbar-brand img { height:48px }
+    .hero-section { padding:120px 0 28px; text-align:center }
+    .intro-text { display:inline-block; font-size:1rem; letter-spacing:.16em; text-transform:uppercase; color:#c3d3ef; background:rgba(255,255,255,.03); border:1px solid var(--line); padding:.42rem .95rem; border-radius:999px }
+    .hero-section h1 { font-weight:900; letter-spacing:.4px; margin-top:16px; font-size:3.25rem; line-height:1.1 }
+    .hero-section p { color:#b5c2d8 }
+    .luxe-card { position:relative; border-radius:var(--radius-4); background:var(--glass); backdrop-filter:blur(10px); border:1px solid var(--line); box-shadow:var(--shadow-2); overflow:hidden }
+    .staking-header { padding:32px }
+    .staking-title { display:flex; gap:16px; align-items:center }
+    .staking-title img { width:56px; height:56px }
+    .staking-title h4 { margin:0; font-weight:800 }
+    .chip { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,.04); border:1px solid var(--line); color:#cfe3ff; padding:.35rem .65rem; border-radius:999px; font-size:.85rem }
+    .chip .dot { width:8px; height:8px; border-radius:999px; background:var(--success); box-shadow:0 0 0 2px rgba(0,224,149,.15) }
+    .staking-sub { color:var(--muted) }
+    .action-grid { display:grid; grid-template-columns:repeat(3, minmax(220px, 1fr)); gap:20px; padding:0 32px 36px; justify-items:center; align-items:stretch; grid-auto-rows:1fr }
+    .action-grid > * { padding:0 }
+    .panel { position:relative; display:flex; flex-direction:column; gap:12px; background:var(--bg-2); border:1px solid var(--line); border-radius:var(--radius-3); padding:18px 18px 20px; box-shadow:var(--shadow-1); height:100%; width:100%; max-width:280px }
+    .panel .item-title { color:var(--muted); font-weight:700; letter-spacing:.3px }
+    .panel small { color:#9fb0cc }
+    .form-control.luxe { background:#0c1121; border:1px solid var(--line); color:#eaf2ff; border-radius:14px; padding:12px 14px; width:100% }
+    .form-control.luxe:focus { outline:none; box-shadow:var(--focus-ring); border-color:rgba(125,178,255,.6) }
+    .btn.primary { background:linear-gradient(135deg,var(--accent-1),var(--accent-2)); color:#0b0e17; border:0; font-weight:800; height:48px; border-radius:14px }
+    .btn.primary:hover { filter:brightness(1.05) }
+    .btn.ghost { border:1px solid var(--line); color:#eaf2ff; background:transparent; border-radius:14px }
+    .btn.ghost:hover { border-color:rgba(125,178,255,.55) }
+    .staking-info .single-item { display:flex; flex-direction:column; align-items:center; gap:6px }
+    .staking-info .single-item span:first-child { font-weight:800; font-size:1.15rem }
+    .staking-info .single-item span:last-child { color:var(--muted); font-size:.88rem }
+    .input-area { margin-top:auto; display:flex; flex-direction:column; gap:10px }
+    .input-btn { width:100%; height:48px; border-radius:14px }
+    .leaderboard-button .btn-bordered { background:transparent !important; border:1px solid var(--line); color:#eaf2ff !important; border-radius:14px; padding:12px 20px; display:inline-flex; align-items:center; justify-content:center; gap:.5rem }
+    .leaderboard-button .btn-bordered:hover { border-color:rgba(125,178,255,.55); background:rgba(125,178,255,.1) }
+    .modal-content { background:var(--bg-1); border:1px solid var(--line); color:var(--txt); border-radius:16px }
+    .modal-header .btn-close { filter:invert(1) }
+    #energy-rental-modal .modal-body p { margin-bottom:10px; color:#cfe3ff }
+    #user-energy,#required-energy,#rental-energy,#rental-duration,#rental-cost-trx { display:inline-block; padding:.15rem .5rem; border-radius:10px; background:rgba(125,178,255,.12); border:1px solid rgba(125,178,255,.25); color:#ffffff }
+    .modal .btn-rent { background:linear-gradient(135deg,var(--accent-1),var(--accent-2)); border:0; color:#0b0e17; border-radius:12px; font-weight:800 }
+    .modal .btn-cancel { border:1px solid var(--line); color:#eaf2ff; background:transparent; border-radius:12px }
+    #transaction-processing-modal .spinner { border:4px solid var(--accent-2); border-top-color:transparent; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; margin:0 auto 15px }
+    @keyframes spin { 0%{transform:rotate(0)}100%{transform:rotate(360deg)} }
+    @media (max-width:992px){
+      .action-grid { display:flex; flex-direction:column; align-items:center; gap:18px; padding:0 20px 28px }
+      .action-grid .panel { width:100%; max-width:min(480px, calc(100% - 24px)); min-height:280px }
+    }
+    @media (max-width:576px){
+      .action-grid .panel { min-height:260px }
+    }
+  </style>
 </head>
-
 <body>
-	<!--====== Preloader Area Start ======-->
-	<div id="gameon-preloader" class="gameon-preloader">
-		<!-- Preloader Animation -->
-		<div class="preloader-animation">
-			<!-- Spinner -->
-			<div class="spinner"></div>
-			<p class="fw-5 text-center text-uppercase">Loading</p>
-		</div>
-		<!-- Loader Animation -->
-		<div class="loader-animation">
-			<div class="row h-100">
-				<!-- Single Loader -->
-				<div class="col-3 single-loader p-0">
-					<div class="loader-bg"></div>
-				</div>
-				<!-- Single Loader -->
-				<div class="col-3 single-loader p-0">
-					<div class="loader-bg"></div>
-				</div>
-				<!-- Single Loader -->
-				<div class="col-3 single-loader p-0">
-					<div class="loader-bg"></div>
-				</div>
-				<!-- Single Loader -->
-				<div class="col-3 single-loader p-0">
-					<div class="loader-bg"></div>
-				</div>
-			</div>
-		</div>
-	</div>
-	<!--====== Preloader Area End ======-->
+  <div id="header-placeholder"></div>
+  <script>
+    fetch('assets/js/header.html')
+      .then(response => response.text())
+      .then(data => document.getElementById('header-placeholder').innerHTML = data);
+  </script>
 
-	<div class="main">
-		<div id="header-placeholder"></div>
-
-<script>
-  fetch('assets/js/header.html')
-    .then(response => response.text())
-    .then(data => {
-      document.getElementById('header-placeholder').innerHTML = data;
-    });
-</script>
-
-		<!-- ***** Hero Area Start ***** -->
-		<section class="hero-section">
-			<div class="container">
-				<div class="row align-items-center justify-content-center">
-					<div class="col-12 col-md-6 col-lg-9 text-center">
-						<!-- Hero Content -->
-						<div class="hero-content">
-							<div class="intro text-center mb-5">
-								<span class="intro-text">CFT Ecosystem</span>
-								<h1 class="mt-4">StableX Staking</h1>
-								<p>Grow your wealth through staking rewards</p>
-							</div>
-							<!-- Buttons -->
-							
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- ***** Hero Area End ***** -->
-
-		<!-- ***** Unified StableX Staking Area Start ***** -->
-<section class="staking-area">
-    <div id="gameon-accordion" class="container accordion">
-        <div class="row justify-content-center">
-            <div class="col-12 col-md-10">
-
-                <!-- Stake StableX for StableX Rewards -->
-                <div class="single-accordion-item">
-                    <div class="card-header bg-inherit border-0 p-0">
-                        <h2 class="m-0">
-                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStableX">
-                                <div class="row">
-                                    <div class="col-12 col-md-8">
-                                        <div class="media flex-column flex-md-row">
-                                            <img class="avatar-max-lg" src="assets/img/content/stablex.png" alt="">
-                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                <h4 class="m-0">Stake StableX</h4>
-                                                <p>Stake StableX for StableX rewards</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
-                                    <div class="col single-item">
-                                        <span id="staked-amount-stablex"></span>
-                                        <span>Staked</span>
-                                    </div>
-                                    <div class="col single-item">
-                                        <span id="estimated-apr-stablex"></span>
-                                        <span>APY</span>
-                                    </div>
-                                    <div class="col single-item">
-                                        <span id="total-claimed-rewards-stablex"></span>
-                                        <span>Total StableX Claimed</span>
-                                    </div>
-                                </div>
-                            </button>
-                        </h2>
-                    </div>
-                    <div id="collapseStableX" class="collapse" data-bs-parent="#gameon-accordion">
-                        <div class="card-body">
-                            <div class="row">
-                                <!-- Deposit -->
-                                <div class="col-12 col-md-4 single-staking-item input-box">
-                                    <span class="item-title mb-2">Deposit</span>
-                                    <span id="available-tokens-stablex"></span> available
-                                    <div class="input-area d-flex flex-column">
-                                        <div class="input-text"><input type="text" placeholder="0" id="stake-amount-stablex"></div>
-                                        <a href="#" class="btn input-btn mt-2" id="stake-button-stablex">Stake</a>
-                                    </div>
-                                </div>
-                                <!-- Withdraw -->
-                                <div class="col-12 col-md-4 single-staking-item input-box">
-                                    <span class="item-title mb-2">Withdraw</span>
-                                    <div class="input-area d-flex flex-column">
-                                        <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-stablex"></div>
-                                        <a href="#" class="btn input-btn mt-2" id="unstake-button-stablex">Withdraw</a>
-                                    </div>
-                                </div>
-                                <!-- Rewards -->
-                                <div class="col-12 col-md-4 single-staking-item input-box">
-                                    <span class="item-title mb-2">Pending Rewards</span>
-                                    <div class="input-area d-flex flex-column">
-                                        <h4 class="price m-0" id="claimable-rewards-stablex">0 StableX</h4>
-                                        <span class="reward my-2">Don't forget the energy cost</span>
-                                        <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-stablex"><i class="fa-solid fa-lock me-1"></i> Claim</a>
-                                    </div>
-                                </div>
-                            </div>
-				<div class="row justify-content-center mt-4">
-        <div class="col-12 text-center">
-            <a href="leaderboardstablex.html" class="btn btn-bordered">
-                <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
-            </a>
-        </div>
+  <!-- Hero -->
+  <section class="hero-section">
+    <div class="container text-center">
+      <span class="intro-text">CFT Ecosystem</span>
+      <h1 class="display-5">StableX Staking</h1>
+      <p class="mb-0">Grow your wealth through staking rewards</p>
     </div>
-                        </div>
-                    </div>
-                </div>
+  </section>
 
-		    <!-- Stake StableX for CFT Rewards -->
-                <div class="single-accordion-item">
-                    <div class="card-header bg-inherit border-0 p-0">
-                        <h2 class="m-0">
-                            <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStableXCFTnew">
-                                <div class="row">
-                                    <div class="col-12 col-md-8">
-                                        <div class="media flex-column flex-md-row">
-                                            <img class="avatar-max-lg" src="assets/img/content/stablex.png" alt="">
-                                            <div class="content media-body mt-4 mt-md-0 ms-md-4">
-                                                <h4 class="m-0">Stake StableX</h4>
-                                                <p>Stake StableX for CFT rewards </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
-                                    <div class="col single-item">
-                                        <span id="staked-amount-cftnew"></span>
-                                        <span>Staked</span>
-                                    </div>
-                                    <div class="col single-item">
-                                        <div class="col single-item"><span id="projected-rewards-cftnew"></span><span>Yearly Rewards</span></div>
-                                        
-                                    </div>
-                                    <div class="col single-item">
-                                        <span id="total-claimed-rewards-cftnew"></span>
-                                        <span>Total CFT Claimed</span>
-                                    </div>
-                                </div>
-                            </button>
-                        </h2>
-                    </div>
-                    <div id="collapseStableXCFTnew" class="collapse" data-bs-parent="#gameon-accordion">
-                        <div class="card-body">
-                            <div class="row">
-                                <!-- Deposit -->
-                                <div class="col-12 col-md-4 single-staking-item input-box">
-                                    <span class="item-title mb-2">Deposit</span>
-                                    <span id="available-tokens-cftnew"></span> available
-                                    <div class="input-area d-flex flex-column">
-                                        <div class="input-text"><input type="text" placeholder="0" id="stake-amount-cftnew"></div>
-                                        <a href="#" class="btn input-btn mt-2" id="stake-button-cftnew">Stake</a>
-                                    </div>
-                                </div>
-                                <!-- Withdraw -->
-                                <div class="col-12 col-md-4 single-staking-item input-box">
-                                    <span class="item-title mb-2">Withdraw</span>
-                                    <div class="input-area d-flex flex-column">
-                                        <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-cftnew"></div>
-                                        <a href="#" class="btn input-btn mt-2" id="unstake-button-cftnew">Withdraw</a>
-                                    </div>
-                                </div>
-                                <!-- Rewards -->
-                                <div class="col-12 col-md-4 single-staking-item input-box">
-                                    <span class="item-title mb-2">Pending Rewards</span>
-                                    <div class="input-area d-flex flex-column">
-                                        <h4 class="price m-0" id="claimable-rewards-cftnew">0 CFT</h4>
-                                        <span class="reward my-2">Don't forget the energy cost</span>
-                                        <a href="#" class="btn input-btn mt-2" id="claim-rewards-button-cftnew"><i class="fa-solid fa-lock me-1"></i> Claim</a>
-                                    </div>
-                                </div>
-                            </div>
-				<div class="row justify-content-center mt-4">
-        <div class="col-12 text-center">
-            <a href="leaderboardstablexcft.html" class="btn btn-bordered">
-                <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
-            </a>
+  <!-- CTA Ad Card -->
+  <section class="py-3">
+    <div class="container">
+      <div class="luxe-card p-4 text-center text-md-start">
+        <div class="row align-items-center">
+          <div class="col-12 col-md-5 text-center">
+            <img src="assets/img/content/cftlogo300.png" alt="CFT" style="max-width:220px">
+          </div>
+          <div class="col-12 col-md-7 mt-4 mt-md-0">
+            <h2>Apply for project staking</h2>
+            <p>Earn weekly rewards from staked CFT to build your project</p>
+            <p>Soon available for projects on any chain</p>
+            <a class="btn primary" href="apply.html"><i class="icon-rocket me-2"></i>Coming Soon</a>
+          </div>
         </div>
+      </div>
     </div>
-                        </div>
-                    </div>
-                </div>
+  </section>
 
-               
-
-                <!-- End of Unified StableX Staking Panels -->
+  <!-- Staking Card -->
+  <section class="py-3 staking-area">
+    <div class="container">
+      <div class="luxe-card">
+        <div class="staking-header">
+          <div class="staking-title">
+            <img src="assets/img/content/stablex.png" alt="StableX">
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h4 class="m-0">StableX Staking</h4>
+                <span class="chip"><span class="dot"></span><span>Active</span></span>
+              </div>
+              <p class="staking-sub mb-0 mt-2">Stake StableX and earn rewards in StableX or CFT</p>
             </div>
+          </div>
         </div>
+
+        <div id="gameon-accordion" class="accordion p-4">
+          <!-- StableX → StableX -->
+          <div class="single-accordion-item">
+            <div class="card-header bg-inherit border-0 p-0">
+              <h2 class="m-0">
+                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStableX">
+                  <div class="row">
+                    <div class="col-12 col-md-8">
+                      <div class="media flex-column flex-md-row">
+                        <img class="avatar-max-lg" src="assets/img/content/stablex.png" alt="">
+                        <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                          <h4 class="m-0">Stake StableX → Earn StableX</h4>
+                          <p>High-yield self-rewarding pool</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                    <div class="col single-item"><span id="staked-amount-stablex">0</span><span>Staked</span></div>
+                    <div class="col single-item"><span id="estimated-apr-stablex">0 %</span><span>APY</span></div>
+                    <div class="col single-item"><span id="total-claimed-rewards-stablex">0</span><span>Total Claimed</span></div>
+                  </div>
+                </button>
+              </h2>
+            </div>
+            <div id="collapseStableX" class="collapse" data-bs-parent="#gameon-accordion">
+              <div class="card-body">
+                <div class="row action-grid">
+                  <div class="panel">
+                    <span class="item-title mb-2">Deposit</span>
+                    <small><span id="available-tokens-stablex">0</span> available</small>
+                    <div class="input-area">
+                      <input type="text" placeholder="0" id="stake-amount-stablex" class="form-control luxe">
+                      <a href="#" class="btn input-btn primary" id="stake-button-stablex">Stake</a>
+                    </div>
+                  </div>
+                  <div class="panel">
+                    <span class="item-title mb-2">Withdraw</span>
+                    <div class="input-area">
+                      <input type="text" placeholder="0" id="withdraw-amount-stablex" class="form-control luxe">
+                      <a href="#" class="btn input-btn primary" id="unstake-button-stablex">Withdraw</a>
+                    </div>
+                  </div>
+                  <div class="panel">
+                    <span class="item-title mb-2">Pending Rewards</span>
+                    <div class="input-area">
+                      <h4 class="price m-0" id="claimable-rewards-stablex">0 StableX</h4>
+                      <span class="reward my-2">Energy cost applies</span>
+                      <a href="#" class="btn input-btn primary" id="claim-rewards-button-stablex"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                    </div>
+                  </div>
+                </div>
+                <div class="text-center mt-4 leaderboard-button">
+                  <a href="leaderboardstablex.html" class="btn btn-bordered">
+                    <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- StableX → CFT -->
+          <div class="single-accordion-item">
+            <div class="card-header bg-inherit border-0 p-0">
+              <h2 class="m-0">
+                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCFTNew">
+                  <div class="row">
+                    <div class="col-12 col-md-8">
+                      <div class="media flex-column flex-md-row">
+                        <img class="avatar-max-lg" src="assets/img/content/stablex.png" alt="">
+                        <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                          <h4 class="m-0">Stake StableX → Earn CFT</h4>
+                          <p>Earn governance token rewards</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                    <div class="col single-item"><span id="staked-amount-cftnew">0</span><span>Staked</span></div>
+                    <div class="col single-item"><span id="projected-rewards-cftnew">0</span><span>Yearly Rewards</span></div>
+                    <div class="col single-item"><span id="total-claimed-rewards-cftnew">0</span><span>Total CFT Claimed</span></div>
+                  </div>
+                </button>
+              </h2>
+            </div>
+            <div id="collapseCFTNew" class="collapse" data-bs-parent="#gameon-accordion">
+              <div class="card-body">
+                <div class="row action-grid">
+                  <div class="panel">
+                    <span class="item-title mb-2">Deposit</span>
+                    <small><span id="available-tokens-cftnew">0</span> available</small>
+                    <div class="input-area">
+                      <input type="text" placeholder="0" id="stake-amount-cftnew" class="form-control luxe">
+                      <a href="#" class="btn input-btn primary" id="stake-button-cftnew">Stake</a>
+                    </div>
+                  </div>
+                  <div class="panel">
+                    <span class="item-title mb-2">Withdraw</span>
+                    <div class="input-area">
+                      <input type="text" placeholder="0" id="withdraw-amount-cftnew" class="form-control luxe">
+                      <a href="#" class="btn input-btn primary" id="unstake-button-cftnew">Withdraw</a>
+                    </div>
+                  </div>
+                  <div class="panel">
+                    <span class="item-title mb-2">Pending Rewards</span>
+                    <div class="input-area">
+                      <h4 class="price m-0" id="claimable-rewards-cftnew">0 CFT</h4>
+                      <span class="reward my-2">Energy cost applies</span>
+                      <a href="#" class="btn input-btn primary" id="claim-rewards-button-cftnew"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                    </div>
+                  </div>
+                </div>
+                <div class="text-center mt-4 leaderboard-button">
+                  <a href="leaderboardstablexcft.html" class="btn btn-bordered">
+                    <i class="fa-solid fa-trophy me-2"></i> View Leaderboard
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-</section>
-<!-- ***** Unified StableX Staking Area End ***** -->
+  </section>
 
+  <!-- Modals (Energy Rental & Transaction Processing) -->
+  <div class="modal fade" id="energy-rental-modal" tabindex="-1" aria-labelledby="energyRentalModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="energyRentalModalLabel">Insufficient Energy</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+        </div>
+        <div class="modal-body">
+          <p>Your wallet has <span id="user-energy">0</span> energy available, but <span id="required-energy">0</span> energy is required.</p>
+          <p>Rent <span id="rental-energy">0</span> energy for <span id="rental-duration">2</span> minutes at <span id="rental-cost-trx">0.00</span> TRX?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-rent" id="rent-energy-confirm">Rent Energy</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-		<!-- ***** CTA Area Start ***** -->
-		<section class="cta-area p-0">
-			<div class="container">
-				<div class="row">
-					<div class="col-12 card">
-						<div class="row align-items-center justify-content-center">
-							<div class="col-12 col-md-5 text-center">
-								<img src="assets/img/content/cftlogo300.png" alt="">
-							</div>
-							<div class="col-12 col-md-6 mt-4 mt-md-0">
-								<h2 class="m-0">Apply for project staking</h2>
-								<p>Earn weekly rewards from staked CFT to build your project</p>
-								<p>Soon available for projects on any chain</p>
-								<a class="btn btn-bordered active d-inline-block" ><i class="icon-rocket me-2"></i>Coming Soon</a>
-							</div>
-						</div>
-						<a class="cta-link" href="apply.html"></a>
-					</div>
-				</div>
-			</div>
-		</section>
-		<!-- ***** CTA Area End ***** -->
+  <div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-labelledby="transactionProcessingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="transactionProcessingModalLabel">Processing Transaction</h5>
+        </div>
+        <div class="modal-body text-center">
+          <div class="spinner"></div>
+          <p>Please wait while your transaction is being processed.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-		<!--====== Footer Area Start ======-->
-		<footer class="footer-area">
-			<div class="container">
-				<div class="row justify-content-center">
-					<div class="col-12 col-md-8 text-center">
-						<!-- Footer Items -->
-						<div class="footer-items">
-							<!-- Logo -->
-							<a class="navbar-brand" href="index.html">
-								<img src="assets/img/logo/logo.png" alt="">
-							</a>
-							<!-- Social Icons -->
-							<div class="social-icons d-flex justify-content-center my-4">
-    <!-- X (Formerly Twitter) -->
-    <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank">
-        <i class="fab fa-x-twitter"></i>
-    </a>
-
-    <!-- Reddit -->
-    <a class="reddit" href="https://www.reddit.com/" target="_blank">
-        <i class="fab fa-reddit"></i>
-    </a>
-
-    <!-- Telegram -->
-    <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank">
-        <i class="fab fa-telegram-plane"></i>
-    </a>
-</div>
-
-
-							
-							<!-- Copyright Area -->
-							<div class="copyright-area py-4">&copy;2025 CFT Ecosystem, All Rights Reserved </div>
-						</div>
-						<!-- Scroll To Top -->
-						<div id="scroll-to-top" class="scroll-to-top">
-							<a href="#header" class="smooth-anchor">
-								<i class="fa-solid fa-arrow-up"></i>
-							</a>
-						</div>
-					</div>
-				</div>
-			</div>
-		</footer>
-		<!--====== Footer Area End ======-->
-
-		<!--====== Modal Search Area Start ======-->
-		<div id="search" class="modal fade p-0">
-			<div class="modal-dialog dialog-animated">
-				<div class="modal-content h-100">
-					<div class="modal-header" data-bs-dismiss="modal">
-						Search <i class="far fa-times-circle icon-close"></i>
-					</div>
-					<div class="modal-body">
-						<form class="row">
-							<div class="col-12 align-self-center">
-								<div class="row">
-									<div class="col-12 pb-3">
-										<h2 class="search-title mt-0 mb-3">What are you looking for?</h2>
-										<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-									</div>
-								</div>
-								<div class="row">
-									<div class="col-12 input-group mt-md-4">
-										<input type="text" placeholder="Enter your keywords">
-									</div>
-								</div>
-								<div class="row">
-									<div class="col-12 input-group align-self-center">
-										<button class="btn btn-bordered-white mt-3">Search</button>
-									</div>
-								</div>
-							</div>
-						</form>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!--====== Modal Search Area End ======-->
-
-		<!--====== Modal Responsive Menu Area Start ======-->
-		<div id="menu" class="modal fade p-0">
-			<div class="modal-dialog dialog-animated">
-				<div class="modal-content h-100">
-					<div class="modal-header" data-bs-dismiss="modal">
-						Menu <i class="far fa-times-circle icon-close"></i>
-					</div>
-					<div class="menu modal-body">
-						<div class="row w-100">
-							<div class="items p-0 col-12 text-center"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		<!--====== Modal Responsive Menu Area End ======-->
-
-	</div>
-
-	<!-- ***** All jQuery Plugins ***** -->
-
-	<!-- jQuery(necessary for all JavaScript plugins) -->
-	<script src="assets/js/vendor/jquery.min.js"></script>
-
-	<!-- Bootstrap js -->
-	<script src="assets/js/vendor/popper.min.js"></script>
-	<script src="assets/js/vendor/bootstrap.min.js"></script>
-
-	<!-- Plugins js -->
-	<script src="assets/js/vendor/all.min.js"></script>
-	<script src="assets/js/vendor/gallery.min.js"></script>
-	<script src="assets/js/vendor/slider.min.js"></script>
-	<script src="assets/js/vendor/countdown.min.js"></script>
-	<script src="assets/js/vendor/shuffle.min.js"></script>
-
-	<!-- Main js -->
-	<script src="assets/js/main.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
-	<!-- Staking Script -->
-
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
   <script src="assets/js/stablexstaking.js"></script>
-
 </body>
+</html>
