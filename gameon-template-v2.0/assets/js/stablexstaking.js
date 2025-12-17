@@ -8,7 +8,7 @@ const tokenDetails = {
     stablex: {
         tokenAddress: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
         stakingAddress: 'TRVn2h65VrbGb7zkASz3escJiHJWMSy7pV',
-        decimals: null,
+        decimals: 6,
         displayName: 'StableX' // ← Added missing comma here
     },
      cftnew: {
@@ -783,38 +783,92 @@ const stakingContractAbi = [
         "type": "event"
     }
 ];
-// DOMContentLoaded Event Listener
+// Helper: Wait for an element to appear in DOM
+function waitForElement(selector, timeout = 10000) {
+    return new Promise((resolve, reject) => {
+        if (document.querySelector(selector)) {
+            return resolve(document.querySelector(selector));
+        }
+
+        const observer = new MutationObserver(() => {
+            if (document.querySelector(selector)) {
+                observer.disconnect();
+                resolve(document.querySelector(selector));
+            }
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        setTimeout(() => {
+            observer.disconnect();
+            reject(new Error(`Timeout waiting for element: ${selector}`));
+        }, timeout);
+    });
+}
+
+// Main initialization
 async function initialize() {
-    document.getElementById('connect-button').addEventListener('click', connectWallet);
-    if (await checkTronLinkInstalled()) {
-        await initializeTronWeb();
-        setInterval(updateAllUI, 60000); // Update UI every minute
-    } else {
-        console.error('TronLink is not installed.');
+    try {
+        // Wait for connect buttons to be injected via header.html
+        const connectButton = await waitForElement('#connect-button');
+        const connectButtonMobile = document.getElementById('connect-button-mobile');
+
+        // Attach click listeners
+        connectButton.addEventListener('click', connectWallet);
+        if (connectButtonMobile) {
+            connectButtonMobile.addEventListener('click', () => {
+                connectWallet();
+                // Close mobile menu if open
+                const menuModal = bootstrap.Modal.getInstance(document.getElementById('menu'));
+                if (menuModal) menuModal.hide();
+            });
+        }
+
+        console.log('Connect buttons ready.');
+
+        // Auto-connect if TronLink is already available
+        if (await checkTronLinkInstalled()) {
+            await initializeTronWeb();
+            setInterval(updateAllUI, 60000); // Refresh UI every minute
+        }
+    } catch (error) {
+        console.error('Failed to initialize connect button:', error);
     }
 }
 
-document.addEventListener('DOMContentLoaded', initialize);
-
-// Check if TronLink is installed
+// Check if TronLink is installed and ready
 async function checkTronLinkInstalled() {
     return new Promise(resolve => {
+        let attempts = 0;
+        const maxAttempts = 20;
         const interval = setInterval(() => {
-            if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+            attempts++;
+            if (window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58) {
                 clearInterval(interval);
                 resolve(true);
+            } else if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                resolve(false);
             }
-        }, 1000);
+        }, 500);
     });
 }
 
 // Connect Wallet
 async function connectWallet() {
     try {
-        await tronLink.request({ method: 'tron_requestAccounts' });
+        if (!window.tronLink) {
+            alert('TronLink wallet not detected. Please install TronLink.');
+            return;
+        }
+        await window.tronLink.request({ method: 'tron_requestAccounts' });
         await initializeTronWeb();
-    } catch (e) {
-        console.error('Failed to connect to TronLink:', e);
+    } catch (error) {
+        console.error('Wallet connection failed:', error);
+        alert('Failed to connect wallet. Please try again.');
     }
 }
 
@@ -823,22 +877,41 @@ async function initializeTronWeb() {
     try {
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58;
-        
-        document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
 
-        
+        if (!userAddress) {
+            throw new Error('No wallet address found.');
+        }
+
+        console.log('Wallet connected:', userAddress);
+
+        // Update both desktop and mobile buttons
+        const desktopBtn = document.getElementById('connect-button');
+        const mobileBtn = document.getElementById('connect-button-mobile');
+        const connectedHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
+
+        if (desktopBtn) {
+            desktopBtn.innerHTML = connectedHTML;
+            desktopBtn.disabled = true;
+        }
+        if (mobileBtn) {
+            mobileBtn.innerHTML = connectedHTML;
+            mobileBtn.disabled = true;
+        }
+
+        // Initialize contracts
         for (let key in tokenDetails) {
             let details = tokenDetails[key];
             tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
             stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
-            if (!details.decimals) {
+            if (details.decimals === null) {
                 tokenDetails[key].decimals = await tokenContracts[key].methods.decimals().call();
             }
         }
-        
+
         await updateAllUI();
     } catch (error) {
         console.error('Error initializing TronWeb or Contracts:', error);
+        alert('Failed to initialize contracts. Check console for details.');
     }
 }
 
@@ -853,7 +926,6 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-
 // Update UI for a specific token
 async function updateTokenUI(token) {
     await updateAvailableTokens(token);
@@ -863,13 +935,11 @@ async function updateTokenUI(token) {
     await updateAPR(token);
     await delay(400);
     await updateProjectedRewards(token);
-  await delay(400);
+    await delay(400);
     await updateClaimableRewards(token);
     await delay(400);
     await updateTotalClaimedRewards(token);
-    await delay(400);
 }
-
 // Update available tokens
 async function updateAvailableTokens(token) {
     try {
@@ -980,42 +1050,38 @@ async function stakeTokens(token, amount) {
         const stakingContractAddress = tokenDetails[token].stakingAddress;
         const tokenContract = tokenContracts[token];
 
-        // Step 1: Check Current Allowance
         const allowanceRaw = await tokenContract.methods.allowance(userAddress, stakingContractAddress).call();
         const allowance = BigInt(allowanceRaw);
 
         if (allowance >= BigInt(amountToStake)) {
-            // Step 2: If approved, stake directly
             console.log(`Sufficient approval detected: ${allowance}`);
             await stakingContracts[token].methods.stake(amountToStake).send();
-            console.log("Tokens staked successfully!");
         } else {
-            // Step 3: If not approved, request approval first
-            console.log("Approval is too low. Requesting approval...");
+            console.log("Approval needed. Requesting unlimited approval...");
             await tokenContract.methods.approve(stakingContractAddress, maxUint256).send();
-            console.log("Approval granted. Proceeding with staking...");
-
-            // Step 4: Stake after approval
             await stakingContracts[token].methods.stake(amountToStake).send();
-            console.log("Tokens staked successfully after approval!");
         }
 
-        // Update UI after staking
         await updateTokenUI(token);
     } catch (error) {
         console.error(`Error staking tokens for ${token}:`, error);
+        alert(`Staking failed: ${error.message || error}`);
     }
 }
-
 
 // Unstaking function
 async function unstakeTokens(token) {
     try {
         const unstakeAmount = document.getElementById(`withdraw-amount-${token}`).value;
+        if (!unstakeAmount || Number(unstakeAmount) <= 0) {
+            alert('Please enter a valid amount to withdraw.');
+            return;
+        }
         await stakingContracts[token].methods.withdraw(tronWeb.toSun(unstakeAmount)).send();
         await updateTokenUI(token);
     } catch (error) {
         console.error(`Error unstaking tokens for ${token}:`, error);
+        alert(`Withdraw failed: ${error.message || error}`);
     }
 }
 
@@ -1026,19 +1092,39 @@ async function claimRewards(token) {
         await updateTokenUI(token);
     } catch (error) {
         console.error(`Error claiming rewards for ${token}:`, error);
+        alert(`Claim failed: ${error.message || error}`);
     }
 }
 
-// Attach event listeners dynamically
+// Attach staking action listeners
 for (let key in tokenDetails) {
-    document.getElementById(`stake-button-${key}`).addEventListener('click', async () => {
-        const amount = document.getElementById(`stake-amount-${key}`).value;
-        await stakeTokens(key, amount);
-    });
-    document.getElementById(`unstake-button-${key}`).addEventListener('click', async () => {
-        await unstakeTokens(key);
-    });
-    document.getElementById(`claim-rewards-button-${key}`).addEventListener('click', async () => {
-        await claimRewards(key);
-    });
+    const stakeBtn = document.getElementById(`stake-button-${key}`);
+    const unstakeBtn = document.getElementById(`unstake-button-${key}`);
+    const claimBtn = document.getElementById(`claim-rewards-button-${key}`);
+
+    if (stakeBtn) {
+        stakeBtn.addEventListener('click', async () => {
+            const amount = document.getElementById(`stake-amount-${key}`).value;
+            if (!amount || Number(amount) <= 0) {
+                alert('Please enter a valid amount to stake.');
+                return;
+            }
+            await stakeTokens(key, amount);
+        });
+    }
+
+    if (unstakeBtn) {
+        unstakeBtn.addEventListener('click', async () => {
+            await unstakeTokens(key);
+        });
+    }
+
+    if (claimBtn) {
+        claimBtn.addEventListener('click', async () => {
+            await claimRewards(key);
+        });
+    }
 }
+
+// Start initialization when DOM is ready
+document.addEventListener('DOMContentLoaded', initialize);
