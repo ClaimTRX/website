@@ -336,12 +336,27 @@
 
 <body>
   <div id="header-placeholder"></div>
-
 <script>
   fetch('assets/js/header.html')
-    .then(response => response.text())
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to load header: ' + response.status);
+      }
+      return response.text();
+    })
     .then(data => {
       document.getElementById('header-placeholder').innerHTML = data;
+
+      // NOW it's safe: the connect button exists
+      if (typeof initialize === 'function') {
+        initialize();
+      } else {
+        console.error('initialize() function not found. Is staking1.js loaded?');
+      }
+    })
+    .catch(err => {
+      console.error('Error loading header:', err);
+      alert('Failed to load navigation menu. Please refresh the page.');
     });
 </script>
 
