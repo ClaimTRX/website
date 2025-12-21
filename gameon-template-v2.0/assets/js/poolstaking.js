@@ -16,8 +16,8 @@ const tokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 /* ===================== Config ===================== */
 const TRONGRID_API_KEYS = [
-  'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca',
-  '664292b1-47ad-47b7-88c1-db67bee6e732'
+  '5ec52873-29cd-41f0-bdab-118acb3e84b5',
+  '8451122b-00cc-44f2-b3af-d477a8d596fc'
 ];
 const TRONGRID_API_URL = 'https://api.trongrid.io';
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
