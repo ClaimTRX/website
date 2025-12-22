@@ -1099,6 +1099,13 @@ async function retryContractCall(fn, maxRetries = 3, delayMs = 1000) {
     }
   }
 }
+
+async function updateAllUI() {
+  for (let key in tokenDetails) {
+    await updateTokenUI(key);
+    await delay(200); // Small delay to avoid rate limiting
+  }
+}
 // Update UI for a specific token
 async function updateTokenUI(token) {
   try {
