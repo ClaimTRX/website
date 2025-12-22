@@ -3,8 +3,8 @@
 let tronWeb;          // TronQL: READ + BROADCAST (NO TronGrid)
 let tronWebSigner;    // TronLink: SIGN ONLY
 let userAddress;
-const stakingContracts = stakingContracts || {};
-const tokenContracts = tokenContracts || {};
+const stakingContracts = {};
+const tokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 /* ===================== Config ===================== */
 
