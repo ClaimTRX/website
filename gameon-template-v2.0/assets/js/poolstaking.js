@@ -30,7 +30,7 @@ const SUN_PER_TRX = 1_000_000;
 const ENERGY_RENTAL_DURATION = 2;
 const CACHE_TIMEOUT_MS = 120_000; // 120s cache for runtime updates
 const THROTTLE_GAP_MS = 1000; // Keep 5000ms to stay under 15 QPS per key
-const CONTRACT_CALL_DELAY_MS = 1200; // Increased to 1000ms for safer pacing
+const CONTRACT_CALL_DELAY_MS = 1500; // Increased to 1000ms for safer pacing
 const UI_REFRESH_DELAY_MS = 3000; // 3s delay for UI refresh after actions
 // Manual CFT price for APY calculation (update this value as needed)
 const CFT_TRX_PRICE = 0.6378; // Manually set CFT price in TRX (update as needed)
@@ -283,6 +283,7 @@ async function initializeTronWeb() {
     tronWeb.setEventServer(customHttpProvider);
   }
   userAddress = tronWeb.defaultAddress.base58;
+  await delay(1000);
   if (!userAddress) {
     showToast({ title: 'Auto-connect failed', body: 'No user address found. Ensure TronLink is connected to mainnet.', variant: 'danger' });
     return;
@@ -294,9 +295,15 @@ async function initializeTronWeb() {
   const details = tokenDetails[key];
   if (!isValidTronAddress(details.tokenAddress)) throw new Error(`Invalid token address for ${key}`);
   if (!isValidTronAddress(details.stakingAddress)) throw new Error(`Invalid staking address for ${key}`);
-  tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
-  await delay(CONTRACT_CALL_DELAY_MS);
-  stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
+  tokenContracts[key] = await throttle(async () => 
+  await tronWeb.contract(tokenContractAbi, details.tokenAddress)
+);
+await delay(CONTRACT_CALL_DELAY_MS);
+
+stakingContracts[key] = await throttle(async () => 
+  await tronWeb.contract(stakingContractAbi, details.stakingAddress)
+);
+await delay(CONTRACT_CALL_DELAY_MS);
   // sanity for ABI variants
   if (!stakingContracts[key].methods.getTotalStaked && !stakingContracts[key].methods.totalStaked) {
     throw new Error('Neither getTotalStaked nor totalStaked found. Check ABI or address.');
@@ -1372,6 +1379,52 @@ document.addEventListener('DOMContentLoaded', () => {
   
   initialize();
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
