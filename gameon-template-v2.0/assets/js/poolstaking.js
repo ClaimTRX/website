@@ -213,13 +213,23 @@ async function initializeTronWeb() {
     return;
   }
   tronWeb = window.tronWeb; // Injected for signing
-
+  // Load TronWeb library if not available
+  const loadTronWebScript = () => new Promise((resolve, reject) => {
+    if (window.TronWeb) {
+      resolve();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    }
+  });
+  await loadTronWebScript();
   // Create separate read-only TronWeb with Chainstack
-  const TronWebClass = window.TronWeb || tronWeb.constructor; // Get TronWeb class
-  readTronWeb = new TronWebClass({
+  readTronWeb = new window.TronWeb({
     fullHost: CHAINSTACK_BASE_URL,
   });
-
   // Throttle requests on readTronWeb
   const originalReadRequest = readTronWeb.request;
   readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
@@ -227,7 +237,6 @@ async function initializeTronWeb() {
       return originalReadRequest.call(this, endpoint, serializeBigInt(params), method);
     });
   };
-
   userAddress = tronWeb.defaultAddress.base58;
   if (!userAddress) {
     showToast({ title: 'Auto-connect failed', body: 'No user address found. Ensure TronLink is connected to mainnet.', variant: 'danger' });
@@ -235,7 +244,6 @@ async function initializeTronWeb() {
   }
   const cb = document.getElementById('connect-button');
   if (cb) cb.innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
-
   // Init contracts: signing versions with injected, read versions with readTronWeb
   const key = 'cft';
   const details = tokenDetails[key];
@@ -816,7 +824,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.remove('inactive');
     claimBtn.disabled = Number(cachedRewards) === 0 || Number(cachedBalance) < Number(cachedRewards);
     claimBtn.style.display = 'block';
-   
+  
     return;
   }
   if (!isActive) {
@@ -824,7 +832,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.add('inactive');
     claimBtn.disabled = true;
     claimBtn.style.display = 'none';
-   
+  
     return;
   }
   if (!timeoutSec) {
@@ -832,7 +840,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.add('inactive');
     claimBtn.disabled = true;
     claimBtn.style.display = 'none';
-   
+  
     return;
   }
   const next = (lastClaimTs || 0) + timeoutSec;
@@ -885,7 +893,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
       timerEl.classList.remove('inactive');
       claimBtn.disabled = Number(pendingRewards) === 0 || Number(contractBalanceRaw) < Number(pendingRewards);
       claimBtn.style.display = 'block';
-     
+    
     }
   };
   tick();
@@ -1256,10 +1264,8 @@ document.addEventListener('DOMContentLoaded', () => {
       await claimRewards(key);
     });
   }
- 
   initialize();
 });
-
 
 
 
