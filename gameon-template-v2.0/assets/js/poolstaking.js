@@ -170,61 +170,48 @@ function normalizeContractOutput(output) {
   }
   return String(output || '0');
 }
-
-function serializeBigInt(obj) {
-  return JSON.parse(JSON.stringify(obj, (key, value) =>
-    typeof value === 'bigint' ? value.toString() : value
-  ));
-}
-
-/* ===================== TronQL TronWeb (guaranteed NOT TronGrid) ===================== */
 function createTronQLTronWeb() {
-  // TronLink injects an instance at window.tronWeb
   const injected = window.tronWeb;
   if (!injected) throw new Error('TronLink tronWeb not found (window.tronWeb missing).');
 
-  // Constructor is available on the injected instance
+  // Use the injected constructor (still safe)
   const TronWebCtor = injected.constructor;
-  const HttpProvider = TronWebCtor?.providers?.HttpProvider;
-
-  if (!HttpProvider) {
-    throw new Error('HttpProvider not found. Make sure tronweb is available (TronLink installed/unlocked).');
-  }
 
   const base = TRONQL_API_URL.replace(/\/+$/, '');
-  const provider = new HttpProvider(base);
 
-  const customHttpProvider = new Proxy(provider, {
-    get(target, prop) {
-      if (prop === 'request') {
-        return async function(endpoint, params = {}, method = 'POST') {
-          return throttle(async () => {
-            const url = `${base}${endpoint}`;
-            const res = await fetch(url, {
-              method,
-              headers: { 'Content-Type': 'application/json' },
-              body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
-            });
-
-            if (res.status === 429) throw new Error('TronQL 429 Too Many Requests.');
-            if (res.status === 403) throw new Error('TronQL 403 Forbidden.');
-
-            const data = await res.json().catch(() => ({}));
-            if (data?.Error) throw new Error(String(data.Error));
-            return serializeBigInt(data);
-          });
-        };
-      }
-      return target[prop];
-    }
+  // Modern way: pass string URLs directly (recommended in current docs)
+  const tw = new TronWebCtor({
+    fullHost: base,                  // Main full node
+    solidityNode: base,              // Solidity node (same endpoint works for TronQL)
+    eventServer: base,               // Event server (same)
+    // Optional: headers if needed later
+    // headers: { "TRON-PRO-API-KEY": "your-key" }
   });
 
-  // ✅ Use the constructor from the injected instance
-  const tw = new TronWebCtor(customHttpProvider, customHttpProvider, customHttpProvider);
+  // Override the internal request method with your throttled fetch
+  const originalProvider = tw.fullNode; // or tw.providers.HttpProvider if it exists
+  const customRequest = async function(endpoint, params = {}, method = 'POST') {
+    return throttle(async () => {
+      const url = `${base}${endpoint}`;
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
+      });
+      if (res.status === 429) throw new Error('TronQL 429 Too Many Requests.');
+      if (res.status === 403) throw new Error('TronQL 403 Forbidden.');
+      const data = await res.json().catch(() => ({}));
+      if (data?.Error) throw new Error(String(data.Error));
+      return serializeBigInt(data);
+    });
+  };
 
-  tw.setFullNode(customHttpProvider);
-  tw.setSolidityNode(customHttpProvider);
-  tw.setEventServer(customHttpProvider);
+  // Proxy the request method on all providers
+  ['fullNode', 'solidityNode', 'eventServer'].forEach(node => {
+    if (tw[node] && typeof tw[node].request === 'function') {
+      tw[node].request = customRequest;
+    }
+  });
 
   return tw;
 }
@@ -1512,6 +1499,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initialize();
 });
+
 
 
 
