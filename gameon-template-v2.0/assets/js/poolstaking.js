@@ -179,7 +179,7 @@ async function chainstackApiCall(endpoint, params = {}) {
   }
   return throttle(async () => {
     return retryWithBackoff(async () => {
-      const res = await fetch(`${CHAINSTACK_API_URL}${endpoint}`, {
+      const res = await fetch(`${CHAINSTACK_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
