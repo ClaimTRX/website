@@ -192,16 +192,16 @@ function createTronQLTronWeb() {
   // Override the internal request method with your throttled fetch
   const originalProvider = tw.fullNode; // or tw.providers.HttpProvider if it exists
   const customRequest = async function(endpoint, params = {}, method = 'POST') {
-    return throttle(async () => {
-      const url = `${base}${endpoint}`;
-      const res = await fetch(url, {
-  method,
-  headers: { 
-    'Content-Type': 'application/json',
-    'Authorization': TRONQL_TOKEN // add this line
-  },
-        body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
-      });
+  return throttle(async () => {
+    const url = `${base}/${endpoint}`;  // Add '/' here
+    const res = await fetch(url, {
+      method,
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': TRONQL_TOKEN  // Remove or adjust if switching endpoints (see below)
+      },
+      body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
+    });
       if (res.status === 429) throw new Error('TronQL 429 Too Many Requests.');
       if (res.status === 403) throw new Error('TronQL 403 Forbidden.');
       const data = await res.json().catch(() => ({}));
