@@ -1,6 +1,5 @@
-
 /* ===================== Helpers: throttle, rotation, delay, retry ===================== */
-let tronWeb;          // TronQL: READ + BROADCAST (NO TronGrid)
+let tronWeb;          // Chainstack: READ + BROADCAST (NO TronGrid)
 let tronWebSigner;    // TronLink: SIGN ONLY
 let userAddress;
 const stakingContracts = {};
@@ -8,8 +7,7 @@ const tokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 /* ===================== Config ===================== */
 
-const TRONQL_API_URL = 'https://mainnet.tron.tronql.com';
-const TRONQL_TOKEN = 'jf0sbvoi57neyy0cwgop82a7tv7e4a'; // add this
+const TRONQL_API_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
 const SAFETY_ENERGY = 50000;
@@ -182,9 +180,9 @@ function createTronQLTronWeb() {
 
   // Modern way: pass string URLs directly (recommended in current docs)
   const tw = new TronWebCtor({
-    fullHost: base,                  // Main full node
-    solidityNode: base,              // Solidity node (same endpoint works for TronQL)
-    eventServer: base,               // Event server (same)
+    fullHost: base + '/wallet',                  // Main full node
+    solidityNode: base + '/walletsolidity',              // Solidity node (same endpoint works for TronQL)
+    eventServer: base + '/event',               // Event server (same)
     // Optional: headers if needed later
     // headers: { "TRON-PRO-API-KEY": "your-key" }
   });
@@ -192,16 +190,15 @@ function createTronQLTronWeb() {
   // Override the internal request method with your throttled fetch
   const originalProvider = tw.fullNode; // or tw.providers.HttpProvider if it exists
   const customRequest = async function(endpoint, params = {}, method = 'POST') {
-  return throttle(async () => {
-    const url = `${base}/${endpoint}`;  // Add '/' here
-    const res = await fetch(url, {
-      method,
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': TRONQL_TOKEN  // Remove or adjust if switching endpoints (see below)
-      },
-      body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
-    });
+    return throttle(async () => {
+      const url = `${base}/${endpoint}`;
+      const res = await fetch(url, {
+  method,
+  headers: { 
+    'Content-Type': 'application/json'
+  },
+        body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
+      });
       if (res.status === 429) throw new Error('TronQL 429 Too Many Requests.');
       if (res.status === 403) throw new Error('TronQL 403 Forbidden.');
       const data = await res.json().catch(() => ({}));
@@ -440,34 +437,32 @@ async function requestEnergyRental(rentalEnergy, rentalCostTrx) {
 async function pollDelegationStatus(requestId) {
   const maxPollAttempts = 30;
   let pollAttempts = 0;
-  return new Promise((resolve, reject) => {
-    const interval = setInterval(async () => {
-      pollAttempts++;
-      try {
-        const response = await fetch(`${SERVER_URL}/api/delegation-status?requestId=${requestId}`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-        const data = await response.json();
-        if (data.status === 'delegated') {
-          clearInterval(interval);
-          resolve(true);
-        } else if (data.status === 'failed' || data.status === 'expired') {
-          clearInterval(interval);
-          reject(new Error(`Delegation failed: ${data.message || 'Unknown error'}`));
-        } else if (pollAttempts >= maxPollAttempts) {
-          clearInterval(interval);
-          reject(new Error('Delegation timed out after 60 seconds.'));
-        }
-      } catch (err) {
-        if (pollAttempts >= maxPollAttempts) {
-          clearInterval(interval);
-          reject(new Error(`Error polling delegation status: ${err.message}`));
-        }
+  let interval = setInterval(async () => {
+    pollAttempts++;
+    try {
+      const response = await fetch(`${SERVER_URL}/api/delegation-status?requestId=${requestId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      const data = await response.json();
+      if (data.status === 'delegated') {
+        clearInterval(interval);
+        resolve(true);
+      } else if (data.status === 'failed' || data.status === 'expired') {
+        clearInterval(interval);
+        reject(new Error(`Delegation failed: ${data.message || 'Unknown error'}`));
+      } else if (pollAttempts >= maxPollAttempts) {
+        clearInterval(interval);
+        reject(new Error('Delegation timed out after 60 seconds.'));
       }
-    }, 2000);
-  });
+    } catch (err) {
+      if (pollAttempts >= maxPollAttempts) {
+        clearInterval(interval);
+        reject(new Error(`Error polling delegation status: ${err.message}`));
+      }
+    }
+  }, 2000);
 }
 
 function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = '') {
@@ -1503,7 +1498,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initialize();
 });
-
 
 
 
