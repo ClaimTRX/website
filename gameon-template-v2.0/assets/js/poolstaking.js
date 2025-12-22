@@ -179,8 +179,17 @@ function serializeBigInt(obj) {
 
 /* ===================== TronQL TronWeb (guaranteed NOT TronGrid) ===================== */
 function createTronQLTronWeb() {
-  const HttpProvider = window.TronWeb?.providers?.HttpProvider;
-  if (!HttpProvider) throw new Error('TronWeb not found on window. Make sure tronweb is loaded.');
+  // TronLink injects an instance at window.tronWeb
+  const injected = window.tronWeb;
+  if (!injected) throw new Error('TronLink tronWeb not found (window.tronWeb missing).');
+
+  // Constructor is available on the injected instance
+  const TronWebCtor = injected.constructor;
+  const HttpProvider = TronWebCtor?.providers?.HttpProvider;
+
+  if (!HttpProvider) {
+    throw new Error('HttpProvider not found. Make sure tronweb is available (TronLink installed/unlocked).');
+  }
 
   const base = TRONQL_API_URL.replace(/\/+$/, '');
   const provider = new HttpProvider(base);
@@ -210,12 +219,16 @@ function createTronQLTronWeb() {
     }
   });
 
-  const tw = new window.TronWeb(customHttpProvider, customHttpProvider, customHttpProvider);
+  // ✅ Use the constructor from the injected instance
+  const tw = new TronWebCtor(customHttpProvider, customHttpProvider, customHttpProvider);
+
   tw.setFullNode(customHttpProvider);
   tw.setSolidityNode(customHttpProvider);
   tw.setEventServer(customHttpProvider);
+
   return tw;
 }
+
 
 /* ===================== TronQL TX helpers (build via TronQL, sign via TronLink, broadcast via TronQL) ===================== */
 async function sendTrxViaTronQL(toAddress, amountSun) {
