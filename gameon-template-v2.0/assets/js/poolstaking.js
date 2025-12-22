@@ -15,13 +15,8 @@ const stakingContracts = {};
 const tokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 /* ===================== Config ===================== */
-const TRONGRID_API_KEYS = [
-  '5ec52873-29cd-41f0-bdab-118acb3e84b5',
-  '8451122b-00cc-44f2-b3af-d477a8d596fc',
-  '68166950-8623-4ae5-ba39-1d2ed0be3597'
-  // Add a third key here if you have one, e.g., 'your-third-key-here'
-];
-const TRONGRID_API_URL = 'https://api.trongrid.io';
+
+const TRONQL_API_URL = 'https://wxfcmxenzj3fqmn4p03ztwb2h27057.mainnet.tron.tronql.com';
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
 const SAFETY_ENERGY = 50000;
@@ -250,38 +245,40 @@ async function initializeTronWeb() {
         return originalRequest.call(this, endpoint, serializeBigInt(params), method);
       });
     };
-  } else {
-    const HttpProvider = window.TronWeb.providers.HttpProvider;
-    const provider = new HttpProvider(TRONGRID_API_URL);
-    const customHttpProvider = new Proxy(provider, {
-      get(target, prop) {
-        if (prop === 'request') {
-          return async function(endpoint, params = {}, method = 'POST') {
-            return throttle(async () => {
-              const key = apiKeyRotator();
-              const res = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
-                method,
-                headers: {
-                  'Content-Type': 'application/json',
-                  'TRON-PRO-API-KEY': key
-                },
-                body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
+      } else {
+      const HttpProvider = window.TronWeb.providers.HttpProvider;
+      const provider = new HttpProvider(TRONQL_API_URL);  // Use new URL
+
+      const customHttpProvider = new Proxy(provider, {
+        get(target, prop) {
+          if (prop === 'request') {
+            return async function(endpoint, params = {}, method = 'POST') {
+              return throttle(async () => {
+                // No key rotation needed — token is in URL
+                const res = await fetch(`${TRONQL_API_URL}${endpoint}`, {
+                  method,
+                  headers: {
+                    'Content-Type': 'application/json'
+                    // No Authorization header needed with subdomain method
+                    // If using base URL + header: add 'Authorization': TRONQL_TOKEN
+                  },
+                  body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
+                });
+                if (res.status === 429) throw new Error('TronQL 429 Too Many Requests.');
+                if (res.status === 403) throw new Error('TronQL 403 Forbidden.');
+                const data = await res.json().catch(() => ({}));
+                if (data.Error) throw new Error(data.Error);
+                return serializeBigInt(data);
               });
-              if (res.status === 429) throw new Error('TronGrid 429 Too Many Requests.');
-              if (res.status === 403) throw new Error('TronGrid 403 Forbidden.');
-              const data = await res.json().catch(() => ({}));
-              if (data.Error) throw new Error(data.Error);
-              return serializeBigInt(data);
-            });
-          };
+            };
+          }
+          return target[prop];
         }
-        return target[prop];
-      }
-    });
-    tronWeb.setFullNode(customHttpProvider);
-    tronWeb.setSolidityNode(customHttpProvider);
-    tronWeb.setEventServer(customHttpProvider);
-  }
+      });
+      tronWeb.setFullNode(customHttpProvider);
+      tronWeb.setSolidityNode(customHttpProvider);
+      tronWeb.setEventServer(customHttpProvider);  // Event server might still use TronGrid if needed, but usually same
+    }
   userAddress = tronWeb.defaultAddress.base58;
   await delay(1000);
   if (!userAddress) {
@@ -1379,60 +1376,6 @@ document.addEventListener('DOMContentLoaded', () => {
   
   initialize();
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
