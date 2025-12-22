@@ -23,17 +23,16 @@
     .progress-bar{background:linear-gradient(90deg,var(--accent-1),var(--accent-2))}
     .section-title{font-size:1.5rem;margin-bottom:1rem}
     .section-total{text-align:right;color:var(--muted);font-size:0.95rem;margin-top:1rem}
-
     /* Mobile card layout - perfect spacing */
     @media (max-width:768px){
       table,thead,tbody,th,td,tr{display:block}
       thead tr{position:absolute;top:-9999px;left:-9999px}
       tr{margin-bottom:1.2rem;border:1px solid var(--line);border-radius:12px;padding:1rem;background:var(--bg-2);box-shadow:0 4px 15px rgba(0,0,0,0.3)}
-      
+   
       td{border:none;position:relative;padding:0.4rem 0 0.4rem 0;text-align:left !important}
       td:first-child{padding-top:0}
       td:last-child{padding-bottom:0}
-      
+   
       td:before{
         content:attr(data-label);
         display:block;
@@ -42,7 +41,7 @@
         margin-bottom:0.35rem;
         font-size:0.95rem;
       }
-      
+   
       /* Special: make wallet address appear below the label */
       td[data-label="Wallet"]{
         padding-top:0.6rem;
@@ -55,7 +54,6 @@
   </style>
 </head>
 <body>
-
 <header id="header" class="pt-2">
   <nav class="navbar navbar-expand">
     <div class="container">
@@ -70,7 +68,6 @@
     </div>
   </nav>
 </header>
-
 <section class="hero-section">
   <div class="container text-center">
     <span class="intro-text">CFT Ecosystem</span>
@@ -78,21 +75,18 @@
     <p>14-day claim timeout • Sorted by staked amount</p>
   </div>
 </section>
-
 <section class="py-5">
   <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h3 class="m-0">Stakers <span id="total-stakers" class="text-muted">(loading...)</span></h3>
       <button id="refresh" class="btn primary btn-sm">Refresh List</button>
     </div>
-
     <div class="text-center my-4" id="progress" style="display:none">
       <div class="progress" style="height:8px;background:var(--bg-2)">
         <div class="progress-bar" style="width:0%"></div>
       </div>
       <div class="progress-text mt-2">Loading staker <span id="current">0</span> of <span id="total">0</span></div>
     </div>
-
     <div id="active-section" class="luxe-card">
       <h4 class="section-title">Active Stakers</h4>
       <div class="table-responsive">
@@ -110,7 +104,6 @@
       </div>
       <div class="section-total" id="active-total">Total Active: — CFT</div>
     </div>
-
     <div id="soon-section" class="luxe-card">
       <h4 class="section-title">Expire Soon</h4>
       <div class="table-responsive">
@@ -128,7 +121,6 @@
       </div>
       <div class="section-total" id="soon-total">Total Expire Soon: — CFT</div>
     </div>
-
     <div id="expired-section" class="luxe-card">
       <h4 class="section-title">Expired</h4>
       <div class="table-responsive">
@@ -148,23 +140,52 @@
     </div>
   </div>
 </section>
-
 <footer class="footer-area py-5 mt-3">
   <div class="container text-center">
     <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" height="28" alt=""></a>
     <div class="copyright-area py-2">©2025 CFT Ecosystem</div>
   </div>
 </footer>
-
-<script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.js"></script>
 <script>
-  const STAKING_ADDRESS = 'TAbu6yKiVRbs3c7tcwFnreupEfVW9t8d9K';
+  window.Buffer = buffer.Buffer;
+</script>
+<script src="https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js"></script>
+<script>
+  const STAKING_ADDRESS = 'TCf1vY3EMuczBSmo9Cfrffu6TsGrUvrC52';
   const TOKEN_DECIMALS = 6;
   const DELAY_MS = 380;
-  let tronWeb;
-
+  const THROTTLE_GAP_MS = 500;
+  const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
+  let tronWeb, readTronWeb;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
-
+  const throttle = (() => {
+    let queue = Promise.resolve();
+    let last = 0;
+    return async function run(fn) {
+      const exec = async () => {
+        const now = Date.now();
+        const wait = Math.max(0, THROTTLE_GAP_MS - (now - last));
+        if (wait) await sleep(wait);
+        last = Date.now();
+        return await fn();
+      };
+      queue = queue.then(exec, exec);
+      return queue;
+    };
+  })();
+  async function initReadTronWeb() {
+    if (readTronWeb) return;
+    readTronWeb = Object.create(tronWeb);
+    readTronWeb.fullNode = new tronWeb.providers.HttpProvider(CHAINSTACK_BASE_URL);
+    readTronWeb.solidityNode = new tronWeb.providers.HttpProvider(CHAINSTACK_BASE_URL);
+    readTronWeb.eventServer = new tronWeb.providers.HttpProvider(CHAINSTACK_BASE_URL);
+    readTronWeb.privateKey = null;
+    const originalRequest = readTronWeb.request;
+    readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
+      return throttle(() => originalRequest.call(this, endpoint, params, method));
+    };
+  }
   async function loadStakers() {
     const activeBody = document.getElementById('active-body');
     const soonBody = document.getElementById('soon-body');
@@ -173,44 +194,35 @@
     const progressBar = progress.querySelector('.progress-bar');
     const currentEl = document.getElementById('current');
     const totalEl = document.getElementById('total');
-
     activeBody.innerHTML = '<tr><td colspan="4" class="text-center py-5">Connecting...</td></tr>';
     soonBody.innerHTML = '';
     expiredBody.innerHTML = '';
     progress.style.display = 'block';
-
     try {
-      if (!tronWeb && (!window.tronWeb || !window.tronWeb.ready)) {
+      if (!window.tronWeb || !window.tronWeb.ready) {
         throw new Error('Please unlock TronLink');
       }
-      tronWeb = tronWeb || window.tronWeb;
-
-      const contract = await tronWeb.contract().at(STAKING_ADDRESS);
+      tronWeb = window.tronWeb;
+      await initReadTronWeb();
+      const contract = await readTronWeb.contract().at(STAKING_ADDRESS);
       const list = await contract.getStakersList().call();
-
       document.getElementById('total-stakers').textContent = `(${list.length} wallets)`;
       totalEl.textContent = list.length;
-
       const activeData = [], soonData = [], expiredData = [];
-
       for (let i = 0; i < list.length; i++) {
         let addr = list[i];
         if (addr.startsWith('41') && addr.length === 42) {
-          addr = tronWeb.address.fromHex(addr);
+          addr = readTronWeb.address.fromHex(addr);
         }
-
         currentEl.textContent = i + 1;
         progressBar.style.width = `${((i + 1) / list.length) * 100}%`;
-
         try {
           const info = await contract.users(addr).call();
-          const stakedNum = tronWeb.toBigNumber(info.stakedAmount).shiftedBy(-TOKEN_DECIMALS).toNumber();
+          const stakedNum = readTronWeb.toBigNumber(info.stakedAmount).shiftedBy(-TOKEN_DECIMALS).toNumber();
           const lastClaim = Number(info.lastClaimTimestamp);
           const isActive = info.isActive;
-
           const now = Math.floor(Date.now() / 1000);
           let daysSinceClaim = lastClaim === 0 ? Infinity : Math.floor((now - lastClaim) / 86400);
-
           let status, statusClass, category;
           if (lastClaim === 0) {
             status = 'Never claimed'; statusClass = 'text-muted'; category = 'active';
@@ -221,25 +233,19 @@
           } else {
             status = 'Active'; statusClass = 'text-success'; category = 'active';
           }
-
           const lastClaimText = lastClaim === 0 ? 'Never' :
             daysSinceClaim === 0 ? 'Today' :
             daysSinceClaim === 1 ? '1 day ago' : `${daysSinceClaim} days ago`;
-
           const data = { addr, stakedNum, lastClaimText, status, statusClass };
-
           if (category === 'active') activeData.push(data);
           else if (category === 'soon') soonData.push(data);
           else expiredData.push(data);
         } catch (e) { console.warn('Failed for', addr, e.message); }
-
         if (i < list.length - 1) await sleep(DELAY_MS);
       }
-
       activeData.sort((a, b) => b.stakedNum - a.stakedNum);
       soonData.sort((a, b) => b.stakedNum - a.stakedNum);
       expiredData.sort((a, b) => b.stakedNum - a.stakedNum);
-
       const buildRows = (data) => {
         let rows = '';
         data.forEach(s => {
@@ -253,23 +259,19 @@
         });
         return rows || '<tr><td colspan="4" class="text-center py-4">None</td></tr>';
       };
-
       activeBody.innerHTML = buildRows(activeData);
       soonBody.innerHTML = buildRows(soonData);
       expiredBody.innerHTML = buildRows(expiredData);
-
       const sum = arr => arr.reduce((t, s) => t + s.stakedNum, 0);
       document.getElementById('active-total').textContent = `Total Active: ${sum(activeData).toLocaleString(undefined, {maximumFractionDigits: 2})} CFT`;
       document.getElementById('soon-total').textContent = `Total Expire Soon: ${sum(soonData).toLocaleString(undefined, {maximumFractionDigits: 2})} CFT`;
       document.getElementById('expired-total').textContent = `Total Expired: ${sum(expiredData).toLocaleString(undefined, {maximumFractionDigits: 2})} CFT`;
-
       progress.style.display = 'none';
     } catch (err) {
       activeBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-5">Error: ${err.message}</td></tr>`;
       progress.style.display = 'none';
     }
   }
-
   function copyAddr(el, addr) {
     navigator.clipboard.writeText(addr);
     const orig = el.textContent;
@@ -277,7 +279,6 @@
     el.style.color = '#62ffcf';
     setTimeout(() => { el.textContent = orig; el.style.color = ''; }, 1500);
   }
-
   window.addEventListener('load', () => {
     if (window.tronWeb && window.tronWeb.ready) {
       tronWeb = window.tronWeb;
@@ -285,7 +286,6 @@
     }
     loadStakers();
   });
-
   document.getElementById('refresh').addEventListener('click', loadStakers);
 </script>
 </body>
