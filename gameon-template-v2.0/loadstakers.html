@@ -146,7 +146,8 @@
     <div class="copyright-area py-2">©2025 CFT Ecosystem</div>
   </div>
 </footer>
-<script src="https://cdn.jsdelivr.net/npm/tronweb@5.3.3/dist/TronWeb.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js"></script>
 <script>
   const STAKING_ADDRESS = 'TCf1vY3EMuczBSmo9Cfrffu6TsGrUvrC52';
   const TOKEN_DECIMALS = 6;
@@ -172,9 +173,11 @@
   })();
   async function initReadTronWeb() {
     if (readTronWeb) return;
-    const TronWebCtor = window.TronWeb;
-    if (!TronWebCtor) throw new Error('TronWeb not loaded');
-    readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
+    readTronWeb = Object.create(tronWeb);
+    readTronWeb.fullNode = new tronWeb.providers.HttpProvider(CHAINSTACK_BASE_URL);
+    readTronWeb.solidityNode = new tronWeb.providers.HttpProvider(CHAINSTACK_BASE_URL);
+    readTronWeb.eventServer = new tronWeb.providers.HttpProvider(CHAINSTACK_BASE_URL);
+    readTronWeb.privateKey = null;
     const originalRequest = readTronWeb.request;
     readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
       return throttle(() => originalRequest.call(this, endpoint, params, method));
@@ -193,6 +196,10 @@
     expiredBody.innerHTML = '';
     progress.style.display = 'block';
     try {
+      if (!window.tronWeb || !window.tronWeb.ready) {
+        throw new Error('Please unlock TronLink');
+      }
+      tronWeb = window.tronWeb;
       await initReadTronWeb();
       const contract = await readTronWeb.contract().at(STAKING_ADDRESS);
       const list = await contract.getStakersList().call();
