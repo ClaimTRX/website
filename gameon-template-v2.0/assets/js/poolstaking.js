@@ -8,7 +8,7 @@ const tokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 /* ===================== Config ===================== */
 
-const TRONQL_API_URL = 'https://wxfcmxenzj3fqmn4p03ztwb2h27057.mainnet.tron.tronql.com';
+const TRONQL_API_URL = 'https://mainnet.tron.tronql.com/wxfcmxenzj3fqmn4p03ztwb2h27057/';
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
 const SAFETY_ENERGY = 50000;
