@@ -9,7 +9,7 @@ const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 /* ===================== Config ===================== */
 
 const TRONQL_API_URL = 'https://mainnet.tron.tronql.com';
-const TRONQL_TOKEN = 'wxfcmxenzj3fqmn4p03ztwb2h27057'; // add this
+const TRONQL_TOKEN = 'jf0sbvoi57neyy0cwgop82a7tv7e4a'; // add this
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
 const SAFETY_ENERGY = 50000;
@@ -1503,6 +1503,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initialize();
 });
+
 
 
 
