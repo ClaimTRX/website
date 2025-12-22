@@ -226,9 +226,9 @@
           let status, statusClass, category;
           if (lastClaim === 0) {
             status = 'Never claimed'; statusClass = 'text-muted'; category = 'active';
-          } else if (!isActive || daysSinceClaim > 14) {
+          } else if (!isActive || daysSinceClaim > 7) {
             status = 'EXPIRED'; statusClass = 'expired'; category = 'expired';
-          } else if (daysSinceClaim >= 10) {
+          } else if (daysSinceClaim >= 4) {
             status = 'Expire Soon'; statusClass = 'soon'; category = 'soon';
           } else {
             status = 'Active'; statusClass = 'text-success'; category = 'active';
