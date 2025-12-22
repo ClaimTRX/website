@@ -28,11 +28,11 @@
       table,thead,tbody,th,td,tr{display:block}
       thead tr{position:absolute;top:-9999px;left:-9999px}
       tr{margin-bottom:1.2rem;border:1px solid var(--line);border-radius:12px;padding:1rem;background:var(--bg-2);box-shadow:0 4px 15px rgba(0,0,0,0.3)}
-     
+    
       td{border:none;position:relative;padding:0.4rem 0 0.4rem 0;text-align:left !important}
       td:first-child{padding-top:0}
       td:last-child{padding-bottom:0}
-     
+    
       td:before{
         content:attr(data-label);
         display:block;
@@ -41,7 +41,7 @@
         margin-bottom:0.35rem;
         font-size:0.95rem;
       }
-     
+    
       /* Special: make wallet address appear below the label */
       td[data-label="Wallet"]{
         padding-top:0.6rem;
@@ -146,10 +146,11 @@
     <div class="copyright-area py-2">©2025 CFT Ecosystem</div>
   </div>
 </footer>
-<script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js"></script>
 <script>
   const STAKING_ADDRESS = 'TCf1vY3EMuczBSmo9Cfrffu6TsGrUvrC52';
   const TOKEN_DECIMALS = 6;
+  const DELAY_MS = 380;
   const DELAY_MS = 380;
   const THROTTLE_GAP_MS = 500;
   const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
@@ -172,9 +173,8 @@
   })();
   async function initReadTronWeb() {
     if (readTronWeb) return;
-    const TronWebCtor = window.TronWeb;
-    if (!TronWebCtor) throw new Error('TronWeb not loaded');
-    readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
+    if (!window.TronWeb) throw new Error('TronWeb not loaded');
+    readTronWeb = new window.TronWeb({ fullHost: CHAINSTACK_BASE_URL });
     const originalRequest = readTronWeb.request;
     readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
       return throttle(() => originalRequest.call(this, endpoint, params, method));
