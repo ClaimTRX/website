@@ -24,8 +24,8 @@ const ENERGY_PRICE_SUN = 30;
 const SUN_PER_TRX = 1_000_000;
 const ENERGY_RENTAL_DURATION = 2;
 const CACHE_TIMEOUT_MS = 120_000; // 120s cache for runtime updates
-const THROTTLE_GAP_MS = 1000; // Keep 5000ms to stay under 15 QPS per key
-const CONTRACT_CALL_DELAY_MS = 1500; // Increased to 1000ms for safer pacing
+const THROTTLE_GAP_MS = 500; // Keep 5000ms to stay under 15 QPS per key
+const CONTRACT_CALL_DELAY_MS = 800; // Increased to 1000ms for safer pacing
 const UI_REFRESH_DELAY_MS = 3000; // 3s delay for UI refresh after actions
 // Manual CFT price for APY calculation (update this value as needed)
 const CFT_TRX_PRICE = 0.6378; // Manually set CFT price in TRX (update as needed)
@@ -145,14 +145,7 @@ const throttle = (() => {
     return queue;
   };
 })();
-const apiKeyRotator = (() => {
-  let idx = 0;
-  return function next() {
-    const key = TRONGRID_API_KEYS[idx];
-    idx = (idx + 1) % TRONGRID_API_KEYS.length;
-    return key;
-  };
-})();
+
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -186,42 +179,7 @@ function serializeBigInt(obj) {
 }
 
 /* ===================== TronGrid helper (throttled + key-rotating + retry) ===================== */
-async function tronGridApiCall(endpoint, params = {}) {
-  const needsHex = endpoint.startsWith('/wallet/');
-  let body = params;
-  if (needsHex && params && params.address) {
-    try {
-      const hex = tronWeb?.address?.toHex ? tronWeb.address.toHex(params.address) : params.address;
-      body = { ...params, address: hex };
-    } catch {
-      body = params;
-    }
-  }
-  return throttle(async () => {
-    return retryWithBackoff(async () => {
-      const key = apiKeyRotator();
-      const res = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'TRON-PRO-API-KEY': key
-        },
-        body: JSON.stringify(body)
-      });
-      if (res.status === 429) {
-        const text = await res.text().catch(() => '');
-        throw new Error(`TronGrid 429 Too Many Requests. ${text || ''}`.trim());
-      }
-      if (res.status === 403) {
-        const text = await res.text().catch(() => '');
-        throw new Error(`TronGrid 403 Forbidden. ${text || ''}`.trim());
-      }
-      const data = await res.json().catch(() => ({}));
-      if (data.Error) throw new Error(data.Error);
-      return data;
-    });
-  });
-}
+
 /* ===================== TronWeb Setup (wrap requests) ===================== */
 async function initializeTronWeb() {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|TronLink/i.test(navigator.userAgent);
@@ -237,48 +195,45 @@ async function initializeTronWeb() {
   }
   tronWeb = window.tronWeb;
   if (isMobile) {
-    const originalRequest = tronWeb.request;
-    tronWeb.request = async function(endpoint, params = {}, method = 'POST') {
-      return throttle(async () => {
-        const key = apiKeyRotator();
-        tronWeb.setHeader({ 'TRON-PRO-API-KEY': key });
-        return originalRequest.call(this, endpoint, serializeBigInt(params), method);
-      });
-    };
-      } else {
-      const HttpProvider = window.TronWeb.providers.HttpProvider;
-      const provider = new HttpProvider(TRONQL_API_URL);  // Use new URL
+  const originalRequest = tronWeb.request;
+  tronWeb.request = async function(endpoint, params = {}, method = 'POST') {
+    return throttle(async () => {
+      // No key or header needed — token is in the subdomain URL
+      return originalRequest.call(this, endpoint, serializeBigInt(params), method);
+    });
+  };
+} else {
+  const HttpProvider = window.TronWeb.providers.HttpProvider;
+  const provider = new HttpProvider(TRONQL_API_URL);
 
-      const customHttpProvider = new Proxy(provider, {
-        get(target, prop) {
-          if (prop === 'request') {
-            return async function(endpoint, params = {}, method = 'POST') {
-              return throttle(async () => {
-                // No key rotation needed — token is in URL
-                const res = await fetch(`${TRONQL_API_URL}${endpoint}`, {
-                  method,
-                  headers: {
-                    'Content-Type': 'application/json'
-                    // No Authorization header needed with subdomain method
-                    // If using base URL + header: add 'Authorization': TRONQL_TOKEN
-                  },
-                  body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
-                });
-                if (res.status === 429) throw new Error('TronQL 429 Too Many Requests.');
-                if (res.status === 403) throw new Error('TronQL 403 Forbidden.');
-                const data = await res.json().catch(() => ({}));
-                if (data.Error) throw new Error(data.Error);
-                return serializeBigInt(data);
-              });
-            };
-          }
-          return target[prop];
-        }
-      });
-      tronWeb.setFullNode(customHttpProvider);
-      tronWeb.setSolidityNode(customHttpProvider);
-      tronWeb.setEventServer(customHttpProvider);  // Event server might still use TronGrid if needed, but usually same
+  const customHttpProvider = new Proxy(provider, {
+    get(target, prop) {
+      if (prop === 'request') {
+        return async function(endpoint, params = {}, method = 'POST') {
+          return throttle(async () => {
+            const res = await fetch(`${TRONQL_API_URL}${endpoint}`, {
+              method,
+              headers: {
+                'Content-Type': 'application/json'
+                // No Authorization header needed — token is in subdomain
+              },
+              body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
+            });
+            if (res.status === 429) throw new Error('TronQL 429 Too Many Requests.');
+            if (res.status === 403) throw new Error('TronQL 403 Forbidden.');
+            const data = await res.json().catch(() => ({}));
+            if (data.Error) throw new Error(data.Error);
+            return serializeBigInt(data);
+          });
+        };
+      }
+      return target[prop];
     }
+  });
+  tronWeb.setFullNode(customHttpProvider);
+  tronWeb.setSolidityNode(customHttpProvider);
+  tronWeb.setEventServer(customHttpProvider);
+}
   userAddress = tronWeb.defaultAddress.base58;
   await delay(1000);
   if (!userAddress) {
@@ -1376,6 +1331,52 @@ document.addEventListener('DOMContentLoaded', () => {
   
   initialize();
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
