@@ -190,21 +190,23 @@ function createTronQLTronWeb() {
   // Override the internal request method with your throttled fetch
   const originalProvider = tw.fullNode; // or tw.providers.HttpProvider if it exists
   const customRequest = async function(endpoint, params = {}, method = 'POST') {
-    return throttle(async () => {
-      const url = `${base}/${endpoint}`;
-      const res = await fetch(url, {
-  method,
-  headers: { 
-    'Content-Type': 'application/json'
-  },
-body: method === 'POST' ? JSON.stringify(params) : undefined      });
-      if (res.status === 429) throw new Error('TronQL 429 Too Many Requests.');
-      if (res.status === 403) throw new Error('TronQL 403 Forbidden.');
-      const data = await res.json().catch(() => ({}));
-      if (data?.Error) throw new Error(String(data.Error));
-      return serializeBigInt(data);
+  return throttle(async () => {
+    const url = `${base}/${endpoint}`;
+    const res = await fetch(url, {
+      method,
+      headers: { 
+        'Content-Type': 'application/json'
+      },
+      body: method === 'POST' ? JSON.stringify(params) : undefined  // ← Fixed here
     });
-  };
+    if (res.status === 429) throw new Error('429 Too Many Requests');
+    if (res.status === 403) throw new Error('403 Forbidden');
+    if (res.status === 401) throw new Error('401 Unauthorized');
+    const data = await res.json().catch(() => ({}));
+    if (data?.Error) throw new Error(String(data.Error));
+    return data;  // Chainstack returns proper types, no need to re-serialize
+  });
+};
 
   // Proxy the request method on all providers
   ['fullNode', 'solidityNode', 'eventServer'].forEach(node => {
@@ -1497,7 +1499,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initialize();
 });
-
 
 
 
