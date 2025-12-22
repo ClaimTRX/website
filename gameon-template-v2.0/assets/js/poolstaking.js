@@ -1,6 +1,8 @@
-let tronWeb, userAddress;
+let tronWeb, readTronWeb, userAddress;
 const stakingContracts = {};
 const tokenContracts = {};
+const readStakingContracts = {};
+const readTokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 /* ===================== Config ===================== */
 const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
@@ -210,43 +212,19 @@ async function initializeTronWeb() {
     showToast({ title: 'Auto-connect failed', body: 'TronLink is not ready. Unlock TronLink and select mainnet.', variant: 'danger' });
     return;
   }
-  tronWeb = window.tronWeb;
+  tronWeb = window.tronWeb; // Injected for signing
 
-  // Always set custom Chainstack providers (overrides TronLink defaults)
-  const HttpProvider = window.TronWeb.providers.HttpProvider;
-  const provider = new HttpProvider(CHAINSTACK_BASE_URL);
-  const customHttpProvider = new Proxy(provider, {
-    get(target, prop) {
-      if (prop === 'request') {
-        return async function(endpoint, params = {}, method = 'POST') {
-          return throttle(async () => {
-            const res = await fetch(`${CHAINSTACK_BASE_URL}${endpoint}`, {
-              method,
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
-            });
-            if (res.status === 429) throw new Error('Chainstack 429 Too Many Requests.');
-            if (res.status === 403) throw new Error('Chainstack 403 Forbidden.');
-            const data = await res.json().catch(() => ({}));
-            if (data.Error) throw new Error(data.Error);
-            return serializeBigInt(data);
-          });
-        };
-      }
-      return target[prop];
-    }
+  // Create separate read-only TronWeb with Chainstack
+  const TronWebClass = window.TronWeb || tronWeb.constructor; // Get TronWeb class
+  readTronWeb = new TronWebClass({
+    fullHost: CHAINSTACK_BASE_URL,
   });
-  tronWeb.setFullNode(customHttpProvider);
-  tronWeb.setSolidityNode(customHttpProvider);
-  tronWeb.setEventServer(customHttpProvider);
 
-  // Additional throttle on request for all cases
-  const originalRequest = tronWeb.request;
-  tronWeb.request = async function(endpoint, params = {}, method = 'POST') {
+  // Throttle requests on readTronWeb
+  const originalReadRequest = readTronWeb.request;
+  readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
     return throttle(async () => {
-      return originalRequest.call(this, endpoint, serializeBigInt(params), method);
+      return originalReadRequest.call(this, endpoint, serializeBigInt(params), method);
     });
   };
 
@@ -257,25 +235,28 @@ async function initializeTronWeb() {
   }
   const cb = document.getElementById('connect-button');
   if (cb) cb.innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
-  // init contracts
+
+  // Init contracts: signing versions with injected, read versions with readTronWeb
   const key = 'cft';
   const details = tokenDetails[key];
   if (!isValidTronAddress(details.tokenAddress)) throw new Error(`Invalid token address for ${key}`);
   if (!isValidTronAddress(details.stakingAddress)) throw new Error(`Invalid staking address for ${key}`);
   tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
+  readTokenContracts[key] = await readTronWeb.contract(tokenContractAbi, details.tokenAddress);
   await delay(CONTRACT_CALL_DELAY_MS);
   stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
+  readStakingContracts[key] = await readTronWeb.contract(stakingContractAbi, details.stakingAddress);
   // sanity for ABI variants
-  if (!stakingContracts[key].methods.getTotalStaked && !stakingContracts[key].methods.totalStaked) {
+  if (!readStakingContracts[key].methods.getTotalStaked && !readStakingContracts[key].methods.totalStaked) {
     throw new Error('Neither getTotalStaked nor totalStaked found. Check ABI or address.');
   }
   setStatus('Connected', true);
   // Force clear all caches on init/load for latest data
   ['top', 'action', 'stats', `user_${key}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${key}_${userAddress}`));
-  // Fetch user data once and reuse
+  // Fetch user data once and reuse (use read)
   let userData;
   try {
-    userData = await retryWithBackoff(() => stakingContracts[key].methods.users(userAddress).call());
+    userData = await retryWithBackoff(() => readStakingContracts[key].methods.users(userAddress).call());
     console.debug('initializeTronWeb: users call successful, userData:', userData);
   } catch (error) {
     console.error('initializeTronWeb: users call failed:', error);
@@ -304,9 +285,9 @@ async function initializeTronWeb() {
   localStorage.setItem(`tokenUI_user_${key}_${userAddress}`, JSON.stringify(serializeBigInt(initialCache)));
   // Update UI with prioritized calls
   await updateUI(key, true, userData);
-  // Show admin if owner
+  // Show admin if owner (use read)
   try {
-    const owner = await retryWithBackoff(() => stakingContracts[key].methods.owner().call());
+    const owner = await retryWithBackoff(() => readStakingContracts[key].methods.owner().call());
     if (userAddress === owner) {
       const admin = document.getElementById('admin-section');
       if (admin) admin.style.display = 'block';
@@ -317,7 +298,7 @@ async function initializeTronWeb() {
 /* ===================== Energy helpers (aligned with staking.js) ===================== */
 async function checkUserEnergy(address, token, action, extraEnergy = 0) {
   try {
-    const resources = await retryWithBackoff(() => tronWeb.trx.getAccountResources(address));
+    const resources = await retryWithBackoff(() => readTronWeb.trx.getAccountResources(address));
     const energyLimit = resources.EnergyLimit || 0;
     const energyUsed = resources.EnergyUsed || 0;
     const availableEnergy = energyLimit - energyUsed;
@@ -580,10 +561,10 @@ async function updateTopBarUI(token, first = false, userData) {
     }
     const d = tokenDetails[token];
     const [userTotalClaimedRaw, poolSizeRaw, totalStakedRaw, totalActiveStakedRaw] = await Promise.all([
-      retryWithBackoff(() => stakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(() => '0')),
-      retryWithBackoff(() => stakingContracts[token].methods.poolSize().call().catch(() => '0')),
-      retryWithBackoff(() => (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
-      retryWithBackoff(() => stakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
+      retryWithBackoff(() => readStakingContracts[token].methods.viewUserTotalClaimed(userAddress).call().catch(() => '0')),
+      retryWithBackoff(() => readStakingContracts[token].methods.poolSize().call().catch(() => '0')),
+      retryWithBackoff(() => (readStakingContracts[token].methods.getTotalStaked || readStakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
+      retryWithBackoff(() => readStakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
     ]);
     await delay(CONTRACT_CALL_DELAY_MS);
     const poolSize = Number(poolSizeRaw || '0') / SUN_PER_TRX;
@@ -672,10 +653,7 @@ async function updateActionGridUI(token, first = false, userData) {
     const d = tokenDetails[token];
     let pendingRewardsRaw;
     try {
-      pendingRewardsRaw = await retryWithBackoff(() => {
-        const contract = tronWeb.contract(stakingContractAbi, tokenDetails[token].stakingAddress);
-        return contract.methods.earned(userAddress).call();
-      });
+      pendingRewardsRaw = await retryWithBackoff(() => readStakingContracts[token].methods.earned(userAddress).call());
       if (pendingRewardsRaw == null || isNaN(Number(pendingRewardsRaw))) {
         console.warn('Invalid pendingRewardsRaw:', pendingRewardsRaw);
         pendingRewardsRaw = '0';
@@ -686,10 +664,10 @@ async function updateActionGridUI(token, first = false, userData) {
       showToast({ title: 'Contract Error', body: 'Failed to fetch earned rewards; using fallback data.', variant: 'warning' });
     }
     const [timeout, contractBalanceRaw, isWhitelisted, balanceRaw] = await Promise.all([
-      retryWithBackoff(() => stakingContracts[token].methods.claimTimeout().call().catch(() => '1209600')),
-      retryWithBackoff(() => tronWeb.trx.getBalance(tokenDetails[token].stakingAddress).catch(() => '0')),
-      retryWithBackoff(() => stakingContracts[token].methods.whitelist(userAddress).call().catch(() => false)),
-      retryWithBackoff(() => tokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0'))
+      retryWithBackoff(() => readStakingContracts[token].methods.claimTimeout().call().catch(() => '1209600')),
+      retryWithBackoff(() => readTronWeb.trx.getBalance(tokenDetails[token].stakingAddress).catch(() => '0')),
+      retryWithBackoff(() => readStakingContracts[token].methods.whitelist(userAddress).call().catch(() => false)),
+      retryWithBackoff(() => readTokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0'))
     ]);
     await delay(CONTRACT_CALL_DELAY_MS);
     const balanceUnits = toUnits(balanceRaw, d.decimals);
@@ -772,9 +750,9 @@ async function updateStatsGridUI(token, first = false, userData) {
     }
     const d = tokenDetails[token];
     const [poolSizeRaw, totalStakedRaw, totalActiveStakedRaw] = await Promise.all([
-      retryWithBackoff(() => stakingContracts[token].methods.poolSize().call().catch(() => '0')),
-      retryWithBackoff(() => (stakingContracts[token].methods.getTotalStaked || stakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
-      retryWithBackoff(() => stakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
+      retryWithBackoff(() => readStakingContracts[token].methods.poolSize().call().catch(() => '0')),
+      retryWithBackoff(() => (readStakingContracts[token].methods.getTotalStaked || readStakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
+      retryWithBackoff(() => readStakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
     ]);
     await delay(CONTRACT_CALL_DELAY_MS);
     const poolSize = Number(poolSizeRaw || '0') / SUN_PER_TRX;
@@ -965,14 +943,15 @@ async function stakeTokens(token, amount) {
       const amountToStake = toWei(amount, tokenDetails[token].decimals);
       if (amountToStake === 0n) throw new Error('Enter a valid amount to stake.');
       const stakingContractAddress = tokenDetails[token].stakingAddress;
-      const tokenContract = tokenContracts[token];
-      const stakingContract = stakingContracts[token];
+      const tokenContract = tokenContracts[token]; // signing
+      const readTokenContract = readTokenContracts[token]; // read
+      const stakingContract = stakingContracts[token]; // signing
       if (!tokenContract?.methods?.allowance) throw new Error('Token contract not initialized');
       if (!stakingContract?.methods?.stake) throw new Error('Staking contract not initialized');
-      const balanceRaw = await retryWithBackoff(() => tokenContract.methods.balanceOf(userAddress).call());
+      const balanceRaw = await retryWithBackoff(() => readTokenContract.methods.balanceOf(userAddress).call());
       await delay(CONTRACT_CALL_DELAY_MS);
       if (BigInt(balanceRaw) < amountToStake) throw new Error('Insufficient balance to stake.');
-      const allowanceRaw = await retryWithBackoff(() => tokenContract.methods.allowance(userAddress, stakingContractAddress).call());
+      const allowanceRaw = await retryWithBackoff(() => readTokenContract.methods.allowance(userAddress, stakingContractAddress).call());
       await delay(CONTRACT_CALL_DELAY_MS);
       const allowance = BigInt(allowanceRaw);
       const approvalRequired = allowance < amountToStake;
@@ -1020,7 +999,7 @@ async function stakeTokens(token, amount) {
       ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
       let newUserData;
       try {
-        newUserData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
+        newUserData = await retryWithBackoff(() => readStakingContracts[token].methods.users(userAddress).call());
         console.debug('stakeTokens: new userData fetched:', newUserData);
       } catch (error) {
         console.error('stakeTokens: failed to fetch new userData:', error);
@@ -1073,10 +1052,7 @@ async function unstakeTokens(token) {
       // Check for pending rewards
       let pendingRewardsRaw;
       try {
-        pendingRewardsRaw = await retryWithBackoff(() => {
-          const contract = tronWeb.contract(stakingContractAbi, tokenDetails[token].stakingAddress);
-          return contract.methods.earned(userAddress).call();
-        });
+        pendingRewardsRaw = await retryWithBackoff(() => readStakingContracts[token].methods.earned(userAddress).call());
         if (pendingRewardsRaw == null || isNaN(Number(pendingRewardsRaw))) {
           pendingRewardsRaw = '0';
         }
@@ -1107,7 +1083,8 @@ async function unstakeTokens(token) {
       processingModal = showProcessingModal('(2/2)');
       const amountToUnstake = toWei(unstakeAmount, tokenDetails[token].decimals);
       const stakingContract = stakingContracts[token];
-      const userData = await retryWithBackoff(() => stakingContract.methods.users(userAddress).call());
+      const readStakingContract = readStakingContracts[token];
+      const userData = await retryWithBackoff(() => readStakingContract.methods.users(userAddress).call());
       await delay(CONTRACT_CALL_DELAY_MS);
       if (BigInt(userData.stakedAmount) < amountToUnstake) throw new Error('Insufficient staked amount.');
       const withdrawTx = await tronWeb.transactionBuilder.triggerSmartContract(
@@ -1123,7 +1100,7 @@ async function unstakeTokens(token) {
       ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
       let newUserData;
       try {
-        newUserData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
+        newUserData = await retryWithBackoff(() => readStakingContracts[token].methods.users(userAddress).call());
         console.debug('unstakeTokens: new userData fetched:', newUserData);
       } catch (error) {
         console.error('unstakeTokens: failed to fetch new userData:', error);
@@ -1188,15 +1165,12 @@ async function claimRewards(token) {
       const stakingContract = stakingContracts[token];
       let pendingRewards;
       try {
-        pendingRewards = await retryWithBackoff(() => {
-          const contract = tronWeb.contract(stakingContractAbi, tokenDetails[token].stakingAddress);
-          return contract.methods.earned(userAddress).call();
-        });
+        pendingRewards = await retryWithBackoff(() => readStakingContracts[token].methods.earned(userAddress).call());
       } catch {
         pendingRewards = '0';
       }
       if (BigInt(pendingRewards) === 0n) throw new Error('No rewards available to claim.');
-      const contractBalance = await retryWithBackoff(() => tronWeb.trx.getBalance(tokenDetails[token].stakingAddress));
+      const contractBalance = await retryWithBackoff(() => readTronWeb.trx.getBalance(tokenDetails[token].stakingAddress));
       if (Number(contractBalance) < Number(pendingRewards)) throw new Error('Insufficient contract balance to claim rewards.');
       const claimTx = await tronWeb.transactionBuilder.triggerSmartContract(
         tokenDetails[token].stakingAddress,
@@ -1218,7 +1192,7 @@ async function claimRewards(token) {
       ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
       let newUserData;
       try {
-        newUserData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
+        newUserData = await retryWithBackoff(() => readStakingContracts[token].methods.users(userAddress).call());
         console.debug('claimRewards: new userData fetched:', newUserData);
       } catch (error) {
         console.error('claimRewards: failed to fetch new userData:', error);
@@ -1285,6 +1259,9 @@ document.addEventListener('DOMContentLoaded', () => {
  
   initialize();
 });
+
+
+
 
 
 
