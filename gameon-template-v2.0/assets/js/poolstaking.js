@@ -8,7 +8,8 @@ const tokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 /* ===================== Config ===================== */
 
-const TRONQL_API_URL = 'https://mainnet.tron.tronql.com/wxfcmxenzj3fqmn4p03ztwb2h27057/';
+const TRONQL_API_URL = 'https://mainnet.tron.tronql.com';
+const TRONQL_TOKEN = 'wxfcmxenzj3fqmn4p03ztwb2h27057'; // add this
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
 const SAFETY_ENERGY = 50000;
@@ -194,8 +195,11 @@ function createTronQLTronWeb() {
     return throttle(async () => {
       const url = `${base}${endpoint}`;
       const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
+  method,
+  headers: { 
+    'Content-Type': 'application/json',
+    'Authorization': TRONQL_TOKEN // add this line
+  },
         body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
       });
       if (res.status === 429) throw new Error('TronQL 429 Too Many Requests.');
@@ -1499,6 +1503,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initialize();
 });
+
 
 
 
