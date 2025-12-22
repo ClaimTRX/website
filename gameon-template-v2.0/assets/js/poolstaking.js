@@ -1,21 +1,9 @@
-/* poolstaking1.js — energy flow aligned with staking.js + throttle + pacing
-   - Same server flow as staking.js (GET /available-energy → pay → POST /request-energy → poll /delegation-status)
-   - Payment sends integer SUN (no float rounding issues)
-   - Payment address set to the same as staking.js so backend recognizes the tx
-   - Global 5000ms throttle + round-robin API key rotation
-   - 1000ms delays between sequential on-chain contract calls to avoid bursts
-   - Whitelist check to display "Whitelisted" instead of countdown
-   - UI refresh after stake/unstake/claim/activate to prevent stale "Expired" display
-   - Reduced updateClaimTimer frequency to 5s and cached results to minimize API calls
-   - Paused timer during transactions to prevent overlapping calls
-   - Optimizations: Consolidated user data fetch, increased delays, prioritized UI updates
-*/
 let tronWeb, userAddress;
 const stakingContracts = {};
 const tokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 /* ===================== Config ===================== */
-const CHAINSTACK_API_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
+const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
 const SAFETY_ENERGY = 50000;
@@ -23,7 +11,7 @@ const ENERGY_PRICE_SUN = 30;
 const SUN_PER_TRX = 1_000_000;
 const ENERGY_RENTAL_DURATION = 2;
 const CACHE_TIMEOUT_MS = 120_000; // 120s cache for runtime updates
-const THROTTLE_GAP_MS = 500; // Keep 5000ms to stay under 15 QPS per key
+const THROTTLE_GAP_MS = 500; // Adjust if needed for Chainstack's 25 RPS limit
 const CONTRACT_CALL_DELAY_MS = 300; // Increased to 1000ms for safer pacing
 const UI_REFRESH_DELAY_MS = 3000; // 3s delay for UI refresh after actions
 // Manual CFT price for APY calculation (update this value as needed)
