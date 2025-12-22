@@ -246,10 +246,15 @@ readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
     });
   };
   userAddress = tronWeb.defaultAddress.base58;
-  if (!userAddress) {
-    showToast({ title: 'Auto-connect failed', body: 'No user address found. Ensure TronLink is connected to mainnet.', variant: 'danger' });
-    return;
-  }
+
+if (!userAddress) {
+  showToast({ title: 'Auto-connect failed', body: 'No user address found. Ensure TronLink is connected to mainnet.', variant: 'danger' });
+  return;
+}
+
+// ✅ IMPORTANT: make readTronWeb have a default "from" address for .call()
+readTronWeb.setAddress(userAddress);
+
   const cb = document.getElementById('connect-button');
   if (cb) cb.innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
   // Init contracts: signing versions with injected, read versions with readTronWeb
