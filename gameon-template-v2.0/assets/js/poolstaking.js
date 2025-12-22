@@ -212,8 +212,7 @@ async function chainstackApiCall(endpoint, params = {}) {
 }
 /* ===================== TronWeb Setup (wrap requests) ===================== */
 async function initializeTronWeb() {
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|TronLink/i.test(navigator.userAgent);
-  const initDelay = isMobile ? 1500 : 800;
+  const initDelay = 1500; // Consistent delay for detection
   await delay(initDelay);
   if (!window.tronLink || !window.tronWeb) {
     showToast({ title: 'Auto-connect failed', body: 'TronLink is not detected. Install or unlock TronLink.', variant: 'danger' });
@@ -224,43 +223,45 @@ async function initializeTronWeb() {
     return;
   }
   tronWeb = window.tronWeb;
-  if (isMobile) {
-    const originalRequest = tronWeb.request;
-    tronWeb.request = async function(endpoint, params = {}, method = 'POST') {
-      return throttle(async () => {
-        return originalRequest.call(this, endpoint, serializeBigInt(params), method);
-      });
-    };
-  } else {
-    const HttpProvider = window.TronWeb.providers.HttpProvider;
-    const provider = new HttpProvider(CHAINSTACK_API_URL);
-    const customHttpProvider = new Proxy(provider, {
-      get(target, prop) {
-        if (prop === 'request') {
-          return async function(endpoint, params = {}, method = 'POST') {
-            return throttle(async () => {
-              const res = await fetch(`${CHAINSTACK_API_URL}${endpoint}`, {
-                method,
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
-              });
-              if (res.status === 429) throw new Error('Chainstack 429 Too Many Requests.');
-              if (res.status === 403) throw new Error('Chainstack 403 Forbidden.');
-              const data = await res.json().catch(() => ({}));
-              if (data.Error) throw new Error(data.Error);
-              return serializeBigInt(data);
+
+  // Always set custom Chainstack providers (overrides TronLink defaults)
+  const HttpProvider = window.TronWeb.providers.HttpProvider;
+  const provider = new HttpProvider(CHAINSTACK_BASE_URL);
+  const customHttpProvider = new Proxy(provider, {
+    get(target, prop) {
+      if (prop === 'request') {
+        return async function(endpoint, params = {}, method = 'POST') {
+          return throttle(async () => {
+            const res = await fetch(`${CHAINSTACK_BASE_URL}${endpoint}`, {
+              method,
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
             });
-          };
-        }
-        return target[prop];
+            if (res.status === 429) throw new Error('Chainstack 429 Too Many Requests.');
+            if (res.status === 403) throw new Error('Chainstack 403 Forbidden.');
+            const data = await res.json().catch(() => ({}));
+            if (data.Error) throw new Error(data.Error);
+            return serializeBigInt(data);
+          });
+        };
       }
+      return target[prop];
+    }
+  });
+  tronWeb.setFullNode(customHttpProvider);
+  tronWeb.setSolidityNode(customHttpProvider);
+  tronWeb.setEventServer(customHttpProvider);
+
+  // Additional throttle on request for all cases
+  const originalRequest = tronWeb.request;
+  tronWeb.request = async function(endpoint, params = {}, method = 'POST') {
+    return throttle(async () => {
+      return originalRequest.call(this, endpoint, serializeBigInt(params), method);
     });
-    tronWeb.setFullNode(customHttpProvider);
-    tronWeb.setSolidityNode(customHttpProvider);
-    tronWeb.setEventServer(customHttpProvider);
-  }
+  };
+
   userAddress = tronWeb.defaultAddress.base58;
   if (!userAddress) {
     showToast({ title: 'Auto-connect failed', body: 'No user address found. Ensure TronLink is connected to mainnet.', variant: 'danger' });
@@ -1296,7 +1297,6 @@ document.addEventListener('DOMContentLoaded', () => {
  
   initialize();
 });
-
 
 
 
