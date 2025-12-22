@@ -1,7 +1,13 @@
-let tronWeb, userAddress;
+let tronWeb, readTronWeb, userAddress;
 const stakingContracts = {};
 const tokenContracts = {};
+const readStakingContracts = {};
+const readTokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+
+/* ===================== Config ===================== */
+const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
+const CONTRACT_CALL_DELAY_MS = 300; // Delay between contract calls
 
 // Define contracts for StableX and CFT
 const tokenDetails = {
@@ -9,16 +15,15 @@ const tokenDetails = {
         tokenAddress: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
         stakingAddress: 'TRVn2h65VrbGb7zkASz3escJiHJWMSy7pV',
         decimals: 6,
-        displayName: 'StableX' // ← Added missing comma here
+        displayName: 'StableX'
     },
-     cftnew: {
+    cftnew: {
         tokenAddress: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
         stakingAddress: 'TABSRFLk6FF1FKPtTLy4zJpJqaiZQzwgQt',
         decimals: 6,
         price: 0.27,
-        displayName: 'CFT' // ← Added missing comma here
+        displayName: 'CFT'
     }
-    
 };
 
 const stakingContractAbi = [
@@ -389,13 +394,9 @@ const stakingContractAbi = [
         "stateMutability": "payable",
         "type": "receive"
     }
-]
-;
+];
 
-
-;
-
-      const tokenContractAbi = [
+const tokenContractAbi = [
     {
         "inputs": [],
         "stateMutability": "nonpayable",
@@ -783,6 +784,32 @@ const stakingContractAbi = [
         "type": "event"
     }
 ];
+
+/* ===================== Helpers ===================== */
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function retryWithBackoff(fn, maxRetries = 5, baseDelay = 2000) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (error.message.includes('429') && i < maxRetries - 1) {
+        const delayMs = baseDelay * Math.pow(2, i);
+        console.warn(`429 error, retrying after ${delayMs}ms...`);
+        await delay(delayMs);
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+
+function isValidTronAddress(address) {
+  return !!(address && typeof address === 'string' && address.startsWith('T') && address.length === 34 && /^[A-Za-z1-9]+$/.test(address));
+}
+
 // Helper: Wait for an element to appear in DOM
 function waitForElement(selector, timeout = 10000) {
     return new Promise((resolve, reject) => {
@@ -876,11 +903,42 @@ async function connectWallet() {
 async function initializeTronWeb() {
     try {
         tronWeb = window.tronWeb;
+        // Load TronWeb library if not available
+        const loadTronWebScript = () => new Promise((resolve, reject) => {
+            if (window.TronWeb) {
+                resolve();
+            } else {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            }
+        });
+        await loadTronWebScript();
+
+        const TronWebCtor = (typeof window.TronWeb === 'function')
+            ? window.TronWeb
+            : window.tronWeb?.constructor;
+        if (!TronWebCtor) {
+            throw new Error('TronWeb is not available as a constructor.');
+        }
+
+        readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
+
+        // Throttle requests on readTronWeb
+        const originalReadRequest = readTronWeb.request;
+        readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
+            return originalReadRequest.call(this, endpoint, params, method); // Add throttle if needed
+        };
+
         userAddress = tronWeb.defaultAddress.base58;
 
         if (!userAddress) {
             throw new Error('No wallet address found.');
         }
+
+        readTronWeb.setAddress(userAddress);
 
         console.log('Wallet connected:', userAddress);
 
@@ -901,10 +959,15 @@ async function initializeTronWeb() {
         // Initialize contracts
         for (let key in tokenDetails) {
             let details = tokenDetails[key];
+            if (!isValidTronAddress(details.tokenAddress)) throw new Error(`Invalid token address for ${key}`);
+            if (!isValidTronAddress(details.stakingAddress)) throw new Error(`Invalid staking address for ${key}`);
             tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
+            readTokenContracts[key] = await readTronWeb.contract(tokenContractAbi, details.tokenAddress);
+            await delay(CONTRACT_CALL_DELAY_MS);
             stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
+            readStakingContracts[key] = await readTronWeb.contract(stakingContractAbi, details.stakingAddress);
             if (details.decimals === null) {
-                tokenDetails[key].decimals = await tokenContracts[key].methods.decimals().call();
+                tokenDetails[key].decimals = await readTokenContracts[key].methods.decimals().call();
             }
         }
 
@@ -922,31 +985,28 @@ async function updateAllUI() {
     }
 }
 
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 // Update UI for a specific token
 async function updateTokenUI(token) {
     await updateAvailableTokens(token);
-    await delay(400);
+    await delay(CONTRACT_CALL_DELAY_MS);
     await updateStakedAmount(token);
-    await delay(400);
+    await delay(CONTRACT_CALL_DELAY_MS);
     await updateAPR(token);
-    await delay(400);
+    await delay(CONTRACT_CALL_DELAY_MS);
     await updateProjectedRewards(token);
-    await delay(400);
+    await delay(CONTRACT_CALL_DELAY_MS);
     await updateClaimableRewards(token);
-    await delay(400);
+    await delay(CONTRACT_CALL_DELAY_MS);
     await updateTotalClaimedRewards(token);
 }
+
 // Update available tokens
 async function updateAvailableTokens(token) {
     try {
-        const balanceRaw = await tokenContracts[token].methods.balanceOf(userAddress).call();
+        const balanceRaw = await retryWithBackoff(() => readTokenContracts[token].methods.balanceOf(userAddress).call());
         const decimals = BigInt(tokenDetails[token].decimals);
-        const divisor = BigInt(10) ** decimals; // Use BigInt for 10^decimals
-        const balance = Number(balanceRaw) / Number(divisor); // Convert both to number for division
+        const divisor = BigInt(10) ** decimals;
+        const balance = Number(BigInt(balanceRaw) / divisor);
         document.getElementById(`available-tokens-${token}`).innerText = balance.toFixed(2);
     } catch (error) {
         console.error(`Error updating available tokens for ${token}:`, error);
@@ -956,10 +1016,10 @@ async function updateAvailableTokens(token) {
 // Update staked amount
 async function updateStakedAmount(token) {
     try {
-        const stakedAmountRaw = await stakingContracts[token].methods.viewStakedAmount(userAddress).call();
+        const stakedAmountRaw = await retryWithBackoff(() => readStakingContracts[token].methods.viewStakedAmount(userAddress).call());
         const decimals = BigInt(tokenDetails[token].decimals);
         const divisor = BigInt(10) ** decimals;
-        const stakedAmount = Number(stakedAmountRaw) / Number(divisor);
+        const stakedAmount = Number(BigInt(stakedAmountRaw) / divisor);
         document.getElementById(`staked-amount-${token}`).innerText = stakedAmount.toFixed(2);
     } catch (error) {
         console.error(`Error updating staked amount for ${token}:`, error);
@@ -969,26 +1029,26 @@ async function updateStakedAmount(token) {
 async function updateAPR(token) {
     try {
         if (token === "stablex") {
-            if (!stakingContracts[token].methods.viewAPR) {
+            if (!readStakingContracts[token].methods.viewAPR) {
                 console.error(`viewAPR function is missing in ${token} staking contract.`);
                 return;
             }
-            const aprRaw = await stakingContracts[token].methods.viewAPR().call();
-            const apr = Number(aprRaw) / 1e4; // Convert BigInt to number for division
+            const aprRaw = await retryWithBackoff(() => readStakingContracts[token].methods.viewAPR().call());
+            const apr = Number(aprRaw) / 1e4;
             document.getElementById(`estimated-apr-${token}`).innerText = apr.toFixed(2) + ' %';
-        } else if (token === "cftnew") { // Corrected from "cft" to "cftnew" to match tokenDetails
-            const stakedAmountRaw = await stakingContracts[token].methods.viewStakedAmount(userAddress).call();
-            const projectedRewardsRaw = await stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call();
+        } else if (token === "cftnew") {
+            const stakedAmountRaw = await retryWithBackoff(() => readStakingContracts[token].methods.viewStakedAmount(userAddress).call());
+            const projectedRewardsRaw = await retryWithBackoff(() => readStakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call());
 
-            if (stakedAmountRaw == 0) { // Loose comparison ok here, but consider BigInt(0)
+            if (BigInt(stakedAmountRaw) === 0n) {
                 document.getElementById(`estimated-apr-${token}`).innerText = '0.00 %';
                 return;
             }
 
             const decimals = BigInt(tokenDetails[token].decimals);
             const divisor = BigInt(10) ** decimals;
-            const stakedTokens = Number(stakedAmountRaw) / Number(divisor);
-            const annualRewardTokens = Number(projectedRewardsRaw) / Number(divisor);
+            const stakedTokens = Number(BigInt(stakedAmountRaw) / divisor);
+            const annualRewardTokens = Number(BigInt(projectedRewardsRaw) / divisor);
             const stakedValueUSD = stakedTokens * 1; // Assuming StableX is $1
             const annualRewardValueUSD = annualRewardTokens * tokenDetails[token].price;
 
@@ -1003,23 +1063,22 @@ async function updateAPR(token) {
 // Update projected rewards
 async function updateProjectedRewards(token) {
     try {
-        const projectedRewardsRaw = await stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call();
+        const projectedRewardsRaw = await retryWithBackoff(() => readStakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call());
         const rewardDecimals = tokenDetails[token].rewardDecimals || tokenDetails[token].decimals;
         const divisor = BigInt(10) ** BigInt(rewardDecimals);
-        const projectedRewards = Number(projectedRewardsRaw) / Number(divisor);
+        const projectedRewards = Number(BigInt(projectedRewardsRaw) / divisor);
         document.getElementById(`projected-rewards-${token}`).innerText = Math.floor(projectedRewards).toLocaleString('en-US');
     } catch (error) {
         console.error(`Error updating projected rewards for ${token}:`, error);
     }
 }
 
-
 async function updateClaimableRewards(token) {
     try {
-        const claimableRewardsRaw = await stakingContracts[token].methods.viewPendingReward(userAddress).call();
+        const claimableRewardsRaw = await retryWithBackoff(() => readStakingContracts[token].methods.viewPendingReward(userAddress).call());
         const decimals = BigInt(tokenDetails[token].decimals);
         const divisor = BigInt(10) ** decimals;
-        const claimableRewards = Number(claimableRewardsRaw) / Number(divisor);
+        const claimableRewards = Number(BigInt(claimableRewardsRaw) / divisor);
         const tokenName = tokenDetails[token].displayName || token.toUpperCase();
         document.getElementById(`claimable-rewards-${token}`).innerText =
             claimableRewards.toFixed(2) + " " + tokenName;
@@ -1028,15 +1087,13 @@ async function updateClaimableRewards(token) {
     }
 }
 
-
-
 // Update total claimed rewards
 async function updateTotalClaimedRewards(token) {
     try {
-        const totalClaimedRewardsRaw = await stakingContracts[token].methods.viewTotalClaimedRewards(userAddress).call();
+        const totalClaimedRewardsRaw = await retryWithBackoff(() => readStakingContracts[token].methods.viewTotalClaimedRewards(userAddress).call());
         const decimals = BigInt(tokenDetails[token].decimals);
         const divisor = BigInt(10) ** decimals;
-        const totalClaimedRewards = Number(totalClaimedRewardsRaw) / Number(divisor);
+        const totalClaimedRewards = Number(BigInt(totalClaimedRewardsRaw) / divisor);
         document.getElementById(`total-claimed-rewards-${token}`).innerText = totalClaimedRewards.toFixed(2);
     } catch (error) {
         console.error(`Error updating total claimed rewards for ${token}:`, error);
@@ -1049,19 +1106,20 @@ async function stakeTokens(token, amount) {
         const amountToStake = tronWeb.toSun(amount);
         const stakingContractAddress = tokenDetails[token].stakingAddress;
         const tokenContract = tokenContracts[token];
+        const readTokenContract = readTokenContracts[token];
 
-        const allowanceRaw = await tokenContract.methods.allowance(userAddress, stakingContractAddress).call();
+        const balanceRaw = await retryWithBackoff(() => readTokenContract.methods.balanceOf(userAddress).call());
+        if (BigInt(balanceRaw) < BigInt(amountToStake)) throw new Error('Insufficient balance.');
+
+        const allowanceRaw = await retryWithBackoff(() => readTokenContract.methods.allowance(userAddress, stakingContractAddress).call());
         const allowance = BigInt(allowanceRaw);
 
-        if (allowance >= BigInt(amountToStake)) {
-            console.log(`Sufficient approval detected: ${allowance}`);
-            await stakingContracts[token].methods.stake(amountToStake).send();
-        } else {
+        if (allowance < BigInt(amountToStake)) {
             console.log("Approval needed. Requesting unlimited approval...");
             await tokenContract.methods.approve(stakingContractAddress, maxUint256).send();
-            await stakingContracts[token].methods.stake(amountToStake).send();
         }
 
+        await stakingContracts[token].methods.stake(amountToStake).send();
         await updateTokenUI(token);
     } catch (error) {
         console.error(`Error staking tokens for ${token}:`, error);
