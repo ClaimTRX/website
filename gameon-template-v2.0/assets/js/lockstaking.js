@@ -1025,9 +1025,14 @@ async function initializeTronWeb() {
       throw new Error('No user address found. Ensure TronLink is connected and set to mainnet.');
     }
     console.log('User Address:', userAddress);
-   
+
     document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
-    // Initialize token contract only once for CFT
+
+    // Use the injected tronWeb's constructor for read-only instance
+    const TronWebCtor = tronWeb.constructor;
+    readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
+
+    // Initialize token contract only once for CFT (signing and read)
     const cftTokenAddress = tokenDetails['cft_6m'].tokenAddress;
     if (!isValidTronAddress(cftTokenAddress)) {
       throw new Error(`Invalid token address for CFT: ${cftTokenAddress}.`);
@@ -1035,7 +1040,8 @@ async function initializeTronWeb() {
     tokenContracts['cft'] = await tronWeb.contract(tokenContractAbi, cftTokenAddress);
     readTokenContracts['cft'] = await readTronWeb.contract(tokenContractAbi, cftTokenAddress);
     console.log('Token contract for CFT:', tokenContracts['cft']);
-    // Initialize staking contracts
+
+    // Initialize staking contracts (signing and read)
     for (let key in tokenDetails) {
       let details = tokenDetails[key];
       if (!isValidTronAddress(details.stakingAddress)) {
@@ -1049,21 +1055,11 @@ async function initializeTronWeb() {
         console.log(`Decimals for ${key}:`, tokenDetails[key].decimals);
       }
     }
-   
+
     await updateAllUI();
   } catch (error) {
     console.error('Error initializing TronWeb or Contracts:', error);
     alert(`Error initializing contracts: ${error.message}. Please ensure correct contract addresses and mainnet configuration.`);
-  }
-}
-// Delay utility function
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-// Update UI for all tokens
-async function updateAllUI() {
-  for (let key in tokenDetails) {
-    await updateTokenUI(key);
   }
 }
 // Utility function to make TronGrid API calls with fallback
