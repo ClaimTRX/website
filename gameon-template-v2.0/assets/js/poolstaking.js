@@ -226,13 +226,18 @@ async function initializeTronWeb() {
     }
   });
   await loadTronWebScript();
-  // Create separate read-only TronWeb with Chainstack
-  const TronWebCtor = window.TronWeb || window.tronWeb?.constructor;
-if (!TronWebCtor) throw new Error('TronWeb constructor not found (window.TronWeb missing).');
 
-readTronWeb = new TronWebCtor({
-  fullHost: CHAINSTACK_BASE_URL,
-});
+// Use TronLink's TronWeb class if the global isn't a constructor
+const TronWebCtor = (typeof window.TronWeb === 'function')
+  ? window.TronWeb
+  : window.tronWeb?.constructor;
+
+if (!TronWebCtor) {
+  throw new Error('TronWeb is not available as a constructor. Reload, unlock TronLink, or use a different TronWeb CDN build.');
+}
+
+readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
+
   // Throttle requests on readTronWeb
   const originalReadRequest = readTronWeb.request;
   readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
