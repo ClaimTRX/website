@@ -287,6 +287,15 @@ async function initializeTronWeb() {
 
   // READER/BROADCASTER = TronQL instance (no TronGrid)
   tronWeb = createTronQLTronWeb();
+  // IMPORTANT: make TronQL tronWeb aware of the caller address for constant calls
+tronWeb.setAddress(userAddress);
+
+// (optional but recommended) also set defaultAddress object explicitly
+tronWeb.defaultAddress = {
+  base58: userAddress,
+  hex: tronWeb.address.toHex(userAddress)
+};
+
 
   const cb = document.getElementById('connect-button');
   if (cb) cb.innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
@@ -1499,7 +1508,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initialize();
 });
-
 
 
 
