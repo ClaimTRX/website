@@ -197,8 +197,7 @@ function createTronQLTronWeb() {
   headers: { 
     'Content-Type': 'application/json'
   },
-        body: method === 'POST' ? JSON.stringify(serializeBigInt(params)) : undefined
-      });
+body: method === 'POST' ? JSON.stringify(params) : undefined      });
       if (res.status === 429) throw new Error('TronQL 429 Too Many Requests.');
       if (res.status === 403) throw new Error('TronQL 403 Forbidden.');
       const data = await res.json().catch(() => ({}));
@@ -1498,7 +1497,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initialize();
 });
-
 
 
 
