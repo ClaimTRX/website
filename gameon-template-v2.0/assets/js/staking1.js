@@ -1,15 +1,11 @@
-
-let tronWeb, userAddress;
+let tronWeb, readTronWeb, userAddress;
 const stakingContracts = {};
 const tokenContracts = {};
+const readStakingContracts = {};
+const readTokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
-
 /* ===================== Config ===================== */
-const TRONGRID_API_KEYS = [
-  'd0abc8e9-5d3d-420d-88dd-60f4f1bd95ca',
-  '664292b1-47ad-47b7-88c1-db67bee6e732'
-];
-const TRONGRID_API_URL = 'https://api.trongrid.io';
+const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
 const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
 const SERVER_URL = 'https://api.cftecosystem.com';
 const SAFETY_ENERGY = 50000;
@@ -19,7 +15,6 @@ const ENERGY_RENTAL_DURATION = 2;
 const CACHE_TIMEOUT_MS = 60_000;
 const THROTTLE_GAP_MS = 200;
 const CONTRACT_CALL_DELAY_MS = 200;
-
 /* ===================== Token Config ===================== */
 const tokenDetails = {
   cft: {
@@ -73,7 +68,7 @@ const tokenDetails = {
       claimRewards: 100000
     }
   },
-  
+ 
   fym: {
     tokenAddress: 'TCTvRkt5kVndeGKWJmMUxEc2rovdrGNoK3',
     stakingAddress: 'TP4HhAWv2WbSMCH2CRhdSsiwBP6JzViouq',
@@ -87,7 +82,6 @@ const tokenDetails = {
     }
   }
 };
-
 /* ===================== Lazy loading on collapse ===================== */
 const panelTokenMap = {
   collapseCFT: 'cft',
@@ -96,10 +90,8 @@ const panelTokenMap = {
   collapseBBT: 'turu',
   collapseFYM: 'fym',
 };
-
 // track last time we loaded a panel so we can respect CACHE_TIMEOUT_MS
 const lastLoadedAt = {};
-
 /** Show skeletons for a token’s KPI fields just before loading */
 function setTokenSkeletons(token, on = true) {
   [
@@ -109,18 +101,15 @@ function setTokenSkeletons(token, on = true) {
     `total-claimed-rewards-${token}`,
   ].forEach(id => setSkeleton(id, on));
 }
-
 /** Attach listeners that fetch data when a panel is opened */
 function setupLazyLoading() {
   Object.entries(panelTokenMap).forEach(([collapseId, token]) => {
     const el = document.getElementById(collapseId);
     if (!el) return;
-
     // When the accordion is ABOUT TO open, start the fetch (gives skeleton time to show)
     el.addEventListener('show.bs.collapse', async () => {
       const now = Date.now();
       const stale = !lastLoadedAt[token] || (now - lastLoadedAt[token]) > CACHE_TIMEOUT_MS;
-
       if (stale) {
         setTokenSkeletons(token, true);
         // first=true tells updateTokenUI to keep skeletons on until data lands
@@ -128,15 +117,12 @@ function setupLazyLoading() {
         lastLoadedAt[token] = Date.now();
       }
     });
-
     // Optional: when it’s fully shown, if user spam-opens, short-circuit using cache
     el.addEventListener('shown.bs.collapse', async () => {
       // no-op; updateTokenUI already caches, this keeps UI snappy
     });
   });
 }
-
-
 /* ===================== Helpers: throttle, rotation, delay ===================== */
 const throttle = (() => {
   let queue = Promise.resolve();
@@ -154,108 +140,72 @@ const throttle = (() => {
     return queue;
   };
 })();
-
-const apiKeyRotator = (() => {
-  let idx = 0;
-  return function next() {
-    const key = TRONGRID_API_KEYS[idx];
-    idx = (idx + 1) % TRONGRID_API_KEYS.length;
-    return key;
-  };
-})();
-
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
-
-
-/* ===================== TronGrid helper ===================== */
-async function tronGridApiCall(endpoint, params = {}) {
-  const needsHex = endpoint.startsWith('/wallet/');
-  let body = params;
-  if (needsHex && params && params.address) {
+async function retryWithBackoff(fn, maxRetries = 5, baseDelay = 2000) {
+  for (let i = 0; i < maxRetries; i++) {
     try {
-      const hex = tronWeb?.address?.toHex ? tronWeb.address.toHex(params.address) : params.address;
-      body = { ...params, address: hex };
-    } catch {
-      body = params;
+      return await fn();
+    } catch (error) {
+      if (error.message.includes('429') && i < maxRetries - 1) {
+        const delayMs = baseDelay * Math.pow(2, i);
+        console.warn(`429 error, retrying after ${delayMs}ms...`);
+        await delay(delayMs);
+        continue;
+      }
+      throw error;
     }
   }
-  return throttle(async () => {
-    const key = apiKeyRotator();
-    const res = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'TRON-PRO-API-KEY': key
-      },
-      body: JSON.stringify(body)
-    });
-    if (res.status === 429) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`TronGrid 429 Too Many Requests. ${text || ''}`.trim());
-    }
-    if (res.status === 403) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`TronGrid 403 Forbidden. ${text || ''}`.trim());
-    }
-    const data = await res.json().catch(() => ({}));
-    if (data.Error) throw new Error(data.Error);
-    return data;
-  });
 }
-
 /* ===================== TronWeb Setup ===================== */
 async function initializeTronWeb() {
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|TronLink/i.test(navigator.userAgent);
-  const initDelay = isMobile ? 1500 : 800;
+  const initDelay = 1500; // Consistent delay for detection
   await delay(initDelay);
-  if (!window.tronLink || !window.tronWeb) throw new Error('TronLink is not detected. Install or unlock TronLink.');
-  if (!window.tronLink.ready) throw new Error('TronLink is not ready. Unlock TronLink and select mainnet.');
-  tronWeb = window.tronWeb;
-  if (isMobile) {
-    const originalRequest = tronWeb.request;
-    tronWeb.request = async function(endpoint, params = {}, method = 'POST') {
-      return throttle(async () => {
-        const key = apiKeyRotator();
-        tronWeb.setHeader({ 'TRON-PRO-API-KEY': key });
-        return originalRequest.call(this, endpoint, params, method);
-      });
-    };
-  } else {
-    const HttpProvider = window.TronWeb.providers.HttpProvider;
-    const provider = new HttpProvider(TRONGRID_API_URL);
-    const customHttpProvider = new Proxy(provider, {
-      get(target, prop) {
-        if (prop === 'request') {
-          return async function(endpoint, params = {}, method = 'POST') {
-            return throttle(async () => {
-              const key = apiKeyRotator();
-              const res = await fetch(`${TRONGRID_API_URL}${endpoint}`, {
-                method,
-                headers: {
-                  'Content-Type': 'application/json',
-                  'TRON-PRO-API-KEY': key
-                },
-                body: method === 'POST' ? JSON.stringify(params) : undefined
-              });
-              if (res.status === 429) throw new Error('TronGrid 429 Too Many Requests.');
-              if (res.status === 403) throw new Error('TronGrid 403 Forbidden.');
-              const data = await res.json().catch(() => ({}));
-              if (data.Error) throw new Error(data.Error);
-              return data;
-            });
-          };
-        }
-        return target[prop];
-      }
-    });
-    tronWeb.setFullNode(customHttpProvider);
-    tronWeb.setSolidityNode(customHttpProvider);
-    tronWeb.setEventServer(customHttpProvider);
+  if (!window.tronLink || !window.tronWeb) {
+    showToast({ title: 'Auto-connect failed', body: 'TronLink is not detected. Install or unlock TronLink.', variant: 'danger' });
+    return;
   }
+  if (!window.tronLink.ready) {
+    showToast({ title: 'Auto-connect failed', body: 'TronLink is not ready. Unlock TronLink and select mainnet.', variant: 'danger' });
+    return;
+  }
+  tronWeb = window.tronWeb; // Injected for signing
+  // Load TronWeb library if not available
+  const loadTronWebScript = () => new Promise((resolve, reject) => {
+    if (window.TronWeb) {
+      resolve();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    }
+  });
+  await loadTronWebScript();
+// Use TronLink's TronWeb class if the global isn't a constructor
+const TronWebCtor = (typeof window.TronWeb === 'function')
+  ? window.TronWeb
+  : window.tronWeb?.constructor;
+if (!TronWebCtor) {
+  throw new Error('TronWeb is not available as a constructor. Reload, unlock TronLink, or use a different TronWeb CDN build.');
+}
+readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
+  // Throttle requests on readTronWeb
+  const originalReadRequest = readTronWeb.request;
+  readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
+    return throttle(async () => {
+      return originalReadRequest.call(this, endpoint, params, method);
+    });
+  };
   userAddress = tronWeb.defaultAddress.base58;
-  if (!userAddress) throw new Error('No user address found. Ensure TronLink is connected to mainnet.');
+if (!userAddress) {
+  showToast({ title: 'Auto-connect failed', body: 'No user address found. Ensure TronLink is connected to mainnet.', variant: 'danger' });
+  return;
+}
+// ✅ IMPORTANT: make readTronWeb have a default "from" address for .call()
+readTronWeb.setAddress(userAddress);
   const cb = document.getElementById('connect-button');
   if (cb) cb.innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
   for (let key in tokenDetails) {
@@ -263,29 +213,27 @@ async function initializeTronWeb() {
     if (!isValidTronAddress(details.tokenAddress)) throw new Error(`Invalid token address for ${key}: ${details.tokenAddress}`);
     if (!isValidTronAddress(details.stakingAddress)) throw new Error(`Invalid staking address for ${key}: ${details.stakingAddress}`);
     tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
+    readTokenContracts[key] = await readTronWeb.contract(tokenContractAbi, details.tokenAddress);
     await delay(CONTRACT_CALL_DELAY_MS);
     stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
+    readStakingContracts[key] = await readTronWeb.contract(stakingContractAbi, details.stakingAddress);
     await delay(CONTRACT_CALL_DELAY_MS);
     if (!details.decimals) {
-      tokenDetails[key].decimals = await tokenContracts[key].methods.decimals().call();
+      tokenDetails[key].decimals = await retryWithBackoff(() => readTokenContracts[key].methods.decimals().call());
     }
   }
     setStatus('Connected', true);
-
   // Attach lazy loading so each card loads only when opened
   setupLazyLoading();
-
   // Use external ads rotator if present
   if (typeof rotateAdvertisements === 'function') {
     rotateAdvertisements();
   }
-
 }
-
 /* ===================== Energy Helpers ===================== */
 async function checkUserEnergy(address, token, action, extraEnergy = 0) {
   try {
-    const resources = await tronWeb.trx.getAccountResources(address);
+    const resources = await retryWithBackoff(() => readTronWeb.trx.getAccountResources(address));
     const energyLimit = resources.EnergyLimit || 0;
     const energyUsed = resources.EnergyUsed || 0;
     const availableEnergy = energyLimit - energyUsed;
@@ -300,7 +248,6 @@ async function checkUserEnergy(address, token, action, extraEnergy = 0) {
     return { availableEnergy: 0, shortfall: requiredEnergy, requiredEnergy };
   }
 }
-
 async function checkDelegatorEnergy(requiredAmount) {
   try {
     const response = await fetch(`${SERVER_URL}/api/available-energy`, { method: 'GET' });
@@ -315,7 +262,6 @@ async function checkDelegatorEnergy(requiredAmount) {
     return false;
   }
 }
-
 async function requestEnergyRental(rentalEnergy, rentalCostTrx) {
   let processingModal = null;
   try {
@@ -353,7 +299,6 @@ async function requestEnergyRental(rentalEnergy, rentalCostTrx) {
     throw error;
   }
 }
-
 async function pollDelegationStatus(requestId) {
   const maxPollAttempts = 30;
   let pollAttempts = 0;
@@ -386,7 +331,6 @@ async function pollDelegationStatus(requestId) {
     }, 2000);
   });
 }
-
 function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = '') {
   return new Promise((resolve, reject) => {
     const modalElement = document.getElementById('energy-rental-modal');
@@ -437,7 +381,6 @@ function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = 
     }
   });
 }
-
 /* ===================== ABIs ===================== */
 const stakingContractAbi = [
   {
@@ -808,7 +751,6 @@ const stakingContractAbi = [
     "type": "receive"
   }
 ];
-
 const tokenContractAbi = [
   {
     "inputs": [],
@@ -1197,7 +1139,6 @@ const tokenContractAbi = [
     "type": "event"
   }
 ];
-
 /* ===================== Utils ===================== */
 const TEN = 10n;
 const toUnits = (raw, decimals = 6) => {
@@ -1218,7 +1159,6 @@ function toWei(amt, decimals = 6) {
   const pow = BigInt(Math.max(0, decimals - 6));
   return base * (TEN ** pow);
 }
-
 /* ===================== UI Helpers ===================== */
 function showToast({ title = 'Notification', body = '', variant = 'dark', autohide = true }) {
   const el = document.getElementById('app-toast');
@@ -1232,7 +1172,6 @@ function showToast({ title = 'Notification', body = '', variant = 'dark', autohi
     <div class="toast-body">${body}</div>`;
   new bootstrap.Toast(el, { autohide, delay: 4500 }).show();
 }
-
 function withLoading(btn, label = 'Processing', fn) {
   return async (...args) => {
     if (!btn) return fn(...args);
@@ -1247,7 +1186,6 @@ function withLoading(btn, label = 'Processing', fn) {
     }
   };
 }
-
 function setStatus(text, ok = true) {
   const chip = document.getElementById('status-chip');
   const txt = document.getElementById('status-text');
@@ -1256,7 +1194,6 @@ function setStatus(text, ok = true) {
     chip.querySelector('.dot').style.background = ok ? '#00ff88' : '#ff4d4d';
   }
 }
-
 function setSkeleton(id, on) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -1268,7 +1205,6 @@ function setSkeleton(id, on) {
     el.classList.remove('skeleton');
   }
 }
-
 function showProcessingModal(step = '') {
   const modalElement = document.getElementById('transaction-processing-modal');
   if (!modalElement) throw new Error('Processing modal not found.');
@@ -1279,11 +1215,9 @@ function showProcessingModal(step = '') {
   modal.show();
   return modal;
 }
-
 function hideProcessingModal(modal) {
   if (modal) modal.hide();
 }
-
 /* ===================== Core ===================== */
 async function initialize() {
   const connectButton = document.getElementById('connect-button');
@@ -1313,7 +1247,6 @@ async function initialize() {
     }
   }
 }
-
 async function checkTronLinkInstalled() {
   return new Promise(resolve => {
     let attempts = 0;
@@ -1330,7 +1263,6 @@ async function checkTronLinkInstalled() {
     }, 500);
   });
 }
-
 async function connectWallet() {
   try {
     if (!window.tronLink) throw new Error('TronLink is not detected. Install or unlock TronLink.');
@@ -1341,7 +1273,6 @@ async function connectWallet() {
     showToast({ title: 'Wallet', body: e.message, variant: 'danger' });
   }
 }
-
 /* ===================== UI Updates ===================== */
 async function updateAllUI(first = false) {
   for (let key in tokenDetails) {
@@ -1349,7 +1280,6 @@ async function updateAllUI(first = false) {
     await delay(CONTRACT_CALL_DELAY_MS);
   }
 }
-
 async function updateTokenUI(token, first = false) {
   const cacheKey = `tokenUI_${token}_${userAddress}`;
   if (!first) {
@@ -1382,11 +1312,11 @@ async function updateTokenUI(token, first = false) {
     }
     const d = tokenDetails[token];
     const [balanceRaw, stakedAmount, projectedRewards, claimableRewards, totalClaimedRewards] = await Promise.all([
-      tokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0'),
-      stakingContracts[token].methods.viewStakedAmount(userAddress).call().catch(() => '0'),
-      stakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call().catch(() => '0'),
-      stakingContracts[token].methods.viewPendingReward(userAddress).call().catch(() => '0'),
-      stakingContracts[token].methods.viewTotalClaimedRewards(userAddress).call().catch(() => '0')
+      retryWithBackoff(() => readTokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0')),
+      retryWithBackoff(() => readStakingContracts[token].methods.viewStakedAmount(userAddress).call().catch(() => '0')),
+      retryWithBackoff(() => readStakingContracts[token].methods.viewProjectedRewardsForYear(userAddress).call().catch(() => '0')),
+      retryWithBackoff(() => readStakingContracts[token].methods.viewPendingReward(userAddress).call().catch(() => '0')),
+      retryWithBackoff(() => readStakingContracts[token].methods.viewTotalClaimedRewards(userAddress).call().catch(() => '0'))
     ]);
     await delay(CONTRACT_CALL_DELAY_MS);
     const decimals = d.decimals;
@@ -1426,7 +1356,6 @@ async function updateTokenUI(token, first = false) {
     [`available-tokens-${token}`, `staked-amount-${token}`, `projected-rewards-${token}`, `total-claimed-rewards-${token}`].forEach(id => setSkeleton(id, false));
   }
 }
-
 /* ===================== Actions ===================== */
 async function stakeTokens(token, amount) {
   let processingModal = null;
@@ -1448,6 +1377,7 @@ async function stakeTokens(token, amount) {
       }
       const stakingContractAddress = tokenDetails[token].stakingAddress;
       const tokenContract = tokenContracts[token];
+      const readTokenContract = readTokenContracts[token];
       const stakingContract = stakingContracts[token];
       if (!tokenContract || !tokenContract.methods.allowance) {
         throw new Error(`Token contract for ${token} not properly initialized`);
@@ -1455,12 +1385,12 @@ async function stakeTokens(token, amount) {
       if (!stakingContract || !stakingContract.methods.stake) {
         throw new Error(`Staking contract for ${token} not properly initialized`);
       }
-      const balanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
+      const balanceRaw = await retryWithBackoff(() => readTokenContract.methods.balanceOf(userAddress).call());
       await delay(CONTRACT_CALL_DELAY_MS);
       if (BigInt(balanceRaw) < amountToStake) {
         throw new Error('Insufficient balance to stake.');
       }
-      const allowanceRaw = await tokenContract.methods.allowance(userAddress, stakingContractAddress).call();
+      const allowanceRaw = await retryWithBackoff(() => readTokenContract.methods.allowance(userAddress, stakingContractAddress).call());
       await delay(CONTRACT_CALL_DELAY_MS);
       const allowance = BigInt(allowanceRaw);
       const approvalRequired = allowance < amountToStake;
@@ -1535,7 +1465,6 @@ async function stakeTokens(token, amount) {
   };
   return withLoading(stakeBtn, 'Staking...', run)();
 }
-
 async function unstakeTokens(token) {
   let processingModal = null;
   const btn = document.getElementById(`unstake-button-${token}`);
@@ -1567,10 +1496,11 @@ async function unstakeTokens(token) {
       processingModal = showProcessingModal('(2/2)');
       const amountToUnstake = toWei(unstakeAmount, tokenDetails[token].decimals);
       const stakingContract = stakingContracts[token];
+      const readStakingContract = readStakingContracts[token];
       if (!stakingContract || !stakingContract.methods.withdraw) {
         throw new Error(`Staking contract for ${token} not properly initialized`);
       }
-      const stakedAmount = await stakingContract.methods.viewStakedAmount(userAddress).call();
+      const stakedAmount = await retryWithBackoff(() => readStakingContract.methods.viewStakedAmount(userAddress).call());
       await delay(CONTRACT_CALL_DELAY_MS);
       if (BigInt(stakedAmount) < amountToUnstake) {
         throw new Error('Insufficient staked amount to withdraw.');
@@ -1604,7 +1534,6 @@ async function unstakeTokens(token) {
   };
   return withLoading(btn, 'Withdrawing...', run)();
 }
-
 async function claimRewards(token) {
   let processingModal = null;
   const btn = document.getElementById(`claim-rewards-button-${token}`);
@@ -1631,10 +1560,11 @@ async function claimRewards(token) {
       }
       processingModal = showProcessingModal('(2/2)');
       const stakingContract = stakingContracts[token];
+      const readStakingContract = readStakingContracts[token];
       if (!stakingContract || !stakingContract.methods.claimReward) {
         throw new Error(`Staking contract for ${token} not properly initialized`);
       }
-      const pendingReward = await stakingContract.methods.viewPendingReward(userAddress).call();
+      const pendingReward = await retryWithBackoff(() => readStakingContract.methods.viewPendingReward(userAddress).call());
       await delay(CONTRACT_CALL_DELAY_MS);
       if (BigInt(pendingReward) === 0n) {
         throw new Error('No rewards available to claim.');
@@ -1668,7 +1598,6 @@ async function claimRewards(token) {
   };
   return withLoading(btn, 'Claiming...', run)();
 }
-
 /* ===================== Events ===================== */
 document.addEventListener('DOMContentLoaded', () => {
   for (let key in tokenDetails) {
