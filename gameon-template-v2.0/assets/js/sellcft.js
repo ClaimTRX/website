@@ -523,42 +523,140 @@ const marketplaceContractAbi = [
 const tokenContractAddress = 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK';
 const marketplaceContractAddress = 'TQt7KfGA331s64EqaHUzyKMo187MfNqRGj';
 
-let tronWeb, userAddress, tokenContract, marketplaceContract;
+let tronWeb, readTronWeb, userAddress, tokenContract, marketplaceContract, readTokenContract, readMarketplaceContract;
+
+const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
+const CONTRACT_CALL_DELAY_MS = 300; // Delay between contract calls
+const THROTTLE_GAP_MS = 500; // Throttle gap for Chainstack RPS limit
+
+/* ===================== Helpers: throttle, delay, retry ===================== */
+const throttle = (() => {
+  let queue = Promise.resolve();
+  let last = 0;
+  const gap = THROTTLE_GAP_MS;
+  return async function run(fn) {
+    const exec = async () => {
+      const now = Date.now();
+      const wait = Math.max(0, gap - (now - last));
+      if (wait) await new Promise(r => setTimeout(r, wait));
+      last = Date.now();
+      return await fn();
+    };
+    queue = queue.then(exec, exec);
+    return queue;
+  };
+})();
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function retryWithBackoff(fn, maxRetries = 5, baseDelay = 2000) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (error.message.includes('429') && i < maxRetries - 1) {
+        const delayMs = baseDelay * Math.pow(2, i);
+        console.warn(`429 error, retrying after ${delayMs}ms...`);
+        await delay(delayMs);
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+
+function serializeBigInt(obj) {
+  return JSON.parse(JSON.stringify(obj, (key, value) =>
+    typeof value === 'bigint' ? value.toString() : value
+  ));
+}
 
 async function checkTronLinkInstalled() {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
+        let attempts = 0; const maxAttempts = 5;
         const interval = setInterval(() => {
-            if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
-                clearInterval(interval);
-                resolve(true);
-            }
-        }, 1000);
+            attempts++;
+            if (window.tronWeb && window.tronWeb.defaultAddress.base58) { clearInterval(interval); resolve(true); }
+            else if (attempts >= maxAttempts) { clearInterval(interval); resolve(false); }
+        }, 500);
     });
 }
 
 async function connectWallet() {
-    if (!window.tronWeb) {
+    if (!window.tronLink) {
         alert("TronLink not found. Please install and log in.");
         return;
     }
 
     try {
         await window.tronLink.request({ method: "tron_requestAccounts" });
-        tronWeb = window.tronWeb;
-        userAddress = tronWeb.defaultAddress.base58;
+        await initializeTronWeb();
         document.getElementById('connect-button').innerHTML = '<i class="icon-wallet me-md-2"></i> Wallet Connected';
         console.log("Connected to TronLink:", userAddress);
-        await initializeContracts();
         await updateUI();
     } catch (e) {
         console.error("Failed to connect:", e);
     }
 }
 
+async function initializeTronWeb() {
+  const initDelay = 1500;
+  await delay(initDelay);
+  if (!window.tronLink || !window.tronWeb) {
+    alert('TronLink is not detected. Install or unlock TronLink.');
+    return;
+  }
+  if (!window.tronLink.ready) {
+    alert('TronLink is not ready. Unlock TronLink and select mainnet.');
+    return;
+  }
+  tronWeb = window.tronWeb; // Injected for signing
+  // Load TronWeb library if not available
+  const loadTronWebScript = () => new Promise((resolve, reject) => {
+    if (window.TronWeb) {
+      resolve();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    }
+  });
+  await loadTronWebScript();
+  // Use TronLink's TronWeb class if the global isn't a constructor
+  const TronWebCtor = (typeof window.TronWeb === 'function')
+    ? window.TronWeb
+    : window.tronWeb?.constructor;
+  if (!TronWebCtor) {
+    throw new Error('TronWeb is not available as a constructor. Reload, unlock TronLink, or use a different TronWeb CDN build.');
+  }
+  readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
+  // Throttle requests on readTronWeb
+  const originalReadRequest = readTronWeb.request;
+  readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
+    return throttle(async () => {
+      return originalReadRequest.call(this, endpoint, serializeBigInt(params), method);
+    });
+  };
+  userAddress = tronWeb.defaultAddress.base58;
+  if (!userAddress) {
+    alert('No user address found. Ensure TronLink is connected to mainnet.');
+    return;
+  }
+  readTronWeb.setAddress(userAddress);
+  await initializeContracts();
+}
+
 async function initializeContracts() {
     try {
         tokenContract = await tronWeb.contract(tokenContractAbi, tokenContractAddress);
+        readTokenContract = await readTronWeb.contract(tokenContractAbi, tokenContractAddress);
+        await delay(CONTRACT_CALL_DELAY_MS);
         marketplaceContract = await tronWeb.contract(marketplaceContractAbi, marketplaceContractAddress);
+        readMarketplaceContract = await readTronWeb.contract(marketplaceContractAbi, marketplaceContractAddress);
     } catch (error) {
         console.error("Error initializing contracts:", error);
     }
@@ -575,7 +673,7 @@ async function updateUI() {
 
 async function updateCFTBalance() {
     try {
-        const cftBalance = await tokenContract.methods.balanceOf(userAddress).call();
+        const cftBalance = await retryWithBackoff(() => readTokenContract.methods.balanceOf(userAddress).call());
         document.getElementById("user-cft-balance").innerText = formatNumber(tronWeb.fromSun(cftBalance), 0) + " CFT";
     } catch (error) {
         console.error("Error fetching CFT balance:", error);
@@ -584,12 +682,12 @@ async function updateCFTBalance() {
 
 async function fetchListings() {
     try {
-        if (!marketplaceContract) {
+        if (!readMarketplaceContract) {
             console.error("Marketplace contract is not initialized yet.");
             return;
         }
 
-        const result = await marketplaceContract.methods.getActiveListings().call();
+        const result = await retryWithBackoff(() => readMarketplaceContract.methods.getActiveListings().call());
 
         if (!result || result[0].length === 0) {
             console.log("No active listings found.");
@@ -658,12 +756,29 @@ async function listTokens() {
         const tokenAmountSun = tronWeb.toSun(amount);
         const pricePerCFTSun = tronWeb.toSun(pricePerCFT);
 
-        const allowance = await tokenContract.methods.allowance(userAddress, marketplaceContractAddress).call();
-        if (parseInt(allowance) < parseInt(tokenAmountSun)) {
-            await tokenContract.methods.approve(marketplaceContractAddress, tokenAmountSun).send();
+        const allowance = await retryWithBackoff(() => readTokenContract.methods.allowance(userAddress, marketplaceContractAddress).call());
+        await delay(CONTRACT_CALL_DELAY_MS);
+        if (BigInt(allowance) < BigInt(tokenAmountSun)) {
+            const approveTx = await tronWeb.transactionBuilder.triggerSmartContract(
+                tokenContractAddress,
+                'approve(address,uint256)',
+                {},
+                [{ type: 'address', value: marketplaceContractAddress }, { type: 'uint256', value: tokenAmountSun }],
+                userAddress
+            );
+            const signedApproveTx = await tronWeb.trx.sign(approveTx.transaction);
+            await tronWeb.trx.sendRawTransaction(signedApproveTx);
         }
 
-        await marketplaceContract.methods.listToken(tokenAmountSun, pricePerCFTSun).send();
+        const listTx = await tronWeb.transactionBuilder.triggerSmartContract(
+            marketplaceContractAddress,
+            'listToken(uint256,uint256)',
+            {},
+            [{ type: 'uint256', value: tokenAmountSun }, { type: 'uint256', value: pricePerCFTSun }],
+            userAddress
+        );
+        const signedListTx = await tronWeb.trx.sign(listTx.transaction);
+        await tronWeb.trx.sendRawTransaction(signedListTx);
         
         fetchListings();
     } catch (error) {
@@ -687,8 +802,9 @@ async function buyToken(listingId) {
             return;
         }
 
-        // Fetch all active listings
-        const result = await marketplaceContract.methods.getActiveListings().call();
+        // Fetch all active listings using read contract
+        const result = await retryWithBackoff(() => readMarketplaceContract.methods.getActiveListings().call());
+        await delay(CONTRACT_CALL_DELAY_MS);
         const listingIds = result[0];
         const listings = result[1];
 
@@ -719,9 +835,15 @@ async function buyToken(listingId) {
         console.log(`Buying ${amountToBuy} CFT at ${pricePerCFT} TRX per CFT. Total price: ${totalPrice} TRX`);
 
         // Execute buy transaction
-        await marketplaceContract.methods.buyToken(listingId, tronWeb.toSun(amountToBuy)).send({
-            callValue: totalPriceSun.toString() // Use integer sun value
-        });
+        const buyTx = await tronWeb.transactionBuilder.triggerSmartContract(
+            marketplaceContractAddress,
+            'buyToken(uint256,uint256)',
+            { callValue: totalPriceSun.toString() },
+            [{ type: 'uint256', value: listingId.toString() }, { type: 'uint256', value: amountToBuySun.toString() }],
+            userAddress
+        );
+        const signedBuyTx = await tronWeb.trx.sign(buyTx.transaction);
+        await tronWeb.trx.sendRawTransaction(signedBuyTx);
 
         fetchListings();
     } catch (error) {
@@ -739,7 +861,15 @@ async function cancelListing(listingId) {
     if (!confirm("Are you sure you want to cancel this listing?")) return;
 
     try {
-        await marketplaceContract.methods.cancelListing(listingId).send();
+        const cancelTx = await tronWeb.transactionBuilder.triggerSmartContract(
+            marketplaceContractAddress,
+            'cancelListing(uint256)',
+            {},
+            [{ type: 'uint256', value: listingId.toString() }],
+            userAddress
+        );
+        const signedCancelTx = await tronWeb.trx.sign(cancelTx.transaction);
+        await tronWeb.trx.sendRawTransaction(signedCancelTx);
         alert("Listing cancelled successfully.");
         fetchListings(); // Refresh the listings
     } catch (error) {
