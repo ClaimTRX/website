@@ -2,10 +2,8 @@ const tokenContractAddress = 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS'; // STBLX toke
 const swapContractAddress = 'TUGprGUNtszQgc3pGwMcC9R3z3sDT31G9W'; // Swap contract
 const usdtContractAddress = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // TRC20 USDT
 const usddContractAddress = 'TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz'; // TRC20 USDD
-
 const usdtDecimals = 6;
 const usddDecimals = 18;
-
     const contractAbi = [
       {"inputs":[{"internalType":"contract ITRC20","name":"_token","type":"address"},{"internalType":"contract ITRC20","name":"_usdt","type":"address"},{"internalType":"contract ITRC20","name":"_usdd","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
       {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"buyer","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"string","name":"paymentToken","type":"string"}],"name":"TokensPurchased","type":"event"},
@@ -19,7 +17,6 @@ const usddDecimals = 18;
       {"inputs":[],"name":"withdrawAllUSDD","outputs":[],"stateMutability":"nonpayable","type":"function"},
       {"inputs":[],"name":"withdrawAllUSDT","outputs":[],"stateMutability":"nonpayable","type":"function"}
     ];
-
     const trc20Abi = [
       {
         "inputs": [
@@ -79,16 +76,48 @@ const usddDecimals = 18;
       {"inputs": [{"internalType": "address", "name": "from", "type": "address"}, {"internalType": "address", "name": "to", "type": "address"}, {"internalType": "uint256", "name": "amount", "type": "uint256"}], "name": "transferFrom", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "nonpayable", "type": "function"},
       {"inputs": [{"internalType": "address", "name": "newOwner", "type": "address"}], "name": "transferOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function"}
     ];
+ 
+let tronWeb, readTronWeb, userAddress, tokenContract, readTokenContract, swapContract, readSwapContract, usdtContract, readUsdtContract, usddContract, readUsddContract;
+const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
+const CONTRACT_CALL_DELAY_MS = 300; // Increased to 1000ms for safer pacing
+const THROTTLE_GAP_MS = 500; // Adjust if needed for Chainstack's 25 RPS limit
 
-  
+const throttle = (() => {
+  let queue = Promise.resolve();
+  let last = 0;
+  const gap = THROTTLE_GAP_MS;
+  return async function run(fn) {
+    const exec = async () => {
+      const now = Date.now();
+      const wait = Math.max(0, gap - (now - last));
+      if (wait) await new Promise(r => setTimeout(r, wait));
+      last = Date.now();
+      return await fn();
+    };
+    queue = queue.then(exec, exec);
+    return queue;
+  };
+})();
 
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-
-
-
-
-
-let tronWeb, userAddress, tokenContract, swapContract, usdtContract, usddContract;
+async function retryWithBackoff(fn, maxRetries = 5, baseDelay = 2000) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (error.message.includes('429') && i < maxRetries - 1) {
+        const delayMs = baseDelay * Math.pow(2, i);
+        console.warn(`429 error, retrying after ${delayMs}ms...`);
+        await delay(delayMs);
+        continue;
+      }
+      throw error;
+    }
+  }
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
     const connectButton = document.getElementById("connect-button");
@@ -97,7 +126,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     } else {
         console.error("❌ Connect button not found in DOM.");
     }
-
     if (await checkTronLinkInstalled()) {
         console.log("✅ TronLink detected, attempting auto-connect...");
         await connectWallet();
@@ -105,10 +133,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.error("❌ TronLink is not installed or not detected.");
         alert("⚠️ TronLink is not installed. Please install it to proceed.");
     }
-
     document.getElementById("usdt-amount")?.addEventListener("input", calculateTKNXUSDT);
     document.getElementById("usdd-amount")?.addEventListener("input", calculateTKNXUSDD);
-
     document.getElementById("buy-usdt-button")?.addEventListener("click", async (e) => {
         e.preventDefault();
         const amount = parseFloat(document.getElementById("usdt-amount").value);
@@ -118,7 +144,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         await buyTokensWithUSDT(amount);
     });
-
     document.getElementById("buy-usdd-button")?.addEventListener("click", async (e) => {
         e.preventDefault();
         const amount = parseFloat(document.getElementById("usdd-amount").value);
@@ -129,7 +154,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         await buyTokensWithUSDD(amount);
     });
 });
-
 async function checkTronLinkInstalled() {
     return new Promise((resolve) => {
         let attempts = 0;
@@ -146,23 +170,14 @@ async function checkTronLinkInstalled() {
         }, 1000);
     });
 }
-
 async function connectWallet() {
     if (!window.tronLink || !window.tronWeb) {
         alert("⚠️ TronLink is not installed. Please install the TronLink extension.");
         return;
     }
-
     try {
         console.log("Attempting to connect to TronLink...");
         await window.tronLink.request({ method: "tron_requestAccounts" });
-        tronWeb = window.tronWeb;
-        userAddress = tronWeb.defaultAddress.base58;
-
-        if (!userAddress) {
-            throw new Error("No account selected or TronLink not logged in.");
-        }
-
         await initializeTronWeb();
         document.getElementById("connect-button").innerText = "Wallet Connected";
         console.log("✅ Connected to TronLink:", userAddress);
@@ -171,59 +186,103 @@ async function connectWallet() {
         alert("❌ Failed to connect. Ensure TronLink is installed, unlocked, and logged in.");
     }
 }
-
 async function initializeTronWeb() {
+    const initDelay = 1500; // Consistent delay for detection
+    await delay(initDelay);
+    if (!window.tronLink || !window.tronWeb) {
+      console.log('TronLink is not detected. Install or unlock TronLink.');
+      return;
+    }
+    if (!window.tronLink.ready) {
+      console.log('TronLink is not ready. Unlock TronLink and select mainnet.');
+      return;
+    }
+    tronWeb = window.tronWeb; // Injected for signing
+    // Load TronWeb library if not available
+    const loadTronWebScript = () => new Promise((resolve, reject) => {
+      if (window.TronWeb) {
+        resolve();
+      } else {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      }
+    });
+    await loadTronWebScript();
+  // Use TronLink's TronWeb class if the global isn't a constructor
+  const TronWebCtor = (typeof window.TronWeb === 'function')
+    ? window.TronWeb
+    : window.tronWeb?.constructor;
+  if (!TronWebCtor) {
+    throw new Error('TronWeb is not available as a constructor. Reload, unlock TronLink, or use a different TronWeb CDN build.');
+  }
+  readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
+    // Throttle requests on readTronWeb
+    const originalReadRequest = readTronWeb.request;
+    readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
+      return throttle(async () => {
+        return originalReadRequest.call(this, endpoint, params, method);
+      });
+    };
+    userAddress = tronWeb.defaultAddress.base58;
+  if (!userAddress) {
+    console.log('No user address found. Ensure TronLink is connected to mainnet.');
+    return;
+  }
+  // ✅ IMPORTANT: make readTronWeb have a default "from" address for .call()
+  readTronWeb.setAddress(userAddress);
     try {
-        tronWeb = window.tronWeb;
-        userAddress = tronWeb.defaultAddress.base58;
-        if (!userAddress) throw new Error("User address not available");
-
         tokenContract = await tronWeb.contract(trc20Abi, tokenContractAddress);
+        readTokenContract = await readTronWeb.contract(trc20Abi, tokenContractAddress);
+        await delay(CONTRACT_CALL_DELAY_MS);
         usdtContract = await tronWeb.contract(trc20Abi, usdtContractAddress);
+        readUsdtContract = await readTronWeb.contract(trc20Abi, usdtContractAddress);
+        await delay(CONTRACT_CALL_DELAY_MS);
         usddContract = await tronWeb.contract(trc20Abi, usddContractAddress);
+        readUsddContract = await readTronWeb.contract(trc20Abi, usddContractAddress);
+        await delay(CONTRACT_CALL_DELAY_MS);
         swapContract = await tronWeb.contract(contractAbi, swapContractAddress);
-
+        readSwapContract = await readTronWeb.contract(contractAbi, swapContractAddress);
         await updateUI();
     } catch (error) {
         console.error("❌ Error initializing TronWeb or Contracts:", error);
     }
 }
-
 async function buyTokensWithUSDT(amount) {
     try {
-        const usdtBalanceRaw = await usdtContract.methods.balanceOf(userAddress).call();
-        const usdtBalance = new BigNumber(usdtBalanceRaw).div(new BigNumber(10).pow(usdtDecimals)).toNumber();
-        const usdtSmallestUnits = new BigNumber(amount).times(new BigNumber(10).pow(usdtDecimals)).toFixed(0);
-
+        const usdtBalanceRaw = await retryWithBackoff(() => readUsdtContract.methods.balanceOf(userAddress).call());
+        await delay(CONTRACT_CALL_DELAY_MS);
+        const usdtBalance = Number(usdtBalanceRaw) / (10 ** usdtDecimals);
+        const usdtSmallestUnits = BigInt(Math.floor(amount * (10 ** usdtDecimals)));
         if (usdtBalance < amount) {
             alert("❌ Insufficient USDT balance.");
             return;
         }
-
-        const trxBalance = await tronWeb.trx.getBalance(userAddress) / 1e6;
-        if (trxBalance < 1) {
+        const trxBalance = await retryWithBackoff(() => tronWeb.trx.getBalance(userAddress));
+        await delay(CONTRACT_CALL_DELAY_MS);
+        if (trxBalance / 1e6 < 1) {
             alert("❌ Insufficient TRX for transaction fees.");
             return;
         }
-
         // Fetch and validate allowance
         let currentAllowance;
         try {
-            currentAllowance = await usdtContract.methods.allowance(userAddress, swapContractAddress).call();
+            currentAllowance = await retryWithBackoff(() => readUsdtContract.methods.allowance(userAddress, swapContractAddress).call());
+            await delay(CONTRACT_CALL_DELAY_MS);
             console.log("📊 Current Allowance:", currentAllowance.toString(), "Required:", usdtSmallestUnits.toString());
         } catch (error) {
             console.error("❌ Error fetching allowance:", error);
             alert("❌ Failed to check allowance. Please try again.");
             return;
         }
-
         // Ensure allowance is a valid number and compare strictly
-        const allowanceBN = new BigNumber(currentAllowance || 0);
-        const requiredBN = new BigNumber(usdtSmallestUnits);
-        if (!allowanceBN.isFinite() || allowanceBN.lt(requiredBN)) {
+        const allowanceBN = BigInt(currentAllowance || 0);
+        if (allowanceBN < usdtSmallestUnits) {
             console.log("✅ Approving USDT for amount:", usdtSmallestUnits);
             try {
-                const approvalTx = await usdtContract.methods.approve(swapContractAddress, usdtSmallestUnits).send();
+                const approvalTx = await usdtContract.methods.approve(swapContractAddress, usdtSmallestUnits.toString()).send();
                 console.log("✅ Approval successful, TX:", approvalTx);
             } catch (error) {
                 console.error("❌ Approval failed:", error);
@@ -233,12 +292,10 @@ async function buyTokensWithUSDT(amount) {
         } else {
             console.log("✅ Sufficient allowance:", allowanceBN.toString());
         }
-
         // Proceed with swap
         console.log("✅ Buying with USDT...");
-        const swapTx = await swapContract.methods.buyWithUSDT(usdtSmallestUnits).send();
+        const swapTx = await swapContract.methods.buyWithUSDT(usdtSmallestUnits.toString()).send();
         console.log("✅ Swap successful, TX:", swapTx);
-
         await updateUI();
         setTimeout(() => location.reload(), 2000);
     } catch (error) {
@@ -246,42 +303,39 @@ async function buyTokensWithUSDT(amount) {
         alert("❌ Swap failed. Check console for details.");
     }
 }
-
 async function buyTokensWithUSDD(amount) {
     try {
-        const usddBalanceRaw = await usddContract.methods.balanceOf(userAddress).call();
-        const usddBalance = new BigNumber(usddBalanceRaw).div(new BigNumber(10).pow(usddDecimals)).toNumber();
-        const usddSmallestUnits = new BigNumber(amount).times(new BigNumber(10).pow(usddDecimals)).toFixed(0);
-
+        const usddBalanceRaw = await retryWithBackoff(() => readUsddContract.methods.balanceOf(userAddress).call());
+        await delay(CONTRACT_CALL_DELAY_MS);
+        const usddBalance = Number(usddBalanceRaw) / (10 ** usddDecimals);
+        const usddSmallestUnits = BigInt(Math.floor(amount * (10 ** usddDecimals)));
         if (usddBalance < amount) {
             alert("❌ Insufficient USDD balance.");
             return;
         }
-
-        const trxBalance = await tronWeb.trx.getBalance(userAddress) / 1e6;
-        if (trxBalance < 1) {
+        const trxBalance = await retryWithBackoff(() => tronWeb.trx.getBalance(userAddress));
+        await delay(CONTRACT_CALL_DELAY_MS);
+        if (trxBalance / 1e6 < 1) {
             alert("❌ Insufficient TRX for transaction fees.");
             return;
         }
-
         // Fetch and validate allowance
         let currentAllowance;
         try {
-            currentAllowance = await usddContract.methods.allowance(userAddress, swapContractAddress).call();
+            currentAllowance = await retryWithBackoff(() => readUsddContract.methods.allowance(userAddress, swapContractAddress).call());
+            await delay(CONTRACT_CALL_DELAY_MS);
             console.log("📊 Current Allowance:", currentAllowance.toString(), "Required:", usddSmallestUnits.toString());
         } catch (error) {
             console.error("❌ Error fetching allowance:", error);
             alert("❌ Failed to check allowance. Please try again.");
             return;
         }
-
         // Ensure allowance is a valid number and compare strictly
-        const allowanceBN = new BigNumber(currentAllowance || 0);
-        const requiredBN = new BigNumber(usddSmallestUnits);
-        if (!allowanceBN.isFinite() || allowanceBN.lt(requiredBN)) {
+        const allowanceBN = BigInt(currentAllowance || 0);
+        if (allowanceBN < usddSmallestUnits) {
             console.log("✅ Approving USDD for amount:", usddSmallestUnits);
             try {
-                const approvalTx = await usddContract.methods.approve(swapContractAddress, usddSmallestUnits).send();
+                const approvalTx = await usddContract.methods.approve(swapContractAddress, usddSmallestUnits.toString()).send();
                 console.log("✅ Approval successful, TX:", approvalTx);
             } catch (error) {
                 console.error("❌ Approval failed:", error);
@@ -291,12 +345,10 @@ async function buyTokensWithUSDD(amount) {
         } else {
             console.log("✅ Sufficient allowance:", allowanceBN.toString());
         }
-
         // Proceed with swap
         console.log("✅ Buying with USDD...");
-        const swapTx = await swapContract.methods.buyWithUSDD(usddSmallestUnits).send();
+        const swapTx = await swapContract.methods.buyWithUSDD(usddSmallestUnits.toString()).send();
         console.log("✅ Swap successful, TX:", swapTx);
-
         await updateUI();
         setTimeout(() => location.reload(), 2000);
     } catch (error) {
@@ -304,26 +356,24 @@ async function buyTokensWithUSDD(amount) {
         alert("❌ Swap failed. Check console for details.");
     }
 }
-
 function calculateTKNXUSDT() {
     const amount = document.getElementById("usdt-amount")?.value || 0;
     document.getElementById("calculated-tknx-usdt").innerText = `STBLX tokens you will get: ${formatNumber(amount)}`;
 }
-
 function calculateTKNXUSDD() {
     const amount = document.getElementById("usdd-amount")?.value || 0;
     document.getElementById("calculated-tknx-usdd").innerText = `STBLX tokens you will get: ${formatNumber(amount)}`;
 }
-
 function formatNumber(num) {
     return parseFloat(num).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-
 async function updateUI() {
     try {
-        const stblxBalanceRaw = await tokenContract.methods.balanceOf(userAddress).call();
-        const stblxDecimals = await tokenContract.methods.decimals().call();
-        const stblxBalance = new BigNumber(stblxBalanceRaw).div(new BigNumber(10).pow(stblxDecimals)).toNumber();
+        const stblxBalanceRaw = await retryWithBackoff(() => readTokenContract.methods.balanceOf(userAddress).call());
+        await delay(CONTRACT_CALL_DELAY_MS);
+        const stblxDecimals = await retryWithBackoff(() => readTokenContract.methods.decimals().call());
+        await delay(CONTRACT_CALL_DELAY_MS);
+        const stblxBalance = Number(stblxBalanceRaw) / (10 ** Number(stblxDecimals));
         if (document.getElementById("stblx-balance")) {
             document.getElementById("stblx-balance").innerText = `STBLX Balance: ${formatNumber(stblxBalance)}`;
         }
