@@ -176,6 +176,7 @@
     const TronWebCtor = (typeof window.TronWeb === 'function') ? window.TronWeb : window.tronWeb?.constructor;
     if (!TronWebCtor) throw new Error('TronWeb constructor not found');
     readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
+    readTronWeb.setAddress('T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb'); // Dummy address for view calls
     const originalRequest = readTronWeb.request;
     readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
       return throttle(() => originalRequest.call(this, endpoint, params, method));
