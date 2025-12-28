@@ -28,11 +28,11 @@
       table,thead,tbody,th,td,tr{display:block}
       thead tr{position:absolute;top:-9999px;left:-9999px}
       tr{margin-bottom:1.2rem;border:1px solid var(--line);border-radius:12px;padding:1rem;background:var(--bg-2);box-shadow:0 4px 15px rgba(0,0,0,0.3)}
-   
+  
       td{border:none;position:relative;padding:0.4rem 0 0.4rem 0;text-align:left !important}
       td:first-child{padding-top:0}
       td:last-child{padding-bottom:0}
-   
+  
       td:before{
         content:attr(data-label);
         display:block;
@@ -41,7 +41,7 @@
         margin-bottom:0.35rem;
         font-size:0.95rem;
       }
-   
+  
       /* Special: make wallet address appear below the label */
       td[data-label="Wallet"]{
         padding-top:0.6rem;
@@ -147,9 +147,6 @@
   </div>
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.js"></script>
-<script>
-  window.Buffer = buffer.Buffer;
-</script>
 <script src="https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js"></script>
 <script>
   const STAKING_ADDRESS = 'TWdkKsk6nvgLqGUv64WHLsYfh5ABHHtkJZ';
@@ -176,11 +173,10 @@
   })();
   async function initReadTronWeb() {
     if (readTronWeb) return;
-    readTronWeb = Object.create(tronWeb);
-    readTronWeb.fullNode = new tronWeb.providers.HttpProvider(CHAINSTACK_BASE_URL);
-    readTronWeb.solidityNode = new tronWeb.providers.HttpProvider(CHAINSTACK_BASE_URL);
-    readTronWeb.eventServer = new tronWeb.providers.HttpProvider(CHAINSTACK_BASE_URL);
-    readTronWeb.privateKey = null;
+    const TronWebCtor = (typeof window.TronWeb === 'function') ? window.TronWeb : window.tronWeb?.constructor;
+    if (!TronWebCtor) throw new Error('TronWeb constructor not found');
+    readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
+    readTronWeb.setAddress('T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb'); // Dummy address for view calls
     const originalRequest = readTronWeb.request;
     readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
       return throttle(() => originalRequest.call(this, endpoint, params, method));
@@ -228,7 +224,7 @@
             status = 'Never claimed'; statusClass = 'text-muted'; category = 'active';
           } else if (!isActive || daysSinceClaim > 7) {
             status = 'EXPIRED'; statusClass = 'expired'; category = 'expired';
-          } else if (daysSinceClaim >= 4) {
+          } else if (daysSinceClaim >= 5) {
             status = 'Expire Soon'; statusClass = 'soon'; category = 'soon';
           } else {
             status = 'Active'; statusClass = 'text-success'; category = 'active';
