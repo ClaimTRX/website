@@ -155,7 +155,6 @@
 </head>
 <body>
   <div id="header-placeholder"></div>
-
 <script>
   fetch('assets/js/header.html')
     .then(response => response.text())
@@ -163,7 +162,6 @@
       document.getElementById('header-placeholder').innerHTML = data;
     });
 </script>
-
   <!-- Hero -->
   <section class="hero-section">
     <div class="container text-center">
@@ -172,7 +170,6 @@
       <p class="mb-0">Become a CFT Ambassador</p>
     </div>
   </section>
-
   <!-- Social Rewards content -->
   <section class="py-3">
     <div class="container">
@@ -189,7 +186,6 @@
             </div>
           </div>
         </div>
-
         <!-- Landing -->
         <div id="landing-section" class="action-grid">
           <div class="panel">
@@ -206,7 +202,6 @@
             </div>
           </div>
         </div>
-
         <!-- Register -->
         <div id="register-section" class="action-grid" style="display:none;">
           <div class="panel">
@@ -223,7 +218,6 @@
             </div>
           </div>
         </div>
-
         <!-- Edit -->
         <div id="edit-section" class="action-grid" style="display:none;">
           <div class="panel">
@@ -240,7 +234,6 @@
             </div>
           </div>
         </div>
-
         <!-- Groups -->
         <div id="groups-section" class="table-container" style="display:none;">
           <div class="d-flex justify-content-start mb-3">
@@ -258,7 +251,6 @@
             <tbody id="links-table-body"></tbody>
           </table>
         </div>
-
         <!-- Rankings -->
         <div id="rankings-section" class="table-container" style="display:none;">
           <div class="d-flex justify-content-start mb-3">
@@ -280,7 +272,6 @@
       </div>
     </div>
   </section>
-
   <!-- Ad slot -->
   <section class="py-3">
     <div class="container">
@@ -289,7 +280,6 @@
       </div>
     </div>
   </section>
-
   <!-- Footer -->
   <footer class="footer-area py-5 mt-3">
     <div class="container text-center">
@@ -302,12 +292,10 @@
       <div id="scroll-to-top" class="scroll-to-top"><a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a></div>
     </div>
   </footer>
-
   <!-- Toast container (required) -->
   <div class="position-fixed bottom-0 end-0 p-3" style="z-index:1100">
     <div id="app-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true"></div>
   </div>
-
   <!-- Processing modal (required) -->
   <div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -322,7 +310,6 @@
       </div>
     </div>
   </div>
-
   <!-- Scripts -->
   <script src="assets/js/vendor/jquery.min.js"></script>
   <script src="assets/js/vendor/popper.min.js"></script>
@@ -335,7 +322,6 @@
   <script src="assets/js/main.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
   <script src="assets/js/advertisements.js" type="module"></script>
-
   <!-- Social Rewards JS -->
   <script>
     // =========================
@@ -344,17 +330,16 @@
     const contractAddress = "TPcSvCGXj6MbCR3SfRHYqNckQQSJpjFm3y";
     const defaultAddress = "THNiVH2i5gqgTXR3PMYFaMKdygiXrzJPrk";
     const cftTokenAddress = "THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK";
-    const TRONGRID_API_URL = "https://api.trongrid.io";
-    const TRONGRID_API_KEY = "1c09f073-c70c-4840-8d24-7fef9dcc84f0"; // replace with your own
+    const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
     const UI_REFRESH_DELAY_MS = 2000;
     const CFT_DECIMALS = 6;
     const FEE_LIMIT = 100_000_000; // 100 TRX
-
+    const THROTTLE_GAP_MS = 500; // Adjust if needed for Chainstack's 25 RPS limit
+    const CONTRACT_CALL_DELAY_MS = 300; // Increased to 1000ms for safer pacing
     // =========================
     // Globals
     // =========================
-    let tronWeb, contract, cftContract, userAddress = null;
-
+    let tronWeb, readTronWeb, contract, readContract, cftContract, readCftContract, userAddress = null;
     // =========================
     // Helpers
     // =========================
@@ -370,7 +355,21 @@
       const frac = fracBN.toString().padStart(decimals, '0').replace(/0+$/, '');
       return `${whole}${frac ? '.' + frac : ''}`;
     };
-
+    const throttle = (() => {
+      let queue = Promise.resolve();
+      let last = 0;
+      return async function run(fn) {
+        const exec = async () => {
+          const now = Date.now();
+          const wait = Math.max(0, THROTTLE_GAP_MS - (now - last));
+          if (wait) await sleep(wait);
+          last = Date.now();
+          return await fn();
+        };
+        queue = queue.then(exec, exec);
+        return queue;
+      };
+    })();
     function showToast({title='Notification', body='', variant='dark', autohide=true}) {
       const el = document.getElementById('app-toast');
       if (!el) return;
@@ -382,7 +381,6 @@
         </div>`;
       new bootstrap.Toast(el, {autohide, delay: 4500}).show();
     }
-
     function showProcessingModal(step='') {
       const modalEl = document.getElementById('transaction-processing-modal');
       const titleEl = modalEl.querySelector('#transactionProcessingModalLabel');
@@ -391,9 +389,7 @@
       modal.show();
       return modal;
     }
-
     function hideProcessingModal(modal) { modal?.hide(); }
-
     function validateLink(link, type) {
       if (!link) return true;
       if (type === 'telegram' && !link.startsWith('https://t.me/')) return false;
@@ -401,7 +397,6 @@
       if (type === 'discord' && !link.startsWith('https://discord.gg/')) return false;
       return true;
     }
-
     // Handle different CDN builds
     function getTronWebCtor() {
       if (!window.TronWeb) return null;
@@ -410,7 +405,6 @@
       if (typeof window.TronWeb?.default === 'function') return window.TronWeb.default;
       return null;
     }
-
     // =========================
     // TronWeb init
     // =========================
@@ -422,15 +416,20 @@
           userAddress = tronWeb.defaultAddress.base58 || null;
         } else if (ctor) {
           tronWeb = new ctor({
-            fullHost: TRONGRID_API_URL,
-            headers: { "TRON-PRO-API-KEY": TRONGRID_API_KEY }
+            fullHost: CHAINSTACK_BASE_URL
           });
           userAddress = null;
         } else {
           showToast({title:'Error', body:'TronWeb not available. Install TronLink or check CDN.', variant:'danger'});
           return;
         }
-
+        // Set up read-only TronWeb
+        readTronWeb = new ctor({ fullHost: CHAINSTACK_BASE_URL });
+        const originalRequest = readTronWeb.request;
+        readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
+          return throttle(() => originalRequest.call(this, endpoint, params, method));
+        };
+        readTronWeb.setAddress(defaultAddress);
         const display = addr => addr ? addr.slice(0,6)+'...' : 'Not Connected';
         document.getElementById('wallet-status').textContent = display(userAddress);
         document.getElementById('wallet-status-register').textContent = display(userAddress);
@@ -438,33 +437,29 @@
         document.getElementById('connect-button').innerHTML = userAddress
           ? `<i class="icon-wallet me-md-2"></i> Wallet Connected`
           : `<i class="icon-wallet me-md-2"></i> Wallet Connect`;
-
         contract = await tronWeb.contract().at(contractAddress);
+        readContract = await readTronWeb.contract().at(contractAddress);
+        await sleep(CONTRACT_CALL_DELAY_MS);
         cftContract = await tronWeb.contract().at(cftTokenAddress);
-
+        readCftContract = await readTronWeb.contract().at(cftTokenAddress);
         if (userAddress) await checkRegistration();
-
         // ---- Attach ALL UI events here (after DOM ready) ----
         document.getElementById('connect-button').addEventListener('click', connectWallet);
         document.getElementById('register-option').addEventListener('click', e=>{e.preventDefault(); showRegister();});
         document.getElementById('view-groups-option').addEventListener('click', e=>{e.preventDefault(); showGroups();});
         document.getElementById('view-rankings-option').addEventListener('click', e=>{e.preventDefault(); showRankings();});
-
         const regBtn = document.getElementById('register-button');
         const editBtn = document.getElementById('edit-button');
         if (regBtn) regBtn.addEventListener('click', e=>{e.preventDefault(); registerLinks();});
         if (editBtn) editBtn.addEventListener('click', e=>{e.preventDefault(); editLinks();});
-
         document.querySelectorAll('#back-register, #back-edit, #back-groups, #back-rankings')
           .forEach(b=>b.addEventListener('click', e=>{e.preventDefault(); showLanding();}));
-
         showLanding();
       } catch (err) {
         console.error(err);
         showToast({title:'Init Error', body: err.message, variant:'danger'});
       }
     }
-
     // =========================
     // Wallet connect
     // =========================
@@ -480,22 +475,22 @@
         showToast({title:'Wallet', body:'Connection failed: '+err.message, variant:'danger'});
       }
     }
-
     // =========================
     // Registration check
     // =========================
     async function checkRegistration() {
       try {
-        if (!userAddress || !contract) {
+        if (!userAddress || !readContract) {
           document.getElementById('edit-section').style.display = 'none';
           document.getElementById('register-section').style.display = 'block';
           return;
         }
-        const [walletsHex, tgArr, twArr, dcArr] = await contract.getAllRegistrations().call();
+        const [walletsHex, tgArr, twArr, dcArr] = await readContract.getAllRegistrations().call();
+        await sleep(CONTRACT_CALL_DELAY_MS);
         const wallets = walletsHex.map(w => tronWeb.address.fromHex(w));
         const idx = wallets.indexOf(userAddress);
-        const isReg = await contract.isRegistered(userAddress).call();
-
+        const isReg = await readContract.isRegistered(userAddress).call();
+        await sleep(CONTRACT_CALL_DELAY_MS);
         if (isReg && idx !== -1) {
           document.getElementById('edit-telegram-link').value = tgArr[idx] || '';
           document.getElementById('edit-twitter-link').value = twArr[idx] || '';
@@ -510,24 +505,23 @@
         showToast({title:'Error', body:'Check registration: '+err.message, variant:'danger'});
       }
     }
-
     // =========================
     // Load tables
     // =========================
     async function loadRegisteredLinks() {
       const tbody = document.getElementById('links-table-body');
       tbody.innerHTML = '<tr><td colspan="4" class="text-center"><div class="skeleton"></div></td></tr>';
-      if (!contract) return tbody.innerHTML = '<tr><td colspan="4" class="text-center">Contract not loaded.</td></tr>';
-
+      if (!readContract) return tbody.innerHTML = '<tr><td colspan="4" class="text-center">Contract not loaded.</td></tr>';
       try {
         const addr = userAddress || defaultAddress;
-        const [walletsHex, tgArr, twArr, dcArr] = await contract.getAllRegistrations().call({from:addr});
+        const [walletsHex, tgArr, twArr, dcArr] = await readContract.getAllRegistrations().call({from:addr});
+        await sleep(CONTRACT_CALL_DELAY_MS);
         let voteFee = 0n;
-        try { voteFee = toBigInt(await contract.voteFee().call({from:addr})); } catch{}
+        try { voteFee = toBigInt(await readContract.voteFee().call({from:addr})); } catch{}
+        await sleep(CONTRACT_CALL_DELAY_MS);
         const feeStr = formatUnits(voteFee, CFT_DECIMALS);
         tbody.innerHTML = '';
         if (!walletsHex.length) return tbody.innerHTML = '<tr><td colspan="4" class="text-center">No registrations yet</td></tr>';
-
         const wallets = walletsHex.map(w => tronWeb.address.fromHex(w));
         for (let i=0;i<wallets.length;i++) {
           const tr = document.createElement('tr');
@@ -548,18 +542,16 @@
         showToast({title:'Error', body:'Load links: '+err.message, variant:'danger'});
       }
     }
-
     async function loadRankings() {
       const tbody = document.getElementById('rankings-table-body');
       tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="skeleton"></div></td></tr>';
-      if (!contract) return tbody.innerHTML = '<tr><td colspan="5" class="text-center">Contract not loaded.</td></tr>';
-
+      if (!readContract) return tbody.innerHTML = '<tr><td colspan="5" class="text-center">Contract not loaded.</td></tr>';
       try {
         const addr = userAddress || defaultAddress;
-        const [walletsHex, tgArr, twArr, dcArr, votesArr] = await contract.getRankings().call({from:addr});
+        const [walletsHex, tgArr, twArr, dcArr, votesArr] = await readContract.getRankings().call({from:addr});
+        await sleep(CONTRACT_CALL_DELAY_MS);
         tbody.innerHTML = '';
         if (!walletsHex.length) return tbody.innerHTML = '<tr><td colspan="5" class="text-center">No rankings yet</td></tr>';
-
         for (let i=0;i<walletsHex.length;i++) {
           const tr = document.createElement('tr');
           const tg = tgArr[i] ? `<a href="${tgArr[i]}" target="_blank">${tgArr[i]}</a>` : '—';
@@ -576,22 +568,18 @@
         showToast({title:'Error', body:'Load rankings: '+err.message, variant:'danger'});
       }
     }
-
     // =========================
     // Register / Edit / Vote
     // =========================
     async function registerLinks() {
       console.log('Register button clicked');
       if (!userAddress) return showToast({title:'Wallet', body:'Connect wallet first.', variant:'danger'});
-
       const tg = document.getElementById('telegram-link').value.trim();
       const tw = document.getElementById('twitter-link').value.trim();
       const dc = document.getElementById('discord-link').value.trim();
-
       if (!validateLink(tg,'telegram') || !validateLink(tw,'twitter') || !validateLink(dc,'discord')) {
         return showToast({title:'Invalid Link', body:'Links must start with the correct domain.', variant:'danger'});
       }
-
       let modal = null;
       try {
         modal = showProcessingModal('(register)');
@@ -611,18 +599,14 @@
         showLanding();
       }
     }
-
     async function editLinks() {
       if (!userAddress) return showToast({title:'Wallet', body:'Connect wallet first.', variant:'danger'});
-
       const tg = document.getElementById('edit-telegram-link').value.trim();
       const tw = document.getElementById('edit-twitter-link').value.trim();
       const dc = document.getElementById('edit-discord-link').value.trim();
-
       if (!validateLink(tg,'telegram') || !validateLink(tw,'twitter') || !validateLink(dc,'discord')) {
         return showToast({title:'Invalid Link', body:'Links must start with the correct domain.', variant:'danger'});
       }
-
       let modal = null;
       try {
         modal = showProcessingModal('(update)');
@@ -642,32 +626,31 @@
         showLanding();
       }
     }
-
     async function voteForProject(projectWallet) {
       if (!userAddress) return showToast({title:'Wallet', body:'Connect wallet first.', variant:'danger'});
-
       let modal = null;
       try {
         modal = showProcessingModal('(vote)');
-        const fee = toBigInt(await contract.voteFee().call());
-        const bal = toBigInt(await cftContract.balanceOf(userAddress).call());
+        const fee = toBigInt(await readContract.voteFee().call());
+        await sleep(CONTRACT_CALL_DELAY_MS);
+        const bal = toBigInt(await readCftContract.balanceOf(userAddress).call());
+        await sleep(CONTRACT_CALL_DELAY_MS);
         if (bal < fee) throw new Error('Not enough CFT for voting fee.');
-
-        const allowance = toBigInt(await cftContract.allowance(userAddress, contractAddress).call());
+        const allowance = toBigInt(await readCftContract.allowance(userAddress, contractAddress).call());
+        await sleep(CONTRACT_CALL_DELAY_MS);
         if (allowance < fee) {
           showToast({title:'Approval', body:'Approving CFT spend…', variant:'warning'});
           const appr = await cftContract.approve(contractAddress, fee.toString()).send({feeLimit:FEE_LIMIT});
           const ok = await new Promise(res=>{
             let attempts=12;
             const int=setInterval(async()=>{
-              const a = toBigInt(await cftContract.allowance(userAddress, contractAddress).call());
+              const a = toBigInt(await readCftContract.allowance(userAddress, contractAddress).call());
               if (a>=fee){ clearInterval(int); res(true); }
               if (--attempts===0){ clearInterval(int); res(false); }
             },1500);
           });
           if (!ok) throw new Error('Approval not confirmed in time.');
         }
-
         const result = await contract.vote(projectWallet).send({feeLimit:FEE_LIMIT, shouldPollResponse:true});
         const txId = result.txid || result.transaction?.txID;
         showToast({title:'Success', body:`<a href="https://tronscan.org/#/transaction/${txId}" target="_blank">Vote Tx</a>`, variant:'success'});
@@ -680,7 +663,6 @@
         await loadRegisteredLinks();
       }
     }
-
     // =========================
     // Section toggles
     // =========================
@@ -710,7 +692,6 @@
       document.getElementById('rankings-section').style.display='block';
       loadRankings();
     }
-
     // =========================
     // Start
     // =========================
