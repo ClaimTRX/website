@@ -673,6 +673,10 @@ async function updateActionGridUI(token, first = false, userData) {
   const cacheKey = `tokenUI_action_${token}_${userAddress}`;
   const cached = localStorage.getItem(cacheKey);
   let cacheData = cached ? JSON.parse(cached) : null;
+
+  // Helper to format integers with thousand separators (e.g., 140000 → 140,000)
+  const fmtInt = (n) => Math.floor(Number(n ?? 0)).toLocaleString('en-US');
+
   if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS && !first) {
     const updateElement = (id, value, skeletonId) => {
       const el = document.getElementById(id);
@@ -682,8 +686,9 @@ async function updateActionGridUI(token, first = false, userData) {
         if (skeletonId) setSkeleton(skeletonId, false);
       }
     };
+
     updateElement(`available-tokens-${token}`, fmt(cacheData.data.balanceUnits), `available-tokens-${token}`);
-    updateElement(`claimable-rewards-${token}`, `${Number(cacheData.data.isExpired ? 0 : cacheData.data.rewardUnits).toFixed(2)} ${tokenDetails[token].rewardDisplayName}`);
+    updateElement(`claimable-rewards-${token}`, `${fmtInt(cacheData.data.isExpired ? 0 : cacheData.data.rewardUnits)} ${tokenDetails[token].rewardDisplayName}`);
 
     const activateButton = document.getElementById(`activate-tokens-button-${token}`);
     const claimButton = document.getElementById(`claim-rewards-button-${token}`);
@@ -695,16 +700,18 @@ async function updateActionGridUI(token, first = false, userData) {
       } else {
         activateButton.style.display = 'none';
         claimButton.style.display = 'block';
-        claimButton.disabled = Number(cacheData.data.rewardUnits) === 0 || Number(cacheData.data.contractBalance) < Number(cacheData.data.rewardUnits);
+        claimButton.disabled = Number(cacheData.data.rewardUnits) === 0;
       }
     }
-    updateClaimTimer(token, cacheData.data.timeoutSec, cacheData.data.lastClaimTimestamp, cacheData.data.isActive, cacheData.data.isWhitelisted, cacheData.data.rewardUnits, cacheData.data.contractBalance);
+    updateClaimTimer(token, cacheData.data.timeoutSec, cacheData.data.lastClaimTimestamp, cacheData.data.isActive, cacheData.data.isWhitelisted, cacheData.data.rewardUnits, 0); // contractBalance not used anymore
     return;
   }
+
   try {
     if (first) {
-      ['available-tokens-cft_rwd', 'claimable-rewards-cft_rwd'].forEach(id => setSkeleton(id, true)); // Updated IDs
+      ['available-tokens-cft_rwd', 'claimable-rewards-cft_rwd'].forEach(id => setSkeleton(id, true));
     }
+
     const d = tokenDetails[token];
     let pendingRewardsRaw;
     try {
@@ -718,26 +725,30 @@ async function updateActionGridUI(token, first = false, userData) {
       pendingRewardsRaw = '0';
       showToast({ title: 'Contract Error', body: 'Failed to fetch earned rewards; using fallback data.', variant: 'warning' });
     }
-    const [timeout, contractBalanceRaw, isWhitelisted, balanceRaw] = await Promise.all([
+
+    const [timeout, isWhitelisted, balanceRaw] = await Promise.all([
       retryWithBackoff(() => readStakingContracts[token].methods.claimTimeout().call().catch(() => '1209600')),
-      retryWithBackoff(() => readTokenContracts[token].methods.balanceOf(tokenDetails[token].stakingAddress).call().catch(() => '0')),
       retryWithBackoff(() => readStakingContracts[token].methods.whitelist(userAddress).call().catch(() => false)),
       retryWithBackoff(() => readTokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0'))
     ]);
+
     await delay(CONTRACT_CALL_DELAY_MS);
+
     const balanceUnits = toUnits(balanceRaw, d.decimals);
     let rewardUnits = toUnits(pendingRewardsRaw, d.rewardDecimals);
+
     const now = Math.floor(Date.now() / 1000);
     const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + Number(timeout);
     const isExpired = Number(timeout) > 0 && nextClaim <= now && !userData.isActive && !isWhitelisted;
+
     if (isExpired) {
       rewardUnits = 0;
     }
+
     cacheData = {
       data: {
         balanceUnits: Number(balanceUnits),
         rewardUnits: Number(rewardUnits),
-        contractBalance: Number(toUnits(contractBalanceRaw, d.rewardDecimals)),
         isWhitelisted: Boolean(isWhitelisted),
         timeoutSec: Number(timeout),
         isExpired: Boolean(isExpired),
@@ -748,6 +759,7 @@ async function updateActionGridUI(token, first = false, userData) {
       timestamp: Date.now()
     };
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+
     const updateElement = (id, value, skeletonId) => {
       const el = document.getElementById(id);
       if (el) {
@@ -756,33 +768,41 @@ async function updateActionGridUI(token, first = false, userData) {
         if (skeletonId) setSkeleton(skeletonId, false);
       }
     };
+
     updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
-    updateElement(`claimable-rewards-${token}`, `${Number(isExpired ? 0 : rewardUnits).toFixed(2)} ${d.rewardDisplayName}`);
-      const claimButton = document.getElementById(`claim-rewards-button-${token}`);
+    updateElement(`claimable-rewards-${token}`, `${fmtInt(isExpired ? 0 : rewardUnits)} ${d.rewardDisplayName}`);
+
+    const claimButton = document.getElementById(`claim-rewards-button-${token}`);
     const rewardsDisplay = document.getElementById(`claimable-rewards-${token}`);
-    const energyHint = document.querySelector('#claimable-rewards-cft_rwd + span'); // Updated ID selector
+    const energyHint = document.querySelector('#claimable-rewards-cft_rwd + span');
+
     if (rewardsDisplay && claimButton) {
       if (isExpired) {
-        rewardsDisplay.innerHTML = `<strong>0.00 ${d.rewardDisplayName}</strong><br><small style="color:#ff5b73; font-weight:600;">Rewards Expired – Stake more CFT to resume earning ${d.rewardDisplayName}.</small>`;
+        rewardsDisplay.innerHTML = `
+          <strong>0 ${d.rewardDisplayName}</strong><br>
+          <small style="color:#ff5b73; font-weight:600;">
+            Rewards Expired – Stake more CFT to resume earning ${d.rewardDisplayName}.
+          </small>`;
         claimButton.style.display = 'none';
         if (energyHint) energyHint.style.display = 'none';
       } else {
-        rewardsDisplay.textContent = `${Number(rewardUnits).toFixed(2)} ${d.rewardDisplayName}`;
+        rewardsDisplay.textContent = `${fmtInt(rewardUnits)} ${d.rewardDisplayName}`;
         claimButton.style.display = 'block';
-claimButton.disabled = Number(pendingRewardsRaw) === 0;
+        claimButton.disabled = Number(rewardUnits) === 0;
         if (energyHint) energyHint.style.display = 'block';
       }
     }
-    updateClaimTimer(token, Number(timeout), Number(userData.lastClaimTimestamp), userData.isActive, isWhitelisted, rewardUnits, toUnits(contractBalanceRaw, d.rewardDecimals));
+
+    updateClaimTimer(token, Number(timeout), Number(userData.lastClaimTimestamp), userData.isActive, isWhitelisted, rewardUnits, 0);
+
   } catch (e) {
     console.error('updateActionGridUI error:', e);
     showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
-    ['available-tokens-cft_rwd', 'claimable-rewards-cft_rwd']
-      .forEach(id => {
-        setSkeleton(id, false);
-        const el = document.getElementById(id);
-        if (el) el.textContent = id.includes('claimable') ? `0 ${tokenDetails[token].rewardDisplayName}` : '0';
-      });
+    ['available-tokens-cft_rwd', 'claimable-rewards-cft_rwd'].forEach(id => {
+      setSkeleton(id, false);
+      const el = document.getElementById(id);
+      if (el) el.textContent = id.includes('claimable') ? `0 ${tokenDetails[token].rewardDisplayName}` : '0';
+    });
   }
 }
 async function updateStatsGridUI(token, first = false, userData) {
