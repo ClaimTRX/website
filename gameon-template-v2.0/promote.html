@@ -334,8 +334,8 @@
     const UI_REFRESH_DELAY_MS = 2000;
     const CFT_DECIMALS = 6;
     const FEE_LIMIT = 100_000_000; // 100 TRX
-    const THROTTLE_GAP_MS = 500; // Adjust if needed for Chainstack's 25 RPS limit
-    const CONTRACT_CALL_DELAY_MS = 300; // Increased to 1000ms for safer pacing
+    const THROTTLE_GAP_MS = 500;
+    const CONTRACT_CALL_DELAY_MS = 300;
     // =========================
     // Globals
     // =========================
@@ -397,7 +397,6 @@
       if (type === 'discord' && !link.startsWith('https://discord.gg/')) return false;
       return true;
     }
-    // Handle different CDN builds
     function getTronWebCtor() {
       if (!window.TronWeb) return null;
       if (typeof window.TronWeb === 'function') return window.TronWeb;
@@ -411,40 +410,43 @@
     async function initTronWeb() {
       try {
         const ctor = getTronWebCtor();
+        if (!ctor) {
+          showToast({title:'Error', body:'TronWeb not available.', variant:'danger'});
+          return;
+        }
+
         if (window.tronWeb && window.tronWeb.ready) {
           tronWeb = window.tronWeb;
           userAddress = tronWeb.defaultAddress.base58 || null;
-        } else if (ctor) {
+        } else {
           tronWeb = new ctor({
             fullHost: CHAINSTACK_BASE_URL
           });
           userAddress = null;
-        } else {
-          showToast({title:'Error', body:'TronWeb not available. Install TronLink or check CDN.', variant:'danger'});
-          return;
         }
-        // Set up read-only TronWeb
+
+        // Read-only instance always uses defaultAddress as caller
         readTronWeb = new ctor({ fullHost: CHAINSTACK_BASE_URL });
         const originalRequest = readTronWeb.request;
         readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
           return throttle(() => originalRequest.call(this, endpoint, params, method));
         };
         readTronWeb.setAddress(defaultAddress);
-        const display = addr => addr ? addr.slice(0,6)+'...' : 'Not Connected';
+
+        const display = addr => addr ? addr.slice(0,6)+'...'+'('+addr.slice(-4)+')' : 'Not Connected';
         document.getElementById('wallet-status').textContent = display(userAddress);
         document.getElementById('wallet-status-register').textContent = display(userAddress);
         document.getElementById('wallet-status-edit').textContent = display(userAddress);
-        document.getElementById('connect-button').innerHTML = userAddress
-          ? `<i class="icon-wallet me-md-2"></i> Wallet Connected`
-          : `<i class="icon-wallet me-md-2"></i> Wallet Connect`;
+
         contract = await tronWeb.contract().at(contractAddress);
         readContract = await readTronWeb.contract().at(contractAddress);
         await sleep(CONTRACT_CALL_DELAY_MS);
         cftContract = await tronWeb.contract().at(cftTokenAddress);
         readCftContract = await readTronWeb.contract().at(cftTokenAddress);
+
         if (userAddress) await checkRegistration();
-        // ---- Attach ALL UI events here (after DOM ready) ----
-        document.getElementById('connect-button').addEventListener('click', connectWallet);
+
+        // Attach UI events
         document.getElementById('register-option').addEventListener('click', e=>{e.preventDefault(); showRegister();});
         document.getElementById('view-groups-option').addEventListener('click', e=>{e.preventDefault(); showGroups();});
         document.getElementById('view-rankings-option').addEventListener('click', e=>{e.preventDefault(); showRankings();});
@@ -454,14 +456,17 @@
         if (editBtn) editBtn.addEventListener('click', e=>{e.preventDefault(); editLinks();});
         document.querySelectorAll('#back-register, #back-edit, #back-groups, #back-rankings')
           .forEach(b=>b.addEventListener('click', e=>{e.preventDefault(); showLanding();}));
-        showLanding();
+
+        // Load groups on page start (no wallet needed)
+        await loadRegisteredLinks();
+
       } catch (err) {
         console.error(err);
         showToast({title:'Init Error', body: err.message, variant:'danger'});
       }
     }
     // =========================
-    // Wallet connect
+    // Wallet connect (optional now for viewing)
     // =========================
     async function connectWallet() {
       if (!window.tronLink) {
@@ -476,7 +481,7 @@
       }
     }
     // =========================
-    // Registration check
+    // Registration check (only when connected)
     // =========================
     async function checkRegistration() {
       try {
@@ -506,18 +511,18 @@
       }
     }
     // =========================
-    // Load tables
+    // Load tables (public - no wallet needed)
     // =========================
     async function loadRegisteredLinks() {
       const tbody = document.getElementById('links-table-body');
       tbody.innerHTML = '<tr><td colspan="4" class="text-center"><div class="skeleton"></div></td></tr>';
       if (!readContract) return tbody.innerHTML = '<tr><td colspan="4" class="text-center">Contract not loaded.</td></tr>';
       try {
-        const addr = userAddress || defaultAddress;
-        const [walletsHex, tgArr, twArr, dcArr] = await readContract.getAllRegistrations().call({from:addr});
+        const caller = userAddress || defaultAddress;
+        const [walletsHex, tgArr, twArr, dcArr] = await readContract.getAllRegistrations().call();
         await sleep(CONTRACT_CALL_DELAY_MS);
         let voteFee = 0n;
-        try { voteFee = toBigInt(await readContract.voteFee().call({from:addr})); } catch{}
+        try { voteFee = toBigInt(await readContract.voteFee().call({from: caller})); } catch{}
         await sleep(CONTRACT_CALL_DELAY_MS);
         const feeStr = formatUnits(voteFee, CFT_DECIMALS);
         tbody.innerHTML = '';
@@ -528,7 +533,9 @@
           const tg = tgArr[i] ? `<a href="${tgArr[i]}" target="_blank">${tgArr[i]}</a>` : '—';
           const tw = twArr[i] ? `<a href="${twArr[i]}" target="_blank">${twArr[i]}</a>` : '—';
           const dc = dcArr[i] ? `<a href="${dcArr[i]}" target="_blank">${dcArr[i]}</a>` : '—';
-          const act = `<a href="#" class="btn vote primary vote-button" data-wallet="${wallets[i]}">Vote (${feeStr} CFT)</a>`;
+          let act = userAddress 
+            ? `<a href="#" class="btn vote primary vote-button" data-wallet="${wallets[i]}">Vote (${feeStr} CFT)</a>`
+            : `<span class="text-muted">Connect wallet to vote</span>`;
           tr.innerHTML = `<td data-label="Telegram Link">${tg}</td>
                           <td data-label="Twitter Link">${tw}</td>
                           <td data-label="Discord Link">${dc}</td>
@@ -539,6 +546,7 @@
           e.preventDefault(); voteForProject(b.dataset.wallet);
         }));
       } catch (err) {
+        console.error(err);
         showToast({title:'Error', body:'Load links: '+err.message, variant:'danger'});
       }
     }
@@ -547,8 +555,7 @@
       tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="skeleton"></div></td></tr>';
       if (!readContract) return tbody.innerHTML = '<tr><td colspan="5" class="text-center">Contract not loaded.</td></tr>';
       try {
-        const addr = userAddress || defaultAddress;
-        const [walletsHex, tgArr, twArr, dcArr, votesArr] = await readContract.getRankings().call({from:addr});
+        const [walletsHex, tgArr, twArr, dcArr, votesArr] = await readContract.getRankings().call();
         await sleep(CONTRACT_CALL_DELAY_MS);
         tbody.innerHTML = '';
         if (!walletsHex.length) return tbody.innerHTML = '<tr><td colspan="5" class="text-center">No rankings yet</td></tr>';
@@ -572,7 +579,6 @@
     // Register / Edit / Vote
     // =========================
     async function registerLinks() {
-      console.log('Register button clicked');
       if (!userAddress) return showToast({title:'Wallet', body:'Connect wallet first.', variant:'danger'});
       const tg = document.getElementById('telegram-link').value.trim();
       const tw = document.getElementById('twitter-link').value.trim();
@@ -674,7 +680,7 @@
       ['landing','groups','rankings'].forEach(s=>document.getElementById(s+'-section').style.display='none');
       const editSec = document.getElementById('edit-section');
       const regSec = document.getElementById('register-section');
-      if (editSec.style.display==='block'){
+      if (userAddress && editSec.style.display==='block'){
         editSec.style.display='block';
         regSec.style.display='none';
       } else {
@@ -685,7 +691,7 @@
     function showGroups(){
       ['landing','register','edit','rankings'].forEach(s=>document.getElementById(s+'-section').style.display='none');
       document.getElementById('groups-section').style.display='block';
-      loadRegisteredLinks();
+      loadRegisteredLinks(); // Refresh in case new registrations appeared
     }
     function showRankings(){
       ['landing','register','edit','groups'].forEach(s=>document.getElementById(s+'-section').style.display='none');
@@ -696,7 +702,6 @@
     // Start
     // =========================
     window.addEventListener('load', initTronWeb);
-    document.addEventListener('DOMContentLoaded', showLanding);
   </script>
 </body>
 </html>
