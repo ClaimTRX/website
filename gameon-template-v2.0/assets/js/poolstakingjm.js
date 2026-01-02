@@ -769,7 +769,7 @@ async function updateActionGridUI(token, first = false, userData) {
       } else {
         rewardsDisplay.textContent = `${Number(rewardUnits).toFixed(2)} ${d.rewardDisplayName}`;
         claimButton.style.display = 'block';
-        claimButton.disabled = Number(pendingRewardsRaw) === 0 || toUnits(contractBalanceRaw, d.rewardDecimals) < rewardUnits;
+claimButton.disabled = Number(pendingRewardsRaw) === 0;
         if (energyHint) energyHint.style.display = 'block';
       }
     }
@@ -1277,13 +1277,8 @@ async function claimRewards(token) {
      
       // Check contract's reward token balance
 const d = tokenDetails[token]; // ← Add this line
-// Force fresh fetch — no cache reliance
-const contractBalanceRaw = await readTokenContracts[token].balanceOf(d.stakingAddress).call();
-const pendingUnits = toUnits(pendingRewards, d.rewardDecimals);
-const contractBalanceUnits = toUnits(contractBalanceRaw, d.rewardDecimals);
-if (contractBalanceUnits < pendingUnits) {
-  throw new Error('Insufficient contract balance to claim rewards.');
-}
+
+
       // Build and send claim transaction
       const claimTx = await tronWeb.transactionBuilder.triggerSmartContract(
         tokenDetails[token].stakingAddress,
