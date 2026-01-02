@@ -22,17 +22,17 @@ const DAILY_PAYOUT_PERCENTAGE = 1; // 1% daily payout as per requirement
 // === MANUAL DAILY CFT PRICE IN USDT ===
 const CFT_PRICE_USDT = 0.1745; // ← UPDATE THIS NUMBER DAILY (e.g., 0.0018 means $0.0018 per CFT)
 // Example: if today CFT = $0.0021 USDT → change to 0.0021
-const REWARD_PRICE_USDT = 0.05; // ← UPDATE THIS: USDT price of your new reward token (e.g., if RWD = $0.05 USDT, set to 0.05)
+const REWARD_PRICE_USDT = 0.000008208281355328604; // ← UPDATE THIS: USDT price of your new reward token (e.g., if RWD = $0.05 USDT, set to 0.05)
 / ===================== Token Config ===================== */
 const tokenDetails = {
 cft_rwd: {
 tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK', // CFT - staking token
-rewardTokenAddress: 'YOUR_NEW_REWARD_TOKEN_ADDRESS_HERE', // ← UPDATE: New TRC20 reward token address (e.g., RWD)
-stakingAddress: 'TWTssCnUCDeMMqDA9A9zoxCfrLJXZh2N71', // your staking contract
+rewardTokenAddress: 'TVHH59uHVpHzLDMFFpUgCx2dNAQqCzPhcR', // ← UPDATE: New TRC20 reward token address (e.g., RWD)
+stakingAddress: 'TEG1ckez7pwe6kYCWsTxR7wHiJUEV24BUB', // your staking contract
 decimals: 6,
 rewardDecimals: 18, // ← UPDATE: Decimals of your new reward token (e.g., 18 for many TRC20 tokens)
 displayName: 'CFT',
-rewardDisplayName: 'Jm', // ← UPDATE: Display name of your new reward token
+rewardDisplayName: 'JM', // ← UPDATE: Display name of your new reward token
 energyCosts: {
 stake: 120000,
 unstake: 75000,
