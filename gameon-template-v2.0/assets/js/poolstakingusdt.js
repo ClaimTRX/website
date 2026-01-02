@@ -32,7 +32,7 @@ const UI_REFRESH_DELAY_MS = 3000; // 3s delay for UI refresh after actions
 const CFT_PRICE = 1; // 1:1 ratio
 const DAILY_PAYOUT_PERCENTAGE = 1; // 1% daily payout as per requirement
 // === MANUAL DAILY CFT PRICE IN USDT ===
-const CFT_PRICE_USDT = 0.1975; // ← UPDATE THIS NUMBER DAILY (e.g., 0.0018 means $0.0018 per CFT)
+const CFT_PRICE_USDT = 0.1745; // ← UPDATE THIS NUMBER DAILY (e.g., 0.0018 means $0.0018 per CFT)
 // Example: if today CFT = $0.0021 USDT → change to 0.0021
 /* ===================== Token Config ===================== */
 const tokenDetails = {
