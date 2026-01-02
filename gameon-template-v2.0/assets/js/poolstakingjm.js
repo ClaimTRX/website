@@ -1277,9 +1277,8 @@ async function claimRewards(token) {
      
       // Check contract's reward token balance
 const d = tokenDetails[token]; // ← Add this line
-const contractBalanceRaw = await retryWithBackoff(() =>
-  tokenContracts[token].balanceOf(d.stakingAddress).call()
-).catch(() => '0');
+// Force fresh fetch — no cache reliance
+const contractBalanceRaw = await readTokenContracts[token].balanceOf(d.stakingAddress).call();
 const pendingUnits = toUnits(pendingRewards, d.rewardDecimals);
 const contractBalanceUnits = toUnits(contractBalanceRaw, d.rewardDecimals);
 if (contractBalanceUnits < pendingUnits) {
