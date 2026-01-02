@@ -44,7 +44,7 @@ const tokenDetails = {
     rewardTokenAddress: 'TVHH59uHVpHzLDMFFpUgCx2dNAQqCzPhcR', // ← UPDATE: New TRC20 reward token address (e.g., RWD)
     stakingAddress: 'TEG1ckez7pwe6kYCWsTxR7wHiJUEV24BUB', // your staking contract (unchanged)
     decimals: 6,  // CFT decimals (unchanged)
-    rewardDecimals: 8,  // ← UPDATE: Decimals of your new reward token (e.g., 18 for many TRC20 tokens)
+    rewardDecimals: 6,  // ← UPDATE: Decimals of your new reward token (e.g., 18 for many TRC20 tokens)
     displayName: 'CFT',
     rewardDisplayName: 'JM',  // ← UPDATE: Display name of your new reward token
     energyCosts: {
