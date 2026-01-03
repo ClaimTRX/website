@@ -1,8 +1,10 @@
-// swap.js - Fully complete updated version (FIXED constructor error + more reliable)
-// Uses injected tronWeb.constructor to create readTronWeb with Chainstack node
-// No need for extra CDN load or window.TronWeb fallback - this pattern is widely used in Tron dApps and fixes the "not a constructor" error
-// All read calls (balances, reserves, allowances) use Chainstack via readTronWeb
-// Transactions/approvals use injected tronWeb
+// swap.js - Fully complete, 100% ready-to-copy version
+// Fixes:
+// - Reliable Chainstack read node using tronWeb.constructor
+// - Polling for async-loaded 'connect-button' (header fetch) to avoid null addEventListener error
+// - All static swap elements have direct listeners
+// - Full STBLX_SWAP_ABI included
+// - BigNumber for price impact (ensure bignumber.js is loaded in HTML)
 
 const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
 
@@ -220,8 +222,8 @@ const STBLX_SWAP_ABI = [
 ];
 
 // Global variables
-let tronWeb = null;        // Injected TronLink instance (signing/transactions)
-let readTronWeb = null;    // Custom instance with Chainstack node (reads only)
+let tronWeb = null;
+let readTronWeb = null;
 let userAddress = null;
 let isWalletConnected = false;
 let lastInputField = 'from';
@@ -241,9 +243,7 @@ function parseInput(value) {
     return isNaN(parsed) ? 0 : parsed;
 }
 
-// Connect wallet
 async function connectWallet() {
-    const connectButton = document.getElementById('connect-button');
     try {
         if (!window.tronWeb) {
             alert('TronLink is not installed. Please install the TronLink extension.');
@@ -257,7 +257,6 @@ async function connectWallet() {
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58;
 
-        // Create read-only instance using Chainstack node
         readTronWeb = new tronWeb.constructor(
             CHAINSTACK_BASE_URL,
             CHAINSTACK_BASE_URL,
@@ -266,8 +265,12 @@ async function connectWallet() {
         readTronWeb.setAddress(userAddress);
 
         isWalletConnected = true;
-        connectButton.innerHTML = '<i class="icon-wallet me-md-2"></i> Wallet Connected';
-        connectButton.disabled = true;
+
+        const connectBtn = document.getElementById('connect-button');
+        if (connectBtn) {
+            connectBtn.innerHTML = '<i class="icon-wallet me-md-2"></i> Wallet Connected';
+            connectBtn.disabled = true;
+        }
 
         populateTokenSelectors();
         await updateBalances();
@@ -276,8 +279,6 @@ async function connectWallet() {
         console.error('Error in connectWallet:', error);
     }
 }
-
-// Rest of the code is identical to previous version (populateTokenSelectors, updateToDropdown, fetchReserves, calculations, approveToken, updateBalances, setMaxAmount, updateExpectedOutput, executeSwap, mirrorSwap, event listeners, auto-connect)
 
 function populateTokenSelectors() {
     const fromSelect = document.getElementById('from-token');
@@ -391,7 +392,7 @@ async function approveToken(tokenAddress, amountInBigInt, spender) {
 }
 
 async function updateBalances() {
-    if (!isWalletConnected) {
+    if (!isWalletConnected || !readTronWeb) {
         document.getElementById('from-balance').textContent = 'Balance: 0';
         document.getElementById('to-balance').textContent = 'Balance: 0';
         return;
@@ -425,7 +426,7 @@ async function updateBalances() {
 }
 
 async function setMaxAmount() {
-    if (!isWalletConnected) {
+    if (!isWalletConnected || !readTronWeb) {
         alert('Please connect your wallet first.');
         return;
     }
@@ -451,7 +452,7 @@ async function setMaxAmount() {
 }
 
 async function updateExpectedOutput() {
-    if (!isWalletConnected) {
+    if (!isWalletConnected || !readTronWeb) {
         document.getElementById('from-amount').value = '';
         document.getElementById('to-amount').value = '';
         document.getElementById('rate-info').textContent = 'Rate: --';
@@ -585,7 +586,7 @@ async function executeSwap() {
         return;
     }
 
-    let amountInBigInt = window.maxAmountBigInt && window.maxAmountBigInt === BigInt(Math.floor(amountInFloat * 10 ** DECIMALS[tokenFrom]))
+    let amountInBigInt = (window.maxAmountBigInt && Math.abs(Number(window.maxAmountBigInt) - amountInFloat * 10 ** DECIMALS[tokenFrom]) < 1)
         ? window.maxAmountBigInt
         : BigInt(Math.floor(amountInFloat * 10 ** DECIMALS[tokenFrom]));
 
@@ -608,6 +609,7 @@ async function executeSwap() {
 
         if (tokenTo === 'STBLX' && (tokenFrom === 'USDT' || tokenFrom === 'USDD')) {
             const swapContract = await tronWeb.contract(STBLX_SWAP_ABI, STBLX_SWAP_CONTRACT);
+
             const trxBalance = Number(await readTronWeb.trx.getBalance(userAddress)) / 1e6;
             if (trxBalance < 1) {
                 document.getElementById('status-msg').textContent = 'Insufficient TRX for transaction fees.';
@@ -720,8 +722,7 @@ async function mirrorSwap() {
     await updateBalances();
 }
 
-// Event listeners (same as before)
-document.getElementById('connect-button').addEventListener('click', connectWallet);
+// Static event listeners (elements exist immediately in DOM)
 document.getElementById('from-token').addEventListener('change', async () => {
     const fromToken = document.getElementById('from-token').value;
     updateToDropdown(fromToken);
@@ -731,6 +732,7 @@ document.getElementById('from-token').addEventListener('change', async () => {
     document.getElementById('impact-info').textContent = 'Price Impact: --';
     await updateBalances();
 });
+
 document.getElementById('to-token').addEventListener('change', async () => {
     document.getElementById('from-amount').value = '';
     document.getElementById('to-amount').value = '';
@@ -738,6 +740,7 @@ document.getElementById('to-token').addEventListener('change', async () => {
     document.getElementById('impact-info').textContent = 'Price Impact: --';
     await updateBalances();
 });
+
 document.getElementById('from-amount').addEventListener('input', function () {
     let value = this.value.replace(/[^0-9.]/g, '');
     const parts = value.split('.');
@@ -747,12 +750,14 @@ document.getElementById('from-amount').addEventListener('input', function () {
     lastInputField = 'from';
     updateExpectedOutput();
 });
+
 document.getElementById('from-amount').addEventListener('blur', function () {
     const value = parseInput(this.value);
     this.value = value > 0 ? formatNumber(value) : '';
     lastInputField = 'from';
     updateExpectedOutput();
 });
+
 document.getElementById('to-amount').addEventListener('input', function () {
     let value = this.value.replace(/[^0-9.]/g, '');
     const parts = value.split('.');
@@ -762,17 +767,32 @@ document.getElementById('to-amount').addEventListener('input', function () {
     lastInputField = 'to';
     updateExpectedOutput();
 });
+
 document.getElementById('to-amount').addEventListener('blur', function () {
     const value = parseInput(this.value);
     this.value = value > 0 ? formatNumber(value) : '';
     lastInputField = 'to';
     updateExpectedOutput();
 });
+
 document.getElementById('max-button').addEventListener('click', setMaxAmount);
 document.getElementById('swap-button').addEventListener('click', executeSwap);
 document.getElementById('mirror-button').addEventListener('click', mirrorSwap);
 
-// Auto-connect
+// Poll for async-loaded connect-button (from header fetch)
+const connectPollInterval = setInterval(() => {
+    const connectBtn = document.getElementById('connect-button');
+    if (connectBtn) {
+        connectBtn.addEventListener('click', connectWallet);
+        if (isWalletConnected) {
+            connectBtn.innerHTML = '<i class="icon-wallet me-md-2"></i> Wallet Connected';
+            connectBtn.disabled = true;
+        }
+        clearInterval(connectPollInterval);
+    }
+}, 300);
+
+// Auto-connect if wallet already connected
 if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
     (async () => {
         tronWeb = window.tronWeb;
@@ -786,13 +806,15 @@ if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
         readTronWeb.setAddress(userAddress);
 
         isWalletConnected = true;
-        const connectButton = document.getElementById('connect-button');
-        if (connectButton) {
-            connectButton.innerHTML = '<i class="icon-wallet me-md-2"></i> Wallet Connected';
-            connectButton.disabled = true;
-        }
 
         populateTokenSelectors();
         await updateBalances();
+
+        // Update connect button if already loaded
+        const connectBtn = document.getElementById('connect-button');
+        if (connectBtn) {
+            connectBtn.innerHTML = '<i class="icon-wallet me-md-2"></i> Wallet Connected';
+            connectBtn.disabled = true;
+        }
     })();
 }
