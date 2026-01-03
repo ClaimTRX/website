@@ -1,20 +1,22 @@
-// swap.js - Fully complete updated version with Chainstack read node + injected TronLink for signing
-// Fixes wallet connection issues and uses Chainstack for reliable read operations (balances, reserves, allowances)
-// All view calls use readTronWeb (Chainstack), transactions/approvals use tronWeb (injected TronLink)
+// swap.js - Fully complete updated version (FIXED constructor error + more reliable)
+// Uses injected tronWeb.constructor to create readTronWeb with Chainstack node
+// No need for extra CDN load or window.TronWeb fallback - this pattern is widely used in Tron dApps and fixes the "not a constructor" error
+// All read calls (balances, reserves, allowances) use Chainstack via readTronWeb
+// Transactions/approvals use injected tronWeb
 
 const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
 
 const SUNSWAP_ROUTER = 'TXF1xDbVGdxFGbovmmmXvBGu8ZiE3Lq4mR';
 const WTRX_CONTRACT = 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR';
-const STBLX_SWAP_CONTRACT = 'TUGprGUNtszQgc3pGwMcC9R3z3sDT31G9W'; // StableX swap contract
+const STBLX_SWAP_CONTRACT = 'TUGprGUNtszQgc3pGwMcC9R3z3sDT31G9W';
 
 const TOKENS = {
-    TRX: 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR', // Maps to WTRX address for pool interactions
+    TRX: 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR',
     CFT: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-    STBLX: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS', // StableX token
+    STBLX: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
     BBT: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
     KING: 'TMFNzkJaj573F62s4bWmfonKwGcosAA8fE',
-    USDD: 'TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz', // USDD for StableX
+    USDD: 'TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz',
     USDT: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'
 };
 
@@ -25,7 +27,7 @@ const DECIMALS = {
     BBT: 8,
     USDT: 6,
     USDD: 18,
-    STBLX: 6 // 6 decimals for STBLX
+    STBLX: 6
 };
 
 const POOLS = {
@@ -130,23 +132,106 @@ const ERC20_ABI = [
     }
 ];
 
-const STBLX_SWAP_ABI = [ /* Your full STBLX_SWAP_ABI from the original code - unchanged */ ];
+const STBLX_SWAP_ABI = [
+    {
+        "inputs": [
+            {"internalType": "contract ITRC20", "name": "_token", "type": "address"},
+            {"internalType": "contract ITRC20", "name": "_usdt", "type": "address"},
+            {"internalType": "contract ITRC20", "name": "_usdd", "type": "address"}
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {"indexed": true, "internalType": "address", "name": "buyer", "type": "address"},
+            {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"},
+            {"indexed": false, "internalType": "string", "name": "paymentToken", "type": "string"}
+        ],
+        "name": "TokensPurchased",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"},
+            {"indexed": false, "internalType": "address", "name": "tokenAddress", "type": "address"}
+        ],
+        "name": "WithdrawnTokens",
+        "type": "event"
+    },
+    {
+        "inputs": [{"internalType": "uint256", "name": "amount", "type": "uint256"}],
+        "name": "buyWithUSDT",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [{"internalType": "uint256", "name": "amount", "type": "uint256"}],
+        "name": "buyWithUSDD",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "token",
+        "outputs": [{"internalType": "contract ITRC20", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "usdd",
+        "outputs": [{"internalType": "contract ITRC20", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "usdt",
+        "outputs": [{"internalType": "contract ITRC20", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "withdrawAllUSDD",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "withdrawAllUSDT",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+];
 
 // Global variables
-let tronWeb = null;        // Injected TronLink for signing/transactions
-let readTronWeb = null;    // Chainstack read-only instance
+let tronWeb = null;        // Injected TronLink instance (signing/transactions)
+let readTronWeb = null;    // Custom instance with Chainstack node (reads only)
 let userAddress = null;
 let isWalletConnected = false;
-let lastInputField = 'from'; // Track which field was last edited ('from' or 'to')
+let lastInputField = 'from';
 
-// Function to format numbers with . as decimal, no thousand separator, fixed to 2 decimals
 function formatNumber(num) {
     const numValue = Number(num);
     if (isNaN(numValue)) return '0.00';
     return numValue.toFixed(2);
 }
 
-// Parse input string to a number, handling only digits and decimal point
 function parseInput(value) {
     if (!value) return 0;
     const cleanedValue = value.replace(/[^0-9.]/g, '');
@@ -156,7 +241,7 @@ function parseInput(value) {
     return isNaN(parsed) ? 0 : parsed;
 }
 
-// Connect to TronLink wallet and initialize Chainstack read instance
+// Connect wallet
 async function connectWallet() {
     const connectButton = document.getElementById('connect-button');
     try {
@@ -165,7 +250,6 @@ async function connectWallet() {
             return;
         }
 
-        // Request accounts if not already granted
         if (!window.tronWeb.defaultAddress.base58) {
             await window.tronWeb.request({ method: 'tron_requestAccounts' });
         }
@@ -173,19 +257,12 @@ async function connectWallet() {
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58;
 
-        // Load full TronWeb library if constructor not available
-        if (!window.TronWeb) {
-            await new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js';
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            });
-        }
-
-        const TronWebCtor = window.TronWeb || tronWeb.constructor;
-        readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
+        // Create read-only instance using Chainstack node
+        readTronWeb = new tronWeb.constructor(
+            CHAINSTACK_BASE_URL,
+            CHAINSTACK_BASE_URL,
+            CHAINSTACK_BASE_URL
+        );
         readTronWeb.setAddress(userAddress);
 
         isWalletConnected = true;
@@ -195,17 +272,17 @@ async function connectWallet() {
         populateTokenSelectors();
         await updateBalances();
     } catch (error) {
-        alert('Failed to connect to TronLink. Please ensure you are logged in: ' + (error.message || ''));
+        alert('Failed to connect to TronLink: ' + (error.message || 'Unknown error'));
         console.error('Error in connectWallet:', error);
     }
 }
 
-// Populate token selectors
+// Rest of the code is identical to previous version (populateTokenSelectors, updateToDropdown, fetchReserves, calculations, approveToken, updateBalances, setMaxAmount, updateExpectedOutput, executeSwap, mirrorSwap, event listeners, auto-connect)
+
 function populateTokenSelectors() {
     const fromSelect = document.getElementById('from-token');
     const toSelect = document.getElementById('to-token');
 
-    // Populate "From" dropdown with all tokens except STBLX
     Object.keys(TOKENS).forEach(token => {
         if (token !== 'STBLX') {
             const option = document.createElement('option');
@@ -215,17 +292,15 @@ function populateTokenSelectors() {
         }
     });
 
-    // Default values
     updateToDropdown('TRX');
     fromSelect.value = 'TRX';
     toSelect.value = 'CFT';
 }
 
-// Update "To" dropdown based on selected "From" token
 function updateToDropdown(fromToken) {
     const toSelect = document.getElementById('to-token');
     const currentToValue = toSelect.value;
-    toSelect.innerHTML = ''; // Clear existing options
+    toSelect.innerHTML = '';
 
     const effectiveFrom = fromToken === 'TRX' ? 'WTRX' : fromToken;
     const pairedTokens = new Set();
@@ -239,7 +314,6 @@ function updateToDropdown(fromToken) {
         }
     });
 
-    // Special case for USDT and USDD: allow STBLX as a "To" token
     if (fromToken === 'USDT' || fromToken === 'USDD') {
         pairedTokens.add('STBLX');
     }
@@ -258,7 +332,6 @@ function updateToDropdown(fromToken) {
     }
 }
 
-// Fetch reserves using Chainstack read node
 async function fetchReserves(poolAddress) {
     try {
         const contract = await readTronWeb.contract(RESERVES_ABI, poolAddress);
@@ -274,7 +347,6 @@ async function fetchReserves(poolAddress) {
     }
 }
 
-// Calculate output amount
 function getAmountOut(amountIn, reserveIn, reserveOut) {
     const amountInWithFee = amountIn * BigInt(997);
     const numerator = amountInWithFee * reserveOut;
@@ -282,14 +354,12 @@ function getAmountOut(amountIn, reserveIn, reserveOut) {
     return numerator / denominator;
 }
 
-// Calculate input amount
 function getAmountIn(amountOut, reserveIn, reserveOut) {
     const numerator = reserveIn * amountOut * BigInt(1000);
     const denominator = (reserveOut - amountOut) * BigInt(997);
     return (numerator / denominator) + BigInt(1);
 }
 
-// Check token allowance using Chainstack
 async function checkAllowance(tokenAddress, owner, spender) {
     try {
         const contract = await readTronWeb.contract(ERC20_ABI, tokenAddress);
@@ -302,7 +372,6 @@ async function checkAllowance(tokenAddress, owner, spender) {
     }
 }
 
-// Approve token spending (uses injected tronWeb)
 async function approveToken(tokenAddress, amountInBigInt, spender) {
     if (!isWalletConnected) {
         alert('Please connect your wallet first.');
@@ -321,7 +390,6 @@ async function approveToken(tokenAddress, amountInBigInt, spender) {
     }
 }
 
-// Update balances using Chainstack
 async function updateBalances() {
     if (!isWalletConnected) {
         document.getElementById('from-balance').textContent = 'Balance: 0';
@@ -356,7 +424,6 @@ async function updateBalances() {
     document.getElementById('to-balance').textContent = `Balance: ${formattedTo} ${tokenTo}`;
 }
 
-// Set max amount for "From" field using Chainstack
 async function setMaxAmount() {
     if (!isWalletConnected) {
         alert('Please connect your wallet first.');
@@ -383,7 +450,6 @@ async function setMaxAmount() {
     await updateExpectedOutput();
 }
 
-// Update expected output
 async function updateExpectedOutput() {
     if (!isWalletConnected) {
         document.getElementById('from-amount').value = '';
@@ -409,7 +475,6 @@ async function updateExpectedOutput() {
         return;
     }
 
-    // Special case for STBLX swaps (1:1)
     if (tokenTo === 'STBLX' && (tokenFrom === 'USDT' || tokenFrom === 'USDD')) {
         if (lastInputField === 'from') {
             const formattedAmountOut = formatNumber(amountIn);
@@ -481,7 +546,6 @@ async function updateExpectedOutput() {
         const formattedRate = rate.toFixed(DECIMALS[tokenTo]);
         document.getElementById('rate-info').textContent = `Rate: 1 ${displayFrom} = ${formattedRate} ${displayTo}`;
 
-        // Price impact calculation
         const BN = BigNumber;
         const reserveInBN = BN(reserveIn.toString());
         const reserveOutBN = BN(reserveOut.toString());
@@ -505,7 +569,6 @@ async function updateExpectedOutput() {
     }
 }
 
-// Execute the swap
 async function executeSwap() {
     if (!isWalletConnected) {
         alert('Please connect your wallet first.');
@@ -530,7 +593,6 @@ async function executeSwap() {
     const tokenAddressTo = TOKENS[tokenTo];
 
     try {
-        // Check balance using Chainstack
         let balanceRaw;
         if (tokenFrom === 'TRX') {
             balanceRaw = await readTronWeb.trx.getBalance(userAddress);
@@ -544,24 +606,19 @@ async function executeSwap() {
             return;
         }
 
-        // Special case for STBLX swaps
         if (tokenTo === 'STBLX' && (tokenFrom === 'USDT' || tokenFrom === 'USDD')) {
             const swapContract = await tronWeb.contract(STBLX_SWAP_ABI, STBLX_SWAP_CONTRACT);
-
-            // Check TRX for fees using Chainstack
             const trxBalance = Number(await readTronWeb.trx.getBalance(userAddress)) / 1e6;
             if (trxBalance < 1) {
                 document.getElementById('status-msg').textContent = 'Insufficient TRX for transaction fees.';
                 return;
             }
 
-            // Check and approve allowance using Chainstack
             const allowance = await checkAllowance(tokenAddressFrom, userAddress, STBLX_SWAP_CONTRACT);
             if (allowance < amountInBigInt) {
                 await approveToken(tokenAddressFrom, amountInBigInt, STBLX_SWAP_CONTRACT);
             }
 
-            // Execute swap
             document.getElementById('status-msg').textContent = `Processing STBLX swap with ${tokenFrom}...`;
             const method = tokenFrom === 'USDT' ? 'buyWithUSDT' : 'buyWithUSDD';
             const tx = await swapContract[method](amountInBigInt.toString()).send({ feeLimit: 100000000 });
@@ -571,8 +628,7 @@ async function executeSwap() {
             return;
         }
 
-        // Regular SunSwap logic
-        const slippage = 1; // 1% slippage
+        const slippage = 1;
         const minOutBigInt = window.expectedOutBigInt * BigInt(100 - slippage) / BigInt(100);
         const deadline = Math.floor(Date.now() / 1000) + 600;
         const router = await tronWeb.contract(ROUTER_ABI, SUNSWAP_ROUTER);
@@ -630,7 +686,6 @@ async function executeSwap() {
     }
 }
 
-// Mirror the swap
 async function mirrorSwap() {
     const fromSelect = document.getElementById('from-token');
     const toSelect = document.getElementById('to-token');
@@ -665,9 +720,8 @@ async function mirrorSwap() {
     await updateBalances();
 }
 
-// Event listeners
+// Event listeners (same as before)
 document.getElementById('connect-button').addEventListener('click', connectWallet);
-
 document.getElementById('from-token').addEventListener('change', async () => {
     const fromToken = document.getElementById('from-token').value;
     updateToDropdown(fromToken);
@@ -677,7 +731,6 @@ document.getElementById('from-token').addEventListener('change', async () => {
     document.getElementById('impact-info').textContent = 'Price Impact: --';
     await updateBalances();
 });
-
 document.getElementById('to-token').addEventListener('change', async () => {
     document.getElementById('from-amount').value = '';
     document.getElementById('to-amount').value = '';
@@ -685,81 +738,51 @@ document.getElementById('to-token').addEventListener('change', async () => {
     document.getElementById('impact-info').textContent = 'Price Impact: --';
     await updateBalances();
 });
-
 document.getElementById('from-amount').addEventListener('input', function () {
     let value = this.value.replace(/[^0-9.]/g, '');
     const parts = value.split('.');
-    if (parts.length > 2) {
-        value = parts[0] + '.' + parts.slice(1).join('');
-    }
-    if (parts[1] && parts[1].length > 2) {
-        parts[1] = parts[1].slice(0, 2);
-        value = parts[0] + '.' + parts[1];
-    }
+    if (parts.length > 2) value = parts[0] + '.' + parts.slice(1).join('');
+    if (parts[1] && parts[1].length > 2) value = parts[0] + '.' + parts[1].slice(0, 2);
     this.value = value;
     lastInputField = 'from';
     updateExpectedOutput();
 });
-
 document.getElementById('from-amount').addEventListener('blur', function () {
     const value = parseInput(this.value);
-    if (value > 0) {
-        this.value = formatNumber(value);
-    } else {
-        this.value = '';
-    }
+    this.value = value > 0 ? formatNumber(value) : '';
     lastInputField = 'from';
     updateExpectedOutput();
 });
-
 document.getElementById('to-amount').addEventListener('input', function () {
     let value = this.value.replace(/[^0-9.]/g, '');
     const parts = value.split('.');
-    if (parts.length > 2) {
-        value = parts[0] + '.' + parts.slice(1).join('');
-    }
-    if (parts[1] && parts[1].length > 2) {
-        parts[1] = parts[1].slice(0, 2);
-        value = parts[0] + '.' + parts[1];
-    }
+    if (parts.length > 2) value = parts[0] + '.' + parts.slice(1).join('');
+    if (parts[1] && parts[1].length > 2) value = parts[0] + '.' + parts[1].slice(0, 2);
     this.value = value;
     lastInputField = 'to';
     updateExpectedOutput();
 });
-
 document.getElementById('to-amount').addEventListener('blur', function () {
     const value = parseInput(this.value);
-    if (value > 0) {
-        this.value = formatNumber(value);
-    } else {
-        this.value = '';
-    }
+    this.value = value > 0 ? formatNumber(value) : '';
     lastInputField = 'to';
     updateExpectedOutput();
 });
-
 document.getElementById('max-button').addEventListener('click', setMaxAmount);
 document.getElementById('swap-button').addEventListener('click', executeSwap);
 document.getElementById('mirror-button').addEventListener('click', mirrorSwap);
 
-// Auto-connect on page load if already connected
+// Auto-connect
 if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
     (async () => {
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58;
 
-        if (!window.TronWeb) {
-            await new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js';
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            });
-        }
-
-        const TronWebCtor = window.TronWeb || tronWeb.constructor;
-        readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
+        readTronWeb = new tronWeb.constructor(
+            CHAINSTACK_BASE_URL,
+            CHAINSTACK_BASE_URL,
+            CHAINSTACK_BASE_URL
+        );
         readTronWeb.setAddress(userAddress);
 
         isWalletConnected = true;
