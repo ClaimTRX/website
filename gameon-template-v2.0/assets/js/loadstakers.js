@@ -1,6 +1,7 @@
 const contracts = [
   {
     name: 'CFT',
+    tabName: 'TRX Pool', // Customize the tab name here
     address: 'TCf1vY3EMuczBSmo9Cfrffu6TsGrUvrC52',
     decimals: 6,
     soonDays: 10,
@@ -9,15 +10,44 @@ const contracts = [
   },
   {
     name: 'CFT',
+    tabName: 'CFT Pool', // Customize the tab name here
     address: 'TAbu6yKiVRbs3c7tcwFnreupEfVW9t8d9K',
     decimals: 6,
     soonDays: 10,
     expireDays: 14,
     chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
   },
+  {
+    name: 'CFT',
+    tabName: 'USDT Pool', // Customize the tab name here
+    address: 'TWTssCnUCDeMMqDA9A9zoxCfrLJXZh2N71',
+    decimals: 6,
+    soonDays: 10,
+    expireDays: 14,
+    chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
+  },
+  {
+    name: 'CFTGame',
+    tabName: 'CFT Game 7 Days', // Customize the tab name here
+    address: 'TWdkKsk6nvgLqGUv64WHLsYfh5ABHHtkJZ',
+    decimals: 6,
+    soonDays: 5,
+    expireDays: 7,
+    chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
+  },
+  {
+    name: 'CFT',
+    tabName: 'CFT Game 3 Days', // Customize the tab name here
+    address: 'TJ748PrjUZc9Beh1qdCXj1U2do8RsdmEcx',
+    decimals: 6,
+    soonDays: 2,
+    expireDays: 3,
+    chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
+  },
   // Add more contracts here, e.g.:
   // {
   //   name: 'DFT',
+  //   tabName: 'DFT Stakers List', // Customize the tab name here
   //   address: 'TAnotherExampleAddressHere',
   //   decimals: 18,
   //   soonDays: 15,
@@ -25,7 +55,6 @@ const contracts = [
   //   chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
   // }
 ];
-
 
 const DELAY_MS = 380;
 const THROTTLE_GAP_MS = 500;
@@ -166,9 +195,10 @@ function setupTabs() {
   const tabContent = document.getElementById('tab-content');
   contracts.forEach((config, index) => {
     const tabId = config.name.toLowerCase();
+    const tabLabel = config.tabName || `${config.name} Stakers`;
     const li = document.createElement('li');
     li.className = 'nav-item';
-    li.innerHTML = `<a class="nav-link ${index === 0 ? 'active' : ''}" id="${tabId}-tab" data-bs-toggle="tab" href="#${tabId}" role="tab">${config.name} Stakers</a>`;
+    li.innerHTML = `<a class="nav-link ${index === 0 ? 'active' : ''}" id="${tabId}-tab" data-bs-toggle="tab" href="#${tabId}" role="tab">${tabLabel}</a>`;
     tabsContainer.appendChild(li);
 
     const pane = document.createElement('div');
