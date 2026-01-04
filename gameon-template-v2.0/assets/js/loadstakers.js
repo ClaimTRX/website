@@ -57,7 +57,7 @@ const contracts = [
 ];
 
 const DELAY_MS = 0; // Reduced to minimize extra delay
-const THROTTLE_GAP_MS = 200; // Aim for ~10 requests per second
+const THROTTLE_GAP_MS = 500; // Aim for ~10 requests per second
 let tronWeb, readTronWeb;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const throttle = (() => {
