@@ -28,11 +28,9 @@
       table,thead,tbody,th,td,tr{display:block}
       thead tr{position:absolute;top:-9999px;left:-9999px}
       tr{margin-bottom:1.2rem;border:1px solid var(--line);border-radius:12px;padding:1rem;background:var(--bg-2);box-shadow:0 4px 15px rgba(0,0,0,0.3)}
- 
       td{border:none;position:relative;padding:0.4rem 0 0.4rem 0;text-align:left !important}
       td:first-child{padding-top:0}
       td:last-child{padding-bottom:0}
- 
       td:before{
         content:attr(data-label);
         display:block;
@@ -41,7 +39,6 @@
         margin-bottom:0.35rem;
         font-size:0.95rem;
       }
- 
       /* Special: make wallet address appear below the label */
       td[data-label="Wallet"]{
         padding-top:0.6rem;
@@ -77,6 +74,12 @@
 </section>
 <section class="py-5">
   <div class="container">
+    <div class="text-center my-4" id="global-progress" style="display:none">
+      <div class="progress" style="height:8px;background:var(--bg-2)">
+        <div class="progress-bar" id="global-progress-bar" style="width:0%"></div>
+      </div>
+      <div class="progress-text mt-2">Loading all stakers: <span id="global-current">0</span>%</div>
+    </div>
     <ul class="nav nav-tabs mb-4" id="tabs-container"></ul>
     <div class="tab-content" id="tab-content"></div>
   </div>
