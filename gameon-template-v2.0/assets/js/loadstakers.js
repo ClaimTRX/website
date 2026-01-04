@@ -298,9 +298,7 @@ async function setupTabs() {
   // First, fetch all staker lists to calculate total
   await Promise.all(contracts.map(async (config) => {
     const tabId = config.tabName.toLowerCase().replace(/\s+/g, '-');
-    if (!window.tronWeb || !window.tronWeb.ready) {
-      return;
-    }
+    
     await initReadTronWeb(config.chainstackUrl);
     const contract = await readTronWeb.contract().at(config.address);
     const list = await contract.getStakersList().call();
