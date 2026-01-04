@@ -78,10 +78,25 @@ const throttle = (() => {
 
 async function initReadTronWeb(chainstackUrl) {
   if (readTronWeb) return;
-  const TronWebCtor = (typeof window.TronWeb === 'function') ? window.TronWeb : window.tronWeb?.constructor;
-  if (!TronWebCtor) throw new Error('TronWeb constructor not found');
-  readTronWeb = new TronWebCtor({ fullHost: chainstackUrl });
-  readTronWeb.setAddress('T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb'); // Dummy address for view calls
+
+  // Always load TronWeb from CDN - works even without TronLink extension
+  if (typeof TronWeb === 'undefined') {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js';
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('Failed to load TronWeb library'));
+      document.head.appendChild(script);
+    });
+  }
+
+  // Now TronWeb is guaranteed to be available globally
+  readTronWeb = new TronWeb({ fullHost: chainstackUrl });
+
+  // Set dummy address for all view calls
+  readTronWeb.setAddress('T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb');
+
+  // Apply throttling to all requests
   const originalRequest = readTronWeb.request;
   readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
     return throttle(() => originalRequest.call(this, endpoint, params, method));
