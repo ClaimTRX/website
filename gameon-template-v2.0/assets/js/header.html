@@ -39,6 +39,13 @@
         <li class="nav-item"><a href="promote.html" class="nav-link">Communities</a></li>
         <li class="nav-item"><a href="stakinggame.html" class="nav-link">CFTGame</a></li>
       </ul>
+       <li class="nav-item dropdown">
+          <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">CFTGame<i class="icon-arrow-down"></i></a>
+          <ul class="dropdown-menu">
+            <li class="nav-item"><a href="stakinggame.html" class="nav-link">CFTGame 7 Days</a></li>
+            <li class="nav-item"><a href="stakinggame3days.html" class="nav-link">CFTGame 3 Days</a></li>
+          </ul>
+        </li>
 
       <!-- Hamburger Icon -->
       <ul class="navbar-nav toggle">
@@ -116,6 +123,18 @@
           <a href="https://cftguardians.com/" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">Guardians</a>
           <a href="promote.html" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">Communities</a>
           <li class="nav-item"><a href="stakinggame.html" class="nav-link">CFTGame</a></li>
+
+          
+          <div class="dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="event.stopPropagation();">
+              CFTGame
+            </a>
+            <ul class="dropdown-menu" style="background:var(--bg-2);border:1px solid var(--line);width:100%;border-radius:var(--radius-3)">
+              <li><a href="stakinggame.html" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">CFTGame 7 Days</a></li>
+              <li><a href="stakinggame3days.html" class="nav-link" onclick="bootstrap.Modal.getInstance(document.getElementById('menu')).hide();">CFTGame 3 Days</a></li>
+             
+            </ul>
+          </div>
 
           <!-- Mobile Wallet Connect Button -->
           <div style="padding:1.5rem 1.25rem 1rem">
