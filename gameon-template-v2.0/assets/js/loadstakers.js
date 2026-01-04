@@ -119,10 +119,7 @@ async function loadStakers(config, tabId) {
   totalStakersEl.textContent = '(loading...)';
 
   try {
-    if (!window.tronWeb || !window.tronWeb.ready) {
-      throw new Error('Please unlock TronLink');
-    }
-    tronWeb = window.tronWeb;
+    
     await initReadTronWeb(config.chainstackUrl);
     const contract = await readTronWeb.contract().at(config.address);
     const list = await contract.getStakersList().call();
