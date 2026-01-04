@@ -46,18 +46,18 @@ const contracts = [
   },
   // Add more contracts here, e.g.:
   // {
-  //   name: 'DFT',
-  //   tabName: 'DFT Stakers List', // Customize the tab name here
-  //   address: 'TAnotherExampleAddressHere',
-  //   decimals: 18,
-  //   soonDays: 15,
-  //   expireDays: 21,
-  //   chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
+  // name: 'DFT',
+  // tabName: 'DFT Stakers List', // Customize the tab name here
+  // address: 'TAnotherExampleAddressHere',
+  // decimals: 18,
+  // soonDays: 15,
+  // expireDays: 21,
+  // chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
   // }
 ];
 
-const DELAY_MS = 380;
-const THROTTLE_GAP_MS = 500;
+const DELAY_MS = 0; // Reduced to minimize extra delay
+const THROTTLE_GAP_MS = 100; // Aim for ~10 requests per second
 let tronWeb, readTronWeb;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const throttle = (() => {
@@ -88,14 +88,26 @@ async function initReadTronWeb(chainstackUrl) {
   };
 }
 
+let globalTotal = 0;
+let globalProcessed = 0;
+let globalProgressBar;
+let globalCurrentEl;
+
+function updateGlobalProgress() {
+  if (globalTotal === 0) return;
+  const percent = Math.floor((globalProcessed / globalTotal) * 100);
+  globalProgressBar.style.width = `${percent}%`;
+  globalCurrentEl.textContent = percent;
+  if (globalProcessed >= globalTotal) {
+    document.getElementById('global-progress').style.display = 'none';
+  }
+}
+
 async function loadStakers(config, tabId) {
   const activeBody = document.getElementById(`active-body-${tabId}`);
   const soonBody = document.getElementById(`soon-body-${tabId}`);
   const expiredBody = document.getElementById(`expired-body-${tabId}`);
-  const progress = document.getElementById(`progress-${tabId}`);
-  const progressBar = progress.querySelector('.progress-bar');
-  const currentEl = document.getElementById(`current-${tabId}`);
-  const totalEl = document.getElementById(`total-${tabId}`);
+  // Removed per-tab progress
   const totalStakersEl = document.getElementById(`total-stakers-${tabId}`);
   const activeTotalEl = document.getElementById(`active-total-${tabId}`);
   const soonTotalEl = document.getElementById(`soon-total-${tabId}`);
@@ -104,7 +116,6 @@ async function loadStakers(config, tabId) {
   activeBody.innerHTML = '<tr><td colspan="4" class="text-center py-5">Connecting...</td></tr>';
   soonBody.innerHTML = '';
   expiredBody.innerHTML = '';
-  progress.style.display = 'block';
   totalStakersEl.textContent = '(loading...)';
 
   try {
@@ -116,15 +127,12 @@ async function loadStakers(config, tabId) {
     const contract = await readTronWeb.contract().at(config.address);
     const list = await contract.getStakersList().call();
     totalStakersEl.textContent = `(${list.length} wallets)`;
-    totalEl.textContent = list.length;
     const activeData = [], soonData = [], expiredData = [];
     for (let i = 0; i < list.length; i++) {
       let addr = list[i];
       if (addr.startsWith('41') && addr.length === 42) {
         addr = readTronWeb.address.fromHex(addr);
       }
-      currentEl.textContent = i + 1;
-      progressBar.style.width = `${((i + 1) / list.length) * 100}%`;
       try {
         const info = await contract.users(addr).call();
         const stakedNum = readTronWeb.toBigNumber(info.stakedAmount).shiftedBy(-config.decimals).toNumber();
@@ -150,6 +158,8 @@ async function loadStakers(config, tabId) {
         else if (category === 'soon') soonData.push(data);
         else expiredData.push(data);
       } catch (e) { console.warn('Failed for', addr, e.message); }
+      globalProcessed++;
+      updateGlobalProgress();
       if (i < list.length - 1) await sleep(DELAY_MS);
     }
     activeData.sort((a, b) => b.stakedNum - a.stakedNum);
@@ -175,10 +185,8 @@ async function loadStakers(config, tabId) {
     activeTotalEl.textContent = `Total Active: ${sum(activeData).toLocaleString(undefined, {maximumFractionDigits: 2})} ${config.name}`;
     soonTotalEl.textContent = `Total Expire Soon: ${sum(soonData).toLocaleString(undefined, {maximumFractionDigits: 2})} ${config.name}`;
     expiredTotalEl.textContent = `Total Expired: ${sum(expiredData).toLocaleString(undefined, {maximumFractionDigits: 2})} ${config.name}`;
-    progress.style.display = 'none';
   } catch (err) {
     activeBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-5">Error: ${err.message}</td></tr>`;
-    progress.style.display = 'none';
   }
 }
 
@@ -190,17 +198,16 @@ function copyAddr(el, addr) {
   setTimeout(() => { el.textContent = orig; el.style.color = ''; }, 1500);
 }
 
-function setupTabs() {
+async function setupTabs() {
   const tabsContainer = document.getElementById('tabs-container');
   const tabContent = document.getElementById('tab-content');
   contracts.forEach((config, index) => {
-    const tabId = config.name.toLowerCase();
+    const tabId = config.tabName.toLowerCase().replace(/\s+/g, '-'); // Unique tabId based on tabName
     const tabLabel = config.tabName || `${config.name} Stakers`;
     const li = document.createElement('li');
     li.className = 'nav-item';
     li.innerHTML = `<a class="nav-link ${index === 0 ? 'active' : ''}" id="${tabId}-tab" data-bs-toggle="tab" href="#${tabId}" role="tab">${tabLabel}</a>`;
     tabsContainer.appendChild(li);
-
     const pane = document.createElement('div');
     pane.className = `tab-pane fade ${index === 0 ? 'show active' : ''}`;
     pane.id = tabId;
@@ -208,12 +215,6 @@ function setupTabs() {
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="m-0">Stakers <span id="total-stakers-${tabId}" class="text-muted">(loading...)</span></h3>
         <button id="refresh-${tabId}" class="btn primary btn-sm">Refresh List</button>
-      </div>
-      <div class="text-center my-4" id="progress-${tabId}" style="display:none">
-        <div class="progress" style="height:8px;background:var(--bg-2)">
-          <div class="progress-bar" style="width:0%"></div>
-        </div>
-        <div class="progress-text mt-2">Loading staker <span id="current-${tabId}">0</span> of <span id="total-${tabId}">0</span></div>
       </div>
       <div id="active-section-${tabId}" class="luxe-card">
         <h4 class="section-title">Active Stakers (${config.soonDays}-${config.expireDays} day claim timeout)</h4>
@@ -268,22 +269,39 @@ function setupTabs() {
       </div>
     `;
     tabContent.appendChild(pane);
-
     document.getElementById(`refresh-${tabId}`).addEventListener('click', () => loadStakers(config, tabId));
   });
 
-  // Load all tabs on initial load
-  contracts.forEach((config, index) => {
-    const tabId = config.name.toLowerCase();
+  // Global progress setup
+  const globalProgress = document.getElementById('global-progress');
+  globalProgressBar = document.getElementById('global-progress-bar');
+  globalCurrentEl = document.getElementById('global-current');
+  globalProgress.style.display = 'block';
+
+  // First, fetch all staker lists to calculate total
+  await Promise.all(contracts.map(async (config) => {
+    const tabId = config.tabName.toLowerCase().replace(/\s+/g, '-');
+    if (!window.tronWeb || !window.tronWeb.ready) {
+      return;
+    }
+    await initReadTronWeb(config.chainstackUrl);
+    const contract = await readTronWeb.contract().at(config.address);
+    const list = await contract.getStakersList().call();
+    globalTotal += list.length;
+  }));
+
+  // Now load all
+  contracts.forEach((config) => {
+    const tabId = config.tabName.toLowerCase().replace(/\s+/g, '-');
     loadStakers(config, tabId);
   });
 
-  // For tab shown, check if needs refresh, but since loaded at start, optional
+  // For tab shown, check if needs refresh
   const tabLinks = document.querySelectorAll('#tabs-container .nav-link');
   tabLinks.forEach(link => {
     link.addEventListener('shown.bs.tab', (e) => {
       const tabId = e.target.getAttribute('href').slice(1);
-      const config = contracts.find(c => c.name.toLowerCase() === tabId);
+      const config = contracts.find(c => c.tabName.toLowerCase().replace(/\s+/g, '-') === tabId);
       const activeBody = document.getElementById(`active-body-${tabId}`);
       if (activeBody && (activeBody.innerHTML.includes('Connecting...') || activeBody.innerHTML === '')) {
         loadStakers(config, tabId);
