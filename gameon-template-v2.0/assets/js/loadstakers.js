@@ -217,7 +217,7 @@ async function setupTabs() {
         <button id="refresh-${tabId}" class="btn primary btn-sm">Refresh List</button>
       </div>
       <div id="active-section-${tabId}" class="luxe-card">
-        <h4 class="section-title">Active Stakers (${config.soonDays}-${config.expireDays} day claim timeout)</h4>
+        <h4 class="section-title">Active Stakers</h4>
         <div class="table-responsive">
           <table>
             <thead>
