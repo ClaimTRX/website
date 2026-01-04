@@ -79,33 +79,41 @@ const throttle = (() => {
 async function initReadTronWeb(chainstackUrl) {
   if (readTronWeb) return;
 
-  // Dynamically load TronWeb from CDN if not already available
-  if (typeof window.tronWeb === 'undefined') {
-    await new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js';
-      script.onload = resolve;
-      script.onerror = () => reject(new Error('Failed to load TronWeb library'));
-      document.head.appendChild(script);
+  try {
+    // Dynamically load TronWeb from CDN if not already available
+    if (typeof window.tronWeb === 'undefined') {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js';
+        script.onload = resolve;
+        script.onerror = () => {
+          console.error('Failed to load TronWeb script from CDN');
+          reject(new Error('Failed to load TronWeb library'));
+        };
+        document.head.appendChild(script);
+      });
+    }
+
+    // After loading, get the constructor from the global instance
+    const TronWebCtor = window.tronWeb.constructor;
+
+    // Create read-only instance using your Chainstack node
+    readTronWeb = new TronWebCtor({
+      fullHost: chainstackUrl
     });
+
+    // Set dummy address for view calls
+    readTronWeb.setAddress('T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb');
+
+    // Apply request throttling
+    const originalRequest = readTronWeb.request;
+    readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
+      return throttle(() => originalRequest.call(this, endpoint, params, method));
+    };
+  } catch (err) {
+    console.error('Error initializing TronWeb:', err.message);
+    throw err; // Re-throw to show in UI if needed
   }
-
-  // After loading, get the constructor from the global instance
-  const TronWebCtor = window.tronWeb.constructor;
-
-  // Create read-only instance using your Chainstack node
-  readTronWeb = new TronWebCtor({
-    fullHost: chainstackUrl
-  });
-
-  // Set dummy address for view calls
-  readTronWeb.setAddress('T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb');
-
-  // Apply request throttling
-  const originalRequest = readTronWeb.request;
-  readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
-    return throttle(() => originalRequest.call(this, endpoint, params, method));
-  };
 }
 
 let globalTotal = 0;
