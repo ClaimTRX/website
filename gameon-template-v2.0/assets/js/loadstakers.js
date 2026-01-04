@@ -326,8 +326,11 @@ async function setupTabs() {
 }
 
 window.addEventListener('load', () => {
-    // Wallet connection no longer needed - always read-only mode
-  document.getElementById('connect-button').innerHTML = 'Read-Only Mode';
-  document.getElementById('connect-button').disabled = true;
+  // Wallet connection no longer needed - always read-only mode
+  const connectButton = document.getElementById('connect-button');
+  if (connectButton) {
+    connectButton.innerHTML = 'Read-Only Mode';
+    connectButton.disabled = true;
+  }
   setupTabs();
 });
