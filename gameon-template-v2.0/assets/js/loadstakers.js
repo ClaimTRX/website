@@ -90,8 +90,8 @@ async function initReadTronWeb(chainstackUrl) {
     });
   }
 
-  // After loading, the global is window.tronWeb (lowercase 't')
-  const TronWebCtor = window.tronWeb;
+  // After loading, get the constructor from the global instance
+  const TronWebCtor = window.tronWeb.constructor;
 
   // Create read-only instance using your Chainstack node
   readTronWeb = new TronWebCtor({
@@ -102,7 +102,7 @@ async function initReadTronWeb(chainstackUrl) {
   readTronWeb.setAddress('T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb');
 
   // Apply request throttling
-  const originalRequest = readTronWeb.trx.request || readTronWeb.request;
+  const originalRequest = readTronWeb.request;
   readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
     return throttle(() => originalRequest.call(this, endpoint, params, method));
   };
