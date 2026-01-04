@@ -140,12 +140,14 @@ async function loadStakers(config, tabId) {
         const isActive = info.isActive;
         const now = Math.floor(Date.now() / 1000);
         let daysSinceClaim = lastClaim === 0 ? Infinity : Math.floor((now - lastClaim) / 86400);
-        let status, statusClass, category;
+                let status, statusClass, category;
         if (lastClaim === 0) {
           status = 'Never claimed'; statusClass = 'text-muted'; category = 'active';
         } else if (!isActive || daysSinceClaim > config.expireDays) {
           status = 'EXPIRED'; statusClass = 'expired'; category = 'expired';
-        } else if (daysSinceClaim >= config.soonDays) {
+        } else if (daysSinceClaim > (config.expireDays - (config.expireDays - config.soonDays + 1))) {
+          // Equivalent to: daysSinceClaim > (config.soonDays - 1)
+          // This means "Expire Soon" only when fewer than (expireDays - soonDays + 1) days remain
           status = 'Expire Soon'; statusClass = 'soon'; category = 'soon';
         } else {
           status = 'Active'; statusClass = 'text-success'; category = 'active';
