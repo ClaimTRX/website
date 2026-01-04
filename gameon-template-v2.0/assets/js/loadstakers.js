@@ -26,6 +26,7 @@ const contracts = [
   // }
 ];
 
+
 const DELAY_MS = 380;
 const THROTTLE_GAP_MS = 500;
 let tronWeb, readTronWeb;
@@ -241,20 +242,20 @@ function setupTabs() {
     document.getElementById(`refresh-${tabId}`).addEventListener('click', () => loadStakers(config, tabId));
   });
 
-  // Load first tab
-  if (contracts.length > 0) {
-    const firstTabId = contracts[0].name.toLowerCase();
-    loadStakers(contracts[0], firstTabId);
-  }
+  // Load all tabs on initial load
+  contracts.forEach((config, index) => {
+    const tabId = config.name.toLowerCase();
+    loadStakers(config, tabId);
+  });
 
-  // Load on tab show if not loaded
+  // For tab shown, check if needs refresh, but since loaded at start, optional
   const tabLinks = document.querySelectorAll('#tabs-container .nav-link');
   tabLinks.forEach(link => {
     link.addEventListener('shown.bs.tab', (e) => {
       const tabId = e.target.getAttribute('href').slice(1);
       const config = contracts.find(c => c.name.toLowerCase() === tabId);
       const activeBody = document.getElementById(`active-body-${tabId}`);
-      if (activeBody && activeBody.innerHTML.includes('Connecting...') || activeBody.innerHTML === '') {
+      if (activeBody && (activeBody.innerHTML.includes('Connecting...') || activeBody.innerHTML === '')) {
         loadStakers(config, tabId);
       }
     });
