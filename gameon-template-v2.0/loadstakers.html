@@ -51,20 +51,15 @@
   </style>
 </head>
 <body>
-<header id="header" class="pt-2">
-  <nav class="navbar navbar-expand">
-    <div class="container">
-      <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" height="48" alt=""></a>
-      <ul class="navbar-nav items mx-auto">
-        <li class="nav-item"><a href="poolstaking.html" class="nav-link">Earn TRX</a></li>
-        <li class="nav-item"><a href="stakers-list.html" class="nav-link active">Stakers List</a></li>
-      </ul>
-      <ul class="navbar-nav action">
-        <li><button id="connect-button" class="btn btn-outline">Wallet Connect</button></li>
-      </ul>
-    </div>
-  </nav>
-</header>
+<div id="header-placeholder"></div>
+
+<script>
+  fetch('assets/js/header.html')
+    .then(response => response.text())
+    .then(data => {
+      document.getElementById('header-placeholder').innerHTML = data;
+    });
+</script>
 <section class="hero-section">
   <div class="container text-center">
     <span class="intro-text">Ecosystem</span>
