@@ -13,9 +13,9 @@ const ENERGY_PRICE_SUN = 30;
 const SUN_PER_TRX = 1_000_000;
 const ENERGY_RENTAL_DURATION = 2;
 const CACHE_TIMEOUT_MS = 120_000; // 120s cache for runtime updates
-const THROTTLE_GAP_MS = 4; // Adjust if needed for Chainstack's 25 RPS limit
-const CONTRACT_CALL_DELAY_MS = 0; // Increased to 1000ms for safer pacing
-const UI_REFRESH_DELAY_MS = 4000; // 3s delay for UI refresh after actions
+const THROTTLE_GAP_MS = 4; // Adjusted for 250 RPS (1000ms / 250 ≈ 4ms)
+const CONTRACT_CALL_DELAY_MS = 0; // No delay for faster execution
+const UI_REFRESH_DELAY_MS = 2000; // Reduced from 4000ms
 // Manual CFT price for APY calculation (update this value as needed)
 const CFT_TRX_PRICE = 0.6378; // Manually set CFT price in TRX (update as needed)
 const DAILY_PAYOUT_PERCENTAGE = 1; // 1% daily payout as per requirement
@@ -118,26 +118,10 @@ const stakingContractAbi = [
   {"stateMutability":"payable","type":"receive"}
 ];
 /* ===================== Helpers: throttle, rotation, delay, retry ===================== */
-const throttle = (() => {
-  let queue = Promise.resolve();
-  let last = 0;
-  const gap = THROTTLE_GAP_MS;
-  return async function run(fn) {
-    const exec = async () => {
-      const now = Date.now();
-      const wait = Math.max(0, gap - (now - last));
-      if (wait) await new Promise(r => setTimeout(r, wait));
-      last = Date.now();
-      return await fn();
-    };
-    queue = queue.then(exec, exec);
-    return queue;
-  };
-})();
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
-async function retryWithBackoff(fn, maxRetries = 5, baseDelay = 2000) {
+async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 500) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn();
@@ -177,32 +161,30 @@ async function chainstackApiCall(endpoint, params = {}) {
       body = params;
     }
   }
-  return throttle(async () => {
-    return retryWithBackoff(async () => {
-      const res = await fetch(`${CHAINSTACK_BASE_URL}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      });
-      if (res.status === 429) {
-        const text = await res.text().catch(() => '');
-        throw new Error(`Chainstack 429 Too Many Requests. ${text || ''}`.trim());
-      }
-      if (res.status === 403) {
-        const text = await res.text().catch(() => '');
-        throw new Error(`Chainstack 403 Forbidden. ${text || ''}`.trim());
-      }
-      const data = await res.json().catch(() => ({}));
-      if (data.Error) throw new Error(data.Error);
-      return data;
+  return retryWithBackoff(async () => {
+    const res = await fetch(`${CHAINSTACK_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
     });
+    if (res.status === 429) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Chainstack 429 Too Many Requests. ${text || ''}`.trim());
+    }
+    if (res.status === 403) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Chainstack 403 Forbidden. ${text || ''}`.trim());
+    }
+    const data = await res.json().catch(() => ({}));
+    if (data.Error) throw new Error(data.Error);
+    return data;
   });
 }
 /* ===================== TronWeb Setup (wrap requests) ===================== */
 async function initializeTronWeb() {
-  const initDelay = 500; // Consistent delay for detection
+  const initDelay = 500; // Reduced delay for faster detection
   await delay(initDelay);
   if (!window.tronLink || !window.tronWeb) {
     showToast({ title: 'Auto-connect failed', body: 'TronLink is not detected. Install or unlock TronLink.', variant: 'danger' });
@@ -238,13 +220,7 @@ if (!TronWebCtor) {
 
 readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
 
-  // Throttle requests on readTronWeb
-  const originalReadRequest = readTronWeb.request;
-  readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
-    return throttle(async () => {
-      return originalReadRequest.call(this, endpoint, serializeBigInt(params), method);
-    });
-  };
+  // No throttle on readTronWeb to allow parallel requests
   userAddress = tronWeb.defaultAddress.base58;
 
 if (!userAddress) {
@@ -264,7 +240,6 @@ readTronWeb.setAddress(userAddress);
   if (!isValidTronAddress(details.stakingAddress)) throw new Error(`Invalid staking address for ${key}`);
   tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
   readTokenContracts[key] = await readTronWeb.contract(tokenContractAbi, details.tokenAddress);
-  await delay(CONTRACT_CALL_DELAY_MS);
   stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
   readStakingContracts[key] = await readTronWeb.contract(stakingContractAbi, details.stakingAddress);
   // sanity for ABI variants
@@ -412,7 +387,7 @@ async function pollDelegationStatus(requestId) {
           reject(new Error(`Error polling delegation status: ${err.message}`));
         }
       }
-    }, 2000);
+    }, 1000); // Reduced poll interval to 1s for faster checking
   });
 }
 function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = '') {
@@ -587,7 +562,6 @@ async function updateTopBarUI(token, first = false, userData) {
       retryWithBackoff(() => (readStakingContracts[token].methods.getTotalStaked || readStakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
       retryWithBackoff(() => readStakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
     ]);
-    await delay(CONTRACT_CALL_DELAY_MS);
     const poolSize = Number(poolSizeRaw || '0') / SUN_PER_TRX;
     const totalStaked = toUnits(totalStakedRaw, d.decimals);
     const totalActiveStaked = toUnits(totalActiveStakedRaw, d.decimals);
@@ -690,7 +664,6 @@ async function updateActionGridUI(token, first = false, userData) {
       retryWithBackoff(() => readStakingContracts[token].methods.whitelist(userAddress).call().catch(() => false)),
       retryWithBackoff(() => readTokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0'))
     ]);
-    await delay(CONTRACT_CALL_DELAY_MS);
     const balanceUnits = toUnits(balanceRaw, d.decimals);
     let rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX;
     const now = Math.floor(Date.now() / 1000);
@@ -775,7 +748,6 @@ async function updateStatsGridUI(token, first = false, userData) {
       retryWithBackoff(() => (readStakingContracts[token].methods.getTotalStaked || readStakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
       retryWithBackoff(() => readStakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
     ]);
-    await delay(CONTRACT_CALL_DELAY_MS);
     const poolSize = Number(poolSizeRaw || '0') / SUN_PER_TRX;
     const dailyPayoutPct = DAILY_PAYOUT_PERCENTAGE; // Use constant
     const totalStaked = toUnits(totalStakedRaw, d.decimals);
@@ -812,13 +784,12 @@ async function updateStatsGridUI(token, first = false, userData) {
   }
 }
 async function updateUI(token, first = false, userData) {
-  // Prioritize action grid and top bar for faster initial render
+  // Make all updates parallel for faster loading
   await Promise.all([
     updateTopBarUI(token, first, userData),
-    updateActionGridUI(token, first, userData)
+    updateActionGridUI(token, first, userData),
+    updateStatsGridUI(token, first, userData)
   ]);
-  await delay(CONTRACT_CALL_DELAY_MS * 2); // Longer delay before stats to spread load
-  await updateStatsGridUI(token, first, userData);
 }
 function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, initialRewards = '0', initialBalance = '0') {
   const timerEl = document.getElementById('next-claim-timer');
@@ -970,10 +941,8 @@ async function stakeTokens(token, amount) {
       if (!tokenContract?.methods?.allowance) throw new Error('Token contract not initialized');
       if (!stakingContract?.methods?.stake) throw new Error('Staking contract not initialized');
       const balanceRaw = await retryWithBackoff(() => readTokenContract.methods.balanceOf(userAddress).call());
-      await delay(CONTRACT_CALL_DELAY_MS);
       if (BigInt(balanceRaw) < amountToStake) throw new Error('Insufficient balance to stake.');
       const allowanceRaw = await retryWithBackoff(() => readTokenContract.methods.allowance(userAddress, stakingContractAddress).call());
-      await delay(CONTRACT_CALL_DELAY_MS);
       const allowance = BigInt(allowanceRaw);
       const approvalRequired = allowance < amountToStake;
       let energyCheckResult = approvalRequired
@@ -987,7 +956,7 @@ async function stakeTokens(token, amount) {
           if (modalResult.rent) {
             processingModal = showProcessingModal('(1/2)');
             await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
-            await delay(5000);
+            await delay(3000); // Reduced delay
             hideProcessingModal(processingModal);
           }
         }
@@ -1005,7 +974,7 @@ async function stakeTokens(token, amount) {
         const broadcastApproval = await tronWeb.trx.sendRawTransaction(signedApprovalTx);
         if (!broadcastApproval.result) throw new Error('Failed to broadcast approve transaction');
         showToast({ title:'Approve submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastApproval.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
-        await delay(5000);
+        await delay(3000); // Reduced delay for approval confirmation
       }
       const stakeTx = await tronWeb.transactionBuilder.triggerSmartContract(
         stakingContractAddress, 'stake(uint256)', {}, [ { type:'uint256', value: amountToStake.toString() } ], userAddress
@@ -1096,7 +1065,7 @@ async function unstakeTokens(token) {
           if (modalResult.rent) {
             processingModal = showProcessingModal('(1/2)');
             await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
-            await delay(5000);
+            await delay(3000); // Reduced delay
             hideProcessingModal(processingModal);
           }
         }
@@ -1106,7 +1075,6 @@ async function unstakeTokens(token) {
       const stakingContract = stakingContracts[token];
       const readStakingContract = readStakingContracts[token];
       const userData = await retryWithBackoff(() => readStakingContract.methods.users(userAddress).call());
-      await delay(CONTRACT_CALL_DELAY_MS);
       if (BigInt(userData.stakedAmount) < amountToUnstake) throw new Error('Insufficient staked amount.');
       const withdrawTx = await tronWeb.transactionBuilder.triggerSmartContract(
         tokenDetails[token].stakingAddress, 'unstake(uint256)', {}, [ { type:'uint256', value: amountToUnstake.toString() } ], userAddress
@@ -1177,7 +1145,7 @@ async function claimRewards(token) {
           if (modalResult.rent) {
             processingModal = showProcessingModal('(1/2)');
             await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
-            await delay(5000);
+            await delay(3000); // Reduced delay
             hideProcessingModal(processingModal);
           }
         }
@@ -1279,7 +1247,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
-
 
 
 
