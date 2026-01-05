@@ -202,7 +202,7 @@ async function chainstackApiCall(endpoint, params = {}) {
 }
 /* ===================== TronWeb Setup (wrap requests) ===================== */
 async function initializeTronWeb() {
-  const initDelay = 1500; // Consistent delay for detection
+  const initDelay = 500; // Consistent delay for detection
   await delay(initDelay);
   if (!window.tronLink || !window.tronWeb) {
     showToast({ title: 'Auto-connect failed', body: 'TronLink is not detected. Install or unlock TronLink.', variant: 'danger' });
