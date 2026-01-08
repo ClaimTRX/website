@@ -14,9 +14,9 @@ const SERVER_URL = 'https://api.cftecosystem.com';
 const STAKE_REQUIRED_ENERGY = 170000; // Energy required for stake
 const UNSTAKE_REQUIRED_ENERGY = 150000; // Energy required for unstake
 const SAFETY_ENERGY = 5000; // Extra energy for safety
-const ENERGY_PRICE_SUN = 10; // Price per energy unit in SUN
+const ENERGY_PRICE_SUN = 50; // Price per energy unit in SUN
 const SUN_PER_TRX = 1000000; // 1 TRX = 1,000,000 SUN
-const ENERGY_RENTAL_DURATION = 5; // Duration in minutes
+const ENERGY_RENTAL_DURATION = 2; // Duration in minutes
 const CONTRACT_CALL_DELAY_MS = 300; // Delay between contract calls
 
 // Define contracts for CFT with 6-month and 12-month lock periods
