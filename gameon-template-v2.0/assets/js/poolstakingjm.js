@@ -1063,18 +1063,33 @@ async function stakeTokens(token, amount) {
         ? await checkUserEnergy(userAddress, token, 'stake', 30000)
         : await checkUserEnergy(userAddress, token, 'stake');
       let { availableEnergy, shortfall, requiredEnergy } = energyCheckResult;
+
+      // === NEW: Only rent if shortfall > 0 AND user chooses to rent ===
       if (shortfall > 0) {
         const totalRequired = shortfall + SAFETY_ENERGY;
-        if (await checkDelegatorEnergy(totalRequired)) {
+        const hasDelegatorEnergy = await checkDelegatorEnergy(totalRequired);
+        if (hasDelegatorEnergy) {
           const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy, approvalRequired ? ' (incl. ~30,000 for approval)' : '');
           if (modalResult.rent) {
             processingModal = showProcessingModal('(1/2)');
             await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
             await delay(5000);
             hideProcessingModal(processingModal);
+            // After rental, refresh energy (optional but safer)
+            energyCheckResult = approvalRequired
+              ? await checkUserEnergy(userAddress, token, 'stake', 30000)
+              : await checkUserEnergy(userAddress, token, 'stake');
+            ({ shortfall } = energyCheckResult);
           }
+          // If user pressed Cancel → continue only if now enough energy
+          if (shortfall > 0) {
+            throw new Error('Insufficient energy. Transaction cancelled.');
+          }
+        } else {
+          throw new Error('Insufficient energy and energy rental not available.');
         }
       }
+
       processingModal = showProcessingModal('(2/2)');
       if (approvalRequired) {
         const approvalTx = await tronWeb.transactionBuilder.triggerSmartContract(
@@ -1099,38 +1114,17 @@ async function stakeTokens(token, amount) {
       if (!broadcastStake.result) throw new Error('Failed to broadcast stake transaction');
       showToast({ title:'Stake submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastStake.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
       hideProcessingModal(processingModal);
-      // Clear caches and fetch fresh user data
+      // Clear caches and refresh UI...
       ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
       let newUserData;
       try {
         newUserData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
-        console.debug('stakeTokens: new userData fetched:', newUserData);
       } catch (error) {
-        console.error('stakeTokens: failed to fetch new userData:', error);
-        newUserData = {
-          stakedAmount: '0',
-          isActive: false,
-          lastClaimTimestamp: '0',
-          totalClaimed: '0',
-          rewards: '0',
-          userRewardPerTokenPaid: '0'
-        };
+        newUserData = { stakedAmount: '0', isActive: false, lastClaimTimestamp: '0', totalClaimed: '0', rewards: '0', userRewardPerTokenPaid: '0' };
         showToast({ title: 'Data Fetch Error', body: 'Failed to fetch updated user data; using fallback.', variant: 'warning' });
       }
-      // Update cache with new user data
-      const updatedCache = {
-        data: {
-          stakedAmount: newUserData.stakedAmount,
-          isActive: newUserData.isActive,
-          lastClaimTimestamp: newUserData.lastClaimTimestamp,
-          totalClaimed: newUserData.totalClaimed,
-          rewards: newUserData.rewards,
-          userRewardPerTokenPaid: newUserData.userRewardPerTokenPaid
-        },
-        timestamp: Date.now()
-      };
+      const updatedCache = { data: { ...newUserData }, timestamp: Date.now() };
       localStorage.setItem(`tokenUI_user_${token}_${userAddress}`, JSON.stringify(serializeBigInt(updatedCache)));
-      // Force UI refresh after delay
       await delay(UI_REFRESH_DELAY_MS);
       await updateUI(token, true, newUserData);
     } catch (e) {
@@ -1153,18 +1147,13 @@ async function unstakeTokens(token) {
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
       const unstakeAmount = document.getElementById(`withdraw-amount-${token}`).value;
       if (!unstakeAmount || isNaN(unstakeAmount) || Number(unstakeAmount) <= 0) throw new Error('Enter a valid amount to withdraw.');
-      // Check for pending rewards
+
+      // Pending rewards warning...
       let pendingRewardsRaw;
       try {
-        pendingRewardsRaw = await retryWithBackoff(() => {
-          const contract = tronWeb.contract(stakingContractAbi, tokenDetails[token].stakingAddress);
-          return contract.methods.earned(userAddress).call();
-        });
-        if (pendingRewardsRaw == null || isNaN(Number(pendingRewardsRaw))) {
-          pendingRewardsRaw = '0';
-        }
+        pendingRewardsRaw = await retryWithBackoff(() => stakingContracts[token].earned(userAddress).call());
+        if (pendingRewardsRaw == null || isNaN(Number(pendingRewardsRaw))) pendingRewardsRaw = '0';
       } catch (error) {
-        console.error('unstakeTokens: earned call failed:', error);
         pendingRewardsRaw = '0';
       }
       const rewardUnits = toUnits(pendingRewardsRaw, tokenDetails[token].rewardDecimals);
@@ -1174,25 +1163,43 @@ async function unstakeTokens(token) {
           throw new Error('Withdrawal cancelled. Please claim your rewards first.');
         }
       }
+
       const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'unstake');
+
+      // === NEW: Only rent if needed and user agrees ===
       if (shortfall > 0) {
         const totalRequired = shortfall + SAFETY_ENERGY;
-        if (await checkDelegatorEnergy(totalRequired)) {
+        const hasDelegatorEnergy = await checkDelegatorEnergy(totalRequired);
+        if (hasDelegatorEnergy) {
           const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy);
           if (modalResult.rent) {
             processingModal = showProcessingModal('(1/2)');
             await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
             await delay(5000);
             hideProcessingModal(processingModal);
+            // Re-check energy after rental
+            const newCheck = await checkUserEnergy(userAddress, token, 'unstake');
+            if (newCheck.shortfall > 0) {
+              throw new Error('Energy rental failed or insufficient. Transaction cancelled.');
+            }
+          } else {
+            // User cancelled rental → abort only if still insufficient
+            const recheck = await checkUserEnergy(userAddress, token, 'unstake');
+            if (recheck.shortfall > 0) {
+              throw new Error('Insufficient energy. Transaction cancelled.');
+            }
           }
+        } else {
+          throw new Error('Insufficient energy and energy rental not available.');
         }
       }
+
       processingModal = showProcessingModal('(2/2)');
       const amountToUnstake = toWei(unstakeAmount, tokenDetails[token].decimals);
-      const stakingContract = stakingContracts[token];
-      const userData = await retryWithBackoff(() => stakingContract.methods.users(userAddress).call());
+      const userData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
       await delay(CONTRACT_CALL_DELAY_MS);
       if (BigInt(userData.stakedAmount) < amountToUnstake) throw new Error('Insufficient staked amount.');
+
       const withdrawTx = await tronWeb.transactionBuilder.triggerSmartContract(
         tokenDetails[token].stakingAddress, 'unstake(uint256)', {}, [ { type:'uint256', value: amountToUnstake.toString() } ], userAddress
       );
@@ -1202,38 +1209,18 @@ async function unstakeTokens(token) {
       if (!broadcastWithdraw.result) throw new Error('Failed to broadcast unstake transaction');
       showToast({ title:'Withdraw submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastWithdraw.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
       hideProcessingModal(processingModal);
-      // Clear caches and fetch fresh user data
+
+      // Refresh UI...
       ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
       let newUserData;
       try {
         newUserData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
-        console.debug('unstakeTokens: new userData fetched:', newUserData);
       } catch (error) {
-        console.error('unstakeTokens: failed to fetch new userData:', error);
-        newUserData = {
-          stakedAmount: '0',
-          isActive: false,
-          lastClaimTimestamp: '0',
-          totalClaimed: '0',
-          rewards: '0',
-          userRewardPerTokenPaid: '0'
-        };
+        newUserData = { stakedAmount: '0', isActive: false, lastClaimTimestamp: '0', totalClaimed: '0', rewards: '0', userRewardPerTokenPaid: '0' };
         showToast({ title: 'Data Fetch Error', body: 'Failed to fetch updated user data; using fallback.', variant: 'warning' });
       }
-      // Update cache with new user data
-      const updatedCache = {
-        data: {
-          stakedAmount: newUserData.stakedAmount,
-          isActive: newUserData.isActive,
-          lastClaimTimestamp: newUserData.lastClaimTimestamp,
-          totalClaimed: newUserData.totalClaimed,
-          rewards: newUserData.rewards,
-          userRewardPerTokenPaid: newUserData.userRewardPerTokenPaid
-        },
-        timestamp: Date.now()
-      };
+      const updatedCache = { data: { ...newUserData }, timestamp: Date.now() };
       localStorage.setItem(`tokenUI_user_${token}_${userAddress}`, JSON.stringify(serializeBigInt(updatedCache)));
-      // Force UI refresh after delay
       await delay(UI_REFRESH_DELAY_MS);
       await updateUI(token, true, newUserData);
     } catch (e) {
@@ -1252,14 +1239,12 @@ async function claimRewards(token) {
   const run = async () => {
     try {
       if (timerEl) timerEl._paused = true;
-      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) {
-        throw new Error('Invalid staking address');
-      }
-      if (!userAddress || !isValidTronAddress(userAddress)) {
-        throw new Error('Invalid user address. Please reconnect your wallet.');
-      }
-      // Energy check for claim
+      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
+      if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Please reconnect your wallet.');
+
       const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'claimRewards');
+
+      // === NEW: Only force rental if truly needed ===
       if (shortfall > 0) {
         const totalRequired = shortfall + SAFETY_ENERGY;
         const hasDelegatorEnergy = await checkDelegatorEnergy(totalRequired);
@@ -1268,38 +1253,38 @@ async function claimRewards(token) {
           if (modalResult.rent) {
             processingModal = showProcessingModal('(1/2)');
             await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
-            await delay(5000); // Wait for energy delegation
+            await delay(5000);
             hideProcessingModal(processingModal);
+            // Re-check energy
+            const recheck = await checkUserEnergy(userAddress, token, 'claimRewards');
+            if (recheck.shortfall > 0) {
+              throw new Error('Energy rental failed. Claim cancelled.');
+            }
           } else {
-            throw new Error('Energy rental cancelled.');
+            // User cancelled → only abort if still short
+            const recheck = await checkUserEnergy(userAddress, token, 'claimRewards');
+            if (recheck.shortfall > 0) {
+              throw new Error('Insufficient energy. Claim cancelled.');
+            }
           }
         } else {
           throw new Error('Insufficient energy and no rental available.');
         }
       }
+
       processingModal = showProcessingModal('(2/2)');
-      // Use pre-initialized contract instance for better reliability
       const stakingContract = stakingContracts[token];
-      // Fetch pending rewards (use initialized contract)
       let pendingRewards;
       try {
         pendingRewards = await retryWithBackoff(() => stakingContract.earned(userAddress).call());
-        if (pendingRewards == null || isNaN(Number(pendingRewards))) {
-          pendingRewards = '0';
-        }
+        if (pendingRewards == null || isNaN(Number(pendingRewards))) pendingRewards = '0';
       } catch (err) {
-        console.error('Failed to fetch earned rewards:', err);
         pendingRewards = '0';
       }
       if (BigInt(pendingRewards) === 0n) {
         throw new Error('No rewards available to claim.');
       }
-     
-      // Check contract's reward token balance
-const d = tokenDetails[token]; // ← Add this line
 
-
-      // Build and send claim transaction
       const claimTx = await tronWeb.transactionBuilder.triggerSmartContract(
         tokenDetails[token].stakingAddress,
         'claimRewards()',
@@ -1307,72 +1292,36 @@ const d = tokenDetails[token]; // ← Add this line
         [],
         userAddress
       );
-      if (!claimTx.result || !claimTx.transaction) {
-        throw new Error('Failed to create claim transaction.');
-      }
+      if (!claimTx.result || !claimTx.transaction) throw new Error('Failed to create claim transaction.');
       const signedClaimTx = await tronWeb.trx.sign(claimTx.transaction);
       const broadcastClaim = await tronWeb.trx.sendRawTransaction(signedClaimTx);
-      if (!broadcastClaim.result) {
-        throw new Error('Failed to broadcast claim transaction. Please try again.');
-      }
+      if (!broadcastClaim.result) throw new Error('Failed to broadcast claim transaction.');
+
       showToast({
         title: 'Rewards Claimed Successfully!',
         body: `<a href="https://tronscan.org/#/transaction/${broadcastClaim.txid}" target="_blank" rel="noopener">View on Tronscan</a>`,
         variant: 'success'
       });
       hideProcessingModal(processingModal);
-      // === Post-claim: Refresh data and UI ===
-      // Clear all relevant caches
+
+      // Refresh UI...
       ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section =>
         localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`)
       );
-      // Fetch fresh user data from contract
       let newUserData;
       try {
         newUserData = await retryWithBackoff(() => stakingContract.users(userAddress).call());
-        console.debug('claimRewards: fresh userData fetched:', newUserData);
       } catch (error) {
-        console.error('claimRewards: failed to fetch new userData:', error);
-        newUserData = {
-          stakedAmount: '0',
-          isActive: false,
-          lastClaimTimestamp: '0',
-          totalClaimed: '0',
-          rewards: '0',
-          userRewardPerTokenPaid: '0'
-        };
-        showToast({
-          title: 'Data Refresh Warning',
-          body: 'Claim successful, but failed to update user data. UI may be slightly outdated.',
-          variant: 'warning'
-        });
+        newUserData = { stakedAmount: '0', isActive: false, lastClaimTimestamp: '0', totalClaimed: '0', rewards: '0', userRewardPerTokenPaid: '0' };
+        showToast({ title: 'Data Refresh Warning', body: 'Claim successful, but failed to update user data.', variant: 'warning' });
       }
-      // Update user cache
-      const updatedCache = {
-        data: {
-          stakedAmount: newUserData.stakedAmount,
-          isActive: newUserData.isActive,
-          lastClaimTimestamp: newUserData.lastClaimTimestamp,
-          totalClaimed: newUserData.totalClaimed,
-          rewards: newUserData.rewards,
-          userRewardPerTokenPaid: newUserData.userRewardPerTokenPaid
-        },
-        timestamp: Date.now()
-      };
-      localStorage.setItem(
-        `tokenUI_user_${token}_${userAddress}`,
-        JSON.stringify(serializeBigInt(updatedCache))
-      );
-      // Force full UI refresh after short delay
+      const updatedCache = { data: { ...newUserData }, timestamp: Date.now() };
+      localStorage.setItem(`tokenUI_user_${token}_${userAddress}`, JSON.stringify(serializeBigInt(updatedCache)));
       await delay(UI_REFRESH_DELAY_MS);
       await updateUI(token, true, newUserData);
     } catch (e) {
       hideProcessingModal(processingModal);
-      showToast({
-        title: 'Claim Failed',
-        body: e.message || 'An unknown error occurred.',
-        variant: 'danger'
-      });
+      showToast({ title: 'Claim Failed', body: e.message || 'An unknown error occurred.', variant: 'danger' });
       console.error('claimRewards error:', e);
     } finally {
       if (timerEl) timerEl._paused = false;
