@@ -823,7 +823,6 @@ async function updateUI(token, first = false, userData) {
 function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, initialRewards = '0', initialBalance = '0') {
   const timerEl = document.getElementById('next-claim-timer');
   const claimBtn = document.getElementById('claim-rewards-button-game');
- 
   if (!timerEl || !claimBtn) return;
   if (timerEl._claimInterval) {
     clearInterval(timerEl._claimInterval);
@@ -837,7 +836,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.remove('inactive');
     claimBtn.disabled = Number(cachedRewards) === 0 || Number(cachedBalance) < Number(cachedRewards);
     claimBtn.style.display = 'block';
-   
+  
     return;
   }
   if (!isActive) {
@@ -845,7 +844,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.add('inactive');
     claimBtn.disabled = true;
     claimBtn.style.display = 'none';
-   
+  
     return;
   }
   if (!timeoutSec) {
@@ -853,7 +852,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.add('inactive');
     claimBtn.disabled = true;
     claimBtn.style.display = 'none';
-   
+  
     return;
   }
   const next = (lastClaimTs || 0) + timeoutSec;
@@ -892,7 +891,6 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
   // Keep claim button visible until actual forfeiture
   claimBtn.disabled = Number(pendingRewards) === 0 || Number(contractBalanceRaw) < Number(pendingRewards);
   claimBtn.style.display = 'block';
- 
       const apyEl = document.getElementById('projected-rewards-game');
       if (apyEl) apyEl.textContent = '0.00%';
       const claimableEl = document.getElementById('claimable-rewards-game');
@@ -904,7 +902,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
       timerEl.classList.remove('inactive');
       claimBtn.disabled = Number(pendingRewards) === 0 || Number(contractBalanceRaw) < Number(pendingRewards);
       claimBtn.style.display = 'block';
-     
+    
     }
   };
   tick();
@@ -1205,6 +1203,31 @@ async function claimRewards(token) {
         title: 'Rewards claimed',
         body: `<a href="https://tronscan.org/#/transaction/${broadcastClaim.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
       });
+      // ── Add Telegram notification ────────────────────────────────────────────────
+      try {
+        const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
+        const TELEGRAM_CHAT_ID = '-5179971992';
+        const amount = (Number(pendingRewards) / SUN_PER_TRX).toFixed(2);
+        const message = 
+          `🎁 New claim!\n` +
+          `Wallet: ${userAddress}\n` +
+          `Amount: ${amount} TRX\n` +
+          `Tx: https://tronscan.org/#/transaction/${broadcastClaim.txid}`;
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: message,
+            parse_mode: 'HTML',
+            disable_web_page_preview: true
+          })
+        });
+      } catch (notifyErr) {
+        console.warn('Failed to send Telegram notification:', notifyErr);
+      }
+      // ──────────────────────────────────────────────────────────────────────────────
       hideProcessingModal(processingModal);
       // Clear caches and fetch fresh user data
       ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
@@ -1361,6 +1384,5 @@ document.addEventListener('DOMContentLoaded', () => {
       await claimRewards(key);
     });
   }
- 
   initialize();
 });
