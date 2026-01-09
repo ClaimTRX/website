@@ -31,6 +31,7 @@ const UI_REFRESH_DELAY_MS = 3000; // 3s delay for UI refresh after actions
 // Since staking token is Game, rewards TRX, assume 1:1 for APY (adjust if Game price known)
 const GAME_TRX_PRICE = 1; // 1:1 as per user
 const DAILY_PAYOUT_PERCENTAGE = 1; // 1% daily payout as per requirement
+const GAME_TYPE = '7 Days';
 /* ===================== Token Config ===================== */
 const tokenDetails = {
   game: {
@@ -1010,6 +1011,31 @@ async function stakeTokens(token, amount) {
       const broadcastStake = await tronWeb.trx.sendRawTransaction(signedStakeTx);
       if (!broadcastStake.result) throw new Error('Failed to broadcast stake transaction');
       showToast({ title:'Stake submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastStake.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
+      // ── Add Telegram notification ────────────────────────────────────────────────
+      try {
+        const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
+        const TELEGRAM_CHAT_ID = '-5179971992';
+        const message = 
+          `🎁 New stake!\n` +
+          `Wallet: ${userAddress}\n` +
+          `Amount: ${amount} Game\n` +
+          `Game: ${GAME_TYPE}\n` +
+          `Tx: https://tronscan.org/#/transaction/${broadcastStake.txid}`;
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: message,
+            parse_mode: 'HTML',
+            disable_web_page_preview: true
+          })
+        });
+      } catch (notifyErr) {
+        console.warn('Failed to send Telegram notification:', notifyErr);
+      }
+      // ──────────────────────────────────────────────────────────────────────────────
       hideProcessingModal(processingModal);
       // Clear caches and fetch fresh user data
       ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
@@ -1212,6 +1238,7 @@ async function claimRewards(token) {
           `🎁 New claim!\n` +
           `Wallet: ${userAddress}\n` +
           `Amount: ${amount} TRX\n` +
+          `Game: ${GAME_TYPE}\n` +
           `Tx: https://tronscan.org/#/transaction/${broadcastClaim.txid}`;
         const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
         await fetch(url, {
