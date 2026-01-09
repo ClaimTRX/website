@@ -1,5 +1,6 @@
 // swapgame.js - Full working version for Game Token swaps (CFT → Game & TRX → Game)
 let swapContracts = {};
+let userAddress;
 // Keep both overloads in ABI, but ALWAYS call by signature to avoid TronLink/TronWeb overload bugs.
 const swapAbi = [
   {
@@ -37,6 +38,7 @@ async function initializeSwap() {
     console.log("TronWeb not ready yet");
     return;
   }
+  userAddress = window.tronWeb.defaultAddress.base58;
   for (const key of ["cft", "trx"]) {
     const details = swapDetails[key];
     try {
@@ -52,6 +54,10 @@ async function initializeSwap() {
 }
 async function performSwap(type) {
   console.log(`Starting swap for type: ${type}`);
+  if (!userAddress) {
+    showToast({ title: "Wallet not connected", body: "Please connect your wallet first.", variant: "danger" });
+    return;
+  }
   const details = swapDetails[type];
   const amountInput = document.getElementById(details.inputId);
   if (!amountInput) {
@@ -83,7 +89,7 @@ async function performSwap(type) {
         const amountSun = window.tronWeb.toSun(amount); // string
         const cftTokenContract = await window.tronWeb.contract().at(details.cftTokenAddress);
         // Check current allowance
-        const allowance = await cftTokenContract.allowance(window.tronWeb.defaultAddress.base58, details.contractAddress).call();
+        const allowance = await cftTokenContract.allowance(userAddress, details.contractAddress).call();
         if (BigInt(allowance) < BigInt(amountSun)) {
           // Step 1: Approve
           showToast({
