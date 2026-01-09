@@ -1045,52 +1045,52 @@ async function stakeTokens(token, amount) {
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!isValidTronAddress(tokenDetails[token].tokenAddress)) throw new Error('Invalid token address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
+
       const amountToStake = toWei(amount, tokenDetails[token].decimals);
       if (amountToStake === 0n) throw new Error('Enter a valid amount to stake.');
+
       const stakingContractAddress = tokenDetails[token].stakingAddress;
       const tokenContract = tokenContracts[token];
       const stakingContract = stakingContracts[token];
+
       if (!tokenContract?.methods?.allowance) throw new Error('Token contract not initialized');
       if (!stakingContract?.methods?.stake) throw new Error('Staking contract not initialized');
+
       const balanceRaw = await retryWithBackoff(() => tokenContract.methods.balanceOf(userAddress).call());
       await delay(CONTRACT_CALL_DELAY_MS);
       if (BigInt(balanceRaw) < amountToStake) throw new Error('Insufficient balance to stake.');
+
       const allowanceRaw = await retryWithBackoff(() => tokenContract.methods.allowance(userAddress, stakingContractAddress).call());
       await delay(CONTRACT_CALL_DELAY_MS);
       const allowance = BigInt(allowanceRaw);
       const approvalRequired = allowance < amountToStake;
+
       let energyCheckResult = approvalRequired
         ? await checkUserEnergy(userAddress, token, 'stake', 30000)
         : await checkUserEnergy(userAddress, token, 'stake');
+
       let { availableEnergy, shortfall, requiredEnergy } = energyCheckResult;
 
-      // === NEW: Only rent if shortfall > 0 AND user chooses to rent ===
+      // If energy is insufficient, ask about rental — but continue anyway if cancelled
       if (shortfall > 0) {
         const totalRequired = shortfall + SAFETY_ENERGY;
         const hasDelegatorEnergy = await checkDelegatorEnergy(totalRequired);
         if (hasDelegatorEnergy) {
           const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy, approvalRequired ? ' (incl. ~30,000 for approval)' : '');
           if (modalResult.rent) {
+            // User confirmed rental
             processingModal = showProcessingModal('(1/2)');
             await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
             await delay(5000);
             hideProcessingModal(processingModal);
-            // After rental, refresh energy (optional but safer)
-            energyCheckResult = approvalRequired
-              ? await checkUserEnergy(userAddress, token, 'stake', 30000)
-              : await checkUserEnergy(userAddress, token, 'stake');
-            ({ shortfall } = energyCheckResult);
           }
-          // If user pressed Cancel → continue only if now enough energy
-          if (shortfall > 0) {
-            throw new Error('Insufficient energy. Transaction cancelled.');
-          }
-        } else {
-          throw new Error('Insufficient energy and energy rental not available.');
+          // If user cancelled → do NOTHING here, just continue with the transaction
         }
+        // If no delegator energy available → continue anyway (user might have frozen energy or accept failure)
       }
 
-      processingModal = showProcessingModal('(2/2)');
+      processingModal = showProcessingModal(approvalRequired ? '(1/2)' : '(2/2)');
+
       if (approvalRequired) {
         const approvalTx = await tronWeb.transactionBuilder.triggerSmartContract(
           tokenDetails[token].tokenAddress,
@@ -1104,7 +1104,10 @@ async function stakeTokens(token, amount) {
         if (!broadcastApproval.result) throw new Error('Failed to broadcast approve transaction');
         showToast({ title:'Approve submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastApproval.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
         await delay(5000);
+        hideProcessingModal(processingModal);
+        processingModal = showProcessingModal('(2/2)');
       }
+
       const stakeTx = await tronWeb.transactionBuilder.triggerSmartContract(
         stakingContractAddress, 'stake(uint256)', {}, [ { type:'uint256', value: amountToStake.toString() } ], userAddress
       );
@@ -1112,9 +1115,11 @@ async function stakeTokens(token, amount) {
       const signedStakeTx = await tronWeb.trx.sign(stakeTx.transaction);
       const broadcastStake = await tronWeb.trx.sendRawTransaction(signedStakeTx);
       if (!broadcastStake.result) throw new Error('Failed to broadcast stake transaction');
+
       showToast({ title:'Stake submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastStake.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
       hideProcessingModal(processingModal);
-      // Clear caches and refresh UI...
+
+      // Refresh UI and cache
       ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
       let newUserData;
       try {
@@ -1145,10 +1150,11 @@ async function unstakeTokens(token) {
       if (timerEl) timerEl._paused = true;
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
+
       const unstakeAmount = document.getElementById(`withdraw-amount-${token}`).value;
       if (!unstakeAmount || isNaN(unstakeAmount) || Number(unstakeAmount) <= 0) throw new Error('Enter a valid amount to withdraw.');
 
-      // Pending rewards warning...
+      // Check for pending rewards (unchanged)
       let pendingRewardsRaw;
       try {
         pendingRewardsRaw = await retryWithBackoff(() => stakingContracts[token].earned(userAddress).call());
@@ -1166,7 +1172,7 @@ async function unstakeTokens(token) {
 
       const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'unstake');
 
-      // === NEW: Only rent if needed and user agrees ===
+      // If shortfall, offer rental — but continue on cancel
       if (shortfall > 0) {
         const totalRequired = shortfall + SAFETY_ENERGY;
         const hasDelegatorEnergy = await checkDelegatorEnergy(totalRequired);
@@ -1177,24 +1183,13 @@ async function unstakeTokens(token) {
             await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
             await delay(5000);
             hideProcessingModal(processingModal);
-            // Re-check energy after rental
-            const newCheck = await checkUserEnergy(userAddress, token, 'unstake');
-            if (newCheck.shortfall > 0) {
-              throw new Error('Energy rental failed or insufficient. Transaction cancelled.');
-            }
-          } else {
-            // User cancelled rental → abort only if still insufficient
-            const recheck = await checkUserEnergy(userAddress, token, 'unstake');
-            if (recheck.shortfall > 0) {
-              throw new Error('Insufficient energy. Transaction cancelled.');
-            }
           }
-        } else {
-          throw new Error('Insufficient energy and energy rental not available.');
+          // Cancel → just continue
         }
       }
 
       processingModal = showProcessingModal('(2/2)');
+
       const amountToUnstake = toWei(unstakeAmount, tokenDetails[token].decimals);
       const userData = await retryWithBackoff(() => stakingContracts[token].methods.users(userAddress).call());
       await delay(CONTRACT_CALL_DELAY_MS);
@@ -1207,10 +1202,11 @@ async function unstakeTokens(token) {
       const signedWithdrawTx = await tronWeb.trx.sign(withdrawTx.transaction);
       const broadcastWithdraw = await tronWeb.trx.sendRawTransaction(signedWithdrawTx);
       if (!broadcastWithdraw.result) throw new Error('Failed to broadcast unstake transaction');
+
       showToast({ title:'Withdraw submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastWithdraw.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
       hideProcessingModal(processingModal);
 
-      // Refresh UI...
+      // Refresh UI and cache
       ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
       let newUserData;
       try {
@@ -1244,7 +1240,7 @@ async function claimRewards(token) {
 
       const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'claimRewards');
 
-      // === NEW: Only force rental if truly needed ===
+      // Offer rental if needed — continue on cancel
       if (shortfall > 0) {
         const totalRequired = shortfall + SAFETY_ENERGY;
         const hasDelegatorEnergy = await checkDelegatorEnergy(totalRequired);
@@ -1255,24 +1251,13 @@ async function claimRewards(token) {
             await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
             await delay(5000);
             hideProcessingModal(processingModal);
-            // Re-check energy
-            const recheck = await checkUserEnergy(userAddress, token, 'claimRewards');
-            if (recheck.shortfall > 0) {
-              throw new Error('Energy rental failed. Claim cancelled.');
-            }
-          } else {
-            // User cancelled → only abort if still short
-            const recheck = await checkUserEnergy(userAddress, token, 'claimRewards');
-            if (recheck.shortfall > 0) {
-              throw new Error('Insufficient energy. Claim cancelled.');
-            }
           }
-        } else {
-          throw new Error('Insufficient energy and no rental available.');
+          // Cancel → proceed anyway
         }
       }
 
       processingModal = showProcessingModal('(2/2)');
+
       const stakingContract = stakingContracts[token];
       let pendingRewards;
       try {
@@ -1281,6 +1266,7 @@ async function claimRewards(token) {
       } catch (err) {
         pendingRewards = '0';
       }
+
       if (BigInt(pendingRewards) === 0n) {
         throw new Error('No rewards available to claim.');
       }
@@ -1293,6 +1279,7 @@ async function claimRewards(token) {
         userAddress
       );
       if (!claimTx.result || !claimTx.transaction) throw new Error('Failed to create claim transaction.');
+
       const signedClaimTx = await tronWeb.trx.sign(claimTx.transaction);
       const broadcastClaim = await tronWeb.trx.sendRawTransaction(signedClaimTx);
       if (!broadcastClaim.result) throw new Error('Failed to broadcast claim transaction.');
@@ -1304,7 +1291,7 @@ async function claimRewards(token) {
       });
       hideProcessingModal(processingModal);
 
-      // Refresh UI...
+      // Refresh UI and cache
       ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section =>
         localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`)
       );
@@ -1313,7 +1300,7 @@ async function claimRewards(token) {
         newUserData = await retryWithBackoff(() => stakingContract.users(userAddress).call());
       } catch (error) {
         newUserData = { stakedAmount: '0', isActive: false, lastClaimTimestamp: '0', totalClaimed: '0', rewards: '0', userRewardPerTokenPaid: '0' };
-        showToast({ title: 'Data Refresh Warning', body: 'Claim successful, but failed to update user data.', variant: 'warning' });
+        showToast({ title: 'Data Refresh Warning', body: 'Claim successful, but failed to update user data. UI may be slightly outdated.', variant: 'warning' });
       }
       const updatedCache = { data: { ...newUserData }, timestamp: Date.now() };
       localStorage.setItem(`tokenUI_user_${token}_${userAddress}`, JSON.stringify(serializeBigInt(updatedCache)));
