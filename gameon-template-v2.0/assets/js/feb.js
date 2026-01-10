@@ -1,8 +1,9 @@
-// assets/js/feb.js - Updated with "Claim Available Now" emergency button
+// assets/js/feb.js - Final version with "Claim Available Now" emergency button
+// Updated January 2026 - correct cooldown logic + trusted backend response
 
-const API_BASE = "https://api.cftecosystem.com"; // adjust if your backend is on different domain/port
+const API_BASE = "https://api.cftecosystem.com"; // ← adjust if your backend runs elsewhere
 
-// Whitelist (consider moving this to backend-only in the future)
+// Whitelist (strongly recommend moving to backend-only in production)
 const allowedAddresses = [
     "TR2XJawheHUAcbxgzABVh1toDA59Eb4RbM",
     "TQLrSGjNtYwtUdttbm4HsXxD6vmbePWni4",
@@ -80,7 +81,7 @@ function updateWalletUI(isConnected) {
     }
 }
 
-// Update displayed available energy (pool)
+// Refresh displayed available energy pool
 async function updateAvailableEnergy() {
     if (!availableEnergyElement) return;
     try {
@@ -95,7 +96,6 @@ async function updateAvailableEnergy() {
                 data.availableEnergy > 1000000 ? '#00e095' : 
                 data.availableEnergy > 300000 ? '#ffd166' : '#ff5b73';
 
-            // Also update short display for emergency button
             const shortEl = document.getElementById("available-short");
             if (shortEl) shortEl.textContent = formatted;
         } else {
@@ -104,12 +104,12 @@ async function updateAvailableEnergy() {
         }
     } catch (err) {
         console.error("Failed to fetch available energy:", err);
-        availableEnergyElement.textContent = "Error";
+        availableEnergyElement.textContent = "Error loading";
         availableEnergyElement.style.color = '#ff5b73';
     }
 }
 
-// Update last claim info + cooldown logic
+// Update last claim info + cooldown (trust backend value)
 async function updateLastClaimInfo() {
     if (!userAddress || !lastClaimInfoElement) return;
 
@@ -144,17 +144,17 @@ async function updateLastClaimInfo() {
             `;
         }
 
-        // Disable/enable both buttons based on cooldown
-        if (requestFullButton) {
-            requestFullButton.disabled = !canClaimNow;
-            requestFullButton.style.opacity = canClaimNow ? "1" : "0.6";
-            requestFullButton.textContent = canClaimNow ? "Request 200,000 Energy" : "Cooldown Active";
-        }
-        if (requestAvailableButton) {
-            requestAvailableButton.disabled = !canClaimNow;
-            requestAvailableButton.style.opacity = canClaimNow ? "1" : "0.6";
-            requestAvailableButton.textContent = canClaimNow ? "Claim Available Now" : "Cooldown Active";
-        }
+        // Control both buttons based on cooldown
+        const updateButton = (btn, textWhenActive) => {
+            if (btn) {
+                btn.disabled = !canClaimNow;
+                btn.style.opacity = canClaimNow ? "1" : "0.6";
+                btn.textContent = canClaimNow ? textWhenActive : "Cooldown Active";
+            }
+        };
+
+        updateButton(requestFullButton, "Request 200,000 Energy");
+        updateButton(requestAvailableButton, "Claim Available Now");
 
     } catch (err) {
         console.error("Failed to load last claim info:", err);
@@ -162,7 +162,7 @@ async function updateLastClaimInfo() {
     }
 }
 
-// Check allowed address & load info
+// Check if address is allowed + trigger info load
 async function checkAllowedAddress() {
     const energyCard = document.getElementById("energy-card");
     const denied = document.getElementById("access-denied");
@@ -210,12 +210,12 @@ async function claimFullEnergy() {
             msg.style.color = "#ff5b73";
         }
     } catch (err) {
-        msg.textContent = "Network error";
+        msg.textContent = "Network error - try again";
         msg.style.color = "#ff5b73";
     }
 }
 
-// Claim whatever is currently available (emergency)
+// Claim current available amount (emergency)
 async function claimAvailableEnergy() {
     const msg = document.getElementById("msg");
     msg.textContent = "Requesting available energy...";
@@ -242,7 +242,7 @@ async function claimAvailableEnergy() {
             msg.style.color = "#ff5b73";
         }
     } catch (err) {
-        msg.textContent = "Network error";
+        msg.textContent = "Network error - try again";
         msg.style.color = "#ff5b73";
     }
 }
@@ -251,24 +251,21 @@ async function claimAvailableEnergy() {
 // Initialization
 // =============================================
 document.addEventListener("DOMContentLoaded", async () => {
-    console.log("DOM loaded");
+    console.log("DOM fully loaded");
 
-    availableEnergyElement = document.getElementById("available-energy");
-    lastClaimInfoElement = document.getElementById("last-claim-info");
-    requestFullButton = document.getElementById("request-full-button");
-    requestAvailableButton = document.getElementById("request-available-button");
+    availableEnergyElement   = document.getElementById("available-energy");
+    lastClaimInfoElement     = document.getElementById("last-claim-info");
+    requestFullButton        = document.getElementById("request-full-button");
+    requestAvailableButton   = document.getElementById("request-available-button");
 
+    // Try auto-connect
     await autoConnectWallet();
 
+    // Event listeners
     document.getElementById("connect-button")?.addEventListener("click", connectWallet);
+    requestFullButton?.addEventListener("click", claimFullEnergy);
+    requestAvailableButton?.addEventListener("click", claimAvailableEnergy);
 
-    if (requestFullButton) {
-        requestFullButton.addEventListener("click", claimFullEnergy);
-    }
-    if (requestAvailableButton) {
-        requestAvailableButton.addEventListener("click", claimAvailableEnergy);
-    }
-
-    // Auto-refresh pool status
+    // Keep pool info fresh
     setInterval(updateAvailableEnergy, 30000);
 });
