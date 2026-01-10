@@ -837,7 +837,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.remove('inactive');
     claimBtn.disabled = Number(cachedRewards) === 0 || Number(cachedBalance) < Number(cachedRewards);
     claimBtn.style.display = 'block';
- 
+  
     return;
   }
   if (!isActive) {
@@ -845,7 +845,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.add('inactive');
     claimBtn.disabled = true;
     claimBtn.style.display = 'none';
- 
+  
     return;
   }
   if (!timeoutSec) {
@@ -853,7 +853,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.add('inactive');
     claimBtn.disabled = true;
     claimBtn.style.display = 'none';
- 
+  
     return;
   }
   const next = (lastClaimTs || 0) + timeoutSec;
@@ -903,7 +903,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
       timerEl.classList.remove('inactive');
       claimBtn.disabled = Number(pendingRewards) === 0 || Number(contractBalanceRaw) < Number(pendingRewards);
       claimBtn.style.display = 'block';
-   
+    
     }
   };
   tick();
@@ -1011,28 +1011,31 @@ async function stakeTokens(token, amount) {
       const broadcastStake = await tronWeb.trx.sendRawTransaction(signedStakeTx);
       if (!broadcastStake.result) throw new Error('Failed to broadcast stake transaction');
       showToast({ title:'Stake submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastStake.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
-      // Telegram notification for stake
-      // In stakeTokens() function - after successful broadcast
-try {
-  const TELEGRAM_BOT_TOKEN = '8387253330:AAEjzOg1HNdVyBzH13iMku_7Ck-3gNEaBV0';
-  const TELEGRAM_CHAT_ID = '-5179971992';
-  
-  const message = 
-    "Stake - " + userAddress + " - " + amount + " Game - " + GAME_TYPE;
-  
-  const url = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage";
-  
-  await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: TELEGRAM_CHAT_ID,
-      text: message
-    })
-  });
-} catch (err) {
-  console.warn("Telegram notification failed:", err);
-}
+      // ── Add Telegram notification ────────────────────────────────────────────────
+      try {
+        const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
+        const TELEGRAM_CHAT_ID = '-1003603146813';
+        const message = 
+          `🎁 New stake!\n` +
+          `Wallet: ${userAddress}\n` +
+          `Amount: ${amount} Game\n` +
+          `Game: ${GAME_TYPE}\n` +
+          `Tx: https://tronscan.org/#/transaction/${broadcastStake.txid}`;
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: message,
+            parse_mode: 'HTML',
+            disable_web_page_preview: true
+          })
+        });
+      } catch (notifyErr) {
+        console.warn('Failed to send Telegram notification:', notifyErr);
+      }
+      // ──────────────────────────────────────────────────────────────────────────────
       hideProcessingModal(processingModal);
       // Clear caches and fetch fresh user data
       ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
@@ -1226,29 +1229,32 @@ async function claimRewards(token) {
         title: 'Rewards claimed',
         body: `<a href="https://tronscan.org/#/transaction/${broadcastClaim.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
       });
-      // Telegram notification for claim
-     // In claimRewards() function - after successful broadcast
-try {
-  const TELEGRAM_BOT_TOKEN = '8387253330:AAEjzOg1HNdVyBzH13iMku_7Ck-3gNEaBV0';
-  const TELEGRAM_CHAT_ID = '-5179971992';
-  
-  const amount = (Number(pendingRewards) / SUN_PER_TRX).toFixed(2);
-  const message = 
-    "Claim - " + userAddress + " - " + amount + " TRX - " + GAME_TYPE;
-  
-  const url = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage";
-  
-  await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: TELEGRAM_CHAT_ID,
-      text: message
-    })
-  });
-} catch (err) {
-  console.warn("Telegram notification failed:", err);
-}
+      // ── Add Telegram notification ────────────────────────────────────────────────
+      try {
+        const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
+        const TELEGRAM_CHAT_ID = '-1003603146813';
+        const amount = (Number(pendingRewards) / SUN_PER_TRX).toFixed(2);
+        const message = 
+          `🎁 New claim!\n` +
+          `Wallet: ${userAddress}\n` +
+          `Amount: ${amount} TRX\n` +
+          `Game: ${GAME_TYPE}\n` +
+          `Tx: https://tronscan.org/#/transaction/${broadcastClaim.txid}`;
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: message,
+            parse_mode: 'HTML',
+            disable_web_page_preview: true
+          })
+        });
+      } catch (notifyErr) {
+        console.warn('Failed to send Telegram notification:', notifyErr);
+      }
+      // ──────────────────────────────────────────────────────────────────────────────
       hideProcessingModal(processingModal);
       // Clear caches and fetch fresh user data
       ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
@@ -1336,7 +1342,6 @@ async function activateTokens(token) {
         title: 'Activation submitted',
         body: `<a href="https://tronscan.org/#/transaction/${broadcastActivate.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
       });
-     
       hideProcessingModal(processingModal);
       // Clear caches and fetch fresh user data
       ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
