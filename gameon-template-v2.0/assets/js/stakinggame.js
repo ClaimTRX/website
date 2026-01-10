@@ -1012,22 +1012,25 @@ async function stakeTokens(token, amount) {
       if (!broadcastStake.result) throw new Error('Failed to broadcast stake transaction');
       showToast({ title:'Stake submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastStake.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
       // ── Add Telegram notification ────────────────────────────────────────────────
-      try {
+      // Inside stakeTokens, claimRewards, activateTokens after successful broadcast:
+
+try {
   const TELEGRAM_BOT_TOKEN = '8387253330:AAEjzOg1HNdVyBzH13iMku_7Ck-3gNEaBV0';
   const TELEGRAM_CHAT_ID = '-5179971992';
 
+  // Escape MarkdownV2 special characters: _ * [ ] ( ) ~ ` > # + - = | { } . !
   const escapeMd = (str) => str.replace(/([_*[\]()~`>#+-=|{}.!])/g, '\\$1');
 
   const message = 
-    `🎁 New stake!\n\n` +
+    `🎁 New Stake!\n\n` +  // Change "claim" to "stake" or "activation" as needed
     `*Wallet:* ${escapeMd(userAddress)}\n` +
-    `*Amount:* ${amount} Game\n` +
+    `*Amount:* ${amount} TRX\n` +
     `*Game:* ${GAME_TYPE}\n` +
-    `*Tx:* [View on Tronscan](https://tronscan.org/#/transaction/${broadcastStake.txid})`;
+    `*Tx:* [View on Tronscan](https://tronscan.org/#/transaction/${escapeMd(broadcastClaim.txid)})`;
 
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 
-  await fetch(url, {
+  const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -1037,6 +1040,21 @@ async function stakeTokens(token, amount) {
       disable_web_page_preview: true
     })
   });
+
+  const data = await response.json();
+
+  if (!data.ok) {
+    console.error('Telegram API error:', data);
+    // Optional fallback to plain text (no formatting)
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: `New claim: ${userAddress} - ${amount} TRX (${GAME_TYPE}) - Tx: https://tronscan.org/#/transaction/${broadcastClaim.txid}`
+      })
+    });
+  }
 } catch (notifyErr) {
   console.warn('Failed to send Telegram notification:', notifyErr);
 }
@@ -1235,31 +1253,52 @@ async function claimRewards(token) {
         title: 'Rewards claimed',
         body: `<a href="https://tronscan.org/#/transaction/${broadcastClaim.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
       });
-      // ── Add Telegram notification ────────────────────────────────────────────────
-      try {
-        const TELEGRAM_BOT_TOKEN = '8387253330:AAEjzOg1HNdVyBzH13iMku_7Ck-3gNEaBV0';
-        const TELEGRAM_CHAT_ID = '-5179971992';
-        const amount = (Number(pendingRewards) / SUN_PER_TRX).toFixed(2);
-        const message = 
-          `🎁 New claim!\n` +
-          `Wallet: ${userAddress}\n` +
-          `Amount: ${amount} TRX\n` +
-          `Game: ${GAME_TYPE}\n` +
-          `Tx: https://tronscan.org/#/transaction/${broadcastClaim.txid}`;
-        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-        await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: TELEGRAM_CHAT_ID,
-            text: message,
-            parse_mode: 'HTML',
-            disable_web_page_preview: true
-          })
-        });
-      } catch (notifyErr) {
-        console.warn('Failed to send Telegram notification:', notifyErr);
-      }
+     // Inside stakeTokens, claimRewards, activateTokens after successful broadcast:
+
+try {
+  const TELEGRAM_BOT_TOKEN = '8387253330:AAEjzOg1HNdVyBzH13iMku_7Ck-3gNEaBV0';
+  const TELEGRAM_CHAT_ID = '-5179971992';
+
+  // Escape MarkdownV2 special characters: _ * [ ] ( ) ~ ` > # + - = | { } . !
+  const escapeMd = (str) => str.replace(/([_*[\]()~`>#+-=|{}.!])/g, '\\$1');
+
+  const message = 
+    `🎁 New claim!\n\n` +  // Change "claim" to "stake" or "activation" as needed
+    `*Wallet:* ${escapeMd(userAddress)}\n` +
+    `*Amount:* ${amount} TRX\n` +
+    `*Game:* ${GAME_TYPE}\n` +
+    `*Tx:* [View on Tronscan](https://tronscan.org/#/transaction/${escapeMd(broadcastClaim.txid)})`;
+
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message,
+      parse_mode: 'MarkdownV2',
+      disable_web_page_preview: true
+    })
+  });
+
+  const data = await response.json();
+
+  if (!data.ok) {
+    console.error('Telegram API error:', data);
+    // Optional fallback to plain text (no formatting)
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: `New claim: ${userAddress} - ${amount} TRX (${GAME_TYPE}) - Tx: https://tronscan.org/#/transaction/${broadcastClaim.txid}`
+      })
+    });
+  }
+} catch (notifyErr) {
+  console.warn('Failed to send Telegram notification:', notifyErr);
+}
       // ──────────────────────────────────────────────────────────────────────────────
       hideProcessingModal(processingModal);
       // Clear caches and fetch fresh user data
