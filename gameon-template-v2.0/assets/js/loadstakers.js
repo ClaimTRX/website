@@ -1,10 +1,9 @@
-// loadstakers.js
-const MIN_VISIBLE_STAKE = 1; // ← Change this value to show/hide small stakes
+// assets/js/loadstakers.js
 
 const contracts = [
   {
     name: 'CFT',
-    tabName: 'TRX Pool',
+    tabName: 'TRX Pool', // Customize the tab name here
     address: 'TCf1vY3EMuczBSmo9Cfrffu6TsGrUvrC52',
     decimals: 6,
     soonDays: 10,
@@ -13,7 +12,7 @@ const contracts = [
   },
   {
     name: 'CFT',
-    tabName: 'CFT Pool',
+    tabName: 'CFT Pool', // Customize the tab name here
     address: 'TAbu6yKiVRbs3c7tcwFnreupEfVW9t8d9K',
     decimals: 6,
     soonDays: 10,
@@ -22,7 +21,7 @@ const contracts = [
   },
   {
     name: 'CFT',
-    tabName: 'USDT Pool',
+    tabName: 'USDT Pool', // Customize the tab name here
     address: 'TWTssCnUCDeMMqDA9A9zoxCfrLJXZh2N71',
     decimals: 6,
     soonDays: 10,
@@ -31,7 +30,7 @@ const contracts = [
   },
   {
     name: 'CFTGame',
-    tabName: 'CFT Game 7 Days',
+    tabName: 'CFT Game 7 Days', // Customize the tab name here
     address: 'TWdkKsk6nvgLqGUv64WHLsYfh5ABHHtkJZ',
     decimals: 6,
     soonDays: 5,
@@ -40,7 +39,7 @@ const contracts = [
   },
   {
     name: 'CFT',
-    tabName: 'CFT Game 3 Days',
+    tabName: 'CFT Game 3 Days', // Customize the tab name here
     address: 'TJ748PrjUZc9Beh1qdCXj1U2do8RsdmEcx',
     decimals: 6,
     soonDays: 2,
@@ -49,12 +48,34 @@ const contracts = [
   },
 ];
 
-const DELAY_MS = 0;
-const THROTTLE_GAP_MS = 500;
+// ───────────────────────────────────────────────
+//     NEW: Copy wallet address to clipboard
+// ───────────────────────────────────────────────
+function copyAddr(el, addr) {
+  navigator.clipboard.writeText(addr)
+    .then(() => {
+      const original = el.textContent;
+      el.textContent = 'Copied!';
+      el.style.color = '#62ffcf'; // matches your --accent-1
 
+      setTimeout(() => {
+        el.textContent = original;
+        el.style.color = '';
+      }, 1500);
+    })
+    .catch(() => {
+      // Optional: fallback if clipboard fails
+      alert('Failed to copy address');
+    });
+}
+
+// Make copyAddr available globally so onclick can use it
+window.copyAddr = copyAddr;
+
+const DELAY_MS = 0; // Reduced to minimize extra delay
+const THROTTLE_GAP_MS = 500; // Aim for ~10 requests per second
 let tronWeb, readTronWeb;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-
 const throttle = (() => {
   let queue = Promise.resolve();
   let last = 0;
@@ -73,12 +94,10 @@ const throttle = (() => {
 
 async function initReadTronWeb(chainstackUrl) {
   if (readTronWeb) return;
-  const TronWebCtor = window.TronWeb || window.tronWeb?.constructor;
+  const TronWebCtor = (typeof window.TronWeb === 'function') ? window.TronWeb : window.tronWeb?.constructor;
   if (!TronWebCtor) throw new Error('TronWeb constructor not found');
-  
   readTronWeb = new TronWebCtor({ fullHost: chainstackUrl });
-  readTronWeb.setAddress('T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb'); // dummy address
-  
+  readTronWeb.setAddress('T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb'); // Dummy address for view calls
   const originalRequest = readTronWeb.request;
   readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
     return throttle(() => originalRequest.call(this, endpoint, params, method));
@@ -95,102 +114,67 @@ function updateGlobalProgress() {
   const percent = Math.floor((globalProcessed / globalTotal) * 100);
   globalProgressBar.style.width = `${percent}%`;
   globalCurrentEl.textContent = percent;
-  
   if (globalProcessed >= globalTotal) {
     document.getElementById('global-progress').style.display = 'none';
   }
-}
-
-// Global copy function - will be attached to window
-function copyAddr(element, address, event) {
-  event?.stopPropagation?.();
-  
-  navigator.clipboard.writeText(address)
-    .then(() => {
-      const originalText = element.textContent;
-      element.textContent = 'Copied!';
-      element.style.color = 'var(--success)';
-      
-      setTimeout(() => {
-        element.textContent = originalText;
-        element.style.color = '';
-      }, 1400);
-    })
-    .catch(() => {
-      element.textContent = 'Copy failed';
-      setTimeout(() => {
-        element.textContent = address;
-        element.style.color = '';
-      }, 2000);
-    });
 }
 
 async function loadStakers(config, tabId) {
   const activeBody = document.getElementById(`active-body-${tabId}`);
   const soonBody = document.getElementById(`soon-body-${tabId}`);
   const expiredBody = document.getElementById(`expired-body-${tabId}`);
-  
+  // Removed per-tab progress
   const totalStakersEl = document.getElementById(`total-stakers-${tabId}`);
   const activeTotalEl = document.getElementById(`active-total-${tabId}`);
   const soonTotalEl = document.getElementById(`soon-total-${tabId}`);
   const expiredTotalEl = document.getElementById(`expired-total-${tabId}`);
 
-  activeBody.innerHTML = '<tr><td colspan="4" class="text-center py-5">Loading...</td></tr>';
-  soonBody.innerHTML = expiredBody.innerHTML = '';
+  activeBody.innerHTML = '<tr><td colspan="4" class="text-center py-5">Connecting...</td></tr>';
+  soonBody.innerHTML = '';
+  expiredBody.innerHTML = '';
+  totalStakersEl.textContent = '(loading...)';
 
   try {
-    if (!window.tronWeb?.ready) throw new Error('Please connect TronLink');
-
+    if (!window.tronWeb || !window.tronWeb.ready) {
+      throw new Error('Please unlock TronLink');
+    }
     tronWeb = window.tronWeb;
     await initReadTronWeb(config.chainstackUrl);
-
     const contract = await readTronWeb.contract().at(config.address);
     const list = await contract.getStakersList().call();
-
     totalStakersEl.textContent = `(${list.length} wallets)`;
 
-    const activeData = [];
-    const soonData = [];
-    const expiredData = [];
+    const activeData = [], soonData = [], expiredData = [];
 
-    for (const hexAddr of list) {
-      let addr = hexAddr.startsWith('41') && hexAddr.length === 42
-        ? readTronWeb.address.fromHex(hexAddr)
-        : hexAddr;
-
+    for (let i = 0; i < list.length; i++) {
+      let addr = list[i];
+      if (addr.startsWith('41') && addr.length === 42) {
+        addr = readTronWeb.address.fromHex(addr);
+      }
       try {
         const info = await contract.users(addr).call();
-        
-        const stakedNum = Number(
-          readTronWeb.toBigNumber(info.stakedAmount).shiftedBy(-config.decimals)
-        );
+        const stakedNum = readTronWeb.toBigNumber(info.stakedAmount).shiftedBy(-config.decimals).toNumber();
 
-        // Skip very small stakes
-        if (stakedNum < MIN_VISIBLE_STAKE) continue;
+        // ───────────────────────────────────────────────
+        //     NEW FEATURE: Hide stakers with < 1 token
+        // ───────────────────────────────────────────────
+        if (stakedNum < 1) continue;
+        // ───────────────────────────────────────────────
 
         const lastClaim = Number(info.lastClaimTimestamp);
         const isActive = info.isActive;
         const now = Math.floor(Date.now() / 1000);
-        const daysSinceClaim = lastClaim === 0 ? Infinity : Math.floor((now - lastClaim) / 86400);
-
+        let daysSinceClaim = lastClaim === 0 ? Infinity : Math.floor((now - lastClaim) / 86400);
         let status, statusClass, category;
 
         if (lastClaim === 0) {
-          status = 'Never claimed';
-          statusClass = 'text-muted';
-          category = 'active';
+          status = 'Never claimed'; statusClass = 'text-muted'; category = 'active';
         } else if (!isActive || daysSinceClaim >= config.expireDays) {
-          status = 'EXPIRED';
-          statusClass = 'expired';
-          category = 'expired';
+          status = 'EXPIRED'; statusClass = 'expired'; category = 'expired';
         } else if (daysSinceClaim >= config.soonDays) {
-          status = 'Expire Soon';
-          statusClass = 'soon';
-          category = 'soon';
+          status = 'Expire Soon'; statusClass = 'soon'; category = 'soon';
         } else {
-          status = 'Active';
-          statusClass = 'text-success';
-          category = 'active';
+          status = 'Active'; statusClass = 'text-success'; category = 'active';
         }
 
         const lastClaimText = lastClaim === 0 ? 'Never' :
@@ -198,57 +182,48 @@ async function loadStakers(config, tabId) {
           daysSinceClaim === 1 ? '1 day ago' : `${daysSinceClaim} days ago`;
 
         const data = { addr, stakedNum, lastClaimText, status, statusClass };
-
         if (category === 'active') activeData.push(data);
         else if (category === 'soon') soonData.push(data);
         else expiredData.push(data);
-
-      } catch (e) {
-        console.warn(`Failed for ${addr}:`, e.message);
-      }
+      } catch (e) { console.warn('Failed for', addr, e.message); }
 
       globalProcessed++;
       updateGlobalProgress();
-      if (list.indexOf(hexAddr) < list.length - 1) await sleep(DELAY_MS);
+      if (i < list.length - 1) await sleep(DELAY_MS);
     }
 
-    // Sort by stake amount descending
-    const sortFn = (a, b) => b.stakedNum - a.stakedNum;
-    activeData.sort(sortFn);
-    soonData.sort(sortFn);
-    expiredData.sort(sortFn);
+    activeData.sort((a, b) => b.stakedNum - a.stakedNum);
+    soonData.sort((a, b) => b.stakedNum - a.stakedNum);
+    expiredData.sort((a, b) => b.stakedNum - a.stakedNum);
 
     const buildRows = (data) => {
-      if (data.length === 0) {
-        return '<tr><td colspan="4" class="text-center py-4">None</td></tr>';
-      }
-      
-      return data.map(s => `
-        <tr>
-          <td data-label="Wallet">
-            <span class="addr" onclick="copyAddr(this, '${s.addr}', event)">${s.addr}</span>
-          </td>
-          <td data-label="Staked ${config.name}">
-            <strong>${s.stakedNum.toLocaleString(undefined, { maximumFractionDigits: 4 })}</strong> ${config.name}
-          </td>
-          <td data-label="Last Claim">${s.lastClaimText}</td>
-          <td data-label="Status" class="${s.statusClass}">${s.status}</td>
-        </tr>
-      `).join('');
+      let rows = '';
+      data.forEach(s => {
+        rows += `
+          <tr>
+            <td data-label="Wallet">
+              <span class="addr" onclick="copyAddr(this, '${s.addr}')">${s.addr}</span>
+            </td>
+            <td data-label="Staked ${config.name}">
+              <strong>${s.stakedNum.toLocaleString(undefined, {maximumFractionDigits: 4})}</strong> ${config.name}
+            </td>
+            <td data-label="Last Claim">${s.lastClaimText}</td>
+            <td data-label="Status" class="${s.statusClass}">${s.status}</td>
+          </tr>`;
+      });
+      return rows || '<tr><td colspan="4" class="text-center py-4">None</td></tr>';
     };
 
     activeBody.innerHTML = buildRows(activeData);
     soonBody.innerHTML = buildRows(soonData);
     expiredBody.innerHTML = buildRows(expiredData);
 
-    const sum = arr => arr.reduce((total, s) => total + s.stakedNum, 0);
-
-    activeTotalEl.textContent = `Total Active: ${sum(activeData).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${config.name}`;
-    soonTotalEl.textContent = `Total Expire Soon: ${sum(soonData).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${config.name}`;
-    expiredTotalEl.textContent = `Total Expired: ${sum(expiredData).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${config.name}`;
+    const sum = arr => arr.reduce((t, s) => t + s.stakedNum, 0);
+    activeTotalEl.textContent = `Total Active: ${sum(activeData).toLocaleString(undefined, {maximumFractionDigits: 2})} ${config.name}`;
+    soonTotalEl.textContent = `Total Expire Soon: ${sum(soonData).toLocaleString(undefined, {maximumFractionDigits: 2})} ${config.name}`;
+    expiredTotalEl.textContent = `Total Expired: ${sum(expiredData).toLocaleString(undefined, {maximumFractionDigits: 2})} ${config.name}`;
 
   } catch (err) {
-    console.error(err);
     activeBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-5">Error: ${err.message}</td></tr>`;
   }
 }
@@ -256,62 +231,68 @@ async function loadStakers(config, tabId) {
 async function setupTabs() {
   const tabsContainer = document.getElementById('tabs-container');
   const tabContent = document.getElementById('tab-content');
-
-  // Make copyAddr globally available
-  window.copyAddr = copyAddr;
-
   contracts.forEach((config, index) => {
-    const tabId = config.tabName.toLowerCase().replace(/\s+/g, '-');
-    const tabLabel = config.tabName;
-
-    // Tab navigation
+    const tabId = config.tabName.toLowerCase().replace(/\s+/g, '-'); // Unique tabId based on tabName
+    const tabLabel = config.tabName || `${config.name} Stakers`;
     const li = document.createElement('li');
     li.className = 'nav-item';
-    li.innerHTML = `
-      <a class="nav-link ${index === 0 ? 'active' : ''}" 
-         id="${tabId}-tab" 
-         data-bs-toggle="tab" 
-         href="#${tabId}" 
-         role="tab">${tabLabel}</a>`;
+    li.innerHTML = `<a class="nav-link ${index === 0 ? 'active' : ''}" id="${tabId}-tab" data-bs-toggle="tab" href="#${tabId}" role="tab">${tabLabel}</a>`;
     tabsContainer.appendChild(li);
 
-    // Tab content pane
     const pane = document.createElement('div');
     pane.className = `tab-pane fade ${index === 0 ? 'show active' : ''}`;
     pane.id = tabId;
     pane.innerHTML = `
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="m-0">Stakers <span id="total-stakers-${tabId}" class="text-muted">(loading...)</span></h3>
-        <button id="refresh-${tabId}" class="btn btn-primary btn-sm">Refresh</button>
+        <button id="refresh-${tabId}" class="btn primary btn-sm">Refresh List</button>
       </div>
-
       <div id="active-section-${tabId}" class="luxe-card">
         <h4 class="section-title">Active Stakers</h4>
         <div class="table-responsive">
           <table>
-            <thead><tr><th>Wallet</th><th>Staked ${config.name}</th><th>Last Claim</th><th>Status</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Wallet</th>
+                <th>Staked ${config.name}</th>
+                <th>Last Claim</th>
+                <th>Status</th>
+              </tr>
+            </thead>
             <tbody id="active-body-${tabId}"></tbody>
           </table>
         </div>
         <div class="section-total" id="active-total-${tabId}">Total Active: — ${config.name}</div>
       </div>
-
       <div id="soon-section-${tabId}" class="luxe-card">
         <h4 class="section-title">Expire Soon</h4>
         <div class="table-responsive">
           <table>
-            <thead><tr><th>Wallet</th><th>Staked ${config.name}</th><th>Last Claim</th><th>Status</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Wallet</th>
+                <th>Staked ${config.name}</th>
+                <th>Last Claim</th>
+                <th>Status</th>
+              </tr>
+            </thead>
             <tbody id="soon-body-${tabId}"></tbody>
           </table>
         </div>
         <div class="section-total" id="soon-total-${tabId}">Total Expire Soon: — ${config.name}</div>
       </div>
-
       <div id="expired-section-${tabId}" class="luxe-card">
         <h4 class="section-title">Expired</h4>
         <div class="table-responsive">
           <table>
-            <thead><tr><th>Wallet</th><th>Staked ${config.name}</th><th>Last Claim</th><th>Status</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Wallet</th>
+                <th>Staked ${config.name}</th>
+                <th>Last Claim</th>
+                <th>Status</th>
+              </tr>
+            </thead>
             <tbody id="expired-body-${tabId}"></tbody>
           </table>
         </div>
@@ -319,40 +300,41 @@ async function setupTabs() {
       </div>
     `;
     tabContent.appendChild(pane);
-
-    document.getElementById(`refresh-${tabId}`).onclick = () => loadStakers(config, tabId);
+    document.getElementById(`refresh-${tabId}`).addEventListener('click', () => loadStakers(config, tabId));
   });
 
-  // Global progress elements
+  // Global progress setup
+  const globalProgress = document.getElementById('global-progress');
   globalProgressBar = document.getElementById('global-progress-bar');
   globalCurrentEl = document.getElementById('global-current');
-  document.getElementById('global-progress').style.display = 'block';
+  globalProgress.style.display = 'block';
 
-  // Count total stakers first (for global progress)
+  // First, fetch all staker lists to calculate total
   await Promise.all(contracts.map(async (config) => {
-    try {
-      await initReadTronWeb(config.chainstackUrl);
-      const contract = await readTronWeb.contract().at(config.address);
-      const list = await contract.getStakersList().call();
-      globalTotal += list.length;
-    } catch {}
+    const tabId = config.tabName.toLowerCase().replace(/\s+/g, '-');
+    if (!window.tronWeb || !window.tronWeb.ready) {
+      return;
+    }
+    await initReadTronWeb(config.chainstackUrl);
+    const contract = await readTronWeb.contract().at(config.address);
+    const list = await contract.getStakersList().call();
+    globalTotal += list.length;
   }));
 
-  // Load all tabs
-  contracts.forEach(config => {
+  // Now load all
+  contracts.forEach((config) => {
     const tabId = config.tabName.toLowerCase().replace(/\s+/g, '-');
     loadStakers(config, tabId);
   });
 
-  // Auto-refresh when tab becomes visible and still empty
-  document.querySelectorAll('#tabs-container .nav-link').forEach(link => {
+  // For tab shown, check if needs refresh
+  const tabLinks = document.querySelectorAll('#tabs-container .nav-link');
+  tabLinks.forEach(link => {
     link.addEventListener('shown.bs.tab', (e) => {
       const tabId = e.target.getAttribute('href').slice(1);
+      const config = contracts.find(c => c.tabName.toLowerCase().replace(/\s+/g, '-') === tabId);
       const activeBody = document.getElementById(`active-body-${tabId}`);
-      const config = contracts.find(c => 
-        c.tabName.toLowerCase().replace(/\s+/g, '-') === tabId
-      );
-      if (config && activeBody && activeBody.innerHTML.includes('loading')) {
+      if (activeBody && (activeBody.innerHTML.includes('Connecting...') || activeBody.innerHTML === '')) {
         loadStakers(config, tabId);
       }
     });
@@ -360,5 +342,9 @@ async function setupTabs() {
 }
 
 window.addEventListener('load', () => {
+  if (window.tronWeb && window.tronWeb.ready) {
+    tronWeb = window.tronWeb;
+    document.getElementById('connect-button').innerHTML = 'Connected';
+  }
   setupTabs();
 });
