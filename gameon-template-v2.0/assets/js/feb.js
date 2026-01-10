@@ -1,8 +1,8 @@
-// assets/js/feb.js - Updated version with Available Energy & Last Claim Info
+// assets/js/feb.js - Updated with correct 48h cooldown logic
 
-const API_BASE = "https://api.cftecosystem.com"; // Change if your backend is on different domain/port
+const API_BASE = "https://api.cftecosystem.com"; // ← adjust if needed
 
-// Keep the whitelist for now (recommended: move to backend-only later)
+// Whitelist (still here for now — consider moving to backend-only later)
 const allowedAddresses = [
     "TR2XJawheHUAcbxgzABVh1toDA59Eb4RbM",
     "TQLrSGjNtYwtUdttbm4HsXxD6vmbePWni4",
@@ -22,19 +22,6 @@ let availableEnergyElement;
 let lastClaimInfoElement;
 let requestButton;
 
-// Helper: Format time difference nicely
-function formatTimeDiff(ms) {
-    if (ms <= 0) return "Now";
-    const seconds = Math.floor(ms / 1000);
-    if (seconds < 60) return `${seconds}s`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h`;
-    const days = Math.floor(hours / 24);
-    return `${days}d`;
-}
-
 // ✅ Check if TronLink is installed
 async function checkTronLinkInstalled() {
     return new Promise((resolve) => {
@@ -51,22 +38,20 @@ async function checkTronLinkInstalled() {
     });
 }
 
-// ✅ Auto-Connect Wallet if already authorized
+// ✅ Auto-Connect Wallet
 async function autoConnectWallet() {
     if (window.tronWeb && window.tronLink) {
         tronWeb = window.tronWeb;
         userAddress = tronWeb.defaultAddress.base58;
         if (userAddress && userAddress !== "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb") {
-            console.log("Auto-connected wallet:", userAddress);
+            console.log("Auto-connected:", userAddress);
             updateWalletUI(true);
             await checkAllowedAddress();
-        } else {
-            console.log("TronLink detected, but wallet is not connected.");
         }
     }
 }
 
-// ✅ Connect Wallet (Manual Trigger)
+// ✅ Manual Connect Wallet
 async function connectWallet() {
     if (!window.tronWeb || !window.tronLink) {
         alert("TronLink not found. Please install TronLink and log in.");
@@ -84,24 +69,23 @@ async function connectWallet() {
     }
 }
 
-// ✅ Update Wallet UI
+// ✅ Update Wallet Button UI
 function updateWalletUI(isConnected) {
-    const connectButton = document.getElementById("connect-button");
-    if (connectButton) {
-        connectButton.innerHTML = isConnected 
+    const btn = document.getElementById("connect-button");
+    if (btn) {
+        btn.innerHTML = isConnected 
             ? `<i class="icon-wallet"></i> Wallet Connected` 
             : `<i class="icon-wallet"></i> Connect Wallet`;
     }
 }
 
-// ✅ Fetch and update available energy pool
+// ✅ Fetch & display available energy pool
 async function updateAvailableEnergy() {
     if (!availableEnergyElement) return;
-
     try {
         availableEnergyElement.textContent = "Loading...";
-        const response = await fetch(`${API_BASE}/api/available-energy`);
-        const data = await response.json();
+        const res = await fetch(`${API_BASE}/api/available-energy`);
+        const data = await res.json();
 
         if (data.success && typeof data.availableEnergy === 'number') {
             const formatted = data.availableEnergy.toLocaleString();
@@ -115,12 +99,12 @@ async function updateAvailableEnergy() {
         }
     } catch (err) {
         console.error("Failed to fetch available energy:", err);
-        availableEnergyElement.textContent = "Error loading pool";
+        availableEnergyElement.textContent = "Error loading";
         availableEnergyElement.style.color = '#ff5b73';
     }
 }
 
-// ✅ Fetch and display last FEB claim info
+// ✅ Fetch & display last FEB claim + correct cooldown calculation
 async function updateLastClaimInfo() {
     if (!userAddress || !lastClaimInfoElement) return;
 
@@ -128,71 +112,90 @@ async function updateLastClaimInfo() {
         lastClaimInfoElement.textContent = "Loading claim history...";
         lastClaimInfoElement.style.color = "var(--muted)";
 
-        const response = await fetch(`${API_BASE}/api/last-feb-claim`, {
+        const res = await fetch(`${API_BASE}/api/last-feb-claim`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ address: userAddress })
         });
 
-        const data = await response.json();
+        const data = await res.json();
 
-        if (data.success) {
-            if (data.hasClaimed) {
-                const canClaimNow = data.canClaimAgainIn === "Now";
-                lastClaimInfoElement.innerHTML = `
-                    Last claim: <strong>${data.timeSince}</strong><br>
-                    Next free claim: <strong style="color:${canClaimNow ? '#00e095' : '#ffd166'}">
-                        ${data.canClaimAgainIn}
-                    </strong>
-                `;
-                // Disable button if on cooldown
-                if (requestButton) {
-                    requestButton.disabled = !canClaimNow;
-                    requestButton.textContent = canClaimNow ? "Request Free Energy" : "Cooldown Active";
-                    requestButton.style.opacity = canClaimNow ? "1" : "0.6";
-                }
-            } else {
-                lastClaimInfoElement.textContent = "No previous claim — claim your free energy now!";
-                lastClaimInfoElement.style.color = "#00e095";
-                if (requestButton) {
-                    requestButton.disabled = false;
-                    requestButton.textContent = "Request Free Energy";
-                    requestButton.style.opacity = "1";
-                }
-            }
-        } else {
+        if (!data.success) {
             lastClaimInfoElement.textContent = "Could not load claim history";
+            return;
         }
+
+        if (!data.hasClaimed) {
+            lastClaimInfoElement.textContent = "No previous claim — claim your free energy now!";
+            lastClaimInfoElement.style.color = "#00e095";
+            if (requestButton) {
+                requestButton.disabled = false;
+                requestButton.textContent = "Request Free Energy";
+                requestButton.style.opacity = "1";
+            }
+            return;
+        }
+
+        // Correct cooldown calculation (client-side safety net)
+        const lastClaimDate = new Date(data.lastClaim);
+        const now = new Date();
+        const diffMs = now - lastClaimDate;
+        const diffHours = diffMs / (1000 * 60 * 60);
+        const COOLDOWN_HOURS = 48;
+
+        let canClaimAgainIn = "Now";
+        let canClaimNow = true;
+
+        if (diffHours < COOLDOWN_HOURS) {
+            const hoursLeft = Math.ceil(COOLDOWN_HOURS - diffHours);
+            canClaimAgainIn = `${hoursLeft} hour${hoursLeft !== 1 ? 's' : ''}`;
+            canClaimNow = false;
+        }
+
+        lastClaimInfoElement.innerHTML = `
+            Last claim: <strong>${data.timeSince}</strong><br>
+            Next free claim: <strong style="color:${canClaimNow ? '#00e095' : '#ffd166'}">
+                ${canClaimAgainIn}
+            </strong>
+        `;
+
+        // Control request button state
+        if (requestButton) {
+            requestButton.disabled = !canClaimNow;
+            requestButton.textContent = canClaimNow ? "Request Free Energy" : "Cooldown Active";
+            requestButton.style.opacity = canClaimNow ? "1" : "0.6";
+        }
+
     } catch (err) {
-        console.error("Failed to fetch last claim info:", err);
+        console.error("Failed to load last claim info:", err);
         lastClaimInfoElement.textContent = "Error loading history";
     }
 }
 
-// ✅ Check Allowed Address + trigger info updates
+// ✅ Check if address is allowed + load extra info
 async function checkAllowedAddress() {
     const energyCard = document.getElementById("energy-card");
-    const accessDenied = document.getElementById("access-denied");
-    const connectWalletMessage = document.getElementById("connect-wallet-message");
+    const denied = document.getElementById("access-denied");
+    const connectMsg = document.getElementById("connect-wallet-message");
 
     if (!userAddress) return;
 
     if (allowedAddresses.includes(userAddress)) {
         energyCard.style.display = "block";
-        accessDenied.style.display = "none";
-        connectWalletMessage.style.display = "none";
+        denied.style.display = "none";
+        connectMsg.style.display = "none";
 
-        // Load additional info when allowed
+        // Load dynamic info
         updateAvailableEnergy();
         updateLastClaimInfo();
     } else {
         energyCard.style.display = "none";
-        accessDenied.style.display = "block";
-        connectWalletMessage.style.display = "none";
+        denied.style.display = "block";
+        connectMsg.style.display = "none";
     }
 }
 
-// ✅ Call Delegation Endpoint for FEB Holders
+// ✅ Claim free energy
 async function callDelegationEndpoint() {
     if (!userAddress) {
         alert("Please connect your wallet first.");
@@ -204,71 +207,56 @@ async function callDelegationEndpoint() {
         return;
     }
 
-    // Optional: extra client-side check (but backend is authoritative)
-    const msgElement = document.getElementById("msg");
-    msgElement.textContent = "Requesting free energy...";
-    msgElement.style.color = "white";
-
-    const url = `${API_BASE}/api/request-feb-energy`;
-    const payload = { AllocationAddress: userAddress };
+    const msg = document.getElementById("msg");
+    msg.textContent = "Requesting free energy...";
+    msg.style.color = "white";
 
     try {
-        const response = await fetch(url, {
+        const res = await fetch(`${API_BASE}/api/request-feb-energy`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": "Bearer abc" // ← consider replacing with real auth later
+                "Authorization": "Bearer abc" // ← replace with real auth when ready
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({ AllocationAddress: userAddress })
         });
 
-        const data = await response.json();
+        const data = await res.json();
 
         if (data.success) {
-            msgElement.textContent = data.Message || "Free energy claimed successfully!";
-            msgElement.style.color = "#00e095";
-
-            // Refresh info after successful claim
+            msg.textContent = data.Message || "Free energy claimed successfully!";
+            msg.style.color = "#00e095";
+            // Refresh info after success
             updateAvailableEnergy();
             updateLastClaimInfo();
         } else {
-            msgElement.textContent = data.Message || "Error claiming free energy.";
-            msgElement.style.color = "#ff5b73";
+            msg.textContent = data.Message || "Error claiming free energy";
+            msg.style.color = "#ff5b73";
         }
-    } catch (error) {
-        console.error("Network error:", error);
-        msgElement.textContent = "Network error - please try again.";
-        msgElement.style.color = "#ff5b73";
+    } catch (err) {
+        console.error("Claim failed:", err);
+        msg.textContent = "Network error - please try again";
+        msg.style.color = "#ff5b73";
     }
 }
 
-// ✅ Main initialization
+// =============================================
+// Initialization
+// =============================================
 document.addEventListener("DOMContentLoaded", async () => {
-    console.log("DOM fully loaded and parsed.");
+    console.log("DOM loaded");
 
-    // Cache DOM elements
     availableEnergyElement = document.getElementById("available-energy");
     lastClaimInfoElement = document.getElementById("last-claim-info");
     requestButton = document.getElementById("request-energy-button");
 
-    // Attempt auto-connect
+    // Auto-connect attempt
     await autoConnectWallet();
 
-    // Connect button listener
-    const connectButton = document.getElementById("connect-button");
-    if (connectButton) {
-        connectButton.addEventListener("click", connectWallet);
-    } else {
-        console.error("Connect button not found.");
-    }
+    // Event listeners
+    document.getElementById("connect-button")?.addEventListener("click", connectWallet);
+    requestButton?.addEventListener("click", callDelegationEndpoint);
 
-    // Request energy button listener
-    if (requestButton) {
-        requestButton.addEventListener("click", callDelegationEndpoint);
-    } else {
-        console.error("Request Energy button not found.");
-    }
-
-    // Auto-refresh available energy every 30 seconds
+    // Refresh energy pool every 30 seconds
     setInterval(updateAvailableEnergy, 30000);
 });
