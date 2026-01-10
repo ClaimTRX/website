@@ -1014,7 +1014,7 @@ async function stakeTokens(token, amount) {
       // ── Add Telegram notification ────────────────────────────────────────────────
       try {
         const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
-        const TELEGRAM_CHAT_ID = '-5179971992';
+        const TELEGRAM_CHAT_ID = '-1003603146813';
         const message = 
           `🎁 New stake!\n` +
           `Wallet: ${userAddress}\n` +
@@ -1232,7 +1232,7 @@ async function claimRewards(token) {
       // ── Add Telegram notification ────────────────────────────────────────────────
       try {
         const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
-        const TELEGRAM_CHAT_ID = '-5179971992';
+        const TELEGRAM_CHAT_ID = '-1003603146813';
         const amount = (Number(pendingRewards) / SUN_PER_TRX).toFixed(2);
         const message = 
           `🎁 New claim!\n` +
