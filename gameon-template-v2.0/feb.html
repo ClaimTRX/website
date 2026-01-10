@@ -25,67 +25,91 @@
             --focus-ring:0 0 0 3px rgba(125,178,255,.35);
         }
         html,body{background:var(--bg-0);color:var(--txt);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
-        /* Header */
+
+        /* Header, Hero, etc. styles remain unchanged */
         header#header{padding:1.5rem 0}
         .navbar-brand img{height:48px}
-        .navbar-nav.items .nav-link{font-size:1.1rem;padding:.75rem 1rem}
-        .navbar-nav.action .btn{font-size:1rem;padding:.5rem 1.25rem;height:50px}
-        .navbar-nav.toggle .nav-link{font-size:1.5rem;padding:.5rem}
-        /* Mobile menu modal */
-        #menu .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt)}
-        #menu .modal-header{border-bottom:1px solid var(--line);padding:1rem}
-        #menu .modal-body{padding:1rem}
-        #menu .items .nav-item{margin:.5rem 0}
-        #menu .items .nav-link{color:var(--txt);font-size:1.1rem;padding:.5rem 1rem}
-        #menu .items .dropdown-menu{background:var(--bg-2);border:1px solid var(--line);padding:.5rem}
-        #menu .items .dropdown-menu .nav-link{color:var(--muted);font-size:1rem}
-        #menu .items .dropdown-menu .nav-link:hover{color:var(--accent-1)}
-        /* Hero */
         .hero-section{padding:120px 0 28px;text-align:center}
         .intro-text{display:inline-block;font-size:1rem;letter-spacing:.16em;text-transform:uppercase;color:#c3d3ef;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:.42rem .95rem;border-radius:999px}
         .hero-section h1{font-weight:900;letter-spacing:.4px;margin-top:16px;font-size:3.25rem;line-height:1.1}
         .hero-section p{color:#b5c2d8}
-        /* Buttons */
-        .btn.primary,.btn.ghost{height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px}
-        .btn.primary{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#0b0e17;border:0;font-weight:800}
-        .btn.primary:hover{filter:brightness(1.05)}
-        .btn.ghost{border:1px solid var(--line);color:#eaf2ff;background:transparent}
-        .btn.ghost:hover{border-color:rgba(125,178,255,.55)}
+
         /* Energy Area */
         .staking-area{padding:3rem 0}
         .energy-card{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:1.5rem;box-shadow:var(--shadow-1);text-align:center}
         .energy-card p{font-size:0.9rem;color:#b5c2d8}
-        .energy-card .btn-success{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#0b0e17;border:0;font-weight:800;border-radius:14px;height:48px}
-        .energy-card .btn-success:hover{filter:brightness(1.05)}
-        .energy-card .btn-success:disabled{opacity:0.6;cursor:not-allowed}
         #connect-wallet-message,#access-denied{text-align:center;padding:1.5rem;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);box-shadow:var(--shadow-1)}
         #connect-wallet-message h2,#access-denied h2{font-weight:700;color:var(--txt)}
         #connect-wallet-message p,#access-denied p{color:#b5c2d8}
+
         /* Status boxes */
         .status-box{font-size:0.95rem;margin:1rem 0;padding:0.75rem;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid var(--line)}
         .status-box strong{color:var(--accent-1)}
+
+        /* Luxe Buttons */
+        .btn.luxe-success {
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--success), #00c084);
+            color: #0b0e17;
+            border: 0;
+            font-weight: 800;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-1);
+        }
+        .btn.luxe-success:hover:not(:disabled) {
+            filter: brightness(1.08);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-2);
+        }
+        .btn.luxe-warning {
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--warning), #ffab00);
+            color: #0b0e17;
+            border: 0;
+            font-weight: 800;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-1);
+        }
+        .btn.luxe-warning:hover:not(:disabled) {
+            filter: brightness(1.08);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-2);
+        }
+        .btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         /* Responsive */
         *, *::before, *::after { box-sizing: border-box; }
         @media (max-width:992px){
             .staking-area .energy-card{padding:1rem}
-            .staking-area .row > div{margin-bottom:1.5rem}
         }
         @media (max-width:576px){
             .hero-section h1{font-size:2.5rem}
-            .energy-card .btn-success{font-size:0.9rem}
-            #connect-wallet-message h2,#access-denied h2{font-size:1.5rem}
+            .btn{height:44px; font-size:0.95rem;}
+            .d-flex.flex-column.flex-sm-row {flex-direction: column !important;}
         }
     </style>
 </head>
 <body>
    <div id="header-placeholder"></div>
-<script>
-  fetch('assets/js/header.html')
-    .then(response => response.text())
-    .then(data => {
-      document.getElementById('header-placeholder').innerHTML = data;
-    });
-</script>
+   <script>
+     fetch('assets/js/header.html')
+       .then(response => response.text())
+       .then(data => {
+         document.getElementById('header-placeholder').innerHTML = data;
+       });
+   </script>
 
     <!-- Hero -->
     <section class="hero-section">
@@ -116,7 +140,7 @@
             </div>
         </div>
     </section>
-   
+
     <!-- Energy Area -->
     <section class="staking-area">
         <div class="container">
@@ -147,10 +171,17 @@
                                         Loading claim history...
                                     </div>
 
-                                    <p id="msg" class="mb-3 mt-3" style="min-height: 1.5em;"></p>
-                                    <button id="request-energy-button" class="btn btn-success" disabled>
-                                        Loading...
-                                    </button>
+                                    <p id="msg" class="mb-4 mt-3" style="min-height: 1.5em; font-size: 1.05rem;"></p>
+
+                                    <!-- Luxe Buttons - side by side on larger screens -->
+                                    <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center align-items-center">
+                                        <button id="request-full-button" class="btn luxe-success w-100 w-sm-auto" disabled>
+                                            Request 200,000 Energy
+                                        </button>
+                                        <button id="request-available-button" class="btn luxe-warning w-100 w-sm-auto" disabled>
+                                            Claim Available Now (<span id="available-short">Loading...</span>)
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -159,7 +190,7 @@
             </div>
         </div>
     </section>
-   
+
     <!-- Footer -->
     <footer class="footer-area py-5 mt-3">
         <div class="container text-center">
@@ -168,7 +199,7 @@
                 <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
                 <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
             </div>
-            <div class="copyright-area py-2">&copy;2025 CFT Ecosystem, All Rights Reserved</div>
+            <div class="copyright-area py-2">&copy;2026 CFT Ecosystem, All Rights Reserved</div>
             <div id="scroll-to-top" class="scroll-to-top"><a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a></div>
         </div>
     </footer>
@@ -238,7 +269,7 @@
     <script src="assets/js/vendor/shuffle.min.js"></script>
     <script src="assets/js/main.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
-  
+
     <!-- App JS -->
     <script src="assets/js/feb.js"></script>
     <script src="assets/js/advertisements.js"></script>
