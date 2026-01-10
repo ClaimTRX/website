@@ -1013,7 +1013,7 @@ async function stakeTokens(token, amount) {
       showToast({ title:'Stake submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastStake.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
       // ── Add Telegram notification ────────────────────────────────────────────────
       try {
-        const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
+        const TELEGRAM_BOT_TOKEN = '8387253330:AAEjzOg1HNdVyBzH13iMku_7Ck-3gNEaBV0';
         const TELEGRAM_CHAT_ID = '-5179971992';
         const message = 
           `🎁 New stake!\n` +
@@ -1231,7 +1231,7 @@ async function claimRewards(token) {
       });
       // ── Add Telegram notification ────────────────────────────────────────────────
       try {
-        const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
+        const TELEGRAM_BOT_TOKEN = '8387253330:AAEjzOg1HNdVyBzH13iMku_7Ck-3gNEaBV0';
         const TELEGRAM_CHAT_ID = '-5179971992';
         const amount = (Number(pendingRewards) / SUN_PER_TRX).toFixed(2);
         const message = 
