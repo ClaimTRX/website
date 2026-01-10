@@ -1013,30 +1013,36 @@ async function stakeTokens(token, amount) {
       showToast({ title:'Stake submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastStake.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
       // ── Add Telegram notification ────────────────────────────────────────────────
       try {
-        const TELEGRAM_BOT_TOKEN = '8387253330:AAEjzOg1HNdVyBzH13iMku_7Ck-3gNEaBV0';
-        const TELEGRAM_CHAT_ID = '-5179971992';
-        const message = 
-          `🎁 New stake!\n` +
-          `Wallet: ${userAddress}\n` +
-          `Amount: ${amount} Game\n` +
-          `Game: ${GAME_TYPE}\n` +
-          `Tx: https://tronscan.org/#/transaction/${broadcastStake.txid}`;
-        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-        await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: TELEGRAM_CHAT_ID,
-            text: message,
-            parse_mode: 'HTML',
-            disable_web_page_preview: true
-          })
-        });
-      } catch (notifyErr) {
-        console.warn('Failed to send Telegram notification:', notifyErr);
-      }
-      // ──────────────────────────────────────────────────────────────────────────────
-      hideProcessingModal(processingModal);
+  const TELEGRAM_BOT_TOKEN = '8387253330:AAEjzOg1HNdVyBzH13iMku_7Ck-3gNEaBV0';
+  const TELEGRAM_CHAT_ID = '-5179971992';
+
+  const escapeMd = (str) => str.replace(/([_*[\]()~`>#+-=|{}.!])/g, '\\$1');
+
+  const message = 
+    `🎁 New stake!\n\n` +
+    `*Wallet:* ${escapeMd(userAddress)}\n` +
+    `*Amount:* ${amount} Game\n` +
+    `*Game:* ${GAME_TYPE}\n` +
+    `*Tx:* [View on Tronscan](https://tronscan.org/#/transaction/${broadcastStake.txid})`;
+
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+  await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message,
+      parse_mode: 'MarkdownV2',
+      disable_web_page_preview: true
+    })
+  });
+} catch (notifyErr) {
+  console.warn('Failed to send Telegram notification:', notifyErr);
+}
+// ────────────────────────────────────────────────────────────────────────
+
+hideProcessingModal(processingModal);
       // Clear caches and fetch fresh user data
       ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
       let newUserData;
