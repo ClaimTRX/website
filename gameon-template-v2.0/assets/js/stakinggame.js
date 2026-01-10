@@ -1012,28 +1012,26 @@ async function stakeTokens(token, amount) {
       if (!broadcastStake.result) throw new Error('Failed to broadcast stake transaction');
       showToast({ title:'Stake submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastStake.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
       // Telegram notification for stake
-      // Telegram notification - plain text only
+      // In stakeTokens() function - after successful broadcast
 try {
   const TELEGRAM_BOT_TOKEN = '8387253330:AAEjzOg1HNdVyBzH13iMku_7Ck-3gNEaBV0';
   const TELEGRAM_CHAT_ID = '-5179971992';
+  
   const message = 
-    "New stake\n" +
-    "Wallet: " + userAddress + "\n" +
-    "Amount: " + amount + " Game\n" +
-    "Game: " + GAME_TYPE + "\n" +
-    "Tx: https://tronscan.org/#/transaction/" + broadcastStake.txid;
+    "Stake - " + userAddress + " - " + amount + " Game - " + GAME_TYPE;
+  
   const url = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage";
+  
   await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: TELEGRAM_CHAT_ID,
-      text: message,
-      disable_web_page_preview: true
+      text: message
     })
   });
-} catch (notifyErr) {
-  console.warn("Failed to send Telegram notification:", notifyErr);
+} catch (err) {
+  console.warn("Telegram notification failed:", err);
 }
       hideProcessingModal(processingModal);
       // Clear caches and fetch fresh user data
@@ -1229,29 +1227,27 @@ async function claimRewards(token) {
         body: `<a href="https://tronscan.org/#/transaction/${broadcastClaim.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
       });
       // Telegram notification for claim
-     // Telegram notification - plain text only
+     // In claimRewards() function - after successful broadcast
 try {
   const TELEGRAM_BOT_TOKEN = '8387253330:AAEjzOg1HNdVyBzH13iMku_7Ck-3gNEaBV0';
   const TELEGRAM_CHAT_ID = '-5179971992';
+  
   const amount = (Number(pendingRewards) / SUN_PER_TRX).toFixed(2);
   const message = 
-    "New claim\n" +
-    "Wallet: " + userAddress + "\n" +
-    "Amount: " + amount + " TRX\n" +
-    "Game: " + GAME_TYPE + "\n" +
-    "Tx: https://tronscan.org/#/transaction/" + broadcastClaim.txid;
+    "Claim - " + userAddress + " - " + amount + " TRX - " + GAME_TYPE;
+  
   const url = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage";
+  
   await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: TELEGRAM_CHAT_ID,
-      text: message,
-      disable_web_page_preview: true
+      text: message
     })
   });
-} catch (notifyErr) {
-  console.warn("Failed to send Telegram notification:", notifyErr);
+} catch (err) {
+  console.warn("Telegram notification failed:", err);
 }
       hideProcessingModal(processingModal);
       // Clear caches and fetch fresh user data
