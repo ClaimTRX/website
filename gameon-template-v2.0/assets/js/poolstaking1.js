@@ -9,7 +9,7 @@ const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a0
 const ENERGY_RENTAL_API_URL = 'https://energyrental.io'; // Base URL for EnergyRental.io API
 const ENERGY_RENTAL_API_KEY = 'a6506deb-3e76-47a2-b673-991105764262';
 const ENERGY_RENTAL_API_SECRET = '7fbdf5ed-5f15-4aed-8acf-da7c960fc7e8';
-
+const ENERGY_PRICE_SUN = 50;
 const SUN_PER_TRX = 1_000_000;
 const ENERGY_RENTAL_DURATION = 5;
 const CACHE_TIMEOUT_MS = 120_000; // 120s cache for runtime updates
@@ -336,17 +336,17 @@ async function requestEnergyRental(rentalEnergy) {
     }
 
     const { 
-      price_trx,          // ← this is what you should pay (platform price in TRX)
-      sun_required,       // ← this is the on-chain delegation amount (do NOT pay this!)
+      price_trx,          // ← Platform selling price (pay this!)
+      sun_required,       // ← Ignore for payment (internal delegation cost)
       payment_address 
     } = quoteData.quote;
 
-    // Convert platform price to SUN (what you actually send)
+    // Pay platform price in SUN (with ceiling to avoid float issues)
     const paymentSun = Math.ceil(price_trx * SUN_PER_TRX);
 
-    console.log(`Paying platform price: ${price_trx} TRX (${paymentSun} SUN) to ${payment_address}`);
+    console.log(`Paying platform price: ${price_trx} TRX (${paymentSun} SUN) to ${payment_address}. (Delegation cost: ${sun_required} SUN - ignored)`);
 
-    // Send the correct amount (platform price, not delegation cost)
+    // Send payment
     const paymentRes = await tronWeb.trx.sendTransaction(payment_address, paymentSun);
 
     if (!paymentRes?.result) {
@@ -355,7 +355,7 @@ async function requestEnergyRental(rentalEnergy) {
 
     console.log(`Payment TXID: ${paymentRes.txid}`);
 
-    // Step 2: Create order with the payment TXID
+    // Create order
     const createOrderRes = await fetch(`${ENERGY_RENTAL_API_URL}/energy/create-order`, {
       method: 'POST',
       headers: {
@@ -385,22 +385,11 @@ async function requestEnergyRental(rentalEnergy) {
     const delegated = await pollDelegationStatus(orderData.order_id);
 
     hideProcessingModal(processingModal);
-    showToast({
-      title: 'Success',
-      body: `Energy rental of ${rentalEnergy} units requested! Waiting for delegation...`,
-      variant: 'success'
-    });
-
     return delegated;
 
   } catch (error) {
     hideProcessingModal(processingModal);
     console.error('Energy rental error:', error);
-    showToast({
-      title: 'Rental Failed',
-      body: error.message || 'Unknown error during energy rental',
-      variant: 'danger'
-    });
     throw error;
   }
 }
@@ -855,7 +844,6 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.remove('inactive');
     claimBtn.disabled = Number(cachedRewards) === 0 || Number(cachedBalance) < Number(cachedRewards);
     claimBtn.style.display = 'block';
- 
     return;
   }
   if (!isActive) {
@@ -863,7 +851,6 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.add('inactive');
     claimBtn.disabled = true;
     claimBtn.style.display = 'none';
- 
     return;
   }
   if (!timeoutSec) {
@@ -871,7 +858,6 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
     timerEl.classList.add('inactive');
     claimBtn.disabled = true;
     claimBtn.style.display = 'none';
- 
     return;
   }
   const next = (lastClaimTs || 0) + timeoutSec;
@@ -924,7 +910,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
       timerEl.classList.remove('inactive');
       claimBtn.disabled = Number(pendingRewards) === 0 || Number(contractBalanceRaw) < Number(pendingRewards);
       claimBtn.style.display = 'block';
-   
+  
     }
   };
   tick();
@@ -1285,7 +1271,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initialize();
 });
-
 
 
 
