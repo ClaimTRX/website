@@ -6,15 +6,16 @@ const readTokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 /* ===================== Config ===================== */
 const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
-const ENERGY_RENTAL_API_URL = 'https://energyrental.io'; // Adjust if needed (e.g., to 'https://api.energyrental.io')
+const ENERGY_RENTAL_API_URL = 'https://energyrental.io'; // Base URL for EnergyRental.io API
 const ENERGY_RENTAL_API_KEY = 'a6506deb-3e76-47a2-b673-991105764262';
 const ENERGY_RENTAL_API_SECRET = '7fbdf5ed-5f15-4aed-8acf-da7c960fc7e8';
-const ENERGY_RENTAL_DURATION = 5; // Fixed to 5 minutes
+const ENERGY_PRICE_SUN = 50;
+const SUN_PER_TRX = 1_000_000;
+const ENERGY_RENTAL_DURATION = 5;
 const CACHE_TIMEOUT_MS = 120_000; // 120s cache for runtime updates
 const THROTTLE_GAP_MS = 4; // Adjusted for 250 RPS (1000ms / 250 ≈ 4ms)
 const CONTRACT_CALL_DELAY_MS = 0; // No delay for faster execution
 const UI_REFRESH_DELAY_MS = 2000; // Reduced from 4000ms
-const ENERGY_BUFFER = 10000; // Buffer for energy estimates (replaces SAFETY_ENERGY)
 // Manual CFT price for APY calculation (update this value as needed)
 const CFT_TRX_PRICE = 0.6378; // Manually set CFT price in TRX (update as needed)
 const DAILY_PAYOUT_PERCENTAGE = 1; // 1% daily payout as per requirement
@@ -26,7 +27,20 @@ const tokenDetails = {
     decimals: 6,
     displayName: 'CFT',
     rewardDisplayName: 'TRX',
-    rewardDecimals: 6
+    rewardDecimals: 6,
+    energyCosts: {
+      stake: 120000,
+      unstake: 75000,
+      claimRewards: 100000,
+      activateTokens: 100000,
+      setPoolSize: 60000,
+      addToPool: 70000,
+      setDailyPayout: 60000,
+      setClaimTimeout: 60000,
+      setAuthorizedWallet: 60000,
+      withdrawTRX: 80000,
+      withdrawTRC20: 90000
+    }
   }
 };
 /* ===================== ABIs ===================== */
@@ -271,43 +285,30 @@ readTronWeb.setAddress(userAddress);
   setInterval(() => updateUI(key, false, userData), 60000);
 }
 /* ===================== Energy helpers (aligned with staking.js) ===================== */
-async function estimateEnergyForAction(contractAddr, functionSelector, parameter, ownerAddress) {
-  try {
-    const tx = await tronWeb.transactionBuilder.triggerSmartContract(
-      contractAddr,
-      functionSelector,
-      {},
-      parameter,
-      ownerAddress
-    );
-    if (!tx.result || !tx.transaction) throw new Error('Failed to build transaction for estimation');
-
-    const estimateRes = await chainstackApiCall('/wallet/estimateenergy', tx.transaction);
-    return Number(estimateRes.energy_required || 0) + ENERGY_BUFFER;
-  } catch (error) {
-    console.error('Energy estimation failed:', error);
-    return 0; // Fallback to 0, but this will trigger rental modal with 0
-  }
-}
-
-async function checkUserEnergy(address) {
+async function checkUserEnergy(address, token, action, extraEnergy = 0) {
   try {
     const resources = await retryWithBackoff(() => readTronWeb.trx.getAccountResources(address));
     const energyLimit = resources.EnergyLimit || 0;
     const energyUsed = resources.EnergyUsed || 0;
-    return energyLimit - energyUsed;
-  } catch {
-    return 0;
+    const availableEnergy = energyLimit - energyUsed;
+    const baseRequiredEnergy = tokenDetails[token].energyCosts[action];
+    const requiredEnergy = baseRequiredEnergy + extraEnergy;
+    const shortfall = Math.max(0, requiredEnergy - availableEnergy);
+    return { availableEnergy, shortfall, requiredEnergy };
+  } catch (error) {
+    const baseRequiredEnergy = tokenDetails[token].energyCosts[action];
+    const requiredEnergy = baseRequiredEnergy + extraEnergy;
+    return { availableEnergy: 0, shortfall: requiredEnergy, requiredEnergy };
   }
 }
-
-async function requestEnergyRental(requiredEnergy) {
+async function requestEnergyRental(rentalEnergy) {
   let processingModal = null;
   try {
     processingModal = showProcessingModal('(1/2)');
-    if (!userAddress) throw new Error('Please connect your wallet first.');
-
-    // Step 1: Get quote
+    if (!userAddress) {
+      throw new Error('Please connect your wallet first.');
+    }
+    const totalEnergy = rentalEnergy;
     const quoteRes = await fetch(`${ENERGY_RENTAL_API_URL}/energy/get-quote`, {
       method: 'POST',
       headers: {
@@ -317,7 +318,7 @@ async function requestEnergyRental(requiredEnergy) {
       },
       body: JSON.stringify({
         receiver: userAddress,
-        amount: requiredEnergy,
+        amount: totalEnergy,
         duration: ENERGY_RENTAL_DURATION
       })
     });
@@ -327,32 +328,28 @@ async function requestEnergyRental(requiredEnergy) {
 
     const { sun_required, payment_address } = quoteData.quote;
 
-    // Step 2: User signs and broadcasts TRX payment
-    const paymentTx = await tronWeb.transactionBuilder.sendTrx(payment_address, sun_required);
-    const signedPayment = await tronWeb.trx.sign(paymentTx);
-    const paymentReceipt = await tronWeb.trx.sendRawTransaction(signedPayment);
-    if (!paymentReceipt.result) throw new Error('Payment transaction failed');
+    const paymentRes = await tronWeb.trx.sendTransaction(payment_address, sun_required);
+    if (!paymentRes?.result) {
+      throw new Error('Transaction was rejected or failed.');
+    }
 
-    // Step 3: Create order with payment TXID
-    const orderRes = await fetch(`${ENERGY_RENTAL_API_URL}/energy/create-order`, {
+    const response = await fetch(`${ENERGY_RENTAL_API_URL}/energy/create-order`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+      headers: { 'Content-Type': 'application/json',
         'X-Api-Key': ENERGY_RENTAL_API_KEY,
-        'X-Api-Secret': ENERGY_RENTAL_API_SECRET
-      },
+        'X-Api-Secret': ENERGY_RENTAL_API_SECRET },
       body: JSON.stringify({
         receiver: userAddress,
-        amount: requiredEnergy,
+        amount: totalEnergy,
         duration: ENERGY_RENTAL_DURATION,
-        payment_txid: paymentReceipt.txid
+        payment_txid: paymentRes.txid
       })
     });
-    if (!orderRes.ok) throw new Error(`Order creation failed: ${orderRes.status}`);
-    const orderData = await orderRes.json();
-    if (!orderData.success) throw new Error(orderData.error || 'Order creation failed');
-
-    const delegated = await pollDelegationStatus(orderData.order_id);
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(`Server error: ${data.message || 'Unknown'}`);
+    }
+    const delegated = await pollDelegationStatus(data.order_id);
     hideProcessingModal(processingModal);
     return delegated;
   } catch (error) {
@@ -360,7 +357,6 @@ async function requestEnergyRental(requiredEnergy) {
     throw error;
   }
 }
-
 async function pollDelegationStatus(orderId) {
   const maxPollAttempts = 30;
   let pollAttempts = 0;
@@ -368,15 +364,13 @@ async function pollDelegationStatus(orderId) {
     const interval = setInterval(async () => {
       pollAttempts++;
       try {
-        const res = await fetch(`${ENERGY_RENTAL_API_URL}/energy/delegation-status?order_id=${orderId}`, {
+        const response = await fetch(`${ENERGY_RENTAL_API_URL}/energy/delegation-status?order_id=${orderId}`, {
           method: 'GET',
-          headers: {
-            'X-Api-Key': ENERGY_RENTAL_API_KEY,
-            'X-Api-Secret': ENERGY_RENTAL_API_SECRET
-          }
+          headers: { 'X-Api-Key': ENERGY_RENTAL_API_KEY,
+            'X-Api-Secret': ENERGY_RENTAL_API_SECRET }
         });
-        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-        const data = await res.json();
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const data = await response.json();
         if (data.status === 'delegated') {
           clearInterval(interval);
           resolve(true);
@@ -385,7 +379,7 @@ async function pollDelegationStatus(orderId) {
           reject(new Error(`Delegation failed: ${data.message || 'Unknown error'}`));
         } else if (pollAttempts >= maxPollAttempts) {
           clearInterval(interval);
-          reject(new Error('Delegation timed out after 30 seconds.'));
+          reject(new Error('Delegation timed out after 60 seconds.'));
         }
       } catch (err) {
         if (pollAttempts >= maxPollAttempts) {
@@ -393,10 +387,9 @@ async function pollDelegationStatus(orderId) {
           reject(new Error(`Error polling delegation status: ${err.message}`));
         }
       }
-    }, 1000);
+    }, 1000); // Reduced poll interval to 1s for faster checking
   });
 }
-
 function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = '') {
   return new Promise((resolve, reject) => {
     const modalElement = document.getElementById('energy-rental-modal');
@@ -405,26 +398,27 @@ function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = 
       return reject(new Error('Energy rental modal not found.'));
     }
     const rentalEnergy = shortfall;
-    // Note: We don't need rentalCost here since the API quote will handle pricing; modal shows estimated energy only
+    const rentalCostSun = rentalEnergy * ENERGY_PRICE_SUN;
+    const rentalCostTrx = rentalCostSun / SUN_PER_TRX;
     const map = {
       'user-energy': userEnergy.toLocaleString('en-US'),
       'required-energy': requiredEnergy.toLocaleString('en-US') + message,
       'rental-energy': rentalEnergy.toLocaleString('en-US'),
+      'rental-cost-trx': rentalCostTrx.toFixed(2),
       'rental-duration': ENERGY_RENTAL_DURATION
     };
     for (const [id, value] of Object.entries(map)) {
       const el = document.getElementById(id);
-      if (el) el.textContent = value;
+      if (!el) return reject(new Error(`Modal element ${id} not found.`));
+      el.textContent = value;
     }
-    // Hide cost if not needed, or update if you want to estimate it client-side
-    document.getElementById('rental-cost-trx').textContent = 'Quoted by API';
     const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
     modalElement.addEventListener('shown.bs.modal', () => modalElement.removeAttribute('aria-hidden'), { once: true });
     const confirmButton = document.getElementById('rent-energy-confirm');
     if (!confirmButton) return reject(new Error('Rent energy confirm button not found.'));
     const confirmHandler = () => {
       modal.hide();
-      resolve({ rent: true, rentalEnergy });
+      resolve({ rent: true, rentalEnergy, rentalCostTrx });
       confirmButton.removeEventListener('click', confirmHandler);
     };
     confirmButton.addEventListener('click', confirmHandler);
@@ -436,7 +430,6 @@ function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = 
     try { modal.show(); } catch { reject(new Error('Failed to show energy rental modal.')); }
   });
 }
-
 function showRewardWarningModal(rewardUnits) {
   return new Promise((resolve, reject) => {
     const modalElement = document.getElementById('reward-warning-modal');
@@ -569,13 +562,13 @@ async function updateTopBarUI(token, first = false, userData) {
       retryWithBackoff(() => (readStakingContracts[token].methods.getTotalStaked || readStakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
       retryWithBackoff(() => readStakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
     ]);
-    const poolSize = Number(poolSizeRaw || '0') / 1_000_000;
+    const poolSize = Number(poolSizeRaw || '0') / SUN_PER_TRX;
     const totalStaked = toUnits(totalStakedRaw, d.decimals);
     const totalActiveStaked = toUnits(totalActiveStakedRaw, d.decimals);
     const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
-    const userTotalClaimed = Number(userTotalClaimedRaw) / 1_000_000;
+    const userTotalClaimed = Number(userTotalClaimedRaw) / SUN_PER_TRX;
     const stakedAmount = toUnits(userData.stakedAmount, d.decimals);
-    const totalClaimedTrx = Number(userTotalClaimedRaw) / 1_000_000;
+    const totalClaimedTrx = Number(userTotalClaimedRaw) / SUN_PER_TRX;
     // Use fixed 1:1 price (1 CFT = 1 TRX) for ROI calculation
     const roiPct = (stakedAmount > 0 && userData.isActive) ? (totalClaimedTrx / (stakedAmount * 1)) * 100 : 0;
     // Calculate yourNextPayout as in updateStatsGridUI
@@ -672,7 +665,7 @@ async function updateActionGridUI(token, first = false, userData) {
       retryWithBackoff(() => readTokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0'))
     ]);
     const balanceUnits = toUnits(balanceRaw, d.decimals);
-    let rewardUnits = Number(pendingRewardsRaw) / 1_000_000;
+    let rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX;
     const now = Math.floor(Date.now() / 1000);
     const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + Number(timeout);
     const isExpired = timeout && nextClaim <= now && !userData.isActive && !isWhitelisted;
@@ -682,7 +675,7 @@ async function updateActionGridUI(token, first = false, userData) {
     cacheData = { data: {}, timestamp: Date.now() };
     cacheData.data.balanceUnits = Number(balanceUnits);
     cacheData.data.rewardUnits = Number(rewardUnits);
-    cacheData.data.contractBalance = Number(contractBalanceRaw) / 1_000_000;
+    cacheData.data.contractBalance = Number(contractBalanceRaw) / SUN_PER_TRX;
     cacheData.data.isWhitelisted = Boolean(isWhitelisted);
     cacheData.data.timeoutSec = Number(timeout);
     cacheData.data.isExpired = Boolean(isExpired);
@@ -755,7 +748,7 @@ async function updateStatsGridUI(token, first = false, userData) {
       retryWithBackoff(() => (readStakingContracts[token].methods.getTotalStaked || readStakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
       retryWithBackoff(() => readStakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
     ]);
-    const poolSize = Number(poolSizeRaw || '0') / 1_000_000;
+    const poolSize = Number(poolSizeRaw || '0') / SUN_PER_TRX;
     const dailyPayoutPct = DAILY_PAYOUT_PERCENTAGE; // Use constant
     const totalStaked = toUnits(totalStakedRaw, d.decimals);
     const totalActiveStaked = toUnits(totalActiveStakedRaw, d.decimals);
@@ -942,7 +935,6 @@ async function stakeTokens(token, amount) {
       const amountToStake = toWei(amount, tokenDetails[token].decimals);
       if (amountToStake === 0n) throw new Error('Enter a valid amount to stake.');
       const stakingContractAddress = tokenDetails[token].stakingAddress;
-      const tokenAddress = tokenDetails[token].tokenAddress;
       const tokenContract = tokenContracts[token]; // signing
       const readTokenContract = readTokenContracts[token]; // read
       const stakingContract = stakingContracts[token]; // signing
@@ -953,21 +945,10 @@ async function stakeTokens(token, amount) {
       const allowanceRaw = await retryWithBackoff(() => readTokenContract.methods.allowance(userAddress, stakingContractAddress).call());
       const allowance = BigInt(allowanceRaw);
       const approvalRequired = allowance < amountToStake;
-
-      // Estimate energy for stake
-      let requiredEnergy = await estimateEnergyForAction(stakingContractAddress, 'stake(uint256)', [{ type: 'uint256', value: amountToStake.toString() }], userAddress);
-
-      // If approval needed, estimate for approve too and add
-      if (approvalRequired) {
-        const approveEnergy = await estimateEnergyForAction(tokenAddress, 'approve(address,uint256)', [
-          { type: 'address', value: stakingContractAddress },
-          { type: 'uint256', value: maxUint256 }
-        ], userAddress);
-        requiredEnergy += approveEnergy;
-      }
-
-      const availableEnergy = await checkUserEnergy(userAddress);
-      const shortfall = Math.max(0, requiredEnergy - availableEnergy);
+      let energyCheckResult = approvalRequired
+        ? await checkUserEnergy(userAddress, token, 'stake', tokenDetails[token].energyCosts.approve || 30000)
+        : await checkUserEnergy(userAddress, token, 'stake');
+      let { availableEnergy, shortfall, requiredEnergy } = energyCheckResult;
       if (shortfall > 0) {
         const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy, approvalRequired ? ' (incl. approval)' : '');
         if (modalResult.rent) {
@@ -975,14 +956,12 @@ async function stakeTokens(token, amount) {
           await requestEnergyRental(modalResult.rentalEnergy);
           await delay(3000); // Reduced delay
           hideProcessingModal(processingModal);
-        } else {
-          throw new Error('Energy rental cancelled.');
         }
       }
       processingModal = showProcessingModal('(2/2)');
       if (approvalRequired) {
         const approvalTx = await tronWeb.transactionBuilder.triggerSmartContract(
-          tokenAddress,
+          tokenDetails[token].tokenAddress,
           'approve(address,uint256)', {},
           [ { type:'address', value: stakingContractAddress }, { type:'uint256', value: maxUint256 } ],
           userAddress
@@ -1068,20 +1047,14 @@ async function unstakeTokens(token) {
         console.error('unstakeTokens: earned call failed:', error);
         pendingRewardsRaw = '0';
       }
-      const rewardUnits = Number(pendingRewardsRaw) / 1_000_000;
+      const rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX;
       if (rewardUnits > 0) {
         const proceed = await showRewardWarningModal(rewardUnits);
         if (!proceed) {
           throw new Error('Withdrawal cancelled. Please claim your rewards first.');
         }
       }
-
-      // Estimate energy for unstake
-      const amountToUnstake = toWei(unstakeAmount, tokenDetails[token].decimals);
-      const requiredEnergy = await estimateEnergyForAction(tokenDetails[token].stakingAddress, 'unstake(uint256)', [{ type: 'uint256', value: amountToUnstake.toString() }], userAddress);
-
-      const availableEnergy = await checkUserEnergy(userAddress);
-      const shortfall = Math.max(0, requiredEnergy - availableEnergy);
+      const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'unstake');
       if (shortfall > 0) {
         const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy);
         if (modalResult.rent) {
@@ -1089,11 +1062,10 @@ async function unstakeTokens(token) {
           await requestEnergyRental(modalResult.rentalEnergy);
           await delay(3000); // Reduced delay
           hideProcessingModal(processingModal);
-        } else {
-          throw new Error('Energy rental cancelled.');
         }
       }
       processingModal = showProcessingModal('(2/2)');
+      const amountToUnstake = toWei(unstakeAmount, tokenDetails[token].decimals);
       const stakingContract = stakingContracts[token];
       const readStakingContract = readStakingContracts[token];
       const userData = await retryWithBackoff(() => readStakingContract.methods.users(userAddress).call());
@@ -1159,12 +1131,7 @@ async function claimRewards(token) {
       if (timerEl) timerEl._paused = true;
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
-
-      // Estimate energy for claim
-      const requiredEnergy = await estimateEnergyForAction(tokenDetails[token].stakingAddress, 'claimRewards()', [], userAddress);
-
-      const availableEnergy = await checkUserEnergy(userAddress);
-      const shortfall = Math.max(0, requiredEnergy - availableEnergy);
+      const { availableEnergy, shortfall, requiredEnergy } = await checkUserEnergy(userAddress, token, 'claimRewards');
       if (shortfall > 0) {
         const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, requiredEnergy);
         if (modalResult.rent) {
@@ -1172,8 +1139,6 @@ async function claimRewards(token) {
           await requestEnergyRental(modalResult.rentalEnergy);
           await delay(3000); // Reduced delay
           hideProcessingModal(processingModal);
-        } else {
-          throw new Error('Energy rental cancelled.');
         }
       }
       processingModal = showProcessingModal('(2/2)');
