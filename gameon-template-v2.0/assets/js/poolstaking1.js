@@ -10,6 +10,7 @@ const ENERGY_RENTAL_API_URL = 'https://energyrental.io'; // Base URL for EnergyR
 const ENERGY_RENTAL_API_KEY = 'a6506deb-3e76-47a2-b673-991105764262';
 const ENERGY_RENTAL_API_SECRET = '7fbdf5ed-5f15-4aed-8acf-da7c960fc7e8';
 const SUN_PER_TRX = 1_000_000;
+let energyPriceSun = 80; // Fallback SUN per energy unit; fetched dynamically from API
 const ENERGY_RENTAL_DURATION = 5;
 const CACHE_TIMEOUT_MS = 120_000; // 120s cache for runtime updates
 const THROTTLE_GAP_MS = 4; // Adjusted for 250 RPS (1000ms / 250 ≈ 4ms)
@@ -182,6 +183,36 @@ async function chainstackApiCall(endpoint, params = {}) {
   });
 }
 /* ===================== TronWeb Setup (wrap requests) ===================== */
+async function fetchEnergyPrice() {
+  if (!userAddress) {
+    console.warn('No user address for fetching energy price; using fallback.');
+    return;
+  }
+  try {
+    const res = await fetch(`${ENERGY_RENTAL_API_URL}/energy/get-quote`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': ENERGY_RENTAL_API_KEY,
+        'X-Api-Secret': ENERGY_RENTAL_API_SECRET
+      },
+      body: JSON.stringify({
+        receiver: userAddress,
+        amount: 65000,
+        duration: 5
+      })
+    });
+    if (!res.ok) throw new Error(`Quote failed: ${res.status}`);
+    const data = await res.json();
+    if (data.success && data.quote?.price_trx) {
+      energyPriceSun = Math.round((data.quote.price_trx * 1e6) / 65000);
+      console.log(`Fetched energy price: ${energyPriceSun} SUN per energy unit`);
+    }
+  } catch (e) {
+    console.error('Failed to fetch energy price:', e);
+    // Keep fallback
+  }
+}
 async function initializeTronWeb() {
   const initDelay = 500; // Reduced delay for faster detection
   await delay(initDelay);
@@ -225,6 +256,8 @@ if (!userAddress) {
 readTronWeb.setAddress(userAddress);
   const cb = document.getElementById('connect-button');
   if (cb) cb.innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
+  // Fetch dynamic energy price from API
+  await fetchEnergyPrice();
   // Init contracts: signing versions with injected, read versions with readTronWeb
   const key = 'cft';
   const details = tokenDetails[key];
@@ -433,7 +466,7 @@ function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = 
       return reject(new Error('Energy rental modal not found.'));
     }
     const rentalEnergy = shortfall;
-    const rentalCostSun = rentalEnergy * ENERGY_PRICE_SUN;
+    const rentalCostSun = rentalEnergy * energyPriceSun; // Use dynamic/fetched price
     const rentalCostTrx = rentalCostSun / SUN_PER_TRX;
     const map = {
       'user-energy': userEnergy.toLocaleString('en-US'),
