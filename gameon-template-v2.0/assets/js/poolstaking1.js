@@ -9,7 +9,6 @@ const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a0
 const ENERGY_RENTAL_API_URL = 'https://energyrental.io'; // Base URL for EnergyRental.io API
 const ENERGY_RENTAL_API_KEY = 'a6506deb-3e76-47a2-b673-991105764262';
 const ENERGY_RENTAL_API_SECRET = '7fbdf5ed-5f15-4aed-8acf-da7c960fc7e8';
-const ENERGY_PRICE_SUN = 50;
 const SUN_PER_TRX = 1_000_000;
 const ENERGY_RENTAL_DURATION = 5;
 const CACHE_TIMEOUT_MS = 120_000; // 120s cache for runtime updates
