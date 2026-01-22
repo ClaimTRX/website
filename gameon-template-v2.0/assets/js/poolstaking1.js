@@ -305,10 +305,11 @@ async function requestEnergyRental(rentalEnergy) {
   let processingModal = null;
   try {
     processingModal = showProcessingModal('(1/2)');
+
     if (!userAddress) {
       throw new Error('Please connect your wallet first.');
     }
-    const totalEnergy = rentalEnergy;
+
     const quoteRes = await fetch(`${ENERGY_RENTAL_API_URL}/energy/get-quote`, {
       method: 'POST',
       headers: {
@@ -318,42 +319,88 @@ async function requestEnergyRental(rentalEnergy) {
       },
       body: JSON.stringify({
         receiver: userAddress,
-        amount: totalEnergy,
+        amount: rentalEnergy,
         duration: ENERGY_RENTAL_DURATION
       })
     });
-    if (!quoteRes.ok) throw new Error(`Quote failed: ${quoteRes.status}`);
-    const quoteData = await quoteRes.json();
-    if (!quoteData.success) throw new Error(quoteData.error || 'Quote failed');
 
-    const { sun_required, payment_address } = quoteData.quote;
-
-    const paymentRes = await tronWeb.trx.sendTransaction(payment_address, sun_required);
-    if (!paymentRes?.result) {
-      throw new Error('Transaction was rejected or failed.');
+    if (!quoteRes.ok) {
+      const errText = await quoteRes.text();
+      throw new Error(`Quote failed (${quoteRes.status}): ${errText}`);
     }
 
-    const response = await fetch(`${ENERGY_RENTAL_API_URL}/energy/create-order`, {
+    const quoteData = await quoteRes.json();
+
+    if (!quoteData.success) {
+      throw new Error(quoteData.error || 'Failed to get quote from server');
+    }
+
+    const { 
+      price_trx,          // ← this is what you should pay (platform price in TRX)
+      sun_required,       // ← this is the on-chain delegation amount (do NOT pay this!)
+      payment_address 
+    } = quoteData.quote;
+
+    // Convert platform price to SUN (what you actually send)
+    const paymentSun = Math.ceil(price_trx * SUN_PER_TRX);
+
+    console.log(`Paying platform price: ${price_trx} TRX (${paymentSun} SUN) to ${payment_address}`);
+
+    // Send the correct amount (platform price, not delegation cost)
+    const paymentRes = await tronWeb.trx.sendTransaction(payment_address, paymentSun);
+
+    if (!paymentRes?.result) {
+      throw new Error('Payment transaction was rejected or failed.');
+    }
+
+    console.log(`Payment TXID: ${paymentRes.txid}`);
+
+    // Step 2: Create order with the payment TXID
+    const createOrderRes = await fetch(`${ENERGY_RENTAL_API_URL}/energy/create-order`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json',
+      headers: {
+        'Content-Type': 'application/json',
         'X-Api-Key': ENERGY_RENTAL_API_KEY,
-        'X-Api-Secret': ENERGY_RENTAL_API_SECRET },
+        'X-Api-Secret': ENERGY_RENTAL_API_SECRET
+      },
       body: JSON.stringify({
         receiver: userAddress,
-        amount: totalEnergy,
+        amount: rentalEnergy,
         duration: ENERGY_RENTAL_DURATION,
         payment_txid: paymentRes.txid
       })
     });
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error(`Server error: ${data.message || 'Unknown'}`);
+
+    if (!createOrderRes.ok) {
+      const errText = await createOrderRes.text();
+      throw new Error(`Create order failed (${createOrderRes.status}): ${errText}`);
     }
-    const delegated = await pollDelegationStatus(data.order_id);
+
+    const orderData = await createOrderRes.json();
+
+    if (!orderData.success) {
+      throw new Error(orderData.error || 'Order creation failed on server');
+    }
+
+    const delegated = await pollDelegationStatus(orderData.order_id);
+
     hideProcessingModal(processingModal);
+    showToast({
+      title: 'Success',
+      body: `Energy rental of ${rentalEnergy} units requested! Waiting for delegation...`,
+      variant: 'success'
+    });
+
     return delegated;
+
   } catch (error) {
     hideProcessingModal(processingModal);
+    console.error('Energy rental error:', error);
+    showToast({
+      title: 'Rental Failed',
+      body: error.message || 'Unknown error during energy rental',
+      variant: 'danger'
+    });
     throw error;
   }
 }
