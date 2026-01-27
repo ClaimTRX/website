@@ -432,18 +432,10 @@ function showEnergyRentalModal(action, availableEnergy, token) {
       requiredFirst = details[action + 'First'] || details[action];
       requiredRepeat = details[action + 'Repeat'] || details[action];
     }
-    const optionsDiv = document.getElementById('energy-options');
     const firstEst = document.getElementById('first-est');
     const repeatEst = document.getElementById('repeat-est');
-    if (optionsDiv) {
-      if (action !== 'approve' && requiredFirst !== requiredRepeat) {
-        optionsDiv.style.display = 'block';
-        if (firstEst) firstEst.textContent = requiredFirst.toLocaleString();
-        if (repeatEst) repeatEst.textContent = requiredRepeat.toLocaleString();
-      } else {
-        optionsDiv.style.display = 'none';
-      }
-    }
+    if (firstEst) firstEst.textContent = requiredFirst.toLocaleString();
+    if (repeatEst) repeatEst.textContent = requiredRepeat.toLocaleString();
     const updateDisplays = () => {
       const selectedType = document.querySelector('[name="energy-type"]:checked')?.value || 'first';
       const required = selectedType === 'first' ? requiredFirst : requiredRepeat;
@@ -469,6 +461,8 @@ function showEnergyRentalModal(action, availableEnergy, token) {
         updateDisplays();
       });
     });
+    const initialRadio = document.querySelector('[name="energy-type"][value="first"]');
+    if (initialRadio) initialRadio.parentElement.classList.add('active');
     const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
     modal.show();
     const confirmButton = document.getElementById('rent-energy-confirm');
@@ -1313,28 +1307,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   initialize();
-});
-function syncEnergyCards(val) {
-  const first = document.getElementById("energy-card-first");
-  const repeat = document.getElementById("energy-card-repeat");
-  if(!first || !repeat) return;
-  first.classList.toggle("active", val === "first");
-  repeat.classList.toggle("active", val === "repeat");
-}
-document.addEventListener("change", (e) => {
-  if (e.target && e.target.name === "energy-type") {
-    syncEnergyCards(e.target.value);
-  }
-});
-document.addEventListener("click", (e) => {
-  const firstCard = e.target.closest("#energy-card-first");
-  const repeatCard = e.target.closest("#energy-card-repeat");
-  if(firstCard){
-    const r = firstCard.querySelector('input[type="radio"]');
-    if(r){ r.checked = true; r.dispatchEvent(new Event("change", {bubbles:true})); }
-  }
-  if(repeatCard){
-    const r = repeatCard.querySelector('input[type="radio"]');
-    if(r){ r.checked = true; r.dispatchEvent(new Event("change", {bubbles:true})); }
-  }
 });
