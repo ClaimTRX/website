@@ -464,16 +464,20 @@ function showEnergyRentalModal(action, availableEnergy, token) {
       }
     }
     const updateDisplays = () => {
-      const selectedType = document.querySelector('[name="energy-type"]:checked')?.value || 'first';
+      const selectedType = document.querySelector'[name="energy-type"]:checked')?.value || 'first';
       const required = selectedType === 'first' ? requiredFirst : requiredRepeat;
       const shortfall = Math.max(0, required - availableEnergy);
       const rental = shortfall;
       const costTrx = energyPriceSun ? (rental * energyPriceSun / SUN_PER_TRX) : 0;
+
+      // Updated to match new HTML IDs and include units
       document.getElementById('user-energy').textContent = availableEnergy.toLocaleString();
       document.getElementById('required-energy').textContent = required.toLocaleString();
       document.getElementById('rental-energy').textContent = rental.toLocaleString();
-      document.getElementById('rental-cost-trx').textContent = costTrx.toFixed(2);
-      document.getElementById('rental-duration').textContent = ENERGY_RENTAL_DURATION;
+      document.getElementById('rental-cost-trx').textContent = `${costTrx.toFixed(2)} TRX`;
+
+      // Removed rental-duration line (ID no longer exists)
+
       const confirmButton = document.getElementById('rent-energy-confirm');
       if (confirmButton) {
         confirmButton.textContent = rental === 0 ? 'Proceed without Rental' : 'Rent Energy';
@@ -481,6 +485,7 @@ function showEnergyRentalModal(action, availableEnergy, token) {
       }
     };
     updateDisplays();
+
     const radios = document.querySelectorAll('[name="energy-type"]');
     radios.forEach(radio => {
       radio.addEventListener('change', () => {
@@ -489,11 +494,14 @@ function showEnergyRentalModal(action, availableEnergy, token) {
         updateDisplays();
       });
     });
+
     // Set initial selected
     const initialRadio = document.querySelector('[name="energy-type"][value="first"]');
     if (initialRadio) initialRadio.parentElement.classList.add('selected');
+
     const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
     modal.show();
+
     const confirmButton = document.getElementById('rent-energy-confirm');
     const confirmHandler = () => {
       const selectedType = document.querySelector('[name="energy-type"]:checked')?.value || 'first';
@@ -505,6 +513,7 @@ function showEnergyRentalModal(action, availableEnergy, token) {
       resolve({ rent: rental > 0, rentalEnergy: rental, rentalCostTrx: costTrx });
     };
     confirmButton.addEventListener('click', confirmHandler);
+
     const cancelHandler = () => {
       modal.hide();
       resolve({ rent: false });
