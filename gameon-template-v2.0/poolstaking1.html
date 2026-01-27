@@ -111,61 +111,188 @@
     .luxe-ad-card .btn856.primary{background:linear-gradient(135deg,var(--accent-3),var(--accent-2));font-weight:700;padding:.75rem 1.5rem;border-radius:12px}
     .luxe-ad-card .btn.primary:hover{filter:brightness(1.2)}
 
-    /* ===================== IMPROVED ENERGY RENTAL MODAL ===================== */
-    #energy-rental-modal .modal-dialog { max-width: 460px; }
-    #energy-rental-modal .modal-body { padding: 24 м 32px 32px; }
-    #energy-options { margin-bottom: 24px; }
-    #energy-options h6 { margin-bottom: 16px; font-weight: 700; color: var(--accent-1); }
-    .option-card {
-      flex: 1;
-      border: 2px solid var(--line);
-      border-radius: 16px;
-      padding: 20px 12px;
-      text-align: center;
-      background: var(--bg-2);
-      cursor: pointer;
-      transition: all 0.3s ease;
-      min-height: 120px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 8px;
-    }
-    .option-card:hover { border-color: var(--accent-2); transform: translateY(-4px); }
-    .option-card.selected {
-      border-color: var(--accent-1);
-      background: rgba(98, 255, 207, 0.12);
-      box-shadow: 0 8px 25px rgba(98, 255, 207, 0.25);
-    }
-    .option-card .title { font-weight: 800; font-size: 1.1rem; }
-    .option-card .subtitle { font-size: 0.9rem; color: var(--muted); }
-    .option-card .energy-est { font-size: 1.4rem; font-weight: 900; color: var(--accent-1); }
+  /* ===================== PRO ENERGY RENTAL MODAL (v3) ===================== */
+#energy-rental-modal .modal-dialog { max-width: 520px; }
 
-    .energy-summary {
-      background: var(--bg-2);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    .energy-summary .row > div { padding: 8px 0; }
-    .energy-summary .label { color: var(--muted); font-size: 0.95rem; }
-    .energy-summary .value { font-weight: 700; font-size: 1.2rem; color: var(--accent-1); }
+#energy-rental-modal .modal-content{
+  border-radius: 22px;
+  background: radial-gradient(1200px 500px at 20% 0%, rgba(125,178,255,.14), transparent 55%),
+              radial-gradient(900px 450px at 90% 30%, rgba(179,124,255,.12), transparent 60%),
+              var(--bg-1);
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 22px 70px rgba(0,0,0,.65);
+  overflow: hidden;
+}
 
-    .energy-note {
-      font-size: 0.88rem;
-      color: var(--muted);
-      text-align: center;
-      margin-top: 12px;
-      line-height: 1.4;
-    }
+#energy-rental-modal .modal-header{
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  padding: 18px 20px;
+}
 
-    /* Mobile adjustments for modal */
-    @media (max-width: 576px) {
-      #energy-options .d-flex { flex-direction: column; gap: 12px; }
-      .option-card { min-height: 100px; padding: 16px; }
-      .energy-summary .row > div { font-size: 0.95rem; }
-    }
+#energy-rental-modal .modal-title{
+  font-weight: 900;
+  letter-spacing: .2px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#energy-rental-modal .modal-title .warn-badge{
+  width: 34px; height: 34px;
+  border-radius: 12px;
+  display: grid; place-items: center;
+  background: rgba(255,91,115,.12);
+  border: 1px solid rgba(255,91,115,.22);
+  box-shadow: 0 10px 25px rgba(255,91,115,.12);
+}
+
+#energy-rental-modal .btn-close{
+  filter: invert(1);
+  opacity: .9;
+}
+#energy-rental-modal .btn-close:hover{ opacity: 1; }
+
+#energy-rental-modal .modal-body{
+  padding: 18px 20px 14px; /* fixed, clean padding */
+}
+
+#energy-options{ margin-bottom: 16px; }
+
+#energy-options h6{
+  margin: 0 0 12px;
+  font-weight: 800;
+  color: #cfe3ff;
+  letter-spacing: .2px;
+}
+
+.energy-type-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.option-card{
+  border-radius: 18px;
+  padding: 16px 14px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+  cursor: pointer;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: center;
+  min-height: 96px;
+  user-select: none;
+}
+
+.option-card:hover{
+  transform: translateY(-2px);
+  border-color: rgba(125,178,255,.35);
+  box-shadow: 0 14px 30px rgba(0,0,0,.35);
+}
+
+.option-card.selected{
+  background: linear-gradient(180deg, rgba(98,255,207,.10), rgba(125,178,255,.06));
+  border-color: rgba(98,255,207,.55);
+  box-shadow: 0 16px 40px rgba(98,255,207,.12);
+}
+
+.option-ico{
+  width: 44px; height: 44px;
+  border-radius: 16px;
+  display: grid; place-items: center;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+.option-meta .title{
+  font-weight: 900;
+  font-size: 1.05rem;
+  margin: 0;
+}
+.option-meta .subtitle{
+  color: var(--muted);
+  font-size: .9rem;
+  margin-top: 2px;
+}
+.option-meta .energy-est{
+  margin-top: 6px;
+  font-weight: 950;
+  color: var(--accent-1);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.energy-summary{
+  margin-top: 10px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.energy-summary .row{ --bs-gutter-x: 12px; --bs-gutter-y: 10px; }
+.energy-summary .label{
+  color: var(--muted);
+  font-size: .85rem;
+}
+.energy-summary .value{
+  font-weight: 900;
+  font-size: 1.05rem;
+  color: #eaf2ff;
+}
+.energy-summary .value.accent{ color: var(--accent-1); }
+.energy-summary .value.danger{ color: var(--danger); }
+.energy-summary .divider{
+  height: 1px;
+  background: rgba(255,255,255,.08);
+  margin: 10px 0;
+}
+
+.energy-note{
+  margin: 12px 4px 2px;
+  font-size: .86rem;
+  color: rgba(154,167,189,.95);
+  text-align: center;
+  line-height: 1.35;
+}
+
+/* Footer buttons */
+#energy-rental-modal .modal-footer{
+  border-top: 1px solid rgba(255,255,255,.08);
+  padding: 14px 16px 16px;
+}
+
+.btn-cancel{
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.10);
+  color: #eaf2ff;
+  font-weight: 800;
+}
+.btn-cancel:hover{
+  border-color: rgba(125,178,255,.35);
+}
+
+.btn-rent{
+  height: 48px;
+  border-radius: 14px;
+  border: 0;
+  font-weight: 900;
+  color: #0b0e17;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  box-shadow: 0 14px 30px rgba(125,178,255,.18);
+}
+.btn-rent:hover{ filter: brightness(1.05); }
+
+@media (max-width: 576px){
+  #energy-rental-modal .modal-dialog{ max-width: 95vw; }
+  .energy-type-grid{ grid-template-columns: 1fr; }
+  .option-card{ min-height: 88px; }
+}
+
 
     /* ===================== RESPONSIVE ===================== */
     *, *::before, *::after { box-sizing: border-box; }
@@ -316,7 +443,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="energyRentalModalLabel">Insufficient Energy</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></buttonkaan>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
         </div>
         <div class="modal-body">
           <div id="energy-options">
