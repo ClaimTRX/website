@@ -31,9 +31,9 @@ const tokenDetails = {
     energyCosts: {
       approve: 65000, // Fixed for approval
       stakeFirst: 150000, // Higher for first-time stake
-      stakeRepeat: 120000, // Lower for repeat stake
+      stakeRepeat: 65000, // Lower for repeat stake
       unstakeFirst: 95000, // Higher for first-time unstake
-      unstakeRepeat: 75000, // Lower for repeat unstake
+      unstakeRepeat: 65000, // Lower for repeat unstake
       claimRewardsFirst: 120000, // Higher for first-time claim
       claimRewardsRepeat: 65000, // Lower for repeat claim
       activateTokens: 100000,
