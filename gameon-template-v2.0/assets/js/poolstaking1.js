@@ -1025,20 +1025,20 @@ async function stakeTokens(token, amount) {
         const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
         const TELEGRAM_CHAT_ID = '-1003603146813';
         const message =
-          `<b>🎉 New Stake Alert!</b>\n` +
-          `Staked Amount: <b>${fmt(amount)} CFT</b>\n` +
-          `View Transaction: <a href="https://tronscan.org/#/transaction/${broadcastStake.txid}">Here</a>`;
-        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-        await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: TELEGRAM_CHAT_ID,
-            text: message,
-            parse_mode: 'HTML',
-            disable_web_page_preview: true
-          })
-        });
+  `<b>🎉 New Stake Alert!</b>\n` +
+  `New user staked <b>${fmt(amount)} CFT</b> in the TRX rewards pool.\n` +
+  `Buy CFT and stake now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>`;
+const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+await fetch(url, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    chat_id: TELEGRAM_CHAT_ID,
+    text: message,
+    parse_mode: 'HTML',
+    disable_web_page_preview: true
+  })
+});
       } catch (notifyErr) {
         console.warn('Failed to send Telegram notification:', notifyErr);
       }
@@ -1225,20 +1225,20 @@ async function claimRewards(token) {
         const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
         const TELEGRAM_CHAT_ID = '-1003603146813';
         const message =
-          `<b>🎉 New Rewards Claim!</b>\n` +
-          `Claimed Amount: <b>${fmt(Number(pendingRewards) / SUN_PER_TRX)} TRX</b>\n` +
-          `View Transaction: <a href="https://tronscan.org/#/transaction/${broadcastClaim.txid}">Here</a>`;
-        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-        await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: TELEGRAM_CHAT_ID,
-            text: message,
-            parse_mode: 'HTML',
-            disable_web_page_preview: true
-          })
-        });
+  `<b>🎉 New Rewards Claim!</b>\n` +
+  `A user claimed <b>${fmt(Number(pendingRewards) / SUN_PER_TRX)} TRX</b> in the TRX rewards pool.\n` +
+  `Join now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>`;
+const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+await fetch(url, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    chat_id: TELEGRAM_CHAT_ID,
+    text: message,
+    parse_mode: 'HTML',
+    disable_web_page_preview: true
+  })
+});
       } catch (notifyErr) {
         console.warn('Failed to send Telegram notification:', notifyErr);
       }
