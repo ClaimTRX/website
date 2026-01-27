@@ -31,6 +31,15 @@
     .navbar-nav.items .nav-link{font-size:1.1rem;padding:.75rem 1rem}
     .navbar-nav.action .btn{font-size:1rem;padding:.5rem 1.25rem;height:50px}
     .navbar-nav.toggle .nav-link{font-size:1.5rem;padding:.5rem}
+    /* Mobile menu modal */
+    #menu .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt)}
+    #menu .modal-header{border-bottom:1px solid var(--line);padding:1rem}
+    #menu .modal-body{padding:1rem}
+    #menu .items .nav-item{margin:.5rem 0}
+    #menu .items .nav-link{color:var(--txt);font-size:1.1rem;padding:.5rem 1rem}
+    #menu .items .dropdown-menu{background:var(--bg-2);border:1px solid var(--line);padding:.5rem}
+    #menu .items .dropdown-menu .nav-link{color:var(--muted);font-size:1rem}
+    #menu .items .dropdown-menu .nav-link:hover{color:var(--accent-1)}
     /* Hero */
     .hero-section{padding:120px 0 28px;text-align:center}
     .intro-text{display:inline-block;font-size:1rem;letter-spacing:.16em;text-transform:uppercase;color:#c3d3ef;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:.42rem .95rem;border-radius:999px}
@@ -51,16 +60,30 @@
     .kpi span:first-child{font-weight:800;font-size:1.15rem}
     .kpi span:last-child{color:var(--muted);font-size:.88rem}
     /* Action Grid */
-    .action-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;padding:0 32px 36px;justify-items:stretch;align-items:stretch}
+    .action-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:18px;
+      padding:0 32px 36px;
+      justify-items:stretch;
+      align-items:stretch;
+    }
+    /* Panel */
     .panel{position:relative;display:grid;grid-template-rows:auto auto 1fr auto;gap:12px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:18px 18px 20px;box-shadow:var(--shadow-1)}
     .panel .item-title{color:var(--muted);font-weight:700;letter-spacing:.3px}
     .panel small{color:#9fb0cc}
     .form-control.luxe{background:#0c1121;border:1px solid var(--line);color:#eaf2ff;border-radius:14px;padding:12px 14px}
     .form-control.luxe:focus{outline:none;box-shadow:var(--focus-ring);border-color:rgba(125,178,255,.6)}
+    /* Quick fills */
     .quick-fills{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
     .quick-fills .btn{border-radius:999px;border:1px solid var(--line);color:#cfe3ff;background:transparent;font-weight:600;width:100%}
-    .btn.primary{height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#0b0e17;border:0;font-weight:800}
+    /* Buttons */
+    .btn.primary,.btn.ghost{height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px}
+    .btn.primary{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#0b0e17;border:0;font-weight:800}
     .btn.primary:hover{filter:brightness(1.05)}
+    .btn.ghost{border:1px solid var(--line);color:#eaf2ff;background:transparent}
+    .btn.ghost:hover{border-color:rgba(125,178,255,.55)}
+    /* Only Claim button now */
     #claim-rewards-button-cft{width:100%;height:48px;font-size:1rem;display:none}
     /* Pool Stats */
     .stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
@@ -74,283 +97,180 @@
     .skeleton{position:relative;overflow:hidden;min-width:80px;min-height:20px;background:#141a2b;border-radius:8px}
     .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);animation:shimmer 1.2s infinite}
     @keyframes shimmer{100%{transform:translateX(100%)}}
-    /* Base Modal defaults */
+    /* Modals */
     .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt);border-radius:16px}
     .modal-header .btn-close{filter:invert(1)}
-    /* =========================================
-       BRAND NEW ENERGY MODAL (PRO / PREMIUM)
-       ========================================= */
-    #energy-rental-modal .modal-dialog{max-width: 640px;}
-    #energy-rental-modal .modal-content{
-      border-radius: 26px;
-      border: 1px solid rgba(255,255,255,.10);
-      background:
-        radial-gradient(1200px 520px at 18% 8%, rgba(125,178,255,.18), transparent 55%),
-        radial-gradient(900px 420px at 92% 35%, rgba(98,255,207,.12), transparent 60%),
-        radial-gradient(700px 380px at 50% 110%, rgba(179,124,255,.10), transparent 60%),
-        rgba(10, 13, 22, .92);
-      box-shadow: 0 30px 90px rgba(0,0,0,.70);
-      overflow: hidden;
-    }
-    /* Fancy top bar */
-    #energy-rental-modal .modal-header{
-      padding: 18px 18px 14px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-    }
-    .energy-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:14px;
-      width:100%;
-    }
-    .energy-head-left{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      min-width:0;
-    }
-    .energy-icon{
-      width:42px;height:42px;
-      border-radius: 16px;
-      display:grid;place-items:center;
-      background: rgba(255,91,115,.12);
-      border: 1px solid rgba(255,91,115,.24);
-      box-shadow: 0 16px 40px rgba(255,91,115,.10);
-    }
-    .energy-title-wrap{min-width:0;}
-    .energy-title{
-      margin:0;
-      font-weight: 950;
-      letter-spacing: .2px;
-      font-size: 1.05rem;
-      white-space: nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .energy-sub{
-      margin:2px 0 0;
-      color: rgba(154,167,189,.92);
-      font-size: .88rem;
-      line-height: 1.2;
-    }
-    .energy-badge{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.04);
-      border: 1px solid rgba(255,255,255,.10);
-      color:#cfe3ff;
-      font-weight: 800;
-      font-size: .82rem;
-      flex-shrink:0;
-    }
-    .energy-badge .dot{
-      width:8px;height:8px;border-radius:999px;
-      background: var(--warning);
-      box-shadow: 0 0 0 3px rgba(255,209,102,.12);
-    }
-    #energy-rental-modal .btn-close{
-      filter: invert(1);
-      opacity: .9;
-      margin: 0;
-    }
-    #energy-rental-modal .btn-close:hover{opacity:1;}
-    #energy-rental-modal .modal-body{ padding: 16px 18px 12px; }
-    .energy-layout{
-      display:grid;
-      grid-template-columns: 1.15fr .85fr;
-      gap: 14px;
-      align-items: stretch;
-    }
-    /* Left: option cards */
-    .energy-section-title{
-      color:#cfe3ff;
-      font-weight: 900;
-      font-size: .92rem;
-      letter-spacing: .2px;
-      margin: 4px 0 10px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .energy-help{
-      color: rgba(154,167,189,.95);
-      font-size: .84rem;
-      font-weight: 650;
-    }
-    .energy-choice{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .energy-card{
-      position:relative;
-      border-radius: 20px;
-      padding: 14px 14px 12px;
-      background: rgba(255,255,255,.03);
-      border: 1px solid rgba(255,255,255,.10);
-      cursor:pointer;
-      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
-      min-height: 116px;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-    }
-    .energy-card:hover{
-      transform: translateY(-2px);
-      border-color: rgba(125,178,255,.35);
-      box-shadow: 0 18px 46px rgba(0,0,0,.45);
-    }
-    .energy-card.active{
-      border-color: rgba(98,255,207,.55);
-      background: linear-gradient(180deg, rgba(98,255,207,.10), rgba(125,178,255,.06));
-      box-shadow: 0 18px 55px rgba(98,255,207,.10);
-    }
-    .energy-card-top{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .energy-card h6{
-      margin:0;
-      font-weight: 950;
-      font-size: 1.0rem;
-      letter-spacing:.2px;
-    }
-    .energy-pill{
-      border-radius:999px;
-      padding: 6px 10px;
-      font-size: .78rem;
-      font-weight: 850;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.03);
-      color:#cfe3ff;
-      white-space:nowrap;
-    }
-    .energy-desc{
-      color: rgba(154,167,189,.95);
-      font-size: .88rem;
-      line-height: 1.25;
-      margin-top: -2px;
-    }
-    .energy-est{
-      margin-top:auto;
-      display:flex;
-      align-items:baseline;
-      gap:8px;
-      font-weight: 950;
-      font-size: 1.35rem;
-      color: var(--accent-1);
-    }
-    .energy-est small{
-      color: rgba(154,167,189,.95);
-      font-size: .85rem;
-      font-weight: 700;
-    }
-    /* Right: summary panel */
-    .energy-summary{
-      border-radius: 22px;
-      padding: 14px;
-      background: rgba(255,255,255,.03);
-      border: 1px solid rgba(255,255,255,.10);
-      height: 100%;
-      display:flex;
-      flex-direction:column;
-      gap: 12px;
-    }
-    .energy-summary-top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-    }
-    .energy-summary-title{
-      font-weight: 950;
-      margin:0;
-      font-size: .98rem;
-      letter-spacing:.2px;
-      color:#eaf2ff;
-    }
-    .energy-summary-note{
-      margin:0;
-      color: rgba(154,167,189,.95);
-      font-size: .84rem;
-      line-height: 1.25;
-    }
-    .energy-metrics{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .metric{
-      border-radius: 18px;
-      padding: 10px 10px;
-      background: rgba(0,0,0,.18);
-      border: 1px solid rgba(255,255,255,.08);
-    }
-    .metric .k{
-      color: rgba(154,167,189,.95);
-      font-size: .82rem;
-      font-weight: 750;
-    }
-    .metric .v{
-      margin-top: 4px;
-      font-weight: 950;
-      font-size: 1.06rem;
-      color:#eaf2ff;
-      line-height: 1.1;
-      word-break: break-word;
-    }
-    .metric .v.accent{ color: var(--accent-1); }
-    .metric .v.danger{ color: var(--danger); }
-    .energy-divider{
-      height:1px;
-      background: rgba(255,255,255,.08);
-      margin: 2px 0;
-    }
-    .energy-footer-text{
-      margin-top:auto;
-      color: rgba(154,167,189,.95);
-      font-size: .84rem;
-      line-height: 1.25;
-    }
-    /* Footer buttons */
-    #energy-rental-modal .modal-footer{
-      padding: 14px 16px 16px;
-      border-top: 1px solid rgba(255,255,255,.08);
-      gap: 12px;
-    }
-    .btn-energy-cancel{
-      height: 50px;
-      border-radius: 16px;
-      background: rgba(255,255,255,.02);
-      border: 1px solid rgba(255,255,255,.12);
-      color: #eaf2ff;
-      font-weight: 900;
-    }
-    .btn-energy-cancel:hover{ border-color: rgba(125,178,255,.35); }
-    .btn-energy-rent{
-      height: 50px;
-      border-radius: 16px;
-      border:0;
-      font-weight: 950;
-      color:#0b0e17;
-      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
-      box-shadow: 0 20px 45px rgba(125,178,255,.20);
-    }
-    .btn-energy-rent:hover{ filter: brightness(1.06); }
-    @media (max-width: 992px){
-      #energy-rental-modal .modal-dialog{max-width: 95vw;}
-      .energy-layout{ grid-template-columns: 1fr; }
-      .energy-choice{ grid-template-columns: 1fr; }
-      .energy-summary{ min-height: unset; }
-    }
-    /* ===================== RESPONSIVE (rest of your page) ===================== */
+    #transaction-processing-modal .spinner{border:4px solid var(--accent-2);border-top-color:transparent;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto 15px}
+    @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+    /* Ad card */
+    .luxe-ad-card{position:relative;border-radius:var(--radius-4);background:linear-gradient(135deg,rgba(98,255,207,.1),rgba(125,178,255,.1));border:2px solid var(--accent-3);box-shadow:var(--shadow-2),0 0 20px rgba(125,178,255,.3);overflow:hidden;margin:2rem 0;transition:transform .3s ease,box-shadow .3s ease}
+    .luxe-ad-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-2),0 0 30px rgba(125,178,255,.5)}
+    .luxe-ad-card .inner{padding:1.5rem}
+    .luxe-ad-card h2{font-weight:800;color:var(--accent-1);text-shadow:0 0 5px rgba(98,255,207,.5)}
+    .luxe-ad-card p{color:var(--txt);font-size:1.1rem}
+    .luxe-ad-card .btn.primary{background:linear-gradient(135deg,var(--accent-3),var(--accent-2));font-weight:700;padding:.75rem 1.5rem;border-radius:12px}
+    .luxe-ad-card .btn.primary:hover{filter:brightness(1.2)}
+  /* ===================== PRO ENERGY RENTAL MODAL (v3) ===================== */
+#energy-rental-modal .modal-dialog { max-width: 520px; }
+#energy-rental-modal .modal-content{
+  border-radius: 22px;
+  background: radial-gradient(1200px 500px at 20% 0%, rgba(125,178,255,.14), transparent 55%),
+              radial-gradient(900px 450px at 90% 30%, rgba(179,124,255,.12), transparent 60%),
+              var(--bg-1);
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 22px 70px rgba(0,0,0,.65);
+  overflow: hidden;
+}
+#energy-rental-modal .modal-header{
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  padding: 18px 20px;
+}
+#energy-rental-modal .modal-title{
+  font-weight: 900;
+  letter-spacing: .2px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#energy-rental-modal .modal-title .warn-badge{
+  width: 34px; height: 34px;
+  border-radius: 12px;
+  display: grid; place-items: center;
+  background: rgba(255,91,115,.12);
+  border: 1px solid rgba(255,91,115,.22);
+  box-shadow: 0 10px 25px rgba(255,91,115,.12);
+}
+#energy-rental-modal .btn-close{
+  filter: invert(1);
+  opacity: .9;
+}
+#energy-rental-modal .btn-close:hover{ opacity: 1; }
+#energy-rental-modal .modal-body{
+  padding: 18px 20px 14px; /* fixed, clean padding */
+}
+#energy-options{ margin-bottom: 16px; }
+#energy-options h6{
+  margin: 0 0 12px;
+  font-weight: 800;
+  color: #cfe3ff;
+  letter-spacing: .2px;
+}
+.energy-type-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.option-card{
+  border-radius: 18px;
+  padding: 16px 14px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+  cursor: pointer;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: center;
+  min-height: 96px;
+  user-select: none;
+}
+.option-card:hover{
+  transform: translateY(-2px);
+  border-color: rgba(125,178,255,.35);
+  box-shadow: 0 14px 30px rgba(0,0,0,.35);
+}
+.option-card.selected{
+  background: linear-gradient(180deg, rgba(98,255,207,.10), rgba(125,178,255,.06));
+  border-color: rgba(98,255,207,.55);
+  box-shadow: 0 16px 40px rgba(98,255,207,.12);
+}
+.option-ico{
+  width: 44px; height: 44px;
+  border-radius: 16px;
+  display: grid; place-items: center;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.option-meta .title{
+  font-weight: 900;
+  font-size: 1.05rem;
+  margin: 0;
+}
+.option-meta .subtitle{
+  color: var(--muted);
+  font-size: .9rem;
+  margin-top: 2px;
+}
+.option-meta .energy-est{
+  margin-top: 6px;
+  font-weight: 950;
+  color: var(--accent-1);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.energy-summary{
+  margin-top: 10px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px;
+  padding: 14px;
+}
+.energy-summary .row{ --bs-gutter-x: 12px; --bs-gutter-y: 10px; }
+.energy-summary .label{
+  color: var(--muted);
+  font-size: .85rem;
+}
+.energy-summary .value{
+  font-weight: 900;
+  font-size: 1.05rem;
+  color: #eaf2ff;
+}
+.energy-summary .value.accent{ color: var(--accent-1); }
+.energy-summary .value.danger{ color: var(--danger); }
+.energy-summary .divider{
+  height: 1px;
+  background: rgba(255,255,255,.08);
+  margin: 10px 0;
+}
+.energy-note{
+  margin: 12px 4px 2px;
+  font-size: .86rem;
+  color: rgba(154,167,189,.95);
+  text-align: center;
+  line-height: 1.35;
+}
+/* Footer buttons */
+#energy-rental-modal .modal-footer{
+  border-top: 1px solid rgba(255,255,255,.08);
+  padding: 14px 16px 16px;
+}
+.btn-cancel{
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.10);
+  color: #eaf2ff;
+  font-weight: 800;
+}
+.btn-cancel:hover{
+  border-color: rgba(125,178,255,.35);
+}
+.btn-rent{
+  height: 48px;
+  border-radius: 14px;
+  border: 0;
+  font-weight: 900;
+  color: #0b0e17;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  box-shadow: 0 14px 30px rgba(125,178,255,.18);
+}
+.btn-rent:hover{ filter: brightness(1.05); }
+@media (max-width: 576px){
+  #energy-rental-modal .modal-dialog{ max-width: 95vw; }
+  .energy-type-grid{ grid-template-columns: 1fr; }
+  .option-card{ min-height: 88px; }
+}
+    /* ===================== RESPONSIVE ===================== */
     *, *::before, *::after { box-sizing: border-box; }
     .kpis > .kpi { min-width:0; }
     .kpi span { text-align:center; white-space:normal; overflow-wrap:anywhere; }
@@ -358,7 +278,11 @@
       .kpis{ grid-template-columns:repeat(2, minmax(0,1fr)); padding:0 20px 20px; }
       .action-grid{ display:flex; flex-direction:column; align-items:center; gap:18px; padding:0 20px 28px; width:100%; }
       .action-grid .panel{ width:100%; max-width:min(480px, calc(100% - 24px)); margin-inline:auto; padding:16px; }
+      .action-grid .panel > *{ max-width:100%; }
       .form-control.luxe{ width:100%; }
+      .quick-fills{ grid-template-columns:repeat(3, minmax(0,1fr)); }
+      .quick-fills .btn{ width:100%; }
+      #stake-button-cft, #unstake-button-cft, #claim-rewards-button-cft { width:100%; }
       .stats-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
     }
     @media (max-width:576px){
@@ -371,17 +295,6 @@
     @media (min-width:992px){
       .panel{ min-height:260px; }
     }
-    /* Ad card */
-    .luxe-ad-card{position:relative;border-radius:var(--radius-4);background:linear-gradient(135deg,rgba(98,255,207,.1),rgba(125,178,255,.1));border:2px solid var(--accent-3);box-shadow:var(--shadow-2),0 0 20px rgba(125,178,255,.3);overflow:hidden;margin:2rem 0;transition:transform .3s ease,box-shadow .3s ease}
-    .luxe-ad-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-2),0 0 30px rgba(125,178,255,.5)}
-    .luxe-ad-card .inner{padding:1.5rem}
-    .luxe-ad-card h2{font-weight:800;color:var(--accent-1);text-shadow:0 0 5px rgba(98,255,207,.5)}
-    .luxe-ad-card p{color:var(--txt);font-size:1.1rem}
-    .luxe-ad-card .btn.primary{background:linear-gradient(135deg,var(--accent-3),var(--accent-2));font-weight:700;padding:.75rem 1.5rem;border-radius:12px}
-    .luxe-ad-card .btn.primary:hover{filter:brightness(1.2)}
-    /* Processing modal spinner */
-    #transaction-processing-modal .spinner{border:4px solid var(--accent-2);border-top-color:transparent;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto 15px}
-    @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
@@ -471,7 +384,7 @@
     <div class="container">
       <div class="stats-grid">
         <div class="stat-tile"><span class="item-title">Pool Size</span><strong id="pool-size">—</strong></div>
-        <div class="stat-tile"><span class="item-title">Daily Payout</span>1%</strong></div>
+        <div class="stat-tile"><span class="item-title">Daily Payout</span>1.00% / day</strong></div>
         <div class="stat-tile"><span class="item-title">Your Next Payout</span><strong id="your-next-payout">—</strong></div>
       </div>
       <!-- Claim before box -->
@@ -500,9 +413,6 @@
     </div>
   </section>
   <!-- ***** Energy Rental Modal ***** -->
-  <!-- ===========================
-       NEW ENERGY RENTAL MODAL
-       =========================== -->
   <div class="modal fade" id="energy-rental-modal" tabindex="-1" aria-labelledby="energyRentalModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -611,8 +521,8 @@
           <p>We recommend claiming your rewards before withdrawing. Proceed with withdrawal anyway?</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-energy-cancel flex-fill" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-energy-rent flex-fill" id="withdraw-confirm">Proceed with Withdrawal</button>
+          <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-rent" id="withdraw-confirm">Proceed with Withdrawal</button>
         </div>
       </div>
     </div>
@@ -654,38 +564,10 @@
   <script src="assets/js/main.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
   <!-- App JS -->
-  <script src="assets/js/poolstaking.js" type="module"></script>
+  <script src="assets/js/poolstaking1.js" type="module"></script>
   <script src="assets/js/advertisements.js" type="module"></script>
-  <!-- Selection logic (visual + radios) -->
-  <script>
-    function syncEnergyCards(val){
-      const first = document.getElementById("energy-card-first");
-      const repeat = document.getElementById("energy-card-repeat");
-      if(!first || !repeat) return;
-      first.classList.toggle("active", val === "first");
-      repeat.classList.toggle("active", val === "repeat");
-    }
-    document.addEventListener("change", (e) => {
-      if (e.target && e.target.name === "energy-type") {
-        syncEnergyCards(e.target.value);
-      }
-    });
-    document.addEventListener("click", (e) => {
-      const firstCard = e.target.closest("#energy-card-first");
-      const repeatCard = e.target.closest("#energy-card-repeat");
-      if(firstCard){
-        const r = firstCard.querySelector('input[type="radio"]');
-        if(r){ r.checked = true; r.dispatchEvent(new Event("change", {bubbles:true})); }
-      }
-      if(repeatCard){
-        const r = repeatCard.querySelector('input[type="radio"]');
-        if(r){ r.checked = true; r.dispatchEvent(new Event("change", {bubbles:true})); }
-      }
-    });
-  </script>
 </body>
 </html>
-
 
 
 
