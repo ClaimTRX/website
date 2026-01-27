@@ -17,7 +17,7 @@ const THROTTLE_GAP_MS = 4; // Adjusted for 250 RPS (1000ms / 250 ≈ 4ms)
 const CONTRACT_CALL_DELAY_MS = 0; // No delay for faster execution
 const UI_REFRESH_DELAY_MS = 2000; // Reduced from 4000ms
 // Manual CFT price for APY calculation (update this value as needed)
-const CFT_PRICE_USDT = 0.1745; // Manually set CFT price in USDT (update as needed)
+const CFT_PRICE_USDT = 0.166; // Manually set CFT price in USDT (update as needed)
 const DAILY_PAYOUT_PERCENTAGE = 1; // 1% daily payout as per requirement
 /* ===================== Token Config ===================== */
 const tokenDetails = {
@@ -260,7 +260,7 @@ async function initializeTronWeb() {
   await fetchEnergyPrice();
   const key = 'cft_usdt';
   const details = tokenDetails[key];
-  if (!isValidTronAddress(details.tokenAddress) ) throw new Error(`Invalid token address for ${key}`);
+  if (!isValidTronAddress(details.tokenAddress)) throw new Error(`Invalid token address for ${key}`);
   if (!isValidTronAddress(details.stakingAddress)) throw new Error(`Invalid staking address for ${key}`);
   tokenContracts[key] = await tronWeb.contract(tokenContractAbi, details.tokenAddress);
   readTokenContracts[key] = await readTronWeb.contract(tokenContractAbi, details.tokenAddress);
@@ -541,6 +541,18 @@ function toWei(amt, decimals = 6) {
   const base = BigInt(Math.round(n * 1e6));
   const pow = BigInt(Math.max(0, decimals - 6));
   return base * (TEN ** pow);
+}
+function calculateAPY(stakedUnits, totalActiveStaked, poolSizeUSDT) {
+  if (stakedUnits <= 0 || totalActiveStaked <= 0 || poolSizeUSDT <= 0) return 0;
+  const yourShare = stakedUnits / totalActiveStaked;
+  const dailyUSDT = yourShare * (poolSizeUSDT * DAILY_PAYOUT_PERCENTAGE / 100);
+  const yearlyUSDT = dailyUSDT * 365;
+  const stakedValueUSDT = stakedUnits * CFT_PRICE_USDT;
+  return stakedValueUSDT > 0 ? (yearlyUSDT / stakedValueUSDT) * 100 : 0;
+}
+function calculateROI(userTotalClaimedUSDT, stakedUnits) {
+  const stakedValueUSDT = stakedUnits * CFT_PRICE_USDT;
+  return stakedValueUSDT > 0 ? (userTotalClaimedUSDT / stakedValueUSDT) * 100 : 0;
 }
 /* ===================== UI helpers ===================== */
 function showToast({ title='Notification', body='', variant='dark', autohide=true }) {
@@ -874,7 +886,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
       } catch {
         pendingRewards = '0';
       }
-      contractBalanceRaw = await retryWithBackoff(() => readTokenContracts['cft_usdt'].methods.balanceOf(tokenDetails['cft_usdt'].stakingAddress).call().catch(() => '0'));
+      contractBalanceRaw = await retryWithBackoff(() => tronWeb.trx.getBalance(tokenDetails['cft_usdt'].stakingAddress).catch(() => '0'));
       cachedRewards = pendingRewards;
       cachedBalance = contractBalanceRaw;
       cacheTimestamp = Date.now();
@@ -1193,7 +1205,7 @@ async function claimRewards(token) {
         pendingRewards = '0';
       }
       if (BigInt(pendingRewards) === 0n) throw new Error('No rewards available to claim.');
-      const contractBalanceRaw = await retryWithBackoff(() => readTokenContracts[token].methods.balanceOf(tokenDetails[token].stakingAddress).call().catch(() => '0'));
+      const contractBalanceRaw = await retryWithBackoff(() => readTokenContracts[token].methods.balanceOf(tokenDetails[token].stakingAddress).catch(() => '0'));
       if (Number(contractBalanceRaw) < Number(pendingRewards)) throw new Error('Insufficient contract balance to claim rewards.');
       const claimTx = await tronWeb.transactionBuilder.triggerSmartContract(
         tokenDetails[token].stakingAddress, 'claimRewards()', {}, [], userAddress
