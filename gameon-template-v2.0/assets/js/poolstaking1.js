@@ -35,7 +35,7 @@ const tokenDetails = {
       unstakeFirst: 95000, // Higher for first-time unstake
       unstakeRepeat: 75000, // Lower for repeat unstake
       claimRewardsFirst: 120000, // Higher for first-time claim
-      claimRewardsRepeat: 100000, // Lower for repeat claim
+      claimRewardsRepeat: 65000, // Lower for repeat claim
       activateTokens: 100000,
       setPoolSize: 60000,
       addToPool: 70000,
