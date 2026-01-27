@@ -7,8 +7,8 @@ const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 /* ===================== Config ===================== */
 const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
 const ENERGY_RENTAL_API_URL = 'https://energyrental.io'; // Base URL for EnergyRental.io API
-const ENERGY_RENTAL_API_KEY = '0072cc9a-e7eb-4393-b986-b6347df8efb4';
-const ENERGY_RENTAL_API_SECRET = '87c007e5-aff3-45ea-903e-831cf2e94ef7';
+const ENERGY_RENTAL_API_KEY = 'fa89bd0c-1d2a-401a-9dbc-cf16f9019331';
+const ENERGY_RENTAL_API_SECRET = 'ccbe0df1-8799-4fe5-a98a-cef13440dd86';
 const SUN_PER_TRX = 1_000_000;
 let energyPriceSun = 80; // Fallback SUN per energy unit; fetched dynamically from API
 const ENERGY_RENTAL_DURATION = 5;
