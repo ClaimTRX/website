@@ -325,33 +325,6 @@
       font-size: .84rem;
       line-height: 1.25;
     }
-    /* Manual rent field */
-    .manual-rent-section{
-      margin-top: 16px;
-      padding: 12px;
-      background: rgba(255,255,255,.03);
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 18px;
-    }
-    .manual-rent-section label{
-      display: block;
-      color: var(--muted);
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-    #manual-rent{
-      background: #0c1121;
-      border: 1px solid var(--line);
-      color: #eaf2ff;
-      border-radius: 14px;
-      padding: 10px 12px;
-      width: 100%;
-    }
-    #manual-rent:focus{
-      outline: none;
-      box-shadow: var(--focus-ring);
-      border-color: rgba(125,178,255,.6);
-    }
     /* Footer buttons */
     #energy-rental-modal .modal-footer{
       padding: 14px 16px 16px;
@@ -388,6 +361,18 @@
       .energy-layout{ grid-template-columns: 1fr; }
       .energy-choice{ grid-template-columns: 1fr; }
       .energy-summary{ min-height: unset; }
+      .modal-footer { 
+        display: flex; 
+        flex-direction: row; 
+        flex-wrap: wrap; 
+        justify-content: space-between; 
+        gap: 8px; 
+        padding: 12px 14px; 
+      }
+      .modal-footer button { 
+        flex: 1 1 48%; 
+        min-width: 0; 
+      }
     }
     /* ===================== RESPONSIVE ===================== */
     *, *::before, *::after { box-sizing: border-box; }
@@ -628,10 +613,6 @@
               </div>
             </div>
           </div>
-          <div class="manual-rent-section">
-            <label for="manual-rent">Manual rent amount (optional):</label>
-            <input type="number" id="manual-rent" class="form-control luxe" placeholder="Enter custom energy to rent" min="0">
-          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-energy-cancel flex-fill" data-bs-dismiss="modal">Cancel</button>
@@ -702,7 +683,6 @@
   <script src="assets/js/advertisements.js" type="module"></script>
 </body>
 </html>
-
 
 
 
