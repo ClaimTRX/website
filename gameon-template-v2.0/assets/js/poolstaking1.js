@@ -441,10 +441,6 @@ function showEnergyRentalModal(action, availableEnergy, token) {
       const required = selectedType === 'first' ? requiredFirst : requiredRepeat;
       let shortfall = Math.max(0, required - availableEnergy);
       let rental = shortfall;
-      const manualInput = document.getElementById('manual-rent');
-      if (manualInput && manualInput.value > 0) {
-        rental = Number(manualInput.value);
-      }
       const costTrx = energyPriceSun ? (rental * energyPriceSun / SUN_PER_TRX) : 0;
       document.getElementById('user-energy').textContent = availableEnergy.toLocaleString();
       document.getElementById('required-energy').textContent = required.toLocaleString();
@@ -467,8 +463,6 @@ function showEnergyRentalModal(action, availableEnergy, token) {
     });
     const initialRadio = document.querySelector('[name="energy-type"][value="first"]');
     if (initialRadio) initialRadio.parentElement.classList.add('active');
-    const manualInput = document.getElementById('manual-rent');
-    if (manualInput) manualInput.addEventListener('input', updateDisplays);
     const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
     modal.show();
     const confirmButton = document.getElementById('rent-energy-confirm');
@@ -477,9 +471,6 @@ function showEnergyRentalModal(action, availableEnergy, token) {
       const required = selectedType === 'first' ? requiredFirst : requiredRepeat;
       let shortfall = Math.max(0, required - availableEnergy);
       let rental = shortfall;
-      if (manualInput && manualInput.value > 0) {
-        rental = Number(manualInput.value);
-      }
       const costTrx = energyPriceSun ? (rental * energyPriceSun / SUN_PER_TRX) : 0;
       modal.hide();
       resolve({ rent: rental > 0, rentalEnergy: rental, rentalCostTrx: costTrx });
