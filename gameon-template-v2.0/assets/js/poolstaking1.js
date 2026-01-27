@@ -456,7 +456,7 @@ function showEnergyRentalModal(action, availableEnergy, token) {
       document.getElementById('rental-cost-trx').textContent = `${costTrx.toFixed(2)} TRX`;
       const confirmButton = document.getElementById('rent-energy-confirm');
       if (confirmButton) {
-        confirmButton.textContent = rental === 0 ? 'Proceed without Rental' : 'Rent Energy';
+        confirmButton.innerHTML = rental === 0 ? '<i class="fa-solid fa-arrow-right me-2"></i> Proceed without Rental' : '<i class="fa-solid fa-bolt me-2"></i> Rent Energy';
         confirmButton.disabled = false;
       }
     };
@@ -464,13 +464,11 @@ function showEnergyRentalModal(action, availableEnergy, token) {
     const radios = document.querySelectorAll('[name="energy-type"]');
     radios.forEach(radio => {
       radio.addEventListener('change', () => {
-        radios.forEach(r => r.parentElement.classList.remove('selected'));
-        radio.parentElement.classList.add('selected');
+        radios.forEach(r => r.parentElement.classList.remove('active'));
+        radio.parentElement.classList.add('active');
         updateDisplays();
       });
     });
-    const initialRadio = document.querySelector('[name="energy-type"][value="first"]');
-    if (initialRadio) initialRadio.parentElement.classList.add('selected');
     const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
     modal.show();
     const confirmButton = document.getElementById('rent-energy-confirm');
@@ -1315,4 +1313,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   initialize();
+});
+function syncEnergyCards(val) {
+  const first = document.getElementById("energy-card-first");
+  const repeat = document.getElementById("energy-card-repeat");
+  if(!first || !repeat) return;
+  first.classList.toggle("active", val === "first");
+  repeat.classList.toggle("active", val === "repeat");
+}
+document.addEventListener("change", (e) => {
+  if (e.target && e.target.name === "energy-type") {
+    syncEnergyCards(e.target.value);
+  }
+});
+document.addEventListener("click", (e) => {
+  const firstCard = e.target.closest("#energy-card-first");
+  const repeatCard = e.target.closest("#energy-card-repeat");
+  if(firstCard){
+    const r = firstCard.querySelector('input[type="radio"]');
+    if(r){ r.checked = true; r.dispatchEvent(new Event("change", {bubbles:true})); }
+  }
+  if(repeatCard){
+    const r = repeatCard.querySelector('input[type="radio"]');
+    if(r){ r.checked = true; r.dispatchEvent(new Event("change", {bubbles:true})); }
+  }
 });
