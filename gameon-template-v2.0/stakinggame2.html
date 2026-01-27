@@ -1,0 +1,830 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="description" content="Game Staking">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>Staking Game</title>
+  <link rel="icon" href="assets/img/favicon.png">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    /* =============================
+       LUXE DESIGN SYSTEM – v2
+       ============================= */
+    :root{
+      --bg-0:#07090f; --bg-1:#0b0e17; --bg-2:#0f1321; --surface:#12172a; --line:#212b46;
+      --muted:#9aa7bd; --txt:#e9eef7;
+      --accent-1:#62ffcf; --accent-2:#7db2ff; --accent-3:#b37cff;
+      --success:#00e095; --danger:#ff5b73; --warning:#ffd166;
+      --radius-2:12px; --radius-3:18px; --radius-4:28px;
+      --shadow-1:0 10px 30px rgba(0,0,0,.55); --shadow-2:0 12px 40px rgba(0,0,0,.6);
+      --glass:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      --focus-ring:0 0 0 3px rgba(125,178,255,.35);
+    }
+    html,body{background:var(--bg-0);color:var(--txt);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    /* Header */
+    header#header{padding:1.5rem 0}
+    .navbar-brand img{height:48px}
+    .navbar-nav.items .nav-link{font-size:1.1rem;padding:.75rem 1rem}
+    .navbar-nav.action .btn{font-size:1rem;padding:.5rem 1.25rem;height:50px}
+    .navbar-nav.toggle .nav-link{font-size:1.5rem;padding:.5rem}
+    /* Mobile menu modal */
+    #menu .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt)}
+    #menu .modal-header{border-bottom:1px solid var(--line);padding:1rem}
+    #menu .modal-body{padding:1rem}
+    #menu .items .nav-item{margin:.5rem 0}
+    #menu .items .nav-link{color:var(--txt);font-size:1.1rem;padding:.5rem 1rem}
+    #menu .items .dropdown-menu{background:var(--bg-2);border:1px solid var(--line);padding:.5rem}
+    #menu .items .dropdown-menu .nav-link{color:var(--muted);font-size:1rem}
+    #menu .items .dropdown-menu .nav-link:hover{color:var(--accent-1)}
+    /* Hero */
+    .hero-section{padding:120px 0 28px;text-align:center}
+    .intro-text{display:inline-block;font-size:1rem;letter-spacing:.16em;text-transform:uppercase;color:#c3d3ef;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:.42rem .95rem;border-radius:999px}
+    .hero-section h1{font-weight:900;letter-spacing:.4px;margin-top:16px;font-size:3.25rem;line-height:1.1}
+    .hero-section p{color:#b5c2d8}
+    /* Luxe Card */
+    .luxe-card{position:relative;border-radius:var(--radius-4);background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--line);box-shadow:var(--shadow-2);overflow:hidden}
+    .staking-header{padding:32px}
+    .staking-title{display:flex;gap:16px;align-items:center}
+    .staking-title img{width:56px;height:56px}
+    .staking-title h4{margin:0;font-weight:800}
+    .chip{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:#cfe3ff;padding:.35rem .65rem;border-radius:999px;font-size:.85rem}
+    .chip .dot{width:8px;height:8px;border-radius:999px;background:var(--success);box-shadow:0 0 0 2px rgba(0,224,149,.15)}
+    .staking-sub{color:var(--muted)}
+    /* KPI Row */
+    .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:0 32px 24px}
+    .kpi{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:16px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3)}
+    .kpi span:first-child{font-weight:800;font-size:1.15rem}
+    .kpi span:last-child{color:var(--muted);font-size:.88rem}
+    /* Action Grid */
+    .action-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:18px;
+      padding:0 32px 36px;
+      justify-items:stretch;
+      align-items:stretch;
+    }
+    /* Panel */
+    .panel{position:relative;display:grid;grid-template-rows:auto auto 1fr auto;gap:12px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:18px 18px 20px;box-shadow:var(--shadow-1)}
+    .panel .item-title{color:var(--muted);font-weight:700;letter-spacing:.3px}
+    .panel small{color:#9fb0cc}
+    .form-control.luxe{background:#0c1121;border:1px solid var(--line);color:#eaf2ff;border-radius:14px;padding:12px 14px}
+    .form-control.luxe:focus{outline:none;box-shadow:var(--focus-ring);border-color:rgba(125,178,255,.6)}
+    /* Quick fills */
+    .quick-fills{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .quick-fills .btn{border-radius:999px;border:1px solid var(--line);color:#cfe3ff;background:transparent;font-weight:600;width:100%}
+    /* Buttons */
+    .btn.primary,.btn.ghost{height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px}
+    .btn.primary{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#0b0e17;border:0;font-weight:800}
+    .btn.primary:hover{filter:brightness(1.05)}
+    .btn.ghost{border:1px solid var(--line);color:#eaf2ff;background:transparent}
+    .btn.ghost:hover{border-color:rgba(125,178,255,.55)}
+    /* Claim/Activate default hidden to avoid wrong state flash; JS will show correct one */
+    #activate-tokens-button-game,#claim-rewards-button-game{width:100%;height:48px;font-size:1rem;display:none}
+    /* Pool Stats */
+    .stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+    .stat-tile{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+    .stat-tile .item-title{color:var(--muted);font-weight:700}
+    /* Claim-before box */
+    .countdown-tile{margin-top:14px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+    .countdown-tile .item-title{color:var(--muted);font-weight:700}
+    .countdown-tile .inactive{color:var(--danger);font-weight:600}
+    /* Skeleton */
+    .skeleton{position:relative;overflow:hidden;min-width:80px;min-height:20px;background:#141a2b;border-radius:8px}
+    .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);animation:shimmer 1.2s infinite}
+    @keyframes shimmer{100%{transform:translateX(100%)}}
+    /* Modals */
+    .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt);border-radius:16px}
+    .modal-header .btn-close{filter:invert(1)}
+    #energy-rental-modal .modal-body{padding-top:10px}
+    #energy-rental-modal .modal-body p{margin-bottom:10px;color:#cfe3ff}
+    #user-energy,#required-energy,#rental-energy,#rental-duration,#rental-cost-trx{display:inline-block;padding:.15rem .5rem;border-radius:10px;background:rgba(125,178,255,.12);border:1px solid rgba(125,178,255,.25);color:#ffffff}
+    .modal .btn-rent{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));border:0;color:#0b0e17;border-radius:12px;font-weight:800}
+    .modal .btn-cancel{border:1px solid var(--line);color:#eaf2ff;background:transparent;border-radius:12px}
+    #transaction-processing-modal .spinner{border:4px solid var(--accent-2);border-top-color:transparent;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto 15px}
+    @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+    /* Ad card */
+    .luxe-ad-card{position:relative;border-radius:var(--radius-4);background:linear-gradient(135deg,rgba(98,255,207,.1),rgba(125,178,255,.1));border:2px solid var(--accent-3);box-shadow:var(--shadow-2),0 0 20px rgba(125,178,255,.3);overflow:hidden;margin:2rem 0;transition:transform .3s ease,box-shadow .3s ease}
+    .luxe-ad-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-2),0 0 30px rgba(125,178,255,.5)}
+    .luxe-ad-card .inner{padding:1.5rem}
+    .luxe-ad-card h2{font-weight:800;color:var(--accent-1);text-shadow:0 0 5px rgba(98,255,207,.5)}
+    .luxe-ad-card p{color:var(--txt);font-size:1.1rem}
+    .luxe-ad-card .btn.primary{background:linear-gradient(135deg,var(--accent-3),var(--accent-2));font-weight:700;padding:.75rem 1.5rem;border-radius:12px}
+    .luxe-ad-card .btn.primary:hover{filter:brightness(1.2)}
+    /* Responsive */
+   /* ≤992px: center panels perfectly */
+/* make 100%-width controls actually fit inside on iOS */
+*, *::before, *::after { box-sizing: border-box; }
+/* Make 100%-width controls actually fit inside on iOS */
+*, *::before, *::after { box-sizing: border-box; }
+/* KPI: allow long numbers to wrap and not push edges */
+.kpis > .kpi{ min-width:0; }
+.kpi span{ text-align:center; white-space:normal; }
+.kpi span:first-child{ overflow-wrap:anywhere; }
+/* <= 992px: center panels AND guarantee inner fit */
+@media (max-width:992px){
+  /* KPIs: 2 cols and matching gutters */
+  .kpis{
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    padding:0 20px 20px;
+  }
+  .action-grid{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:18px;
+    padding:0 20px 28px;
+    width:100%;
+  }
+  /* cap to container width minus a small gutter so nothing touches the edge */
+  .action-grid .panel{
+    width:100%;
+    max-width:min(480px, calc(100% - 24px)); /* <- key change */
+    margin-inline:auto;
+    padding:16px; /* a touch more breathing room */
+  }
+  /* ensure children never overflow */
+  .action-grid .panel > *{ max-width:100%; }
+  .form-control.luxe{ width:100%; }
+  .quick-fills{ grid-template-columns:repeat(3, minmax(0,1fr)); }
+  .quick-fills .btn{ width:100%; }
+  #stake-button-game,
+  #unstake-button-game,
+  #activate-tokens-button-game,
+  #claim-rewards-button-game { width:100%; }
+  /* stats grid: 2 cols on tablets */
+  .stats-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+}
+/* <= 576px: single-column KPIs and tighter gutters */
+@media (max-width:576px){
+  .kpis{
+    grid-template-columns:1fr;
+    padding:0 12px 16px;
+  }
+  .action-grid{ padding:0 12px 24px; }
+  .panel{ padding:16px; } /* keep the same padding on xs as well */
+  .stats-grid{ grid-template-columns:1fr; }
+  .kpi span:first-child{ font-size:1rem; } /* avoid crowding on small phones */
+}
+/* >= 992px: keep desktop card height */
+@media (min-width:992px){
+  .panel{ min-height:260px; }
+}
+ /* =========================================
+       BRAND NEW ENERGY MODAL (PRO / PREMIUM)
+       ========================================= */
+    #energy-rental-modal .modal-dialog{max-width: 640px;}
+    #energy-rental-modal .modal-content{
+      border-radius: 26px;
+      border: 1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(1200px 520px at 18% 8%, rgba(125,178,255,.18), transparent 55%),
+        radial-gradient(900px 420px at 92% 35%, rgba(98,255,207,.12), transparent 60%),
+        radial-gradient(700px 380px at 50% 110%, rgba(179,124,255,.10), transparent 60%),
+        rgba(10, 13, 22, .92);
+      box-shadow: 0 30px 90px rgba(0,0,0,.70);
+      overflow: hidden;
+    }
+    /* Fancy top bar */
+    #energy-rental-modal .modal-header{
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .energy-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      width:100%;
+    }
+    .energy-head-left{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:0;
+    }
+    .energy-icon{
+      width:42px;height:42px;
+      border-radius: 16px;
+      display:grid;place-items:center;
+      background: rgba(255,91,115,.12);
+      border: 1px solid rgba(255,91,115,.24);
+      box-shadow: 0 16px 40px rgba(255,91,115,.10);
+    }
+    .energy-title-wrap{min-width:0;}
+    .energy-title{
+      margin:0;
+      font-weight: 950;
+      letter-spacing: .2px;
+      font-size: 1.05rem;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .energy-sub{
+      margin:2px 0 0;
+      color: rgba(154,167,189,.92);
+      font-size: .88rem;
+      line-height: 1.2;
+    }
+    .energy-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.10);
+      color:#cfe3ff;
+      font-weight: 800;
+      font-size: .82rem;
+      flex-shrink:0;
+    }
+    .energy-badge .dot{
+      width:8px;height:8px;border-radius:999px;
+      background: var(--warning);
+      box-shadow: 0 0 0 3px rgba(255,209,102,.12);
+    }
+    #energy-rental-modal .btn-close{
+      filter: invert(1);
+      opacity: .9;
+      margin: 0;
+    }
+    #energy-rental-modal .btn-close:hover{opacity:1;}
+    #energy-rental-modal .modal-body{ padding: 16px 18px 12px; overflow-y: auto; max-height: calc(100vh - 200px); }
+    .energy-layout{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+    /* Left: option cards */
+    .energy-section-title{
+      color:#cfe3ff;
+      font-weight: 900;
+      font-size: .92rem;
+      letter-spacing: .2px;
+      margin: 4px 0 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .energy-help{
+      color: rgba(154,167,189,.95);
+      font-size: .84rem;
+      font-weight: 650;
+    }
+    .energy-choice{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .energy-card{
+      position:relative;
+      border-radius: 20px;
+      padding: 14px 14px 12px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.10);
+      cursor:pointer;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+      min-height: 116px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .energy-card:hover{
+      transform: translateY(-2px);
+      border-color: rgba(125,178,255,.35);
+      box-shadow: 0 18px 46px rgba(0,0,0,.45);
+    }
+    .energy-card.active{
+      border-color: rgba(98,255,207,.55);
+      background: linear-gradient(180deg, rgba(98,255,207,.10), rgba(125,178,255,.06));
+      box-shadow: 0 18px 55px rgba(98,255,207,.10);
+      animation: glow 2s ease-in-out infinite;
+    }
+    @keyframes glow {
+      0% { box-shadow: 0 0 10px rgba(98,255,207,.2); }
+      50% { box-shadow: 0 0 20px rgba(125,178,255,.3); }
+      100% { box-shadow: 0 0 10px rgba(98,255,207,.2); }
+    }
+    .energy-card-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .energy-card h6{
+      margin:0;
+      font-weight: 950;
+      font-size: 1.0rem;
+      letter-spacing:.2px;
+    }
+    .energy-pill{
+      border-radius:999px;
+      padding: 6px 10px;
+      font-size: .78rem;
+      font-weight: 850;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      color:#cfe3ff;
+      white-space:nowrap;
+    }
+    .energy-desc{
+      color: rgba(154,167,189,.95);
+      font-size: .88rem;
+      line-height: 1.25;
+      margin-top: -2px;
+    }
+    .energy-est{
+      margin-top:auto;
+      display:flex;
+      align-items:baseline;
+      gap:8px;
+      font-weight: 950;
+      font-size: 1.35rem;
+      color: var(--accent-1);
+    }
+    .energy-est small{
+      color: rgba(154,167,189,.95);
+      font-size: .85rem;
+      font-weight: 700;
+    }
+    /* Right: summary panel */
+    .energy-summary{
+      border-radius: 22px;
+      padding: 14px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.10);
+      height: 100%;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
+    .energy-summary-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .energy-summary-title{
+      font-weight: 950;
+      margin:0;
+      font-size: .98rem;
+      letter-spacing:.2px;
+      color:#eaf2ff;
+    }
+    .energy-summary-note{
+      margin:0;
+      color: rgba(154,167,189,.95);
+      font-size: .84rem;
+      line-height: 1.25;
+    }
+    .energy-metrics{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .metric{
+      border-radius: 18px;
+      padding: 10px 10px;
+      background: rgba(0,0,0,.18);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .metric .k{
+      color: rgba(154,167,189,.95);
+      font-size: .82rem;
+      font-weight: 750;
+    }
+    .metric .v{
+  margin-top: 4px;
+  font-weight: 950;
+  font-size: 1.06rem;
+  color:#eaf2ff;
+  line-height: 1.1;
+  word-break: normal;
+}
+    .metric .v.accent{ color: var(--accent-1); }
+    .metric .v.danger{ color: var(--danger); }
+    .energy-divider{
+      height:1px;
+      background: rgba(255,255,255,.08);
+      margin: 2px 0;
+    }
+    .energy-footer-text{
+      margin-top:auto;
+      color: rgba(154,167,189,.95);
+      font-size: .84rem;
+      line-height: 1.25;
+    }
+    /* Footer buttons */
+    #energy-rental-modal .modal-footer{
+      padding: 14px 16px 16px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      gap: 12px;
+    }
+    .btn-energy-cancel{
+      height: 50px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.02);
+      border: 1px solid rgba(255,255,255,.12);
+      color: #eaf2ff;
+      font-weight: 900;
+    }
+    .btn-energy-cancel:hover{ border-color: rgba(125,178,255,.35); }
+    .btn-energy-rent{
+      height: 50px;
+      border-radius: 16px;
+      border:0;
+      font-weight: 950;
+      color:#0b0e17;
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      box-shadow: 0 20px 45px rgba(125,178,255,.20);
+      animation: pulse 1.5s infinite;
+    }
+    .btn-energy-rent:hover{ filter: brightness(1.06); }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+    @media (max-width: 992px){
+      #energy-rental-modal .modal-dialog{max-width: 95vw;}
+      .energy-layout{ grid-template-columns: 1fr; }
+      .energy-choice{ grid-template-columns: 1fr; }
+      .energy-summary{ min-height: unset; }
+      .modal-footer {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 12px 14px;
+      }
+      .modal-footer button {
+        flex: 1 1 48%;
+        min-width: 0;
+      }
+      .btn-energy-cancel { display: none; }
+      .btn-energy-rent { flex: 1 1 100%; }
+      .energy-metrics { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="header-placeholder"></div>
+
+<script>
+  fetch('assets/js/header.html')
+    .then(response => response.text())
+    .then(data => {
+      document.getElementById('header-placeholder').innerHTML = data;
+    });
+</script>
+  <!-- Hero -->
+  <section class="hero-section">
+    <div class="container text-center">
+      <span class="intro-text">Game Ecosystem</span>
+      <h1 class="display-5">Game Staking</h1>
+      <p class="mb-0">Grow your wealth through TRX rewards by staking CFTGame</p>
+    </div>
+  </section>
+  <!-- Staking Card -->
+  <section class="py-3">
+    <div class="container">
+      <div class="luxe-card">
+        <!-- Header -->
+        <div class="staking-header">
+          <div class="staking-title">
+            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt=""> <!-- Update image if needed -->
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h4 class="staking-title-text m-0">Game Staking</h4>
+                <span class="chip" id="status-chip"><span class="dot"></span><span id="status-text">Ready</span></span>
+              </div>
+              <p class="staking-sub mb-0 mt-2">Stake CFTGame to earn TRX rewards. Tokens are permanently locked — claim before every 7 days on the website or lose your staked tokens.</p>
+            </div>
+          </div>
+        </div>
+        <!-- KPI Row -->
+        <div class="kpis">
+          <div class="kpi"><span id="staked-amount-game" class="skeleton"></span><span>Staked</span></div>
+          <div class="kpi">
+            <span id="projected-rewards-game" class="skeleton" data-bs-toggle="tooltip" data-bs-title="Estimated annual percentage yield based on current pool parameters. Subject to change."></span>
+            <span>Your est. APY</span>
+          </div>
+          <div class="kpi"><span id="roi-game" class="skeleton"></span><span>Your ROI</span></div>
+          <div class="kpi"><span id="user-total-claimed-game" class="skeleton"></span><span>Your Total Claimed</span></div>
+        </div>
+                <!-- Action Grid -->
+        <div class="action-grid">
+          <!-- Deposit -->
+          <div class="panel">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="item-title">Deposit</span>
+              <small>Available: <span id="available-tokens-game" class="skeleton" style="display:inline-block;min-width:80px;min-height:16px"></span> </small>
+            </div>
+            <div><input type="number" inputmode="decimal" min="0" step="0.000001" placeholder="0.0" id="stake-amount-game" class="form-control luxe"></div>
+            <div class="quick-fills mt-3">
+  <button class="btn ghost flex-fill" data-fill="0.25">25%</button>
+  <button class="btn ghost flex-fill" data-fill="0.5">50%</button>
+  <button class="btn ghost flex-fill" data-fill="1">MAX</button>
+</div>
+            <a href="#" class="btn primary w-100" id="stake-button-game">Stake</a>
+          </div>
+
+          <!-- Game Staking Info (Replaces Withdraw Panel) -->
+          <div class="panel d-flex flex-column justify-content-between">
+            <div>
+              <div class="d-flex align-items-center mb-3">
+                <i class="fa-solid fa-circle-info text-primary me-2" style="font-size:1.4rem;"></i>
+                <span class="item-title">Game Staking Rules</span>
+              </div>
+              <div style="font-size:0.92rem; line-height:1.5; color:#b5c2d8;">
+                <p class="mb-2"><strong>Permanent Stake:</strong> Once staked, CFTGame tokens cannot be withdrawn.</p>
+                <p class="mb-2"><strong>Claim Deadline:</strong> You must claim rewards before every 7 days on the website. Using code or automated bots to claim is not allowed and will automatically forfeit your CFTGame tokens.</p>
+                <p class="mb-0"><strong>Forfeiture:</strong> If you miss the deadline, your staked CFTGame tokens are permanently forfeited and removed from your balance.</p>
+              </div>
+            </div>
+            <div class="mt-3 pt-3 border-top border-secondary-subtle">
+             <p class="mb-0 mt-3" style="font-size:0.9rem; color:#a8b5cf; line-height:1.5;">
+  <strong>Warning:</strong> This is a high-yield, high-risk staking pool designed for long-term stakers.
+</p>
+            </div>
+          </div>
+
+          <!-- Rewards -->
+          <div class="panel">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="item-title">Pending Rewards</span>
+            </div>
+            <div>
+              <h4 class="m-0" id="claimable-rewards-game">0 TRX</h4>
+              <span class="mt-2 d-block" style="color:#9fb0cc" id="energy-hint">TRON energy fee required</span>
+            </div>
+            <div></div>
+            <div>
+              <!-- Only Claim button remains (Activate button removed) -->
+              <a href="#" class="btn primary w-100" id="claim-rewards-button-game" style="display:none">
+                <i class="fa-solid fa-gift me-2"></i> Claim Rewards
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="py-2">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat-tile"><span class="item-title">Pool Size</span><strong id="pool-size">— TRX</strong></div>
+        <div class="stat-tile"><span class="item-title">Daily Payout</span>1%</div>
+       
+        <div class="stat-tile"><span class="item-title">Your Next Payout</span><strong id="your-next-payout">— TRX</strong></div>
+       
+       
+      </div>
+      <!-- Claim before box -->
+      <div class="countdown-tile" id="next-claim-box">
+        <span class="item-title">Expire in</span>
+        <strong id="next-claim-timer" class="inactive">Inactive</strong>
+      </div>
+    </div>
+  </section>
+  
+
+    <!-- Buy Game Token Section -->
+  <section class="py-4">
+    <div class="container">
+      <div class="luxe-card">
+        <div class="staking-header text-center">
+          <h4 class="m-0">Buy Game Token Instantly</h4>
+          <p class="staking-sub mb-0 mt-2">Swap CFT or TRX directly for CFTGame (1:1 ratio)</p>
+        </div>
+        <div class="row g-4 justify-content-center px-4 pb-4">
+          <!-- Swap CFT → Game -->
+          <div class="col-lg-5 col-md-6">
+            <div class="panel h-100 d-flex flex-column">
+              <div class="text-center mb-3">
+                <img src="assets/img/content/cftlogo518.png" alt="CFT" style="width:48px;height:48px;">
+                <i class="fa-solid fa-arrow-right mx-3 text-primary"></i>
+                <img src="assets/img/content/cftlogo518.png" alt="Game" style="width:48px;height:48px;">
+              </div>
+              <h5 class="text-center mb-3">Swap CFT → CFTGame (1:1)</h5>
+              <input type="number" inputmode="decimal" min="0" step="any" placeholder="Amount of CFT" id="swap-cft-amount" class="form-control luxe mb-3">
+              <button class="btn primary w-100 mt-auto" id="swap-cft-button">Swap CFT for CFTGame</button>
+            </div>
+          </div>
+
+          <!-- Swap TRX → Game -->
+          <div class="col-lg-5 col-md-6">
+            <div class="panel h-100 d-flex flex-column">
+              <div class="text-center mb-3">
+                <img src="assets/img/content/tron1.png" alt="TRX" style="width:48px;height:48px;border-radius:50%;">
+                <i class="fa-solid fa-arrow-right mx-3 text-primary"></i>
+                <img src="assets/img/content/cftlogo518.png" alt="Game" style="width:48px;height:48px;">
+              </div>
+              <h5 class="text-center mb-3">Swap TRX → CFTGame (1:1)</h5>
+              <input type="number" inputmode="decimal" min="0" step="any" placeholder="Amount of TRX" id="swap-trx-amount" class="form-control luxe mb-3">
+              <button class="btn primary w-100 mt-auto" id="swap-trx-button">Swap TRX for CFTGame</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-3">
+    <div class="container">
+      <div class="cta luxe-ad-card">
+        <div class="row align-items-center g-0">
+          <div class="col-12 col-md-5 text-center p-3">
+            <img src="assets/img/content/guardian.png" alt="CFT Guardian" style="max-width:220px">
+          </div>
+          <div class="col-12 col-md-7 p-3">
+            <div class="inner">
+              <h2 class="m-0">CFT Guardian Minting is Now Live</h2>
+              <p class="mb-3">Earn daily SOL rewards by staking our Guardian NFTs</p>
+              <a class="btn primary" href="https://cftguardians.com/" aria-label="Mint CFT Guardians"><i class="icon-rocket me-2"></i>Mint Now</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- ***** Energy Rental Modal ***** -->
+  <div class="modal fade" id="energy-rental-modal" tabindex="-1" aria-labelledby="energyRentalModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="energy-head">
+            <div class="energy-head-left">
+              <div class="energy-icon"><i class="fa-solid fa-bolt"></i></div>
+              <div class="energy-title-wrap">
+                <h5 class="energy-title" id="energyRentalModalLabel">Insufficient Energy</h5>
+                <p class="energy-sub">Choose the transaction type and rent the missing energy.</p>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="energy-badge"><span class="dot"></span> Estimate</span>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div class="energy-layout">
+            <!-- LEFT -->
+            <div>
+              <div class="energy-section-title">
+                <span>Select Transaction Type</span>
+                <span class="energy-help">Pick the closest match</span>
+              </div>
+              <div class="energy-choice">
+                <label class="energy-card active" id="energy-card-first">
+                  <input type="radio" name="energy-type" value="first" checked style="display:none;">
+                  <div class="energy-card-top">
+                    <h6>First time</h6>
+                    <span class="energy-pill"><i class="fa-solid fa-star me-1"></i> higher</span>
+                  </div>
+                  <div class="energy-desc">Usually costs more energy (new allowance / approvals).</div>
+                  <div class="energy-est">
+                    ~<span id="first-est">0</span>
+                    <small>Energy</small>
+                  </div>
+                </label>
+                <label class="energy-card" id="energy-card-repeat">
+                  <input type="radio" name="energy-type" value="repeat" style="display:none;">
+                  <div class="energy-card-top">
+                    <h6>Repeat</h6>
+                    <span class="energy-pill"><i class="fa-solid fa-rotate me-1"></i> lower</span>
+                  </div>
+                  <div class="energy-desc">Normally cheaper if you’ve done this action before.</div>
+                  <div class="energy-est">
+                    ~<span id="repeat-est">0</span>
+                    <small>Energy</small>
+                  </div>
+                </label>
+              </div>
+            </div>
+            <!-- RIGHT -->
+            <div class="energy-summary">
+              <div class="energy-summary-top">
+                <p class="energy-summary-title m-0">Summary</p>
+                <p class="energy-summary-note m-0">Values update automatically</p>
+              </div>
+              <div class="energy-metrics">
+                <div class="metric">
+                  <div class="k">Your Energy</div>
+                  <div class="v" id="user-energy">0</div>
+                </div>
+                <div class="metric">
+                  <div class="k">Required</div>
+                  <div class="v danger" id="required-energy">0</div>
+                </div>
+              </div>
+              <div class="energy-divider"></div>
+              <div class="energy-metrics">
+                <div class="metric">
+                  <div class="k">To Rent</div>
+                  <div class="v accent" id="rental-energy">0</div>
+                </div>
+                <div class="metric">
+                  <div class="k">Cost</div>
+                  <div class="v accent" id="rental-cost-trx">0.00 TRX</div>
+                </div>
+              </div>
+              <div class="energy-footer-text">
+                Tip: For exact energy cost, cancel and preview the transaction in TronLink.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-energy-cancel flex-fill" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-energy-rent flex-fill" id="rent-energy-confirm">
+            <i class="fa-solid fa-bolt me-2"></i> Rent Energy
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="reward-warning-modal" tabindex="-1" aria-labelledby="rewardWarningModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="rewardWarningModalLabel">Pending Rewards Warning</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+      </div>
+      <div class="modal-body">
+        <p>You have <span id="pending-rewards-amount">0</span> in pending rewards. Withdrawing your Game tokens now will reduce these rewards.</p>
+        <p>We recommend claiming your rewards before withdrawing. Proceed with withdrawal anyway?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-rent" id="withdraw-confirm">Proceed with Withdrawal</button>
+      </div>
+    </div>
+  </div>
+</div>
+  <!-- Processing Modal -->
+  <div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-labelledby="transactionProcessingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title" id="transactionProcessingModalLabel">Processing Transaction</h5></div>
+        <div class="modal-body text-center"><div class="spinner"></div><p>Please wait while your transaction is being processed.</p></div>
+      </div>
+    </div>
+  </div>
+  <!-- Mobile Menu Modal -->
+  <div id="menu" class="modal fade p-0">
+    <div class="modal-dialog dialog-animated">
+      <div class="modal-content h-100">
+        <div class="modal-header" data-bs-dismiss="modal">
+          Menu <i class="far fa-times-circle icon-close"></i>
+        </div>
+        <div class="menu modal-body">
+          <div class="row w-100">
+            <div class="items p-0 col-12 text-center"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Toasts -->
+  <div id="toast-container" style="position:fixed;z-index:1100;bottom:16px;right:16px">
+    <div id="app-toast" class="toast text-bg-dark" role="status" aria-live="polite" aria-atomic="true"></div>
+  </div>
+  <!-- Footer -->
+  <footer class="footer-area py-5 mt-3">
+    <div class="container text-center">
+      <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt="" style="height:28px"></a>
+      <div class="social-icons d-flex justify-content-center my-3 gap-3">
+        <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
+        <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
+      </div>
+      <div class="copyright-area py-2">&copy;2025 Game Ecosystem, All Rights Reserved</div>
+      <div id="scroll-to-top" class="scroll-to-top"><a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a></div>
+    </div>
+  </footer>
+  <!-- Vendor JS -->
+  <script src="assets/js/vendor/jquery.min.js"></script>
+  <script src="assets/js/vendor/popper.min.js"></script>
+  <script src="assets/js/vendor/bootstrap.min.js"></script>
+  <script src="assets/js/vendor/all.min.js"></script>
+  <script src="assets/js/vendor/gallery.min.js"></script>
+  <script src="assets/js/vendor/slider.min.js"></script>
+  <script src="assets/js/vendor/countdown.min.js"></script>
+  <script src="assets/js/vendor/shuffle.min.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+  <!-- App JS -->
+  <script src="assets/js/stakinggame2.js" type="module"></script>
+  <script src="assets/js/swapgame1.js" type="module"></script>
+  <script src="assets/js/advertisements.js" type="module"></script>
+</body>
+</html>
