@@ -1307,4 +1307,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   initialize();
-});
+}); 
