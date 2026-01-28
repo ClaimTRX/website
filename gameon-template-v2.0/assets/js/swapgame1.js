@@ -10,7 +10,7 @@ const ENERGY_RENTAL_DURATION = 5;
 // Energy costs for swap actions
 const energyCosts = {
   approve: 65000,
-  swapFirst: 150000,
+  swapFirst: 100000,
   swapRepeat: 65000
 };
 // Keep both overloads in ABI, but ALWAYS call by signature to avoid TronLink/TronWeb overload bugs.
