@@ -463,7 +463,7 @@ async function pollDelegationStatus(orderId) {
     }, 1000);
   });
 }
-function showEnergyRentalModal(action, availableEnergy, token) {
+function showEnergyRentalModal(action, availableEnergy, token, extra=0) {
   return new Promise((resolve, reject) => {
     const modalElement = document.getElementById('energy-rental-modal');
     if (!modalElement) return reject(new Error('Energy rental modal not found.'));
@@ -476,6 +476,8 @@ function showEnergyRentalModal(action, availableEnergy, token) {
       requiredFirst = details[action + 'First'] || details[action];
       requiredRepeat = details[action + 'Repeat'] || details[action];
     }
+    requiredFirst += extra;
+    requiredRepeat += extra;
     const firstEst = document.getElementById('first-est');
     const repeatEst = document.getElementById('repeat-est');
     if (firstEst) firstEst.textContent = requiredFirst.toLocaleString();
@@ -1041,19 +1043,19 @@ async function stakeTokens(token, amount) {
       const allowance = BigInt(allowanceRaw);
       const approvalRequired = allowance < amountToStake;
       let availableEnergy = await getAvailableEnergy(userAddress);
-      if (approvalRequired) {
-        const maxApprove = tokenDetails[token].energyCosts.approve;
-        if (availableEnergy < maxApprove && energyPriceSun > 0) {
-          const modalResult = await showEnergyRentalModal('approve', availableEnergy, token);
-          if (modalResult.rent) {
-            processingModal = showProcessingModal('(1/3)');
-            await requestEnergyRental(modalResult.rentalEnergy);
-            await delay(3000);
-            hideProcessingModal(processingModal);
-            availableEnergy = await getAvailableEnergy(userAddress);
-          }
+      const extra = approvalRequired ? tokenDetails[token].energyCosts.approve : 0;
+      const maxStake = Math.max(tokenDetails[token].energyCosts.stakeFirst + extra, tokenDetails[token].energyCosts.stakeRepeat + extra);
+      if (availableEnergy < maxStake && energyPriceSun > 0) {
+        const modalResult = await showEnergyRentalModal('stake', availableEnergy, token, extra);
+        if (modalResult.rent) {
+          processingModal = showProcessingModal('(1/2)');
+          await requestEnergyRental(modalResult.rentalEnergy);
+          await delay(3000);
+          hideProcessingModal(processingModal);
         }
-        processingModal = showProcessingModal('(2/3)');
+      }
+      processingModal = showProcessingModal('(2/2)');
+      if (approvalRequired) {
         const approvalTx = await tronWeb.transactionBuilder.triggerSmartContract(
           tokenDetails[token].tokenAddress,
           'approve(address,uint256)', {},
@@ -1067,18 +1069,6 @@ async function stakeTokens(token, amount) {
         showToast({ title:'Approve submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastApproval.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
         await delay(3000);
       }
-      availableEnergy = await getAvailableEnergy(userAddress);
-      const maxStake = Math.max(tokenDetails[token].energyCosts.stakeFirst, tokenDetails[token].energyCosts.stakeRepeat);
-      if (availableEnergy < maxStake && energyPriceSun > 0) {
-        const modalResult = await showEnergyRentalModal('stake', availableEnergy, token);
-        if (modalResult.rent) {
-          processingModal = showProcessingModal(approvalRequired ? '(3/3)' : '(1/2)');
-          await requestEnergyRental(modalResult.rentalEnergy);
-          await delay(3000);
-          hideProcessingModal(processingModal);
-        }
-      }
-      processingModal = showProcessingModal(approvalRequired ? '(3/3)' : '(2/2)');
       const stakeTx = await tronWeb.transactionBuilder.triggerSmartContract(
         stakingContractAddress, 'stake(uint256)', {}, [ { type:'uint256', value: amountToStake.toString() } ], userAddress
       );
@@ -1092,9 +1082,9 @@ async function stakeTokens(token, amount) {
         const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
         const TELEGRAM_CHAT_ID = '-1003603146813';
         const message =
-`<b>🎉 New Stake Alert!</b>\n` +
-`New user staked <b>${fmt(amount)} CFT</b> in the CFT rewards pool.\n` +
-`Buy CFT and stake now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>`;
+  `<b>🎉 New Stake Alert!</b>\n` +
+  `New user staked <b>${fmt(amount)} CFT</b> in the CFT rewards pool.\n` +
+  `Buy CFT and stake now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>`;
 const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 await fetch(url, {
   method: 'POST',
