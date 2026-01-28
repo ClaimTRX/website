@@ -746,58 +746,218 @@ async function updateActionGridUI(token, first = false, userData) {
     const balanceUnits = toUnits(balanceRaw, d.decimals);
     let rewardUnits = toUnits(pendingRewardsRaw, d.rewardDecimals);
     const now = Math.floor(Date.now() / 1000);
-    const next = (lastClaimTs || 0) + timeoutSec;
-    const format = (s) => {
-      const d = Math.floor(s / 86400);
-      const h = Math.floor((s % 86400) / 3600);
-      const m = Math.floor((s % 3600) / 60);
-      const sec = s % 60;
-      return `${d ? d + 'd ' : ''}${(h || d) ? h + 'h ' : ''}${m}m ${sec}s`;
+    const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + Number(timeout);
+    const isExpired = timeout && nextClaim <= now && !userData.isActive && !isWhitelisted;
+    if (isExpired) {
+      rewardUnits = 0;
+    }
+    cacheData = { data: {}, timestamp: Date.now() };
+    cacheData.data.balanceUnits = Number(balanceUnits);
+    cacheData.data.rewardUnits = Number(rewardUnits);
+    cacheData.data.contractBalance = Number(toUnits(contractBalanceRaw, d.rewardDecimals));
+    cacheData.data.isWhitelisted = Boolean(isWhitelisted);
+    cacheData.data.timeoutSec = Number(timeout);
+    cacheData.data.isExpired = Boolean(isExpired);
+    cacheData.data.isActive = Boolean(userData.isActive);
+    cacheData.data.lastClaimTimestamp = Number(userData.lastClaimTimestamp);
+    cacheData.data.stakedUnits = Number(toUnits(userData.stakedAmount, d.decimals));
+    cacheData.timestamp = Date.now();
+    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    const updateElement = (id, value, skeletonId) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = value;
+        if (id === `available-tokens-${token}`) el.dataset.raw = String(cacheData.data.balanceUnits);
+        if (skeletonId) setSkeleton(skeletonId, false);
+      }
     };
-    const tick = async () => {
-      if (timerEl._paused) return;
-      const now = Math.floor(Date.now() / 1000);
-      const rem = Math.max(0, next - now);
-      let pendingRewards = cachedRewards;
-      let contractBalanceRaw = cachedBalance;
-      if (Date.now() - cacheTimestamp >= CACHE_TIMEOUT_MS) {
-        try {
-          pendingRewards = await retryWithBackoff(() => readStakingContracts['cft_rwd'].methods.earned(userAddress).call());
-          if (pendingRewards == null || isNaN(Number(pendingRewards))) {
-            pendingRewards = '0';
-          }
-        } catch {
+    updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
+    updateElement(`claimable-rewards-${token}`, `${fmt(isExpired ? 0 : rewardUnits)} ${d.rewardDisplayName}`);
+    const claimButton = document.getElementById(`claim-rewards-button-${token}`);
+    const rewardsDisplay = document.getElementById(`claimable-rewards-${token}`);
+    const energyHint = document.querySelector('#claimable-rewards-cft_rwd + span');
+    if (rewardsDisplay && claimButton) {
+      if (isExpired) {
+        rewardsDisplay.innerHTML = `<strong>0.00 JM</strong><br><small style="color:#ff5b73; font-weight:600;">Rewards Expired – Stake more CFT to resume earning JM.</small>`;
+        claimButton.style.display = 'none';
+        if (energyHint) energyHint.style.display = 'none';
+      } else {
+        rewardsDisplay.textContent = `${fmt(rewardUnits)} JM`;
+        claimButton.style.display = 'block';
+        claimButton.disabled = Number(pendingRewardsRaw) === 0 || toUnits(contractBalanceRaw, d.rewardDecimals) < rewardUnits;
+        if (energyHint) energyHint.style.display = 'block';
+      }
+    }
+    updateClaimTimer(Number(timeout), Number(userData.lastClaimTimestamp), userData.isActive, isWhitelisted, rewardUnits, toUnits(contractBalanceRaw, d.rewardDecimals));
+  } catch (e) {
+    console.error('updateActionGridUI error:', e);
+    showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
+    ['available-tokens-cft_rwd', 'claimable-rewards-cft_rwd']
+      .forEach(id => {
+        setSkeleton(id, false);
+        const el = document.getElementById(id);
+        if (el) el.textContent = id.includes('claimable') ? `0 ${tokenDetails[token].rewardDisplayName}` : '0';
+      });
+  }
+}
+async function updateStatsGridUI(token, first = false, userData) {
+  const cacheKey = `tokenUI_stats_${token}_${userAddress}`;
+  const cached = localStorage.getItem(cacheKey);
+  let cacheData = cached ? JSON.parse(cached) : null;
+  if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS && !first) {
+    const updateElement = (id, value, skeletonId) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = value;
+        if (skeletonId) setSkeleton(skeletonId, false);
+      }
+    };
+    updateElement('pool-size', `${fmt(cacheData.data.poolSize)} ${tokenDetails[token].rewardDisplayName}`, 'pool-size');
+    updateElement('daily-payout', '1.00% / day', 'daily-payout');
+    updateElement('your-next-payout', `${fmt(cacheData.data.yourNextPayout)} ${tokenDetails[token].rewardDisplayName}`, 'your-next-payout');
+    return;
+  }
+  try {
+    if (first) {
+      ['pool-size', 'daily-payout', 'your-next-payout'].forEach(id => setSkeleton(id, true));
+    }
+    const d = tokenDetails[token];
+    const [poolSizeRaw, totalStakedRaw, totalActiveStakedRaw] = await Promise.all([
+      retryWithBackoff(() => readStakingContracts[token].methods.poolSize().call().catch(() => '0')),
+      retryWithBackoff(() => (readStakingContracts[token].methods.getTotalStaked || readStakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
+      retryWithBackoff(() => readStakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
+    ]);
+    await delay(CONTRACT_CALL_DELAY_MS);
+    const poolSize = toUnits(poolSizeRaw, d.rewardDecimals);
+    const totalStaked = toUnits(totalStakedRaw, d.decimals);
+    const totalActiveStaked = toUnits(totalActiveStakedRaw, d.decimals);
+    const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
+    const dailyPayoutPct = DAILY_PAYOUT_PERCENTAGE; // Use constant
+    let yourNextPayout = stakedUnits > 0 && totalActiveStaked > 0 && userData.isActive ? (stakedUnits / totalActiveStaked) * (poolSize * dailyPayoutPct / 100) : 0;
+    if (!userData.isActive) yourNextPayout = 0;
+    cacheData = { data: {}, timestamp: Date.now() };
+    cacheData.data.poolSize = Number(poolSize);
+    cacheData.data.yourNextPayout = Number(yourNextPayout);
+    cacheData.data.stakedUnits = Number(stakedUnits);
+    cacheData.data.isActive = Boolean(userData.isActive);
+    cacheData.timestamp = Date.now();
+    localStorage.setItem(cacheKey, JSON.stringify(serializeBigInt(cacheData)));
+    const updateElement = (id, value, skeletonId) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = value;
+        if (skeletonId) setSkeleton(skeletonId, false);
+      }
+    };
+    updateElement('pool-size', `${fmt(poolSize)} JM`, 'pool-size');
+    updateElement('daily-payout', '1.00% / day', 'daily-payout');
+    updateElement('your-next-payout', `${fmt(yourNextPayout)} JM`, 'your-next-payout');
+  } catch (e) {
+    console.error('updateStatsGridUI error:', e);
+    showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
+    ['pool-size', 'daily-payout', 'your-next-payout'].forEach(id => {
+      setSkeleton(id, false);
+      const el = document.getElementById(id);
+      if (el) el.textContent = id.includes('daily-payout') ? '1.00% / day' : '0 JM';
+    });
+  }
+}
+async function updateUI(token, first = false, userData) {
+  // Prioritize action grid and top bar for faster initial render
+  await Promise.all([
+    updateTopBarUI(token, first, userData),
+    updateActionGridUI(token, first, userData)
+  ]);
+  await delay(CONTRACT_CALL_DELAY_MS * 2); // Longer delay before stats to spread load
+  await updateStatsGridUI(token, first, userData);
+}
+function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, initialRewards = '0', initialBalance = '0') {
+  const timerEl = document.getElementById('next-claim-timer');
+  const claimBtn = document.getElementById('claim-rewards-button-cft_rwd');
+  if (!timerEl || !claimBtn) return;
+  if (timerEl._claimInterval) {
+    clearInterval(timerEl._claimInterval);
+    timerEl._claimInterval = null;
+  }
+  let cachedRewards = initialRewards;
+  let cachedBalance = initialBalance;
+  let cacheTimestamp = Date.now();
+  if (isWhitelisted) {
+    timerEl.textContent = 'Whitelisted';
+    timerEl.classList.remove('inactive');
+    claimBtn.disabled = Number(cachedRewards) === 0 || Number(cachedBalance) < Number(cachedRewards);
+    claimBtn.style.display = 'block';
+    return;
+  }
+  if (!isActive) {
+    timerEl.textContent = 'Inactive';
+    timerEl.classList.add('inactive');
+    claimBtn.disabled = true;
+    claimBtn.style.display = 'none';
+    return;
+  }
+  if (!timeoutSec) {
+    timerEl.textContent = '—';
+    timerEl.classList.add('inactive');
+    claimBtn.disabled = true;
+    claimBtn.style.display = 'none';
+    return;
+  }
+  const next = (lastClaimTs || 0) + timeoutSec;
+  const format = (s) => {
+    const d = Math.floor(s / 86400);
+    const h = Math.floor((s % 86400) / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return `${d ? d + 'd ' : ''}${(h || d) ? h + 'h ' : ''}${m}m ${sec}s`;
+  };
+  const tick = async () => {
+    if (timerEl._paused) return;
+    const now = Math.floor(Date.now() / 1000);
+    const rem = Math.max(0, next - now);
+    let pendingRewards = cachedRewards;
+    let contractBalanceRaw = cachedBalance;
+    if (Date.now() - cacheTimestamp >= CACHE_TIMEOUT_MS) {
+      try {
+        pendingRewards = await retryWithBackoff(() => {
+          const contract = tronWeb.contract(stakingContractAbi, tokenDetails['cft_rwd'].stakingAddress);
+          return contract.methods.earned(userAddress).call();
+        });
+        if (pendingRewards == null || isNaN(Number(pendingRewards))) {
           pendingRewards = '0';
         }
-        contractBalanceRaw = await retryWithBackoff(() => readTronWeb.contract(tokenContractAbi, d.rewardTokenAddress).balanceOf(d.stakingAddress).call().catch(() => '0'));
-        cachedRewards = pendingRewards;
-        cachedBalance = contractBalanceRaw;
-        cacheTimestamp = Date.now();
+      } catch {
+        pendingRewards = '0';
       }
-      if (rem === 0) {
-        clearInterval(timerEl._claimInterval);
-        timerEl._claimInterval = null;
-        timerEl.textContent = 'Expired';
-        timerEl.classList.add('inactive');
-        claimBtn.style.display = 'none';
-        if (rewardsDisplay) {
-          rewardsDisplay.innerHTML = `<strong>0.00 JM</strong><br><small style="color:#ff5b73; font-weight:600;">Rewards Expired – Stake more CFT to resume earning JM.</small>`;
-        }
-        const apyEl = document.getElementById('projected-rewards-cft_rwd');
-        if (apyEl) apyEl.textContent = '0.00%';
-        const yourNextPayoutEl = document.getElementById('your-next-payout');
-        if (yourNextPayoutEl) yourNextPayoutEl.textContent = '0 JM';
-      } else {
-        timerEl.textContent = `${format(rem)}`;
-        timerEl.classList.remove('inactive');
-        claimBtn.disabled = Number(pendingRewards) === 0 || toUnits(contractBalanceRaw, d.rewardDecimals) < toUnits(pendingRewards, d.rewardDecimals);
-        claimBtn.style.display = 'block';
+      contractBalanceRaw = await retryWithBackoff(() => tronWeb.trx.getBalance(tokenDetails['cft_rwd'].stakingAddress).catch(() => '0'));
+      cachedRewards = pendingRewards;
+      cachedBalance = contractBalanceRaw;
+      cacheTimestamp = Date.now();
+    }
+    if (rem === 0) {
+      clearInterval(timerEl._claimInterval);
+      timerEl._claimInterval = null;
+      timerEl.textContent = 'Expired';
+      timerEl.classList.add('inactive');
+      claimBtn.style.display = 'none';
+      if (rewardsDisplay) {
+        rewardsDisplay.innerHTML = `<strong>0.00 JM</strong><br><small style="color:#ff5b73; font-weight:600;">Rewards Expired – Stake more CFT to resume earning JM.</small>`;
       }
-    };
-    tick();
-    timerEl._claimInterval = setInterval(tick, 5000);
+      const apyEl = document.getElementById('projected-rewards-cft_rwd');
+      if (apyEl) apyEl.textContent = '0.00%';
+      const yourNextPayoutEl = document.getElementById('your-next-payout');
+      if (yourNextPayoutEl) yourNextPayoutEl.textContent = '0 JM';
+    } else {
+      timerEl.textContent = `${format(rem)}`;
+      timerEl.classList.remove('inactive');
+      claimBtn.disabled = Number(pendingRewards) === 0 || Number(contractBalanceRaw) < Number(pendingRewards);
+      claimBtn.style.display = 'block';
+    }
   };
-  /* ===================== Core ===================== */
+  tick();
+  timerEl._claimInterval = setInterval(tick, 5000);
+}
+/* ===================== Core ===================== */
 async function initialize() {
   const connectButton = document.getElementById('connect-button');
   if (connectButton) { connectButton.addEventListener('click', connectWallet); }
@@ -903,7 +1063,7 @@ async function stakeTokens(token, amount) {
         const message =
   `<b>🎉 New Stake Alert!</b>\n` +
   `New user staked <b>${fmt(amount)} CFT</b> in the JM rewards pool.\n` +
-  `Buy CFT and stake now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>`;
+  `Buy CFT and stake now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>.`;
 const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 await fetch(url, {
   method: 'POST',
