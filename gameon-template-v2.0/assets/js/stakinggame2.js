@@ -993,7 +993,7 @@ async function stakeTokens(token, amount) {
       hideProcessingModal(processingModal);
       try {
         const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
-        const TELEGRAM_CHAT_ID = '-1003603146813';
+        const TELEGRAM_CHAT_ID = '-1002114533251';
         const message =
   `<b>🎉 New CFTGame Stake Alert!</b>\n` +
   `New user staked <b>${fmt(amount)} CFTGame</b> in the high-risk 3 Days TRX rewards pool.\n` +
@@ -1100,7 +1100,7 @@ async function claimRewards(token) {
       hideProcessingModal(processingModal);
       try {
         const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
-        const TELEGRAM_CHAT_ID = '-1003603146813';
+        const TELEGRAM_CHAT_ID = '-1002114533251';
         const message =
   `<b>🎉 New CFTGame Rewards Claim!</b>\n` +
   `A user claimed <b>${fmt(Number(pendingRewards) / SUN_PER_TRX)} TRX</b> in the high-risk 3 Days CFTGame pool.\n` +
