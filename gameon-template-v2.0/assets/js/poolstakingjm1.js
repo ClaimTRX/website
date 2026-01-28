@@ -1167,7 +1167,7 @@ async function stakeTokens(token, amount) {
       // Telegram notification
       try {
         const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
-        const TELEGRAM_CHAT_ID = '-1003603146813';
+        const TELEGRAM_CHAT_ID = '-1002114533251';
         const message =
 `<b>🎉 New Stake Alert!</b>\n` +
 `New user staked <b>${fmt(amount)} CFT</b> in the JM rewards pool.\n` +
@@ -1371,7 +1371,7 @@ async function claimRewards(token) {
       const rewardUnits = toUnits(pendingRewards, tokenDetails[token].rewardDecimals);
       try {
         const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
-        const TELEGRAM_CHAT_ID = '-1003603146813';
+        const TELEGRAM_CHAT_ID = '-1002114533251';
         const message =
 `<b>🎉 New Rewards Claim!</b>\n` +
 `A user claimed <b>${fmt(rewardUnits)} JM</b> in the JM rewards pool.\n` +
