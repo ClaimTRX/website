@@ -1327,7 +1327,6 @@ async function claimRewards(token) {
       if (timerEl) timerEl._paused = true;
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
-
       let availableEnergy = await getAvailableEnergy(userAddress);
       const maxClaim = Math.max(tokenDetails[token].energyCosts.claimRewardsFirst, tokenDetails[token].energyCosts.claimRewardsRepeat);
       if (availableEnergy < maxClaim) {
@@ -1348,10 +1347,9 @@ async function claimRewards(token) {
         pendingRewards = '0';
       }
       if (BigInt(pendingRewards) === 0n) throw new Error('No rewards available to claim.');
-
-      const contractBalance = await retryWithBackoff(() => readTokenContracts[token].methods.balanceOf(tokenDetails[token].stakingAddress).call());
-      if (BigInt(contractBalance) < BigInt(pendingRewards)) throw new Error('Insufficient contract balance to claim rewards.');
-
+      // Removed balance check to allow transaction to proceed
+      // const contractBalance = await retryWithBackoff(() => readTokenContracts[token].methods.balanceOf(tokenDetails[token].stakingAddress).call());
+      // if (BigInt(contractBalance) < BigInt(pendingRewards)) throw new Error('Insufficient contract balance to claim rewards.');
       const claimTx = await tronWeb.transactionBuilder.triggerSmartContract(
         tokenDetails[token].stakingAddress,
         'claimRewards()',
