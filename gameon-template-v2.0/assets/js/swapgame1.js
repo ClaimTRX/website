@@ -354,7 +354,7 @@ async function performSwap(type) {
       // ── Add Telegram notification ────────────────────────────────────────────────
       try {
         const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
-        const TELEGRAM_CHAT_ID = '-1003603146813';
+        const TELEGRAM_CHAT_ID = '-1002114533251';
         const swapType = type.toUpperCase();
         const gameType = 'Game'; // Adjust if needed for 3/7 day distinction
         const message =
