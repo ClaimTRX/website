@@ -31,15 +31,6 @@
     .navbar-nav.items .nav-link{font-size:1.1rem;padding:.75rem 1rem}
     .navbar-nav.action .btn{font-size:1rem;padding:.5rem 1.25rem;height:50px}
     .navbar-nav.toggle .nav-link{font-size:1.5rem;padding:.5rem}
-    /* Mobile menu modal */
-    #menu .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt)}
-    #menu .modal-header{border-bottom:1px solid var(--line);padding:1rem}
-    #menu .modal-body{padding:1rem}
-    #menu .items .nav-item{margin:.5rem 0}
-    #menu .items .nav-link{color:var(--txt);font-size:1.1rem;padding:.5rem 1rem}
-    #menu .items .dropdown-menu{background:var(--bg-2);border:1px solid var(--line);padding:.5rem}
-    #menu .items .dropdown-menu .nav-link{color:var(--muted);font-size:1rem}
-    #menu .items .dropdown-menu .nav-link:hover{color:var(--accent-1)}
     /* Hero */
     .hero-section{padding:120px 0 28px;text-align:center}
     .intro-text{display:inline-block;font-size:1rem;letter-spacing:.16em;text-transform:uppercase;color:#c3d3ef;background:rgba(255,255,255,.03);border:1px solid var(--line);padding:.42rem .95rem;border-radius:999px}
@@ -60,31 +51,17 @@
     .kpi span:first-child{font-weight:800;font-size:1.15rem}
     .kpi span:last-child{color:var(--muted);font-size:.88rem}
     /* Action Grid */
-    .action-grid{
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:18px;
-      padding:0 32px 36px;
-      justify-items:stretch;
-      align-items:stretch;
-    }
-    /* Panel */
+    .action-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;padding:0 32px 36px;justify-items:stretch;align-items:stretch}
     .panel{position:relative;display:grid;grid-template-rows:auto auto 1fr auto;gap:12px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:18px 18px 20px;box-shadow:var(--shadow-1)}
     .panel .item-title{color:var(--muted);font-weight:700;letter-spacing:.3px}
     .panel small{color:#9fb0cc}
     .form-control.luxe{background:#0c1121;border:1px solid var(--line);color:#eaf2ff;border-radius:14px;padding:12px 14px}
     .form-control.luxe:focus{outline:none;box-shadow:var(--focus-ring);border-color:rgba(125,178,255,.6)}
-    /* Quick fills */
     .quick-fills{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
     .quick-fills .btn{border-radius:999px;border:1px solid var(--line);color:#cfe3ff;background:transparent;font-weight:600;width:100%}
-    /* Buttons */
-    .btn.primary,.btn.ghost{height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px}
-    .btn.primary{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#0b0e17;border:0;font-weight:800}
+    .btn.primary{height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#0b0e17;border:0;font-weight:800}
     .btn.primary:hover{filter:brightness(1.05)}
-    .btn.ghost{border:1px solid var(--line);color:#eaf2ff;background:transparent}
-    .btn.ghost:hover{border-color:rgba(125,178,255,.55)}
-    /* Claim button default hidden; JS will show when needed */
-    #claim-rewards-button-cft_rwd{width:100%;height:48px;font-size:1rem;display:none}
+    #claim-rewards-button-cft{width:100%;height:48px;font-size:1rem;display:none}
     /* Pool Stats */
     .stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
     .stat-tile{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
@@ -97,74 +74,9 @@
     .skeleton{position:relative;overflow:hidden;min-width:80px;min-height:20px;background:#141a2b;border-radius:8px}
     .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);animation:shimmer 1.2s infinite}
     @keyframes shimmer{100%{transform:translateX(100%)}}
-    /* Modals */
+    /* Base Modal defaults */
     .modal-content{background:var(--bg-1);border:1px solid var(--line);color:var(--txt);border-radius:16px}
     .modal-header .btn-close{filter:invert(1)}
-    #energy-rental-modal .modal-body{padding-top:10px}
-    #energy-rental-modal .modal-body p{margin-bottom:10px;color:#cfe3ff}
-    #user-energy,#required-energy,#rental-energy,#rental-duration,#rental-cost-trx{display:inline-block;padding:.15rem .5rem;border-radius:10px;background:rgba(125,178,255,.12);border:1px solid rgba(125,178,255,.25);color:#ffffff}
-    .modal .btn-rent{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));border:0;color:#0b0e17;border-radius:12px;font-weight:800}
-    .modal .btn-cancel{border:1px solid var(--line);color:#eaf2ff;background:transparent;border-radius:12px}
-    #transaction-processing-modal .spinner{border:4px solid var(--accent-2);border-top-color:transparent;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto 15px}
-    @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
-    /* Ad card */
-    .luxe-ad-card{position:relative;border-radius:var(--radius-4);background:linear-gradient(135deg,rgba(98,255,207,.1),rgba(125,178,255,.1));border:2px solid var(--accent-3);box-shadow:var(--shadow-2),0 0 20px rgba(125,178,255,.3);overflow:hidden;margin:2rem 0;transition:transform .3s ease,box-shadow .3s ease}
-    .luxe-ad-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-2),0 0 30px rgba(125,178,255,.5)}
-    .luxe-ad-card .inner{padding:1.5rem}
-    .luxe-ad-card h2{font-weight:800;color:var(--accent-1);text-shadow:0 0 5px rgba(98,255,207,.5)}
-    .luxe-ad-card p{color:var(--txt);font-size:1.1rem}
-    .luxe-ad-card .btn.primary{background:linear-gradient(135deg,var(--accent-3),var(--accent-2));font-weight:700;padding:.75rem 1.5rem;border-radius:12px}
-    .luxe-ad-card .btn.primary:hover{filter:brightness(1.2)}
-    /* Responsive */
-    /* ≤992px: center panels perfectly */
-    /* make 100%-width controls actually fit inside on iOS */
-    *, *::before, *::after { box-sizing: border-box; }
-    /* KPI: allow long numbers to wrap and not push edges */
-    .kpis > .kpi{ min-width:0; }
-    .kpi span{ text-align:center; white-space:normal; }
-    .kpi span:first-child{ overflow-wrap:anywhere; }
-    /* <= 992px: center panels AND guarantee inner fit */
-    @media (max-width:992px){
-      .kpis{
-        grid-template-columns:repeat(2, minmax(0,1fr));
-        padding:0 20px 20px;
-      }
-      .action-grid{
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        gap:18px;
-        padding:0 20px 28px;
-        width:100%;
-      }
-      .action-grid .panel{
-        width:100%;
-        max-width:min(480px, calc(100% - 24px));
-        margin-inline:auto;
-        padding:16px;
-      }
-      .action-grid .panel > *{ max-width:100%; }
-      .form-control.luxe{ width:100%; }
-      .quick-fills{ grid-template-columns:repeat(3, minmax(0,1fr)); }
-      .quick-fills .btn{ width:100%; }
-      #stake-button-cft_rwd,
-      #unstake-button-cft_rwd,
-      #claim-rewards-button-cft_rwd { width:100%; }
-      .stats-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
-    }
-    @media (max-width:576px){
-      .kpis{
-        grid-template-columns:1fr;
-        padding:0 12px 16px;
-      }
-      .action-grid{ padding:0 12px 24px; }
-      .panel{ padding:16px; }
-      .stats-grid{ grid-template-columns:1fr; }
-      .kpi span:first-child{ font-size:1rem; }
-    }
-    @media (min-width:992px){
-      .panel{ min-height:260px; }
-    }
     /* =========================================
        BRAND NEW ENERGY MODAL (PRO / PREMIUM)
        ========================================= */
@@ -465,17 +377,53 @@
       .btn-energy-rent { flex: 1 1 100%; }
       .energy-metrics { grid-template-columns: 1fr; }
     }
+    /* ===================== RESPONSIVE ===================== */
+    *, *::before, *::after { box-sizing: border-box; }
+    .kpis > .kpi { min-width:0; }
+    .kpi span { text-align:center; white-space:normal; overflow-wrap:anywhere; }
+    @media (max-width:992px){
+      .kpis{ grid-template-columns:repeat(2, minmax(0,1fr)); padding:0 20px 20px; }
+      .action-grid{ display:flex; flex-direction:column; align-items:center; gap:18px; padding:0 20px 28px; width:100%; }
+      .action-grid .panel{ width:100%; max-width:min(480px, calc(100% - 24px)); margin-inline:auto; padding:16px; }
+      .action-grid .panel > *{ max-width:100%; }
+      .form-control.luxe{ width:100%; }
+      .quick-fills{ grid-template-columns:repeat(3, minmax(0,1fr)); }
+      .quick-fills .btn{ width:100%; }
+      #stake-button-cft, #unstake-button-cft, #claim-rewards-button-cft { width:100%; }
+      .stats-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+    }
+    @media (max-width:576px){
+      .kpis{ grid-template-columns:1fr; padding:0 12px 16px; }
+      .action-grid{ padding:0 12px 24px; }
+      .panel{ padding:16px; }
+      .stats-grid{ grid-template-columns:1fr; }
+      .kpi span:first-child{ font-size:1rem; }
+    }
+    @media (min-width:992px){
+      .panel{ min-height:260px; }
+    }
+    /* Ad card */
+    .luxe-ad-card{position:relative;border-radius:var(--radius-4);background:linear-gradient(135deg,rgba(98,255,207,.1),rgba(125,178,255,.1));border:2px solid var(--accent-3);box-shadow:var(--shadow-2),0 0 20px rgba(125,178,255,.3);overflow:hidden;margin:2rem 0;transition:transform .3s ease,box-shadow .3s ease}
+    .luxe-ad-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-2),0 0 30px rgba(125,178,255,.5)}
+    .luxe-ad-card .inner{padding:1.5rem}
+    .luxe-ad-card h2{font-weight:800;color:var(--accent-1);text-shadow:0 0 5px rgba(98,255,207,.5)}
+    .luxe-ad-card p{color:var(--txt);font-size:1.1rem}
+    .luxe-ad-card .btn.primary{background:linear-gradient(135deg,var(--accent-3),var(--accent-2));font-weight:700;padding:.75rem 1.5rem;border-radius:12px}
+    .luxe-ad-card .btn.primary:hover{filter:brightness(1.2)}
+    /* Processing modal spinner */
+    #transaction-processing-modal .spinner{border:4px solid var(--accent-2);border-top-color:transparent;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto 15px}
+    @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
   <div id="header-placeholder"></div>
-  <script>
-    fetch('assets/js/header.html')
-      .then(response => response.text())
-      .then(data => {
-        document.getElementById('header-placeholder').innerHTML = data;
-      });
-  </script>
+<script>
+  fetch('assets/js/header.html')
+    .then(response => response.text())
+    .then(data => {
+      document.getElementById('header-placeholder').innerHTML = data;
+    });
+</script>
   <!-- Hero -->
   <section class="hero-section">
     <div class="container text-center">
@@ -503,10 +451,13 @@
         </div>
         <!-- KPI Row -->
         <div class="kpis">
-          <div class="kpi"><span id="staked-amount-cft_rwd" class="skeleton"></span><span>Staked CFT</span></div>
-          <div class="kpi"><span id="projected-rewards-cft_rwd" class="skeleton" data-bs-toggle="tooltip" data-bs-title="Estimated APY based on current prices and pool rewards"></span><span>Your est. APY</span></div>
+          <div class="kpi"><span id="staked-amount-cft" class="skeleton"></span><span>Staked</span></div>
+          <div class="kpi">
+            <span id="projected-rewards-cft" class="skeleton" data-bs-toggle="tooltip" data-bs-title="Estimated annual percentage yield based on current pool parameters. Subject to change."></span>
+            <span>Your est. APY</span>
+          </div>
           <div class="kpi"><span id="roi-cft" class="skeleton"></span><span>Your ROI</span></div>
-          <div class="kpi"><span id="user-total-claimed-cft_rwd" class="skeleton"></span><span>Total JM Claimed</span></div>
+          <div class="kpi"><span id="user-total-claimed-cft" class="skeleton"></span><span>Your Total Claimed</span></div>
         </div>
         <!-- Action Grid -->
         <div class="action-grid">
@@ -514,33 +465,33 @@
           <div class="panel">
             <div class="d-flex justify-content-between align-items-center mb-2">
               <span class="item-title">Deposit</span>
-              <small>Available: <span id="available-tokens-cft_rwd" class="skeleton" style="display:inline-block;min-width:80px;min-height:16px"></span> </small>
+              <small>Available: <span id="available-tokens-cft" class="skeleton" style="display:inline-block;min-width:80px;min-height:16px"></span> </small>
             </div>
-            <div><input type="number" inputmode="decimal" min="0" step="0.000001" placeholder="0.0" id="stake-amount-cft_rwd" class="form-control luxe"></div>
+            <div><input type="number" inputmode="decimal" min="0" step="0.000001" placeholder="0.0" id="stake-amount-cft" class="form-control luxe"></div>
             <div class="quick-fills">
               <button class="btn btn-sm" data-fill="0.25">25%</button>
               <button class="btn btn-sm" data-fill="0.5">50%</button>
               <button class="btn btn-sm" data-fill="1">MAX</button>
             </div>
-            <a href="#" class="btn primary w-100" id="stake-button-cft_rwd">Stake</a>
+            <a href="#" class="btn primary w-100" id="stake-button-cft">Stake</a>
           </div>
           <!-- Withdraw -->
           <div class="panel">
             <div class="d-flex justify-content-between align-items-center mb-2"><span class="item-title">Withdraw</span><small>&nbsp;</small></div>
-            <div><input type="number" inputmode="decimal" min="0" step="0.000001" placeholder="0.0" id="withdraw-amount-cft_rwd" class="form-control luxe"></div>
+            <div><input type="number" inputmode="decimal" min="0" step="0.000001" placeholder="0.0" id="withdraw-amount-cft" class="form-control luxe"></div>
             <div></div>
-            <a href="#" class="btn primary w-100" id="unstake-button-cft_rwd">Withdraw</a>
+            <a href="#" class="btn primary w-100" id="unstake-button-cft">Withdraw</a>
           </div>
           <!-- Rewards -->
           <div class="panel">
             <div class="d-flex justify-content-between align-items-center mb-2"><span class="item-title">Pending Rewards</span></div>
             <div>
-              <h4 class="m-0" id="claimable-rewards-cft_rwd">0.00 JM</h4>
+              <h4 class="m-0" id="claimable-rewards-cft">0 JM</h4>
               <span class="mt-2 d-block" style="color:#9fb0cc" id="energy-hint">TRON energy fee required</span>
             </div>
             <div></div>
             <div>
-              <a href="#" class="btn primary w-100" id="claim-rewards-button-cft_rwd" style="display:none"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+              <a href="#" class="btn primary w-100" id="claim-rewards-button-cft" style="display:none"><i class="fa-solid fa-lock me-1"></i> Claim</a>
             </div>
           </div>
         </div>
@@ -550,9 +501,9 @@
   <section class="py-2">
     <div class="container">
       <div class="stats-grid">
-        <div class="stat-tile"><span class="item-title">Pool Size</span><strong id="pool-size">— JM</strong></div>
-        <div class="stat-tile"><span class="item-title">Daily Payout</span>1%</div>
-        <div class="stat-tile"><span class="item-title">Your Next Payout</span><strong id="your-next-payout">— JM</strong></div>
+        <div class="stat-tile"><span class="item-title">Pool Size</span><strong id="pool-size">—</strong></div>
+        <div class="stat-tile"><span class="item-title">Daily Payout</span>1.00% / day</div>
+        <div class="stat-tile"><span class="item-title">Your Next Payout</span><strong id="your-next-payout">—</strong></div>
       </div>
       <!-- Claim before box -->
       <div class="countdown-tile" id="next-claim-box">
@@ -675,6 +626,7 @@
       </div>
     </div>
   </div>
+  <!-- Reward Warning Modal -->
   <div class="modal fade" id="reward-warning-modal" tabindex="-1" aria-labelledby="rewardWarningModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -728,8 +680,8 @@
   <script src="assets/js/vendor/countdown.min.js"></script>
   <script src="assets/js/vendor/shuffle.min.js"></script>
   <script src="assets/js/main.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
-  <!-- App JS (updated to match new token key) -->
+  <script src="https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js"></script>
+  <!-- App JS -->
   <script src="assets/js/poolstakingjm1.js" type="module"></script>
   <script src="assets/js/advertisements.js" type="module"></script>
 </body>
