@@ -174,7 +174,307 @@
 @media (min-width:992px){
   .panel{ min-height:260px; }
 }
-</style>
+ /* =========================================
+       BRAND NEW ENERGY MODAL (PRO / PREMIUM)
+       ========================================= */
+    #energy-rental-modal .modal-dialog{max-width: 640px;}
+    #energy-rental-modal .modal-content{
+      border-radius: 26px;
+      border: 1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(1200px 520px at 18% 8%, rgba(125,178,255,.18), transparent 55%),
+        radial-gradient(900px 420px at 92% 35%, rgba(98,255,207,.12), transparent 60%),
+        radial-gradient(700px 380px at 50% 110%, rgba(179,124,255,.10), transparent 60%),
+        rgba(10, 13, 22, .92);
+      box-shadow: 0 30px 90px rgba(0,0,0,.70);
+      overflow: hidden;
+    }
+    /* Fancy top bar */
+    #energy-rental-modal .modal-header{
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .energy-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      width:100%;
+    }
+    .energy-head-left{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:0;
+    }
+    .energy-icon{
+      width:42px;height:42px;
+      border-radius: 16px;
+      display:grid;place-items:center;
+      background: rgba(255,91,115,.12);
+      border: 1px solid rgba(255,91,115,.24);
+      box-shadow: 0 16px 40px rgba(255,91,115,.10);
+    }
+    .energy-title-wrap{min-width:0;}
+    .energy-title{
+      margin:0;
+      font-weight: 950;
+      letter-spacing: .2px;
+      font-size: 1.05rem;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .energy-sub{
+      margin:2px 0 0;
+      color: rgba(154,167,189,.92);
+      font-size: .88rem;
+      line-height: 1.2;
+    }
+    .energy-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.10);
+      color:#cfe3ff;
+      font-weight: 800;
+      font-size: .82rem;
+      flex-shrink:0;
+    }
+    .energy-badge .dot{
+      width:8px;height:8px;border-radius:999px;
+      background: var(--warning);
+      box-shadow: 0 0 0 3px rgba(255,209,102,.12);
+    }
+    #energy-rental-modal .btn-close{
+      filter: invert(1);
+      opacity: .9;
+      margin: 0;
+    }
+    #energy-rental-modal .btn-close:hover{opacity:1;}
+    #energy-rental-modal .modal-body{ padding: 16px 18px 12px; overflow-y: auto; max-height: calc(100vh - 200px); }
+    .energy-layout{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+    /* Left: option cards */
+    .energy-section-title{
+      color:#cfe3ff;
+      font-weight: 900;
+      font-size: .92rem;
+      letter-spacing: .2px;
+      margin: 4px 0 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .energy-help{
+      color: rgba(154,167,189,.95);
+      font-size: .84rem;
+      font-weight: 650;
+    }
+    .energy-choice{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .energy-card{
+      position:relative;
+      border-radius: 20px;
+      padding: 14px 14px 12px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.10);
+      cursor:pointer;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+      min-height: 116px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .energy-card:hover{
+      transform: translateY(-2px);
+      border-color: rgba(125,178,255,.35);
+      box-shadow: 0 18px 46px rgba(0,0,0,.45);
+    }
+    .energy-card.active{
+      border-color: rgba(98,255,207,.55);
+      background: linear-gradient(180deg, rgba(98,255,207,.10), rgba(125,178,255,.06));
+      box-shadow: 0 18px 55px rgba(98,255,207,.10);
+      animation: glow 2s ease-in-out infinite;
+    }
+    @keyframes glow {
+      0% { box-shadow: 0 0 10px rgba(98,255,207,.2); }
+      50% { box-shadow: 0 0 20px rgba(125,178,255,.3); }
+      100% { box-shadow: 0 0 10px rgba(98,255,207,.2); }
+    }
+    .energy-card-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .energy-card h6{
+      margin:0;
+      font-weight: 950;
+      font-size: 1.0rem;
+      letter-spacing:.2px;
+    }
+    .energy-pill{
+      border-radius:999px;
+      padding: 6px 10px;
+      font-size: .78rem;
+      font-weight: 850;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+      color:#cfe3ff;
+      white-space:nowrap;
+    }
+    .energy-desc{
+      color: rgba(154,167,189,.95);
+      font-size: .88rem;
+      line-height: 1.25;
+      margin-top: -2px;
+    }
+    .energy-est{
+      margin-top:auto;
+      display:flex;
+      align-items:baseline;
+      gap:8px;
+      font-weight: 950;
+      font-size: 1.35rem;
+      color: var(--accent-1);
+    }
+    .energy-est small{
+      color: rgba(154,167,189,.95);
+      font-size: .85rem;
+      font-weight: 700;
+    }
+    /* Right: summary panel */
+    .energy-summary{
+      border-radius: 22px;
+      padding: 14px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.10);
+      height: 100%;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
+    .energy-summary-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .energy-summary-title{
+      font-weight: 950;
+      margin:0;
+      font-size: .98rem;
+      letter-spacing:.2px;
+      color:#eaf2ff;
+    }
+    .energy-summary-note{
+      margin:0;
+      color: rgba(154,167,189,.95);
+      font-size: .84rem;
+      line-height: 1.25;
+    }
+    .energy-metrics{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .metric{
+      border-radius: 18px;
+      padding: 10px 10px;
+      background: rgba(0,0,0,.18);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .metric .k{
+      color: rgba(154,167,189,.95);
+      font-size: .82rem;
+      font-weight: 750;
+    }
+    .metric .v{
+  margin-top: 4px;
+  font-weight: 950;
+  font-size: 1.06rem;
+  color:#eaf2ff;
+  line-height: 1.1;
+  word-break: normal;
+}
+    .metric .v.accent{ color: var(--accent-1); }
+    .metric .v.danger{ color: var(--danger); }
+    .energy-divider{
+      height:1px;
+      background: rgba(255,255,255,.08);
+      margin: 2px 0;
+    }
+    .energy-footer-text{
+      margin-top:auto;
+      color: rgba(154,167,189,.95);
+      font-size: .84rem;
+      line-height: 1.25;
+    }
+    /* Footer buttons */
+    #energy-rental-modal .modal-footer{
+      padding: 14px 16px 16px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      gap: 12px;
+    }
+    .btn-energy-cancel{
+      height: 50px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.02);
+      border: 1px solid rgba(255,255,255,.12);
+      color: #eaf2ff;
+      font-weight: 900;
+    }
+    .btn-energy-cancel:hover{ border-color: rgba(125,178,255,.35); }
+    .btn-energy-rent{
+      height: 50px;
+      border-radius: 16px;
+      border:0;
+      font-weight: 950;
+      color:#0b0e17;
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      box-shadow: 0 20px 45px rgba(125,178,255,.20);
+      animation: pulse 1.5s infinite;
+    }
+    .btn-energy-rent:hover{ filter: brightness(1.06); }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+    @media (max-width: 992px){
+      #energy-rental-modal .modal-dialog{max-width: 95vw;}
+      .energy-layout{ grid-template-columns: 1fr; }
+      .energy-choice{ grid-template-columns: 1fr; }
+      .energy-summary{ min-height: unset; }
+      .modal-footer {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 12px 14px;
+      }
+      .modal-footer button {
+        flex: 1 1 48%;
+        min-width: 0;
+      }
+      .btn-energy-cancel { display: none; }
+      .btn-energy-rent { flex: 1 1 100%; }
+      .energy-metrics { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
   <div id="header-placeholder"></div>
@@ -190,7 +490,7 @@
   <section class="hero-section">
     <div class="container text-center">
       <span class="intro-text">Game Ecosystem</span>
-      <h1 class="display-5">Game Staking 3 Days</h1>
+      <h1 class="display-5">Game Staking</h1>
       <p class="mb-0">Grow your wealth through TRX rewards by staking CFTGame</p>
     </div>
   </section>
@@ -357,26 +657,102 @@
       </div>
     </div>
   </section>
-  <!-- ***** Energy Rental Modal Start ***** -->
+  <!-- ***** Energy Rental Modal ***** -->
   <div class="modal fade" id="energy-rental-modal" tabindex="-1" aria-labelledby="energyRentalModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="energyRentalModalLabel">Insufficient Energy</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+          <div class="energy-head">
+            <div class="energy-head-left">
+              <div class="energy-icon"><i class="fa-solid fa-bolt"></i></div>
+              <div class="energy-title-wrap">
+                <h5 class="energy-title" id="energyRentalModalLabel">Insufficient Energy</h5>
+                <p class="energy-sub">Choose the transaction type and rent the missing energy.</p>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="energy-badge"><span class="dot"></span> Estimate</span>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+          </div>
         </div>
         <div class="modal-body">
-          <p>Your wallet has <span id="user-energy">0</span> energy available, but <span id="required-energy">0</span> energy is required for this transaction.</p>
-          <p>Rent <span id="rental-energy">0</span> energy for <span id="rental-duration">5</span> minutes at a cost of <span id="rental-cost-trx">0.00</span> TRX?</p>
+          <div class="energy-layout">
+            <!-- LEFT -->
+            <div>
+              <div class="energy-section-title">
+                <span>Select Transaction Type</span>
+                <span class="energy-help">Pick the closest match</span>
+              </div>
+              <div class="energy-choice">
+                <label class="energy-card active" id="energy-card-first">
+                  <input type="radio" name="energy-type" value="first" checked style="display:none;">
+                  <div class="energy-card-top">
+                    <h6>First time</h6>
+                    <span class="energy-pill"><i class="fa-solid fa-star me-1"></i> higher</span>
+                  </div>
+                  <div class="energy-desc">Usually costs more energy (new allowance / approvals).</div>
+                  <div class="energy-est">
+                    ~<span id="first-est">0</span>
+                    <small>Energy</small>
+                  </div>
+                </label>
+                <label class="energy-card" id="energy-card-repeat">
+                  <input type="radio" name="energy-type" value="repeat" style="display:none;">
+                  <div class="energy-card-top">
+                    <h6>Repeat</h6>
+                    <span class="energy-pill"><i class="fa-solid fa-rotate me-1"></i> lower</span>
+                  </div>
+                  <div class="energy-desc">Normally cheaper if you’ve done this action before.</div>
+                  <div class="energy-est">
+                    ~<span id="repeat-est">0</span>
+                    <small>Energy</small>
+                  </div>
+                </label>
+              </div>
+            </div>
+            <!-- RIGHT -->
+            <div class="energy-summary">
+              <div class="energy-summary-top">
+                <p class="energy-summary-title m-0">Summary</p>
+                <p class="energy-summary-note m-0">Values update automatically</p>
+              </div>
+              <div class="energy-metrics">
+                <div class="metric">
+                  <div class="k">Your Energy</div>
+                  <div class="v" id="user-energy">0</div>
+                </div>
+                <div class="metric">
+                  <div class="k">Required</div>
+                  <div class="v danger" id="required-energy">0</div>
+                </div>
+              </div>
+              <div class="energy-divider"></div>
+              <div class="energy-metrics">
+                <div class="metric">
+                  <div class="k">To Rent</div>
+                  <div class="v accent" id="rental-energy">0</div>
+                </div>
+                <div class="metric">
+                  <div class="k">Cost</div>
+                  <div class="v accent" id="rental-cost-trx">0.00 TRX</div>
+                </div>
+              </div>
+              <div class="energy-footer-text">
+                Tip: For exact energy cost, cancel and preview the transaction in TronLink.
+              </div>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-rent" id="rent-energy-confirm">Rent Energy</button>
+          <button type="button" class="btn btn-energy-cancel flex-fill" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-energy-rent flex-fill" id="rent-energy-confirm">
+            <i class="fa-solid fa-bolt me-2"></i> Rent Energy
+          </button>
         </div>
       </div>
     </div>
   </div>
-  <!-- ***** Energy Rental Modal End ***** -->
   <div class="modal fade" id="reward-warning-modal" tabindex="-1" aria-labelledby="rewardWarningModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -429,7 +805,6 @@
       <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt="" style="height:28px"></a>
       <div class="social-icons d-flex justify-content-center my-3 gap-3">
         <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
-       
         <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
       </div>
       <div class="copyright-area py-2">&copy;2025 Game Ecosystem, All Rights Reserved</div>
