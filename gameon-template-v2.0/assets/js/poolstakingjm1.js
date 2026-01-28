@@ -3,6 +3,7 @@ const stakingContracts = {};
 const tokenContracts = {};
 const readStakingContracts = {};
 const readTokenContracts = {};
+const rewardTokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 /* ===================== Config ===================== */
 const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
@@ -255,6 +256,7 @@ async function initializeTronWeb() {
   readTokenContracts[key] = await readTronWeb.contract(tokenContractAbi, details.tokenAddress);
   stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
   readStakingContracts[key] = await readTronWeb.contract(stakingContractAbi, details.stakingAddress);
+  rewardTokenContracts[key] = await readTronWeb.contract(tokenContractAbi, details.rewardTokenAddress);
   rewardTokenContracts[key] = await readTronWeb.contract(tokenContractAbi, details.rewardTokenAddress);
   if (!readStakingContracts[key].methods.getTotalStaked && !readStakingContracts[key].methods.totalStaked) {
     throw new Error('Neither getTotalStaked nor totalStaked found. Check ABI or address.');
