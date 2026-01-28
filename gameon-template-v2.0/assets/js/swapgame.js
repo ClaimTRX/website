@@ -1,6 +1,8 @@
-// swapgame.js - Full working version for Game Token swaps (CFT → Game & TRX → Game) with energy rental
+// swapgame.js - Full working version for Game Token swaps (CFT → Game & TRX → Game) with energy rental using Chainstack for reads
+
+let tronWeb, readTronWeb, userAddress;
 let swapContracts = {};
-let userAddress;
+let readSwapContracts = {};
 let energyPriceSun; // No fallback; remains undefined if fetch fails
 const ENERGY_RENTAL_API_URL = 'https://energyrental.io'; // Base URL for EnergyRental.io API
 const ENERGY_RENTAL_API_KEY = 'fa89bd0c-1d2a-401a-9dbc-cf16f9019331';
@@ -45,26 +47,73 @@ const swapDetails = {
     buttonId: "swap-trx-button",
   },
 };
-async function initializeSwap() {
-  if (!window.tronWeb || !window.tronWeb.defaultAddress?.base58) {
-    console.log("TronWeb not ready yet");
-    return;
-  }
-  userAddress = window.tronWeb.defaultAddress.base58;
-  await fetchEnergyPrice();
-  for (const key of ["cft", "trx"]) {
-    const details = swapDetails[key];
+
+/* ===================== Config ===================== */
+const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
+const CACHE_TIMEOUT_MS = 120_000; // 120s cache for runtime updates
+
+/* ===================== Helpers: delay, retry ===================== */
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 500) {
+  for (let i = 0; i < maxRetries; i++) {
     try {
-      swapContracts[key] = await window.tronWeb.contract(swapAbi, details.contractAddress);
-      const button = document.getElementById(details.buttonId);
-      if (button) {
-        button.addEventListener("click", () => performSwap(key));
+      return await fn();
+    } catch (error) {
+      if (error.message.includes('429') && i < maxRetries - 1) {
+        const delayMs = baseDelay * Math.pow(2, i);
+        console.warn(`429 error, retrying after ${delayMs}ms...`);
+        await delay(delayMs);
+        continue;
       }
-    } catch (e) {
-      console.error(`Failed to initialize ${key} swap contract:`, e);
+      throw error;
     }
   }
 }
+
+/* ===================== TronWeb Setup ===================== */
+async function initializeTronWeb() {
+  const initDelay = 500;
+  await delay(initDelay);
+  if (!window.tronLink || !window.tronWeb) {
+    console.log("TronWeb not ready yet");
+    return;
+  }
+  if (!window.tronLink.ready) {
+    console.log("TronLink not ready yet");
+    return;
+  }
+  tronWeb = window.tronWeb;
+  const loadTronWebScript = () => new Promise((resolve, reject) => {
+    if (window.TronWeb) {
+      resolve();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/tronweb@latest/dist/TronWeb.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    }
+  });
+  await loadTronWebScript();
+  const TronWebCtor = (typeof window.TronWeb === 'function')
+    ? window.TronWeb
+    : window.tronWeb?.constructor;
+  if (!TronWebCtor) {
+    throw new Error('TronWeb is not available as a constructor.');
+  }
+  readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
+  userAddress = tronWeb.defaultAddress.base58;
+  if (!userAddress) {
+    console.log("No user address");
+    return;
+  }
+  readTronWeb.setAddress(userAddress);
+  await fetchEnergyPrice();
+}
+
+/* ===================== Energy helpers ===================== */
 async function fetchEnergyPrice() {
   if (!userAddress) {
     console.warn('No user address for fetching energy price.');
@@ -96,7 +145,7 @@ async function fetchEnergyPrice() {
 }
 async function getAvailableEnergy(address) {
   try {
-    const resources = await retryWithBackoff(() => window.tronWeb.trx.getAccountResources(address));
+    const resources = await retryWithBackoff(() => readTronWeb.trx.getAccountResources(address));
     const energyLimit = resources.EnergyLimit || 0;
     const energyUsed = resources.EnergyUsed || 0;
     return energyLimit - energyUsed;
@@ -137,7 +186,7 @@ async function requestEnergyRental(rentalEnergy) {
       payment_address
     } = quoteData.quote;
     const paymentSun = Math.ceil(price_trx * SUN_PER_TRX);
-    const paymentRes = await window.tronWeb.trx.sendTransaction(payment_address, paymentSun);
+    const paymentRes = await tronWeb.trx.sendTransaction(payment_address, paymentSun);
     if (!paymentRes?.result) {
       throw new Error('Payment transaction was rejected or failed.');
     }
@@ -304,9 +353,9 @@ async function performSwap(type) {
       let availableEnergy = await getAvailableEnergy(userAddress);
       let extra = 0;
       if (type === "cft") {
-        const amountSun = window.tronWeb.toSun(amount); // string
-        const cftTokenContract = await window.tronWeb.contract().at(details.cftTokenAddress);
-        const allowance = await cftTokenContract.allowance(userAddress, details.contractAddress).call();
+        const amountSun = tronWeb.toSun(amount); // string
+        const cftTokenContract = await readTronWeb.contract().at(details.cftTokenAddress);
+        const allowance = await retryWithBackoff(() => cftTokenContract.allowance(userAddress, details.contractAddress).call());
         const approvalRequired = BigInt(allowance) < BigInt(amountSun);
         extra = approvalRequired ? energyCosts.approve : 0;
       }
@@ -321,9 +370,10 @@ async function performSwap(type) {
         }
       }
       if (type === "cft") {
-        const amountSun = window.tronWeb.toSun(amount); // string
-        const cftTokenContract = await window.tronWeb.contract().at(details.cftTokenAddress);
-        const allowance = await cftTokenContract.allowance(userAddress, details.contractAddress).call();
+        const amountSun = tronWeb.toSun(amount); // string
+        const cftTokenContract = await tronWeb.contract().at(details.cftTokenAddress);
+        const readCftTokenContract = await readTronWeb.contract().at(details.cftTokenAddress);
+        const allowance = await retryWithBackoff(() => readCftTokenContract.allowance(userAddress, details.contractAddress).call());
         const approvalRequired = BigInt(allowance) < BigInt(amountSun);
         if (approvalRequired) {
           showToast({
@@ -345,7 +395,7 @@ async function performSwap(type) {
           feeLimit: 100_000_000,
         });
       } else {
-        const amountSun = window.tronWeb.toSun(amount); // string
+        const amountSun = tronWeb.toSun(amount); // string
         tx = await swapContracts.trx["swap()"]().send({
           callValue: amountSun,
           feeLimit: 80_000_000,
@@ -398,21 +448,6 @@ async function performSwap(type) {
   })();
 }
 // Helper functions (duplicated from stakinggame.js where needed)
-async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 500) {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (error.message.includes('429') && i < maxRetries - 1) {
-        const delayMs = baseDelay * Math.pow(2, i);
-        console.warn(`429 error, retrying after ${delayMs}ms...`);
-        await delay(delayMs);
-        continue;
-      }
-      throw error;
-    }
-  }
-}
 function showToast({ title, body, variant = "dark" }) {
   const el = document.getElementById("app-toast");
   if (!el) return;
@@ -439,9 +474,6 @@ function withLoading(btn, label, fn) {
     }
   };
 }
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 function showProcessingModal(step='') {
   const modalElement = document.getElementById('transaction-processing-modal');
   if (!modalElement) throw new Error('Processing modal not found.');
@@ -454,5 +486,25 @@ function showProcessingModal(step='') {
 }
 function hideProcessingModal(modal) { if (modal) modal.hide(); }
 // Initialize
+async function initializeSwap() {
+  await initializeTronWeb();
+  if (!tronWeb || !userAddress) {
+    console.log("TronWeb not ready yet");
+    return;
+  }
+  for (const key of ["cft", "trx"]) {
+    const details = swapDetails[key];
+    try {
+      swapContracts[key] = await tronWeb.contract(swapAbi, details.contractAddress);
+      readSwapContracts[key] = await readTronWeb.contract(swapAbi, details.contractAddress);
+      const button = document.getElementById(details.buttonId);
+      if (button) {
+        button.addEventListener("click", () => performSwap(key));
+      }
+    } catch (e) {
+      console.error(`Failed to initialize ${key} swap contract:`, e);
+    }
+  }
+}
 document.addEventListener("DOMContentLoaded", initializeSwap);
 
