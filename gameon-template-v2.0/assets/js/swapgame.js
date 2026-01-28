@@ -409,7 +409,6 @@ async function performSwap(type) {
   const gameType = 'Game'; // Adjust if needed for 3/7 day distinction
   const message =
     `<b>🎉 A user bought ${amount} CFTGame tokens!</b>\n` +
-    `Wallet: ${userAddress}\n` +
     `Will they stake or hold?\n` +
     `Join now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>`;
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
