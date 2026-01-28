@@ -33,7 +33,7 @@ const tokenDetails = {
       stakeFirst: 200000, // Higher for first-time stake
       stakeRepeat: 150000, // Lower for repeat stake
       claimRewardsFirst: 100000, // Higher for first-time claim
-      claimRewardsRepeat: 70000, // Lower for repeat claim
+      claimRewardsRepeat: 65000, // Lower for repeat claim
       // Removed unused (unstake, activate, etc.)
     }
   }
