@@ -996,7 +996,7 @@ async function stakeTokens(token, amount) {
         const TELEGRAM_CHAT_ID = '-1003603146813';
         const message =
   `<b>🎉 New CFTGame Stake Alert!</b>\n` +
-  `New user staked <b>${fmt(amount)} CFTGame</b> in the high-risk TRX rewards pool.\n` +
+  `New user staked <b>${fmt(amount)} CFTGame</b> in the high-risk 7 Days TRX rewards pool.\n` +
   `Buy CFTGame and stake now at <a href="https://www.cftecosystem.com/stakinggame.html">cftecosystem.com</a>.`;
 const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 await fetch(url, {
@@ -1103,7 +1103,7 @@ async function claimRewards(token) {
         const TELEGRAM_CHAT_ID = '-1003603146813';
         const message =
   `<b>🎉 New CFTGame Rewards Claim!</b>\n` +
-  `A user claimed <b>${fmt(Number(pendingRewards) / SUN_PER_TRX)} TRX</b> in the high-risk CFTGame pool.\n` +
+  `A user claimed <b>${fmt(Number(pendingRewards) / SUN_PER_TRX)} TRX</b> in the high-risk 7 Days CFTGame pool.\n` +
   `Join now at <a href="https://www.cftecosystem.com/stakinggame.html">cftecosystem.com</a>.`;
 const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 await fetch(url, {
