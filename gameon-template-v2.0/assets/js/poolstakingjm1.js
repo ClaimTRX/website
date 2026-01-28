@@ -3,34 +3,31 @@ const stakingContracts = {};
 const tokenContracts = {};
 const readStakingContracts = {};
 const readTokenContracts = {};
-const rewardTokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 /* ===================== Config ===================== */
 const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
-const SERVER_URL = 'https://api.cftecosystem.com';
-const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
-const SAFETY_ENERGY = 50000;
-const ENERGY_PRICE_SUN = 50;
+const ENERGY_RENTAL_API_URL = 'https://energyrental.io'; // Base URL for EnergyRental.io API
+const ENERGY_RENTAL_API_KEY = 'fa89bd0c-1d2a-401a-9dbc-cf16f9019331';
+const ENERGY_RENTAL_API_SECRET = 'ccbe0df1-8799-4fe5-a98a-cef13440dd86';
 const SUN_PER_TRX = 1_000_000;
+let energyPriceSun; // No fallback; remains undefined if fetch fails
 const ENERGY_RENTAL_DURATION = 5;
 const CACHE_TIMEOUT_MS = 120_000; // 120s cache for runtime updates
-const THROTTLE_GAP_MS = 500; // Adjusted for safer pacing
-const CONTRACT_CALL_DELAY_MS = 300; // For pacing
-const UI_REFRESH_DELAY_MS = 3000; // Reduced from 4000ms
+const THROTTLE_GAP_MS = 4; // Adjusted for 250 RPS (1000ms / 250 ≈ 4ms)
+const CONTRACT_CALL_DELAY_MS = 0; // No delay for faster execution
+const UI_REFRESH_DELAY_MS = 2000; // Reduced from 4000ms
 // Manual CFT price for APY calculation (update this value as needed)
-const CFT_PRICE_USDT = 0.1745; // Manually set CFT price in USDT (update as needed)
-const REWARD_PRICE_USDT = 0.000008234709551940406; // Manually set JM price in USDT (update as needed)
+const CFT_TRX_PRICE = 0.5653; // Manually set CFT price in TRX (update as needed)
 const DAILY_PAYOUT_PERCENTAGE = 1; // 1% daily payout as per requirement
 /* ===================== Token Config ===================== */
 const tokenDetails = {
   cft: {
     tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-    rewardTokenAddress: 'TVHH59uHVpHzLDMFFpUgCx2dNAQqCzPhcR',
-    stakingAddress: 'TEG1ckez7pwe6kYCWsTxR7wHiJUEV24BUB',
+    stakingAddress: 'TCf1vY3EMuczBSmo9Cfrffu6TsGrUvrC52',
     decimals: 6,
-    rewardDecimals: 8,
     displayName: 'CFT',
     rewardDisplayName: 'JM',
+    rewardDecimals: 6,
     energyCosts: {
       approve: 65000, // Fixed for approval
       stakeFirst: 150000, // Higher for first-time stake
@@ -60,7 +57,7 @@ const tokenContractAbi = [
   {"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"}
 ];
 const stakingContractAbi = [
-  {"inputs":[{"internalType":"address","name":"_trc20Token","type":"address"},{"internalType":"address","name":"_rewardToken","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
+  {"inputs":[{"internalType":"address","name":"_trc20Token","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
   {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Staked","type":"event"},
   {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Unstaked","type":"event"},
   {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"totalRewards","type":"uint256"}],"name":"RewardsDistributed","type":"event"},
@@ -79,7 +76,6 @@ const stakingContractAbi = [
   {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"}],"name":"WalletAddedToWhitelist","type":"event"},
   {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"}],"name":"WalletRemovedFromWhitelist","type":"event"},
   {"inputs":[],"name":"trc20Token","outputs":[{"internalType":"contract ITRC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},
-  {"inputs":[],"name":"rewardToken","outputs":[{"internalType":"contract ITRC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"authorizedWallet","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"poolSize","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
@@ -112,7 +108,7 @@ const stakingContractAbi = [
   {"inputs":[],"name":"viewTotalClaimedRewards","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"viewTotalUnclaimedRewards","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[{"internalType":"uint256","name":"_newSize","type":"uint256"}],"name":"setPoolSize","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"addToPool","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[],"name":"addToPool","outputs":[],"stateMutability":"payable","type":"function"},
   {"inputs":[{"internalType":"uint256","name":"_percentage","type":"uint256"}],"name":"setDailyPayoutPercentage","outputs":[],"stateMutability":"nonpayable","type":"function"},
   {"inputs":[{"internalType":"uint256","name":"_timeout","type":"uint256"}],"name":"setClaimTimeout","outputs":[],"stateMutability":"nonpayable","type":"function"},
   {"inputs":[{"internalType":"address","name":"_wallet","type":"address"}],"name":"setAuthorizedWallet","outputs":[],"stateMutability":"nonpayable","type":"function"},
@@ -126,26 +122,10 @@ const stakingContractAbi = [
   {"stateMutability":"payable","type":"receive"}
 ];
 /* ===================== Helpers: throttle, rotation, delay, retry ===================== */
-const throttle = (() => {
-  let queue = Promise.resolve();
-  let last = 0;
-  const gap = THROTTLE_GAP_MS;
-  return async function run(fn) {
-    const exec = async () => {
-      const now = Date.now();
-      const wait = Math.max(0, gap - (now - last));
-      if (wait) await new Promise(r => setTimeout(r, wait));
-      last = Date.now();
-      return await fn();
-    };
-    queue = queue.then(exec, exec);
-    return queue;
-  };
-})();
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
-async function retryWithBackoff(fn, maxRetries = 5, baseDelay = 2000) {
+async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 500) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn();
@@ -185,30 +165,57 @@ async function chainstackApiCall(endpoint, params = {}) {
       body = params;
     }
   }
-  return throttle(async () => {
-    return retryWithBackoff(async () => {
-      const res = await fetch(`${CHAINSTACK_BASE_URL}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      });
-      if (res.status === 429) {
-        const text = await res.text().catch(() => '');
-        throw new Error(`Chainstack 429 Too Many Requests. ${text || ''}`.trim());
-      }
-      if (res.status === 403) {
-        const text = await res.text().catch(() => '');
-        throw new Error(`Chainstack 403 Forbidden. ${text || ''}`.trim());
-      }
-      const data = await res.json().catch(() => ({}));
-      if (data.Error) throw new Error(data.Error);
-      return data;
+  return retryWithBackoff(async () => {
+    const res = await fetch(`${CHAINSTACK_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
     });
+    if (res.status === 429) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Chainstack 429 Too Many Requests. ${text || ''}`.trim());
+    }
+    if (res.status === 403) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Chainstack 403 Forbidden. ${text || ''}`.trim());
+    }
+    const data = await res.json().catch(() => ({}));
+    if (data.Error) throw new Error(data.Error);
+    return data;
   });
 }
 /* ===================== TronWeb Setup (wrap requests) ===================== */
+async function fetchEnergyPrice() {
+  if (!userAddress) {
+    console.warn('No user address for fetching energy price.');
+    return;
+  }
+  try {
+    const res = await fetch(`${ENERGY_RENTAL_API_URL}/energy/get-quote`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': ENERGY_RENTAL_API_KEY,
+        'X-Api-Secret': ENERGY_RENTAL_API_SECRET
+      },
+      body: JSON.stringify({
+        receiver: userAddress,
+        amount: 65000,
+        duration: 5
+      })
+    });
+    if (!res.ok) throw new Error(`Quote failed: ${res.status}`);
+    const data = await res.json();
+    if (data.success && data.quote?.price_trx) {
+      energyPriceSun = Math.round((data.quote.price_trx * 1e6) / 65000);
+      console.log(`Fetched energy price: ${energyPriceSun} SUN per energy unit`);
+    }
+  } catch (e) {
+    console.error('Failed to fetch energy price:', e);
+  }
+}
 async function initializeTronWeb() {
   const initDelay = 500;
   await delay(initDelay);
@@ -248,6 +255,7 @@ async function initializeTronWeb() {
   readTronWeb.setAddress(userAddress);
   const cb = document.getElementById('connect-button');
   if (cb) cb.innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
+  await fetchEnergyPrice();
   const key = 'cft';
   const details = tokenDetails[key];
   if (!isValidTronAddress(details.tokenAddress)) throw new Error(`Invalid token address for ${key}`);
@@ -256,8 +264,6 @@ async function initializeTronWeb() {
   readTokenContracts[key] = await readTronWeb.contract(tokenContractAbi, details.tokenAddress);
   stakingContracts[key] = await tronWeb.contract(stakingContractAbi, details.stakingAddress);
   readStakingContracts[key] = await readTronWeb.contract(stakingContractAbi, details.stakingAddress);
-  rewardTokenContracts[key] = await readTronWeb.contract(tokenContractAbi, details.rewardTokenAddress);
-  rewardTokenContracts[key] = await readTronWeb.contract(tokenContractAbi, details.rewardTokenAddress);
   if (!readStakingContracts[key].methods.getTotalStaked && !readStakingContracts[key].methods.totalStaked) {
     throw new Error('Neither getTotalStaked nor totalStaked found. Check ABI or address.');
   }
@@ -302,65 +308,76 @@ async function initializeTronWeb() {
   setInterval(() => updateUI(key, false, userData), 60000);
 }
 /* ===================== Energy helpers ===================== */
-async function checkUserEnergy(address, token, action, extraEnergy = 0) {
+async function getAvailableEnergy(address) {
   try {
     const resources = await retryWithBackoff(() => readTronWeb.trx.getAccountResources(address));
     const energyLimit = resources.EnergyLimit || 0;
     const energyUsed = resources.EnergyUsed || 0;
-    const availableEnergy = energyLimit - energyUsed;
-    const baseRequiredEnergy = tokenDetails[token].energyCosts[action];
-    const requiredEnergy = baseRequiredEnergy + extraEnergy;
-    const shortfall = Math.max(0, requiredEnergy - availableEnergy);
-    return { availableEnergy, shortfall, requiredEnergy };
+    return energyLimit - energyUsed;
   } catch (error) {
-    const baseRequiredEnergy = tokenDetails[token].energyCosts[action];
-    const requiredEnergy = baseRequiredEnergy + extraEnergy;
-    return { availableEnergy: 0, shortfall: requiredEnergy, requiredEnergy };
+    return 0;
   }
 }
-async function checkDelegatorEnergy(requiredAmount) {
-  try {
-    const response = await fetch(`${SERVER_URL}/api/available-energy`, { method: 'GET' });
-    const data = await response.json();
-    if (data.success) {
-      const availableEnergy = Number(data.availableEnergy);
-      return availableEnergy >= requiredAmount;
-    }
-    throw new Error('Failed to fetch delegator energy');
-  } catch {
-    return false;
-  }
-}
-async function requestEnergyRental(rentalEnergy, rentalCostTrx) {
+async function requestEnergyRental(rentalEnergy) {
   let processingModal = null;
   try {
     processingModal = showProcessingModal('(1/2)');
     if (!userAddress) {
       throw new Error('Please connect your wallet first.');
     }
-    const rentalCostSun = Math.round(rentalEnergy * ENERGY_PRICE_SUN);
-    const paymentRes = await tronWeb.trx.sendTransaction(PAYMENT_ADDRESS, rentalCostSun);
-    if (!paymentRes?.result) {
-      throw new Error('Transaction was rejected or failed.');
-    }
-    const totalEnergy = rentalEnergy + SAFETY_ENERGY;
-    const response = await fetch(`${SERVER_URL}/api/request-energy`, {
+    const quoteRes = await fetch(`${ENERGY_RENTAL_API_URL}/energy/get-quote`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': ENERGY_RENTAL_API_KEY,
+        'X-Api-Secret': ENERGY_RENTAL_API_SECRET
+      },
       body: JSON.stringify({
-        energyAmount: totalEnergy,
-        receiverAddress: userAddress,
-        trxPrice: rentalCostSun / SUN_PER_TRX,
-        userAddress,
-        paymentTxId: paymentRes.txid,
-        delegationDuration: ENERGY_RENTAL_DURATION
+        receiver: userAddress,
+        amount: rentalEnergy,
+        duration: ENERGY_RENTAL_DURATION
       })
     });
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error(`Server error: ${data.message || 'Unknown'}`);
+    if (!quoteRes.ok) {
+      const errText = await quoteRes.text();
+      throw new Error(`Quote failed (${quoteRes.status}): ${errText}`);
     }
-    const delegated = await pollDelegationStatus(data.requestId);
+    const quoteData = await quoteRes.json();
+    if (!quoteData.success) {
+      throw new Error(quoteData.error || 'Failed to get quote from server');
+    }
+    const {
+      price_trx,
+      payment_address
+    } = quoteData.quote;
+    const paymentSun = Math.ceil(price_trx * SUN_PER_TRX);
+    const paymentRes = await tronWeb.trx.sendTransaction(payment_address, paymentSun);
+    if (!paymentRes?.result) {
+      throw new Error('Payment transaction was rejected or failed.');
+    }
+    const createOrderRes = await fetch(`${ENERGY_RENTAL_API_URL}/energy/create-order`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': ENERGY_RENTAL_API_KEY,
+        'X-Api-Secret': ENERGY_RENTAL_API_SECRET
+      },
+      body: JSON.stringify({
+        receiver: userAddress,
+        amount: rentalEnergy,
+        duration: ENERGY_RENTAL_DURATION,
+        payment_txid: paymentRes.txid
+      })
+    });
+    if (!createOrderRes.ok) {
+      const errText = await createOrderRes.text();
+      throw new Error(`Create order failed (${createOrderRes.status}): ${errText}`);
+    }
+    const orderData = await createOrderRes.json();
+    if (!orderData.success) {
+      throw new Error(orderData.error || 'Order creation failed on server');
+    }
+    const delegated = await pollDelegationStatus(orderData.order_id);
     hideProcessingModal(processingModal);
     return delegated;
   } catch (error) {
@@ -369,16 +386,17 @@ async function requestEnergyRental(rentalEnergy, rentalCostTrx) {
     throw error;
   }
 }
-async function pollDelegationStatus(requestId) {
+async function pollDelegationStatus(orderId) {
   const maxPollAttempts = 30;
   let pollAttempts = 0;
   return new Promise((resolve, reject) => {
     const interval = setInterval(async () => {
       pollAttempts++;
       try {
-        const response = await fetch(`${SERVER_URL}/api/delegation-status?requestId=${requestId}`, {
+        const response = await fetch(`${ENERGY_RENTAL_API_URL}/energy/delegation-status?order_id=${orderId}`, {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'X-Api-Key': ENERGY_RENTAL_API_KEY,
+            'X-Api-Secret': ENERGY_RENTAL_API_SECRET }
         });
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
@@ -398,33 +416,66 @@ async function pollDelegationStatus(requestId) {
           reject(new Error(`Error polling delegation status: ${err.message}`));
         }
       }
-    }, 2000);
+    }, 1000);
   });
 }
-function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = '') {
+function showEnergyRentalModal(action, availableEnergy, token, extra=0) {
   return new Promise((resolve, reject) => {
     const modalElement = document.getElementById('energy-rental-modal');
     if (!modalElement) return reject(new Error('Energy rental modal not found.'));
-    const rentalEnergy = shortfall;
-    const rentalCostSun = rentalEnergy * ENERGY_PRICE_SUN;
-    const rentalCostTrx = rentalCostSun / SUN_PER_TRX;
-    const map = {
-      'user-energy': userEnergy.toLocaleString('en-US'),
-      'required-energy': requiredEnergy.toLocaleString('en-US') + message,
-      'rental-energy': rentalEnergy.toLocaleString('en-US'),
-      'rental-cost-trx': rentalCostTrx.toFixed(2),
-      'rental-duration': ENERGY_RENTAL_DURATION
-    };
-    for (const [id, value] of Object.entries(map)) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = value;
+    const details = tokenDetails[token].energyCosts;
+    let requiredFirst, requiredRepeat;
+    if (action === 'approve') {
+      requiredFirst = details.approve;
+      requiredRepeat = details.approve;
+    } else {
+      requiredFirst = details[action + 'First'] || details[action];
+      requiredRepeat = details[action + 'Repeat'] || details[action];
     }
+    requiredFirst += extra;
+    requiredRepeat += extra;
+    const firstEst = document.getElementById('first-est');
+    const repeatEst = document.getElementById('repeat-est');
+    if (firstEst) firstEst.textContent = requiredFirst.toLocaleString();
+    if (repeatEst) repeatEst.textContent = requiredRepeat.toLocaleString();
+    const updateDisplays = () => {
+      const selectedType = document.querySelector('[name="energy-type"]:checked')?.value || 'first';
+      const required = selectedType === 'first' ? requiredFirst : requiredRepeat;
+      let shortfall = Math.max(0, required - availableEnergy);
+      let rental = shortfall;
+      const costTrx = energyPriceSun ? (rental * energyPriceSun / SUN_PER_TRX) : 0;
+      document.getElementById('user-energy').textContent = availableEnergy.toLocaleString();
+      document.getElementById('required-energy').textContent = required.toLocaleString();
+      document.getElementById('rental-energy').textContent = rental.toLocaleString();
+      document.getElementById('rental-cost-trx').textContent = `${costTrx.toFixed(2)} TRX`;
+      const confirmButton = document.getElementById('rent-energy-confirm');
+      if (confirmButton) {
+        confirmButton.innerHTML = rental === 0 ? '<i class="fa-solid fa-arrow-right me-2"></i> Proceed without Rental' : '<i class="fa-solid fa-bolt me-2"></i> Rent Energy';
+        confirmButton.disabled = false;
+      }
+    };
+    updateDisplays();
+    const radios = document.querySelectorAll('[name="energy-type"]');
+    radios.forEach(radio => {
+      radio.addEventListener('change', () => {
+        radios.forEach(r => r.parentElement.classList.remove('active'));
+        radio.parentElement.classList.add('active');
+        updateDisplays();
+      });
+    });
+    const initialRadio = document.querySelector('[name="energy-type"][value="first"]');
+    if (initialRadio) initialRadio.parentElement.classList.add('active');
     const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
     modal.show();
     const confirmButton = document.getElementById('rent-energy-confirm');
     const confirmHandler = () => {
+      const selectedType = document.querySelector('[name="energy-type"]:checked')?.value || 'first';
+      const required = selectedType === 'first' ? requiredFirst : requiredRepeat;
+      let shortfall = Math.max(0, required - availableEnergy);
+      let rental = shortfall;
+      const costTrx = energyPriceSun ? (rental * energyPriceSun / SUN_PER_TRX) : 0;
       modal.hide();
-      resolve({ rent: true, rentalEnergy, rentalCostTrx });
+      resolve({ rent: rental > 0, rentalEnergy: rental, rentalCostTrx: costTrx });
     };
     confirmButton.addEventListener('click', confirmHandler);
     const cancelHandler = () => {
@@ -434,17 +485,27 @@ function showEnergyRentalModal(userEnergy, shortfall, requiredEnergy, message = 
     modalElement.addEventListener('hidden.bs.modal', cancelHandler, { once: true });
   });
 }
-function showRewardWarningModal(rewardUnits, rewardDisplayName) {
+function showRewardWarningModal(rewardUnits) {
   return new Promise((resolve, reject) => {
     const modalElement = document.getElementById('reward-warning-modal');
-    if (!modalElement) return reject(new Error('Reward warning modal not found.'));
+    if (!modalElement) {
+      console.error('Reward warning modal not found.');
+      return reject(new Error('Reward warning modal not found.'));
+    }
     const rewardDisplay = document.getElementById('pending-rewards-amount');
-    if (rewardDisplay) rewardDisplay.textContent = `${rewardUnits.toFixed(2)} ${rewardDisplayName}`;
+    if (rewardDisplay) {
+      rewardDisplay.textContent = `${rewardUnits.toFixed(2)} JM`;
+    } else {
+      return reject(new Error('Pending rewards display element not found.'));
+    }
     const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
+    modalElement.addEventListener('shown.bs.modal', () => modalElement.removeAttribute('aria-hidden'), { once: true });
     const confirmButton = document.getElementById('withdraw-confirm');
+    if (!confirmButton) return reject(new Error('Withdraw confirm button not found.'));
     const confirmHandler = () => {
       modal.hide();
       resolve(true);
+      confirmButton.removeEventListener('click', confirmHandler);
     };
     confirmButton.addEventListener('click', confirmHandler);
     const cancelHandler = () => {
@@ -452,7 +513,7 @@ function showRewardWarningModal(rewardUnits, rewardDisplayName) {
       resolve(false);
     };
     modalElement.addEventListener('hidden.bs.modal', cancelHandler, { once: true });
-    modal.show();
+    try { modal.show(); } catch { reject(new Error('Failed to show reward warning modal.')); }
   });
 }
 /* ===================== Utils ===================== */
@@ -470,15 +531,17 @@ function toUnits(raw, decimals = 6) {
 }
 const fmt = (n, max=6) => Number(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: max });
 const fmtPct = (n) => `${(Number(n) || 0).toFixed(2)}%`;
-const fmtTrx = (n) => `${fmt(n)} TRX`;
-const isValidTronAddress = (address) => !!(address && typeof address === 'string' && address.startsWith('T') && address.length === 34 && /^[A-Za-z1-9]+$/.test(address));
-const toWei = (amt, decimals = 6) => {
+const fmtReward = (n) => `${fmt(n)} JM`;
+function isValidTronAddress(address) {
+  return !!(address && typeof address === 'string' && address.startsWith('T') && address.length === 34 && /^[A-Za-z1-9]+$/.test(address));
+}
+function toWei(amt, decimals = 6) {
   const n = Number(amt || 0);
   if (!isFinite(n) || n <= 0) return 0n;
   const base = BigInt(Math.round(n * 1e6));
   const pow = BigInt(Math.max(0, decimals - 6));
   return base * (TEN ** pow);
-};
+}
 /* ===================== UI helpers ===================== */
 function showToast({ title='Notification', body='', variant='dark', autohide=true }) {
   const el = document.getElementById('app-toast');
@@ -518,6 +581,7 @@ function showProcessingModal(step='') {
   const titleElement = document.getElementById('transactionProcessingModalLabel');
   if (titleElement) titleElement.textContent = `Processing Transaction ${step}`;
   const modal = new bootstrap.Modal(modalElement, { backdrop:'static', keyboard:false });
+  modalElement.addEventListener('shown.bs.modal', () => modalElement.removeAttribute('aria-hidden'), { once: true });
   modal.show();
   return modal;
 }
@@ -535,15 +599,15 @@ async function updateTopBarUI(token, first = false, userData) {
         if (skeletonId) setSkeleton(skeletonId, false);
       }
     };
-    updateElement(`staked-amount-${token}`, fmt(cacheData.data.stakedUnits), `staked-amount-${token}`);
-    updateElement(`projected-rewards-${token}`, fmtPct(cacheData.data.apyPct), `projected-rewards-${token}`);
+    updateElement(`staked-amount-${token}_rwd`, fmt(cacheData.data.stakedUnits), `staked-amount-${token}_rwd`);
+    updateElement(`projected-rewards-${token}_rwd`, fmtPct(cacheData.data.apyPct), `projected-rewards-${token}_rwd`);
     updateElement(`roi-cft`, fmtPct(cacheData.data.roiPct), `roi-cft`);
-    updateElement(`user-total-claimed-cft`, fmt(cacheData.data.userTotalClaimed), `user-total-claimed-cft`);
+    updateElement(`user-total-claimed-cft_rwd`, fmtReward(cacheData.data.userTotalClaimed), `user-total-claimed-cft_rwd`);
     return;
   }
   try {
     if (first) {
-      ['staked-amount-cft', 'projected-rewards-cft', 'roi-cft', 'user-total-claimed-cft']
+      ['staked-amount-cft_rwd', 'projected-rewards-cft_rwd', 'roi-cft', 'user-total-claimed-cft_rwd']
         .forEach(id => setSkeleton(id, true));
     }
     const d = tokenDetails[token];
@@ -553,25 +617,27 @@ async function updateTopBarUI(token, first = false, userData) {
       retryWithBackoff(() => (readStakingContracts[token].methods.getTotalStaked || readStakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
       retryWithBackoff(() => readStakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
     ]);
-    const poolSize = toUnits(poolSizeRaw, d.rewardDecimals);
+    const poolSize = Number(poolSizeRaw || '0') / SUN_PER_TRX;
     const totalStaked = toUnits(totalStakedRaw, d.decimals);
     const totalActiveStaked = toUnits(totalActiveStakedRaw, d.decimals);
     const stakedUnits = toUnits(userData.stakedAmount, d.decimals);
-    const userTotalClaimed = toUnits(userTotalClaimedRaw, d.rewardDecimals);
+    const userTotalClaimed = Number(userTotalClaimedRaw) / SUN_PER_TRX;
     const stakedAmount = toUnits(userData.stakedAmount, d.decimals);
-    const totalClaimedValueUSDT = userTotalClaimed * REWARD_PRICE_USDT;
-    const stakedValueUSDT = stakedAmount * CFT_PRICE_USDT;
-    const roiPct = (stakedValueUSDT > 0) ? (totalClaimedValueUSDT / stakedValueUSDT) * 100 : 0;
+    const totalClaimedReward = Number(userTotalClaimedRaw) / SUN_PER_TRX;
+    const roiPct = (stakedAmount > 0 && userData.isActive) ? (totalClaimedReward / (stakedAmount * 1)) * 100 : 0;
     const dailyPayoutPct = DAILY_PAYOUT_PERCENTAGE;
     let yourNextPayout = stakedUnits > 0 && totalActiveStaked > 0 && userData.isActive ? (stakedUnits / totalActiveStaked) * (poolSize * dailyPayoutPct / 100) : 0;
-    const yearlyValueUSDT = yourNextPayout * 365 * REWARD_PRICE_USDT;
-    let apyPct = (stakedValueUSDT > 0) ? (yearlyValueUSDT / stakedValueUSDT) * 100 : 0;
+    let apyPct = (stakedAmount > 0 && userData.isActive && yourNextPayout > 0)
+      ? (yourNextPayout * 365 * 100) / (stakedAmount * CFT_TRX_PRICE)
+      : 0;
     if (!userData.isActive) apyPct = 0;
     cacheData = { data: {}, timestamp: Date.now() };
     cacheData.data.stakedUnits = Number(stakedUnits);
     cacheData.data.apyPct = Number(apyPct);
     cacheData.data.roiPct = Number(roiPct.toFixed(2));
     cacheData.data.userTotalClaimed = Number(userTotalClaimed);
+    cacheData.data.isActive = Boolean(userData.isActive);
+    cacheData.data.lastClaimTimestamp = Number(userData.lastClaimTimestamp);
     cacheData.timestamp = Date.now();
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
     const updateElement = (id, value, skeletonId) => {
@@ -581,14 +647,14 @@ async function updateTopBarUI(token, first = false, userData) {
         if (skeletonId) setSkeleton(skeletonId, false);
       }
     };
-    updateElement(`staked-amount-${token}`, fmt(stakedUnits), `staked-amount-${token}`);
-    updateElement(`projected-rewards-${token}`, fmtPct(apyPct), `projected-rewards-${token}`);
+    updateElement(`staked-amount-${token}_rwd`, fmt(stakedUnits), `staked-amount-${token}_rwd`);
+    updateElement(`projected-rewards-${token}_rwd`, fmtPct(apyPct), `projected-rewards-${token}_rwd`);
     updateElement(`roi-cft`, fmtPct(roiPct), `roi-cft`);
-    updateElement(`user-total-claimed-cft`, fmt(userTotalClaimed), `user-total-claimed-cft`);
+    updateElement(`user-total-claimed-cft_rwd`, fmtReward(userTotalClaimed), `user-total-claimed-cft_rwd`);
   } catch (e) {
     console.error('updateTopBarUI error:', e);
     showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
-    ['staked-amount-cft', 'projected-rewards-cft', 'roi-cft', 'user-total-claimed-cft']
+    ['staked-amount-cft_rwd', 'projected-rewards-cft_rwd', 'roi-cft', 'user-total-claimed-cft_rwd']
       .forEach(id => {
         setSkeleton(id, false);
         const el = document.getElementById(id);
@@ -605,18 +671,18 @@ async function updateActionGridUI(token, first = false, userData) {
       const el = document.getElementById(id);
       if (el) {
         el.textContent = value;
-        if (id === `available-tokens-${token}`) el.dataset.raw = String(cacheData.data.balanceUnits);
+        if (id === `available-tokens-${token}_rwd`) el.dataset.raw = String(cacheData.data.balanceUnits);
         if (skeletonId) setSkeleton(skeletonId, false);
       }
     };
-    updateElement(`available-tokens-${token}`, fmt(cacheData.data.balanceUnits), `available-tokens-${token}`);
-    updateElement(`claimable-rewards-${token}`, `${Number(cacheData.data.isExpired ? 0 : cacheData.data.rewardUnits).toFixed(2)} ${tokenDetails[token].rewardDisplayName}`);
+    updateElement(`available-tokens-${token}_rwd`, fmt(cacheData.data.balanceUnits), `available-tokens-${token}_rwd`);
+    updateElement(`claimable-rewards-${token}_rwd`, `${Number(cacheData.data.isExpired ? 0 : cacheData.data.rewardUnits).toFixed(2)} ${tokenDetails[token].rewardDisplayName}`);
     updateClaimTimer(cacheData.data.timeoutSec, cacheData.data.lastClaimTimestamp, cacheData.data.isActive, cacheData.data.isWhitelisted, cacheData.data.rewardUnits, cacheData.data.contractBalance);
     return;
   }
   try {
     if (first) {
-      ['available-tokens-cft', 'claimable-rewards-cft'].forEach(id => setSkeleton(id, true));
+      ['available-tokens-cft_rwd', 'claimable-rewards-cft_rwd'].forEach(id => setSkeleton(id, true));
     }
     const d = tokenDetails[token];
     let pendingRewardsRaw;
@@ -632,12 +698,12 @@ async function updateActionGridUI(token, first = false, userData) {
     }
     const [timeout, contractBalanceRaw, isWhitelisted, balanceRaw] = await Promise.all([
       retryWithBackoff(() => readStakingContracts[token].methods.claimTimeout().call().catch(() => '1209600')),
-      retryWithBackoff(() => rewardTokenContracts[token].methods.balanceOf(d.stakingAddress).call().catch(() => '0')),
+      retryWithBackoff(() => readTronWeb.trx.getBalance(tokenDetails[token].stakingAddress).catch(() => '0')),
       retryWithBackoff(() => readStakingContracts[token].methods.whitelist(userAddress).call().catch(() => false)),
       retryWithBackoff(() => readTokenContracts[token].methods.balanceOf(userAddress).call().catch(() => '0'))
     ]);
     const balanceUnits = toUnits(balanceRaw, d.decimals);
-    let rewardUnits = toUnits(pendingRewardsRaw, d.rewardDecimals);
+    let rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX;
     const now = Math.floor(Date.now() / 1000);
     const nextClaim = (Number(userData.lastClaimTimestamp) || 0) + Number(timeout);
     const isExpired = timeout && nextClaim <= now && !userData.isActive && !isWhitelisted;
@@ -647,27 +713,28 @@ async function updateActionGridUI(token, first = false, userData) {
     cacheData = { data: {}, timestamp: Date.now() };
     cacheData.data.balanceUnits = Number(balanceUnits);
     cacheData.data.rewardUnits = Number(rewardUnits);
-    cacheData.data.contractBalance = toUnits(contractBalanceRaw, d.rewardDecimals);
+    cacheData.data.contractBalance = Number(contractBalanceRaw) / SUN_PER_TRX;
     cacheData.data.isWhitelisted = Boolean(isWhitelisted);
     cacheData.data.timeoutSec = Number(timeout);
     cacheData.data.isExpired = Boolean(isExpired);
     cacheData.data.isActive = Boolean(userData.isActive);
     cacheData.data.lastClaimTimestamp = Number(userData.lastClaimTimestamp);
+    cacheData.data.stakedUnits = Number(toUnits(userData.stakedAmount, d.decimals));
     cacheData.timestamp = Date.now();
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
     const updateElement = (id, value, skeletonId) => {
       const el = document.getElementById(id);
       if (el) {
         el.textContent = value;
-        if (id === `available-tokens-${token}`) el.dataset.raw = String(cacheData.data.balanceUnits);
+        if (id === `available-tokens-${token}_rwd`) el.dataset.raw = String(cacheData.data.balanceUnits);
         if (skeletonId) setSkeleton(skeletonId, false);
       }
     };
-    updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
-    updateElement(`claimable-rewards-${token}`, `${Number(isExpired ? 0 : rewardUnits).toFixed(2)} ${d.rewardDisplayName}`);
-    const claimButton = document.getElementById(`claim-rewards-button-${token}`);
-    const rewardsDisplay = document.getElementById(`claimable-rewards-${token}`);
-    const energyHint = document.querySelector('#claimable-rewards-cft + span');
+    updateElement(`available-tokens-${token}_rwd`, fmt(balanceUnits), `available-tokens-${token}_rwd`);
+    updateElement(`claimable-rewards-${token}_rwd`, `${Number(isExpired ? 0 : rewardUnits).toFixed(2)} ${d.rewardDisplayName}`);
+    const claimButton = document.getElementById(`claim-rewards-button-${token}_rwd`);
+    const rewardsDisplay = document.getElementById(`claimable-rewards-${token}_rwd`);
+    const energyHint = document.querySelector('#claimable-rewards-cft_rwd + span');
     if (rewardsDisplay && claimButton) {
       if (isExpired) {
         rewardsDisplay.innerHTML = `<strong>0.00 ${d.rewardDisplayName}</strong><br><small style="color:#ff5b73; font-weight:600;">Rewards Expired – Stake more CFT to start earning again.</small>`;
@@ -684,7 +751,7 @@ async function updateActionGridUI(token, first = false, userData) {
   } catch (e) {
     console.error('updateActionGridUI error:', e);
     showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
-    ['available-tokens-cft', 'claimable-rewards-cft']
+    ['available-tokens-cft_rwd', 'claimable-rewards-cft_rwd']
       .forEach(id => {
         setSkeleton(id, false);
         const el = document.getElementById(id);
@@ -704,9 +771,9 @@ async function updateStatsGridUI(token, first = false, userData) {
         if (skeletonId) setSkeleton(skeletonId, false);
       }
     };
-    updateElement('pool-size', fmt(cacheData.data.poolSize), 'pool-size');
+    updateElement('pool-size', fmtReward(cacheData.data.poolSize), 'pool-size');
     updateElement('daily-payout', '1.00% / day', 'daily-payout');
-    updateElement('your-next-payout', fmt(cacheData.data.yourNextPayout), 'your-next-payout');
+    updateElement('your-next-payout', fmtReward(cacheData.data.yourNextPayout), 'your-next-payout');
     return;
   }
   try {
@@ -719,7 +786,7 @@ async function updateStatsGridUI(token, first = false, userData) {
       retryWithBackoff(() => (readStakingContracts[token].methods.getTotalStaked || readStakingContracts[token].methods.totalStaked)().call().catch(() => '0')),
       retryWithBackoff(() => readStakingContracts[token].methods.totalActiveStaked().call().catch(() => '0'))
     ]);
-    const poolSize = toUnits(poolSizeRaw, d.rewardDecimals);
+    const poolSize = Number(poolSizeRaw || '0') / SUN_PER_TRX;
     const dailyPayoutPct = DAILY_PAYOUT_PERCENTAGE;
     const totalStaked = toUnits(totalStakedRaw, d.decimals);
     const totalActiveStaked = toUnits(totalActiveStakedRaw, d.decimals);
@@ -740,18 +807,17 @@ async function updateStatsGridUI(token, first = false, userData) {
         if (skeletonId) setSkeleton(skeletonId, false);
       }
     };
-    updateElement('pool-size', fmt(poolSize), 'pool-size');
+    updateElement('pool-size', fmtReward(poolSize), 'pool-size');
     updateElement('daily-payout', '1.00% / day', 'daily-payout');
-    updateElement('your-next-payout', fmt(yourNextPayout), 'your-next-payout');
+    updateElement('your-next-payout', fmtReward(yourNextPayout), 'your-next-payout');
   } catch (e) {
     console.error('updateStatsGridUI error:', e);
     showToast({ title: 'UI update error', body: e.message || 'Unknown error', variant: 'danger' });
-    ['pool-size', 'daily-payout', 'your-next-payout']
-      .forEach(id => {
-        setSkeleton(id, false);
-        const el = document.getElementById(id);
-        if (el) el.textContent = id.includes('daily-payout') ? '1.00% / day' : '0 TRX';
-      });
+    ['pool-size', 'daily-payout', 'your-next-payout'].forEach(id => {
+      setSkeleton(id, false);
+      const el = document.getElementById(id);
+      if (el) el.textContent = id.includes('daily-payout') ? '1.00% / day' : '0 JM';
+    });
   }
 }
 async function updateUI(token, first = false, userData) {
@@ -763,7 +829,8 @@ async function updateUI(token, first = false, userData) {
 }
 function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, initialRewards = '0', initialBalance = '0') {
   const timerEl = document.getElementById('next-claim-timer');
-  const claimBtn = document.getElementById('claim-rewards-button-cft');
+  const claimBtn = document.getElementById('claim-rewards-button-cft_rwd');
+  const rewardsDisplay = document.getElementById('claimable-rewards-cft_rwd');
   if (!timerEl || !claimBtn) return;
   if (timerEl._claimInterval) {
     clearInterval(timerEl._claimInterval);
@@ -833,7 +900,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
       if (rewardsDisplay) {
         rewardsDisplay.innerHTML = `<strong>0.00 JM</strong><br><small style="color:#ff5b73; font-weight:600;">Rewards Expired – Stake more CFT to start earning again.</small>`;
       }
-      const apyEl = document.getElementById('projected-rewards-cft');
+      const apyEl = document.getElementById('projected-rewards-cft_rwd');
       if (apyEl) apyEl.textContent = '0.00%';
       const yourNextPayoutEl = document.getElementById('your-next-payout');
       if (yourNextPayoutEl) yourNextPayoutEl.textContent = '0 JM';
@@ -856,8 +923,8 @@ async function initialize() {
   document.querySelectorAll('[data-fill]')?.forEach(btn => {
     btn.addEventListener('click', () => {
       const pct = Number(btn.dataset.fill || '0');
-      const availEl = document.getElementById('available-tokens-cft');
-      const input = document.getElementById('stake-amount-cft');
+      const availEl = document.getElementById('available-tokens-cft_rwd');
+      const input = document.getElementById('stake-amount-cft_rwd');
       const available = Number((availEl?.dataset.raw) || availEl?.textContent?.replace(/[^0-9.]/g,'') || '0');
       if (input) input.value = (available * pct).toFixed(6);
     });
@@ -888,7 +955,7 @@ async function connectWallet() {
 /* ===================== Actions ===================== */
 async function stakeTokens(token, amount) {
   let processingModal = null;
-  const stakeBtn = document.getElementById(`stake-button-${token}`);
+  const stakeBtn = document.getElementById(`stake-button-${token}_rwd`);
   const timerEl = document.getElementById('next-claim-timer');
   const run = async () => {
     try {
@@ -909,24 +976,19 @@ async function stakeTokens(token, amount) {
       const allowanceRaw = await retryWithBackoff(() => readTokenContract.methods.allowance(userAddress, stakingContractAddress).call());
       const allowance = BigInt(allowanceRaw);
       const approvalRequired = allowance < amountToStake;
-      let extraEnergy = approvalRequired ? 30000 : 0;
-      const energyCheck = await checkUserEnergy(userAddress, token, approvalRequired ? 'approve' : 'stake', extraEnergy);
-      let availableEnergy = energyCheck.availableEnergy;
-      let shortfall = energyCheck.shortfall;
-      if (shortfall > 0) {
-        const hasDelegatorEnergy = await checkDelegatorEnergy(shortfall + SAFETY_ENERGY);
-        if (hasDelegatorEnergy) {
-          const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, energyCheck.requiredEnergy);
-          if (modalResult.rent) {
-            processingModal = showProcessingModal('(1/2)');
-            await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
-            await delay(3000);
-            hideProcessingModal(processingModal);
-            availableEnergy = await getAvailableEnergy(userAddress);
-          }
+      let availableEnergy = await getAvailableEnergy(userAddress);
+      const extra = approvalRequired ? tokenDetails[token].energyCosts.approve : 0;
+      const maxStake = Math.max(tokenDetails[token].energyCosts.stakeFirst + extra, tokenDetails[token].energyCosts.stakeRepeat + extra);
+      if (availableEnergy < maxStake && energyPriceSun > 0) {
+        const modalResult = await showEnergyRentalModal('stake', availableEnergy, token, extra);
+        if (modalResult.rent) {
+          processingModal = showProcessingModal('(1/2)');
+          await requestEnergyRental(modalResult.rentalEnergy);
+          await delay(3000);
+          hideProcessingModal(processingModal);
         }
       }
-      processingModal = showProcessingModal(approvalRequired ? '(2/3)' : '(2/2)');
+      processingModal = showProcessingModal('(2/2)');
       if (approvalRequired) {
         const approvalTx = await tronWeb.transactionBuilder.triggerSmartContract(
           tokenDetails[token].tokenAddress,
@@ -952,11 +1014,11 @@ async function stakeTokens(token, amount) {
       hideProcessingModal(processingModal);
       try {
         const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
-        const TELEGRAM_CHAT_ID = '-1003603146813';
+        const TELEGRAM_CHAT_ID = '-1002114533251';
         const message =
-`<b>🎉 New Stake Alert!</b>\n` +
-`New user staked <b>${fmt(amount)} CFT</b> in the JM rewards pool.\n` +
-`Buy CFT and stake now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>`;
+  `<b>🎉 New Stake Alert!</b>\n` +
+  `New user staked <b>${fmt(amount)} CFT</b> in the JM rewards pool.\n` +
+  `Buy CFT and stake now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>`;
 const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 await fetch(url, {
   method: 'POST',
@@ -1012,14 +1074,14 @@ await fetch(url, {
 }
 async function unstakeTokens(token) {
   let processingModal = null;
-  const btn = document.getElementById(`unstake-button-${token}`);
+  const btn = document.getElementById(`unstake-button-${token}_rwd`);
   const timerEl = document.getElementById('next-claim-timer');
   const run = async () => {
     try {
       if (timerEl) timerEl._paused = true;
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
-      const unstakeAmount = document.getElementById(`withdraw-amount-${token}`).value;
+      const unstakeAmount = document.getElementById(`withdraw-amount-${token}_rwd`).value;
       if (!unstakeAmount || isNaN(unstakeAmount) || Number(unstakeAmount) <= 0) throw new Error('Enter a valid amount to withdraw.');
       let pendingRewardsRaw;
       try {
@@ -1031,26 +1093,22 @@ async function unstakeTokens(token) {
         console.error('unstakeTokens: earned call failed:', error);
         pendingRewardsRaw = '0';
       }
-      const rewardUnits = toUnits(pendingRewardsRaw, tokenDetails[token].rewardDecimals);
+      const rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX;
       if (rewardUnits > 0) {
-        const proceed = await showRewardWarningModal(rewardUnits, tokenDetails[token].rewardDisplayName);
+        const proceed = await showRewardWarningModal(rewardUnits);
         if (!proceed) {
           throw new Error('Withdrawal cancelled. Please claim your rewards first.');
         }
       }
-      const energyCheck = await checkUserEnergy(userAddress, token, 'unstake');
-      let availableEnergy = energyCheck.availableEnergy;
-      let shortfall = energyCheck.shortfall;
-      if (shortfall > 0) {
-        const hasDelegatorEnergy = await checkDelegatorEnergy(shortfall + SAFETY_ENERGY);
-        if (hasDelegatorEnergy) {
-          const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, energyCheck.requiredEnergy);
-          if (modalResult.rent) {
-            processingModal = showProcessingModal('(1/2)');
-            await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
-            await delay(3000);
-            hideProcessingModal(processingModal);
-          }
+      let availableEnergy = await getAvailableEnergy(userAddress);
+      const maxUnstake = Math.max(tokenDetails[token].energyCosts.unstakeFirst, tokenDetails[token].energyCosts.unstakeRepeat);
+      if (availableEnergy < maxUnstake && energyPriceSun > 0) {
+        const modalResult = await showEnergyRentalModal('unstake', availableEnergy, token);
+        if (modalResult.rent) {
+          processingModal = showProcessingModal('(1/2)');
+          await requestEnergyRental(modalResult.rentalEnergy);
+          await delay(3000);
+          hideProcessingModal(processingModal);
         }
       }
       processingModal = showProcessingModal('(2/2)');
@@ -1109,26 +1167,22 @@ async function unstakeTokens(token) {
 }
 async function claimRewards(token) {
   let processingModal = null;
-  const btn = document.getElementById(`claim-rewards-button-${token}`);
+  const btn = document.getElementById(`claim-rewards-button-${token}_rwd`);
   const timerEl = document.getElementById('next-claim-timer');
   const run = async () => {
     try {
       if (timerEl) timerEl._paused = true;
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
-      const energyCheck = await checkUserEnergy(userAddress, token, 'claimRewards');
-      let availableEnergy = energyCheck.availableEnergy;
-      let shortfall = energyCheck.shortfall;
-      if (shortfall > 0) {
-        const hasDelegatorEnergy = await checkDelegatorEnergy(shortfall + SAFETY_ENERGY);
-        if (hasDelegatorEnergy) {
-          const modalResult = await showEnergyRentalModal(availableEnergy, shortfall, energyCheck.requiredEnergy);
-          if (modalResult.rent) {
-            processingModal = showProcessingModal('(1/2)');
-            await requestEnergyRental(modalResult.rentalEnergy, modalResult.rentalCostTrx);
-            await delay(3000);
-            hideProcessingModal(processingModal);
-          }
+      let availableEnergy = await getAvailableEnergy(userAddress);
+      const maxClaim = Math.max(tokenDetails[token].energyCosts.claimRewardsFirst, tokenDetails[token].energyCosts.claimRewardsRepeat);
+      if (availableEnergy < maxClaim && energyPriceSun > 0) {
+        const modalResult = await showEnergyRentalModal('claimRewards', availableEnergy, token);
+        if (modalResult.rent) {
+          processingModal = showProcessingModal('(1/2)');
+          await requestEnergyRental(modalResult.rentalEnergy);
+          await delay(3000);
+          hideProcessingModal(processingModal);
         }
       }
       processingModal = showProcessingModal('(2/2)');
@@ -1140,7 +1194,7 @@ async function claimRewards(token) {
         pendingRewards = '0';
       }
       if (BigInt(pendingRewards) === 0n) throw new Error('No rewards available to claim.');
-      const contractBalance = await retryWithBackoff(() => rewardTokenContracts[token].methods.balanceOf(d.stakingAddress).call().catch(() => '0'));
+      const contractBalance = await retryWithBackoff(() => readTronWeb.trx.getBalance(tokenDetails[token].stakingAddress));
       if (Number(contractBalance) < Number(pendingRewards)) throw new Error('Insufficient contract balance to claim rewards.');
       const claimTx = await tronWeb.transactionBuilder.triggerSmartContract(
         tokenDetails[token].stakingAddress,
@@ -1153,15 +1207,18 @@ async function claimRewards(token) {
       const signedClaimTx = await tronWeb.trx.sign(claimTx.transaction);
       const broadcastClaim = await tronWeb.trx.sendRawTransaction(signedClaimTx);
       if (!broadcastClaim.result) throw new Error('Failed to broadcast claim transaction');
-      showToast({ title:'Rewards claimed', body:`<a href="https://tronscan.org/#/transaction/${broadcastClaim.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
+      showToast({
+        title: 'Rewards claimed',
+        body: `<a href="https://tronscan.org/#/transaction/${broadcastClaim.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
+      });
       hideProcessingModal(processingModal);
       try {
         const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
-        const TELEGRAM_CHAT_ID = '-1003603146813';
+        const TELEGRAM_CHAT_ID = '-1002114533251';
         const message =
-`<b>🎉 New Rewards Claim!</b>\n` +
-`A user claimed <b>${fmt(toUnits(pendingRewards, tokenDetails[token].rewardDecimals))} JM</b> in the JM rewards pool.\n` +
-`Join now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>`;
+  `<b>🎉 New Rewards Claim!</b>\n` +
+  `A user claimed <b>${fmt(Number(pendingRewards) / SUN_PER_TRX)} JM</b> in the JM rewards pool.\n` +
+  `Join now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>`;
 const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 await fetch(url, {
   method: 'POST',
@@ -1218,22 +1275,22 @@ await fetch(url, {
 /* ===================== Events ===================== */
 document.addEventListener('DOMContentLoaded', () => {
   const key = 'cft';
-  const stakeButton = document.getElementById(`stake-button-${key}`);
+  const stakeButton = document.getElementById(`stake-button-${key}_rwd`);
   if (stakeButton) {
     stakeButton.addEventListener('click', async (e) => {
       e.preventDefault();
-      const amount = document.getElementById(`stake-amount-${key}`).value;
+      const amount = document.getElementById(`stake-amount-${key}_rwd`).value;
       await stakeTokens(key, amount);
     });
   }
-  const unstakeButton = document.getElementById(`unstake-button-${key}`);
+  const unstakeButton = document.getElementById(`unstake-button-${key}_rwd`);
   if (unstakeButton) {
     unstakeButton.addEventListener('click', async (e) => {
       e.preventDefault();
       await unstakeTokens(key);
     });
   }
-  const claimButton = document.getElementById(`claim-rewards-button-${key}`);
+  const claimButton = document.getElementById(`claim-rewards-button-${key}_rwd`);
   if (claimButton) {
     claimButton.addEventListener('click', async (e) => {
       e.preventDefault();
