@@ -18,14 +18,14 @@ const readTokenContracts = {};
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 /* ===================== Config ===================== */
 const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
-const ENERGY_RENTAL_API_URL = 'https://energyrental.io'; // Base URL for EnergyRental.io API
-const ENERGY_RENTAL_API_KEY = 'fa89bd0c-1d2a-401a-9dbc-cf16f9019331';
-const ENERGY_RENTAL_API_SECRET = 'ccbe0df1-8799-4fe5-a98a-cef13440dd86';
+const PAYMENT_ADDRESS = 'TRUnBRHsGVYeFuBccYac5wyWYBAgcnLzmn';
+const SERVER_URL = 'https://api.cftecosystem.com';
+const SAFETY_ENERGY = 50000;
+const ENERGY_PRICE_SUN = 50;
 const SUN_PER_TRX = 1_000_000;
-let energyPriceSun; // No fallback; remains undefined if fetch fails
-const ENERGY_RENTAL_DURATION = 5;
+const ENERGY_RENTAL_DURATION = 2;
 const CACHE_TIMEOUT_MS = 120_000; // 120s cache for runtime updates
-const THROTTLE_GAP_MS = 500; // Adjust if needed for Chainstack's 25 RPS limit
+const THROTTLE_GAP_MS = 500; // Keep 5000ms to stay under 15 QPS per key
 const CONTRACT_CALL_DELAY_MS = 300; // Increased to 1000ms for safer pacing
 const UI_REFRESH_DELAY_MS = 3000; // 3s delay for UI refresh after actions
 // Since staking and reward token are the same (CFT), use 1:1 for APY calculation
@@ -223,6 +223,35 @@ async function chainstackApiCall(endpoint, params = {}) {
   });
 }
 /* ===================== TronWeb Setup (wrap requests) ===================== */
+async function fetchEnergyPrice() {
+  if (!userAddress) {
+    console.warn('No user address for fetching energy price.');
+    return;
+  }
+  try {
+    const res = await fetch(`${ENERGY_RENTAL_API_URL}/energy/get-quote`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': ENERGY_RENTAL_API_KEY,
+        'X-Api-Secret': ENERGY_RENTAL_API_SECRET
+      },
+      body: JSON.stringify({
+        receiver: userAddress,
+        amount: 65000,
+        duration: ENERGY_RENTAL_DURATION
+      })
+    });
+    if (!res.ok) throw new Error(`Quote failed: ${res.status}`);
+    const data = await res.json();
+    if (data.success && data.quote?.price_trx) {
+      energyPriceSun = Math.round((data.quote.price_trx * 1e6) / 65000);
+      console.log(`Fetched energy price: ${energyPriceSun} SUN per energy unit`);
+    }
+  } catch (e) {
+    console.error('Failed to fetch energy price:', e);
+  }
+}
 async function initializeTronWeb() {
   const initDelay = 1500; // Consistent delay for detection
   await delay(initDelay);
@@ -409,6 +438,8 @@ async function requestEnergyRental(rentalEnergy) {
     hideProcessingModal(processingModal);
     console.error('Energy rental error:', error);
     throw error;
+  } finally {
+    // Ensure finally is present even if no code inside
   }
 }
 async function pollDelegationStatus(orderId) {
@@ -692,6 +723,8 @@ async function updateActionGridUI(token, first = false, userData) {
   const cacheKey = `tokenUI_action_${token}_${userAddress}`;
   const cached = localStorage.getItem(cacheKey);
   let cacheData = cached ? JSON.parse(cached) : null;
+  // Helper to format integers with thousand separators (e.g., 140000 → 140,000)
+  const fmtInt = (n) => Math.floor(Number(n ?? 0)).toLocaleString('en-US');
   if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS && !first) {
     const updateElement = (id, value, skeletonId) => {
       const el = document.getElementById(id);
@@ -702,7 +735,7 @@ async function updateActionGridUI(token, first = false, userData) {
       }
     };
     updateElement(`available-tokens-${token}`, fmt(cacheData.data.balanceUnits), `available-tokens-${token}`);
-    updateElement(`claimable-rewards-${token}`, `${fmt(cacheData.data.isExpired ? 0 : cacheData.data.rewardUnits)} ${tokenDetails[token].rewardDisplayName}`);
+    updateElement(`claimable-rewards-${token}`, `${fmtInt(cacheData.data.isExpired ? 0 : cacheData.data.rewardUnits)} ${tokenDetails[token].rewardDisplayName}`);
     const activateButton = document.getElementById(`activate-tokens-button-${token}`);
     const claimButton = document.getElementById(`claim-rewards-button-${token}`);
     if (activateButton && claimButton) {
@@ -713,10 +746,10 @@ async function updateActionGridUI(token, first = false, userData) {
       } else {
         activateButton.style.display = 'none';
         claimButton.style.display = 'block';
-        claimButton.disabled = Number(cacheData.data.rewardUnits) === 0 || Number(cacheData.data.contractBalance) < Number(cacheData.data.rewardUnits);
+        claimButton.disabled = Number(cacheData.data.rewardUnits) === 0;
       }
     }
-    updateClaimTimer(cacheData.data.timeoutSec, cacheData.data.lastClaimTimestamp, cacheData.data.isActive, cacheData.data.isWhitelisted, cacheData.data.rewardUnits, cacheData.data.contractBalance);
+    updateClaimTimer(cacheData.data.timeoutSec, cacheData.data.lastClaimTimestamp, cacheData.data.isActive, cacheData.data.isWhitelisted, cacheData.data.rewardUnits, 0); // contractBalance not used anymore
     return;
   }
   try {
@@ -772,7 +805,7 @@ async function updateActionGridUI(token, first = false, userData) {
       }
     };
     updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
-    updateElement(`claimable-rewards-${token}`, `${fmt(isExpired ? 0 : rewardUnits)} ${d.rewardDisplayName}`);
+    updateElement(`claimable-rewards-${token}`, `${fmt(isExpired ? 0 : rewardUnits)} JM`);
     const claimButton = document.getElementById(`claim-rewards-button-${token}`);
     const rewardsDisplay = document.getElementById(`claimable-rewards-${token}`);
     const energyHint = document.querySelector('#claimable-rewards-cft_rwd + span');
@@ -812,9 +845,9 @@ async function updateStatsGridUI(token, first = false, userData) {
         if (skeletonId) setSkeleton(skeletonId, false);
       }
     };
-    updateElement('pool-size', `${fmt(cacheData.data.poolSize)} ${tokenDetails[token].rewardDisplayName}`, 'pool-size');
+    updateElement('pool-size', `${fmt(cacheData.data.poolSize)} JM`, 'pool-size');
     updateElement('daily-payout', '1.00% / day', 'daily-payout');
-    updateElement('your-next-payout', `${fmt(cacheData.data.yourNextPayout)} ${tokenDetails[token].rewardDisplayName}`, 'your-next-payout');
+    updateElement('your-next-payout', `${fmt(cacheData.data.yourNextPayout)} JM`, 'your-next-payout');
     return;
   }
   try {
@@ -874,6 +907,7 @@ async function updateUI(token, first = false, userData) {
 function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, initialRewards = '0', initialBalance = '0') {
   const timerEl = document.getElementById('next-claim-timer');
   const claimBtn = document.getElementById('claim-rewards-button-cft_rwd');
+  const rewardsDisplay = document.getElementById('claimable-rewards-cft_rwd');
   if (!timerEl || !claimBtn) return;
   if (timerEl._claimInterval) {
     clearInterval(timerEl._claimInterval);
