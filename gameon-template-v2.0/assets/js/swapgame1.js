@@ -205,7 +205,7 @@ async function pollDelegationStatus(orderId) {
     }, 1000);
   });
 }
-function showEnergyRentalModal(action, availableEnergy) {
+function showEnergyRentalModal(action, availableEnergy, extra=0) {
   return new Promise((resolve, reject) => {
     const modalElement = document.getElementById('energy-rental-modal');
     if (!modalElement) return reject(new Error('Energy rental modal not found.'));
@@ -217,6 +217,8 @@ function showEnergyRentalModal(action, availableEnergy) {
       requiredFirst = energyCosts[action + 'First'] || energyCosts[action];
       requiredRepeat = energyCosts[action + 'Repeat'] || energyCosts[action];
     }
+    requiredFirst += extra;
+    requiredRepeat += extra;
     const firstEst = document.getElementById('first-est');
     const repeatEst = document.getElementById('repeat-est');
     if (firstEst) firstEst.textContent = requiredFirst.toLocaleString();
@@ -300,23 +302,30 @@ async function performSwap(type) {
     try {
       let tx;
       let availableEnergy = await getAvailableEnergy(userAddress);
+      let extra = 0;
       if (type === "cft") {
-        // CFT → Game (requires approval)
         const amountSun = window.tronWeb.toSun(amount); // string
         const cftTokenContract = await window.tronWeb.contract().at(details.cftTokenAddress);
-        // Check current allowance
+        const allowance = await cftTokenContract.allowance(userAddress, details.contractAddress).call();
+        const approvalRequired = BigInt(allowance) < BigInt(amountSun);
+        extra = approvalRequired ? energyCosts.approve : 0;
+      }
+      const maxRequired = Math.max(energyCosts.swapFirst + extra, energyCosts.swapRepeat + extra);
+      if (availableEnergy < maxRequired && energyPriceSun > 0) {
+        const modalResult = await showEnergyRentalModal('swap', availableEnergy, extra);
+        if (modalResult.rent) {
+          const processingModal = showProcessingModal('(1/2)');
+          await requestEnergyRental(modalResult.rentalEnergy);
+          await delay(3000);
+          hideProcessingModal(processingModal);
+        }
+      }
+      if (type === "cft") {
+        const amountSun = window.tronWeb.toSun(amount); // string
+        const cftTokenContract = await window.tronWeb.contract().at(details.cftTokenAddress);
         const allowance = await cftTokenContract.allowance(userAddress, details.contractAddress).call();
         const approvalRequired = BigInt(allowance) < BigInt(amountSun);
         if (approvalRequired) {
-          if (availableEnergy < energyCosts.approve && energyPriceSun > 0) {
-            const modalResult = await showEnergyRentalModal('approve', availableEnergy);
-            if (modalResult.rent) {
-              showToast({ title: "Renting Energy", body: "Renting energy for approval...", variant: "info" });
-              await requestEnergyRental(modalResult.rentalEnergy);
-              await delay(3000);
-              availableEnergy = await getAvailableEnergy(userAddress);
-            }
-          }
           showToast({
             title: "Step 1/2",
             body: "Approve CFT spending... Confirm in wallet.",
@@ -327,16 +336,6 @@ async function performSwap(type) {
           });
           await delay(6000); // optional confirmation wait
         }
-        // Now check for swap
-        const maxSwap = Math.max(energyCosts.swapFirst, energyCosts.swapRepeat);
-        if (availableEnergy < maxSwap && energyPriceSun > 0) {
-          const modalResult = await showEnergyRentalModal('swap', availableEnergy);
-          if (modalResult.rent) {
-            showToast({ title: "Renting Energy", body: "Renting energy for swap...", variant: "info" });
-            await requestEnergyRental(modalResult.rentalEnergy);
-            await delay(3000);
-          }
-        }
         showToast({
           title: "Step 2/2",
           body: "Swapping CFT → CFTGame... Confirm.",
@@ -346,17 +345,7 @@ async function performSwap(type) {
           feeLimit: 100_000_000,
         });
       } else {
-        // TRX → Game
         const amountSun = window.tronWeb.toSun(amount); // string
-        const maxSwap = Math.max(energyCosts.swapFirst, energyCosts.swapRepeat);
-        if (availableEnergy < maxSwap && energyPriceSun > 0) {
-          const modalResult = await showEnergyRentalModal('swap', availableEnergy);
-          if (modalResult.rent) {
-            showToast({ title: "Renting Energy", body: "Renting energy for swap...", variant: "info" });
-            await requestEnergyRental(modalResult.rentalEnergy);
-            await delay(3000);
-          }
-        }
         tx = await swapContracts.trx["swap()"]().send({
           callValue: amountSun,
           feeLimit: 80_000_000,
@@ -369,9 +358,12 @@ async function performSwap(type) {
         const swapType = type.toUpperCase();
         const gameType = 'Game'; // Adjust if needed for 3/7 day distinction
         const message =
-          `<b>🎉 New CFTGame Purchase Alert!</b>\n` +
-          `A user bought <b>${amount} CFTGame</b> with ${swapType} in the high-risk pool.\n` +
-          `Join now at <a href="https://www.cftecosystem.com/stakinggame.html">cftecosystem.com</a>.`;
+          `🎁 New buy!\n` +
+          `Wallet: ${userAddress}\n` +
+          `Amount: ${amount} ${swapType}\n` +
+          `For: CFT Game\n` +
+          `Game: ${gameType}\n` +
+          `Tx: https://tronscan.org/#/transaction/${tx}`;
         const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
         await fetch(url, {
           method: 'POST',
