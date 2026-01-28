@@ -353,31 +353,29 @@ async function performSwap(type) {
       }
       // ── Add Telegram notification ────────────────────────────────────────────────
       try {
-        const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
-        const TELEGRAM_CHAT_ID = '-1002114533251';
-        const swapType = type.toUpperCase();
-        const gameType = 'Game'; // Adjust if needed for 3/7 day distinction
-        const message =
-          `🎁 New buy!\n` +
-          `Wallet: ${userAddress}\n` +
-          `Amount: ${amount} ${swapType}\n` +
-          `For: CFT Game\n` +
-          `Game: ${gameType}\n` +
-          `Tx: https://tronscan.org/#/transaction/${tx}`;
-        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-        await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: TELEGRAM_CHAT_ID,
-            text: message,
-            parse_mode: 'HTML',
-            disable_web_page_preview: true
-          })
-        });
-      } catch (notifyErr) {
-        console.warn('Failed to send Telegram notification:', notifyErr);
-      }
+  const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
+  const TELEGRAM_CHAT_ID = '-1002114533251';
+  const swapType = type.toUpperCase();
+  const gameType = 'Game'; // Adjust if needed for 3/7 day distinction
+  const message =
+    `<b>🎉 A user bought ${amount} CFTGame tokens!</b>\n` +
+    `Wallet: ${userAddress}\n` +
+    `Will they stake or hold?\n` +
+    `Join now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>`;
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+  await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message,
+      parse_mode: 'HTML',
+      disable_web_page_preview: true
+    })
+  });
+} catch (notifyErr) {
+  console.warn('Failed to send Telegram notification:', notifyErr);
+}
       // ──────────────────────────────────────────────────────────────────────────────
       showToast({
         title: "Swap Complete!",
