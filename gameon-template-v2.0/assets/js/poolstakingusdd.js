@@ -1202,11 +1202,22 @@ async function claimRewards(token) {
       .methods
       .balanceOf(tokenDetails[token].stakingAddress)
       .call();
-  } catch (err) {
-    console.warn('Failed to get contract balance:', err);
-    return '0';
+  } catch (e) {
+    console.warn("Failed to fetch contract USDD balance:", e);
+    return "0";
   }
 });
+
+const contractBalanceBig = BigInt(contractBalanceRaw || "0");
+const pendingBig = BigInt(pendingRewards || "0");
+
+if (contractBalanceBig < pendingBig) {
+  const contractUSDD = toUnits(contractBalanceRaw, 18);
+  const claimUSDD = toUnits(pendingRewards, 18);
+  throw new Error(`Insufficient contract balance. 
+    Contract: ${contractUSDD.toFixed(6)} USDD | 
+    Your claim: ${claimUSDD.toFixed(6)} USDD`);
+}
       if (Number(contractBalanceRaw) < Number(pendingRewards)) throw new Error('Insufficient contract balance to claim rewards.');
       const claimTx = await tronWeb.transactionBuilder.triggerSmartContract(
         tokenDetails[token].stakingAddress, 'claimRewards()', {}, [], userAddress
