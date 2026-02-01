@@ -1016,7 +1016,7 @@ async function stakeTokens(token, amount) {
       hideProcessingModal(processingModal);
       try {
         const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
-        const TELEGRAM_CHAT_ID = '-4866059981';
+        const TELEGRAM_CHAT_ID = '-1002114533251';
         const message =
   `<b>🎉 New Stake Alert!</b>\n` +
   `New user staked <b>${fmt(amount)} StableX</b> in the USDD rewards pool.\n` +
@@ -1238,7 +1238,7 @@ async function claimRewards(token) {
       // Telegram notification
       try {
         const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
-        const TELEGRAM_CHAT_ID = '-4866059981';
+        const TELEGRAM_CHAT_ID = '-1002114533251';
         const message = 
 `<b>🎉 New Rewards Claim!</b>\n` +
 `A user claimed <b>${fmt(toUnits(pendingRewards, tokenDetails[token].rewardDecimals))} USDD</b> in the USDD rewards pool.\n` +
