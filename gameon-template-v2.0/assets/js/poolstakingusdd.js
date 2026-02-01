@@ -1171,13 +1171,18 @@ async function claimRewards(token) {
   let processingModal = null;
   const btn = document.getElementById(`claim-rewards-button-${token}`);
   const timerEl = document.getElementById('next-claim-timer');
+
   const run = async () => {
     try {
       if (timerEl) timerEl._paused = true;
+
       if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
       if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
+
+      // Energy rental
       let availableEnergy = await getAvailableEnergy(userAddress);
       const maxClaim = Math.max(tokenDetails[token].energyCosts.claimRewardsFirst, tokenDetails[token].energyCosts.claimRewardsRepeat);
+
       if (availableEnergy < maxClaim && energyPriceSun > 0) {
         const modalResult = await showEnergyRentalModal('claimRewards', availableEnergy, token);
         if (modalResult.rent) {
@@ -1187,84 +1192,96 @@ async function claimRewards(token) {
           hideProcessingModal(processingModal);
         }
       }
+
       processingModal = showProcessingModal('(2/2)');
-      const stakingContract = stakingContracts[token];
+
       let pendingRewards;
       try {
-        pendingRewards = await retryWithBackoff(() => readStakingContracts[token].methods.earned(userAddress).call());
-      } catch {
+        pendingRewards = await retryWithBackoff(() => 
+          readStakingContracts[token].methods.earned(userAddress).call()
+        );
+      } catch (e) {
         pendingRewards = '0';
       }
-      if (BigInt(pendingRewards) === 0n) throw new Error('No rewards available to claim.');
-      const contractBalanceRaw = await retryWithBackoff(async () => {
-  try {
-    return await readTokenContracts[token]
-      .methods
-      .balanceOf(tokenDetails[token].stakingAddress)
-      .call();
-  } catch (e) {
-    console.warn("Failed to fetch contract USDD balance:", e);
-    return "0";
-  }
-});
 
-const contractBalanceBig = BigInt(contractBalanceRaw || "0");
-const pendingBig = BigInt(pendingRewards || "0");
+      if (BigInt(pendingRewards || '0') === 0n) {
+        throw new Error('No rewards available to claim.');
+      }
 
-if (contractBalanceBig < pendingBig) {
-  const contractUSDD = toUnits(contractBalanceRaw, 18);
-  const claimUSDD = toUnits(pendingRewards, 18);
-  throw new Error(`Insufficient contract balance. 
-    Contract: ${contractUSDD.toFixed(6)} USDD | 
-    Your claim: ${claimUSDD.toFixed(6)} USDD`);
-}
-      if (Number(contractBalanceRaw) < Number(pendingRewards)) throw new Error('Insufficient contract balance to claim rewards.');
+      // Claim transaction
       const claimTx = await tronWeb.transactionBuilder.triggerSmartContract(
-        tokenDetails[token].stakingAddress, 'claimRewards()', {}, [], userAddress
+        tokenDetails[token].stakingAddress, 
+        'claimRewards()', 
+        {}, 
+        [], 
+        userAddress
       );
-      if (!claimTx.result || !claimTx.transaction) throw new Error('Failed to create claim transaction');
+
+      if (!claimTx.result || !claimTx.transaction) {
+        throw new Error('Failed to create claim transaction');
+      }
+
       const signedClaimTx = await tronWeb.trx.sign(claimTx.transaction);
       const broadcastClaim = await tronWeb.trx.sendRawTransaction(signedClaimTx);
-      if (!broadcastClaim.result) throw new Error('Failed to broadcast claim transaction');
-      showToast({ title:'Rewards claimed', body:`<a href="https://tronscan.org/#/transaction/${broadcastClaim.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
+
+      if (!broadcastClaim.result) {
+        throw new Error('Failed to broadcast claim transaction');
+      }
+
+      showToast({ 
+        title: 'Rewards claimed', 
+        body: `<a href="https://tronscan.org/#/transaction/${broadcastClaim.txid}" target="_blank" rel="noopener">View on Tronscan</a>` 
+      });
+
       hideProcessingModal(processingModal);
+
+      // Telegram notification
       try {
         const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
         const TELEGRAM_CHAT_ID = '-4866059981';
-        const message =
+        const message = 
 `<b>🎉 New Rewards Claim!</b>\n` +
 `A user claimed <b>${fmt(toUnits(pendingRewards, tokenDetails[token].rewardDecimals))} USDD</b> in the USDD rewards pool.\n` +
 `Join now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>`;
-const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-await fetch(url, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    chat_id: TELEGRAM_CHAT_ID,
-    text: message,
-    parse_mode: 'HTML',
-    disable_web_page_preview: true
-  })
-});
+
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: message,
+            parse_mode: 'HTML',
+            disable_web_page_preview: true
+          })
+        });
       } catch (notifyErr) {
         console.warn('Failed to send Telegram notification:', notifyErr);
       }
-      ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
-      let newUserData;
+
+      // Refresh UI
+      ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => 
+        localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`)
+      );
+
+      let newUserData = {
+        stakedAmount: '0',
+        isActive: false,
+        lastClaimTimestamp: '0',
+        totalClaimed: '0',
+        rewards: '0',
+        userRewardPerTokenPaid: '0'
+      };
+
       try {
-        newUserData = await retryWithBackoff(() => readStakingContracts[token].methods.users(userAddress).call());
+        newUserData = await retryWithBackoff(() => 
+          readStakingContracts[token].methods.users(userAddress).call()
+        );
       } catch (error) {
         console.error('claimRewards: failed to fetch new userData:', error);
-        newUserData = {
-          stakedAmount: '0',
-          isActive: false,
-          lastClaimTimestamp: '0',
-          totalClaimed: '0',
-          rewards: '0',
-          userRewardPerTokenPaid: '0'
-        };
         showToast({ title: 'Data Fetch Error', body: 'Failed to fetch updated user data; using fallback.', variant: 'warning' });
       }
+
       const updatedCache = {
         data: {
           stakedAmount: newUserData.stakedAmount,
@@ -1276,9 +1293,12 @@ await fetch(url, {
         },
         timestamp: Date.now()
       };
+
       localStorage.setItem(`tokenUI_user_${token}_${userAddress}`, JSON.stringify(serializeBigInt(updatedCache)));
+
       await delay(UI_REFRESH_DELAY_MS);
       await updateUI(token, true, newUserData);
+
     } catch (e) {
       hideProcessingModal(processingModal);
       showToast({ title: 'Claim error', body: e.message, variant: 'danger' });
@@ -1286,6 +1306,7 @@ await fetch(url, {
       if (timerEl) timerEl._paused = false;
     }
   };
+
   return withLoading(btn, 'Claiming...', run)();
 }
 /* ===================== Events ===================== */
