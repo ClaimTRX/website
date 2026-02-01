@@ -1196,7 +1196,17 @@ async function claimRewards(token) {
         pendingRewards = '0';
       }
       if (BigInt(pendingRewards) === 0n) throw new Error('No rewards available to claim.');
-      const contractBalanceRaw = await retryWithBackoff(() => readTokenContracts[token].methods.balanceOf(tokenDetails[token].stakingAddress).catch(() => '0'));
+      const contractBalanceRaw = await retryWithBackoff(async () => {
+  try {
+    return await readTokenContracts[token]
+      .methods
+      .balanceOf(tokenDetails[token].stakingAddress)
+      .call();
+  } catch (err) {
+    console.warn('Failed to get contract balance:', err);
+    return '0';
+  }
+});
       if (Number(contractBalanceRaw) < Number(pendingRewards)) throw new Error('Insufficient contract balance to claim rewards.');
       const claimTx = await tronWeb.transactionBuilder.triggerSmartContract(
         tokenDetails[token].stakingAddress, 'claimRewards()', {}, [], userAddress
