@@ -46,6 +46,15 @@ const contracts = [
     expireDays: 3,
     chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
   },
+  {
+    name: 'StableX',
+    tabName: 'USDD Rewards', // Customize the tab name here
+    address: 'TD9vT92VYx4AN56R4pmPjpkbtgoehc7SR4',
+    decimals: 6,
+    soonDays: 10,
+    expireDays: 14,
+    chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
+  },
 ];
 
 // ───────────────────────────────────────────────
