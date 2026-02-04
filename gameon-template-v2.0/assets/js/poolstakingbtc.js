@@ -1,4 +1,4 @@
-let tronWeb, readTronWeb, userAddress;
+let tronWeb, readTronWeb, userAddress; 
 const stakingContracts = {};
 const tokenContracts = {};
 const readStakingContracts = {};
