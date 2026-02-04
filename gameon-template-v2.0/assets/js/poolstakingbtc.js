@@ -677,7 +677,7 @@ async function updateActionGridUI(token, first = false, userData) {
       }
     };
     updateElement(`available-tokens-${token}`, fmt(cacheData.data.balanceUnits), `available-tokens-${token}`);
-    updateElement(`claimable-rewards-${token}`, `${Number(cacheData.data.isExpired ? 0 : cacheData.data.rewardUnits).toFixed(2)} ${tokenDetails[token].rewardDisplayName}`);
+    updateElement(`claimable-rewards-${token}`, fmtBtc(isExpired ? 0 : rewardUnits));
     updateClaimTimer(cacheData.data.timeoutSec, cacheData.data.lastClaimTimestamp, cacheData.data.isActive, cacheData.data.isWhitelisted, cacheData.data.rewardUnits, cacheData.data.contractBalance);
     return;
   }
@@ -735,7 +735,7 @@ async function updateActionGridUI(token, first = false, userData) {
     const energyHint = document.querySelector('#claimable-rewards-cft_usdt + span');
     if (rewardsDisplay && claimButton) {
       if (isExpired) {
-        rewardsDisplay.innerHTML = `<strong>0.00 ${d.rewardDisplayName}</strong><br><small style="color:#ff5b73; font-weight:600;">Rewards Expired – Stake more CFT to start earning again.</small>`;
+        rewardsDisplay.innerHTML = `<strong>0.00000000 ${d.rewardDisplayName}</strong><br><small style="color:#ff5b73; font-weight:600;">Rewards Expired – Stake more CFT to start earning again.</small>`;
         claimButton.style.display = 'none';
         if (energyHint) energyHint.style.display = 'none';
       } else {
@@ -897,7 +897,7 @@ function updateClaimTimer(timeoutSec, lastClaimTs, isActive, isWhitelisted, init
       timerEl.classList.add('inactive');
       claimBtn.style.display = 'none';
       if (rewardsDisplay) {
-        rewardsDisplay.innerHTML = `<strong>0.00 BTC</strong><br><small style="color:#ff5b73; font-weight:600;">Rewards Expired – Stake more CFT to start earning again.</small>`;
+        rewardsDisplay.innerHTML = `<strong>0.00000000 BTC</strong><br><small style="color:#ff5b73; font-weight:600;">Rewards Expired – Stake more CFT to start earning again.</small>`;
       }
       const apyEl = document.getElementById('projected-rewards-cft_usdt');
       if (apyEl) apyEl.textContent = '0.00%';
