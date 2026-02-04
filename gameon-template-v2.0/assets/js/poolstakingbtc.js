@@ -1,4 +1,4 @@
-let tronWeb, readTronWeb, userAddress; 
+let tronWeb, readTronWeb, userAddress;
 const stakingContracts = {};
 const tokenContracts = {};
 const readStakingContracts = {};
@@ -728,8 +728,8 @@ async function updateActionGridUI(token, first = false, userData) {
         if (skeletonId) setSkeleton(skeletonId, false);
       }
     };
-    updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
-    updateElement(`claimable-rewards-${token}`, `${Number(isExpired ? 0 : rewardUnits).toFixed(2)} ${d.rewardDisplayName}`);
+        updateElement(`available-tokens-${token}`, fmt(balanceUnits), `available-tokens-${token}`);
+    updateElement(`claimable-rewards-${token}`, fmtBtc(isExpired ? 0 : rewardUnits));
     const claimButton = document.getElementById(`claim-rewards-button-${token}`);
     const rewardsDisplay = document.getElementById(`claimable-rewards-${token}`);
     const energyHint = document.querySelector('#claimable-rewards-cft_usdt + span');
@@ -738,8 +738,8 @@ async function updateActionGridUI(token, first = false, userData) {
         rewardsDisplay.innerHTML = `<strong>0.00000000 ${d.rewardDisplayName}</strong><br><small style="color:#ff5b73; font-weight:600;">Rewards Expired – Stake more CFT to start earning again.</small>`;
         claimButton.style.display = 'none';
         if (energyHint) energyHint.style.display = 'none';
-      } else {
-        rewardsDisplay.textContent = `${Number(rewardUnits).toFixed(2)} ${d.rewardDisplayName}`;
+            } else {
+        rewardsDisplay.textContent = fmtBtc(rewardUnits);
         claimButton.style.display = 'block';
         claimButton.disabled = Number(pendingRewardsRaw) === 0 || toUnits(contractBalanceRaw, d.rewardDecimals) < rewardUnits;
         if (energyHint) energyHint.style.display = 'block';
