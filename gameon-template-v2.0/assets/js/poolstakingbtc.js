@@ -19,6 +19,7 @@ const CFT_PRICE_USDT = 0.1623;
 const BTC_PRICE_USDT = 76000;
 const CFT_PRICE_BTC = CFT_PRICE_USDT / BTC_PRICE_USDT;
 const DAILY_PAYOUT_PERCENTAGE = 1;
+let energyRentalAvailable = true;   // ← Add this
 
 const tokenDetails = {
   cft_usdt: {
@@ -667,7 +668,7 @@ async function updateActionGridUI(token, first = false, userData) {
   const cacheKey = `tokenUI_action_${token}_${userAddress}`;
   const cached = localStorage.getItem(cacheKey);
   let cacheData = cached ? JSON.parse(cached) : null;
-  if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS && !first) {
+    if (cacheData && Date.now() - cacheData.timestamp < CACHE_TIMEOUT_MS && !first) {
     const updateElement = (id, value, skeletonId) => {
       const el = document.getElementById(id);
       if (el) {
@@ -676,9 +677,17 @@ async function updateActionGridUI(token, first = false, userData) {
         if (skeletonId) setSkeleton(skeletonId, false);
       }
     };
+    const isExpired = cacheData.data.isExpired || false;
     updateElement(`available-tokens-${token}`, fmt(cacheData.data.balanceUnits), `available-tokens-${token}`);
-    updateElement(`claimable-rewards-${token}`, fmtBtc(isExpired ? 0 : rewardUnits));
-    updateClaimTimer(cacheData.data.timeoutSec, cacheData.data.lastClaimTimestamp, cacheData.data.isActive, cacheData.data.isWhitelisted, cacheData.data.rewardUnits, cacheData.data.contractBalance);
+    updateElement(`claimable-rewards-${token}`, fmtBtc(isExpired ? 0 : cacheData.data.rewardUnits));
+    updateClaimTimer(
+      cacheData.data.timeoutSec,
+      cacheData.data.lastClaimTimestamp,
+      cacheData.data.isActive,
+      cacheData.data.isWhitelisted,
+      cacheData.data.rewardUnits,
+      cacheData.data.contractBalance
+    );
     return;
   }
   try {
