@@ -239,7 +239,7 @@ const adminWallets = [
 ];
 const CHAINSTACK_BASE_URL = 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299';
 const THROTTLE_GAP_MS = 4; // For 250 RPS
-let tronWeb, userAddress;
+let tronWeb, readTronWeb, userAddress;
 let contracts = [];
 // Helpers
 function delay(ms) {
@@ -303,21 +303,26 @@ async function initializeTronWeb() {
     if (!TronWebCtor) {
         throw new Error('TronWeb constructor not available.');
     }
-    tronWeb = window.tronWeb;
+
+    tronWeb = window.tronWeb; // Injected for signing/send
+
+    // Create separate readTronWeb for view calls using Chainstack
+    readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
+
     userAddress = tronWeb.defaultAddress.base58;
-    // Switch to Chainstack
-    tronWeb.setFullNode(CHAINSTACK_BASE_URL);
-tronWeb.setSolidityNode(CHAINSTACK_BASE_URL);
-tronWeb.setEventServer(CHAINSTACK_BASE_URL);
     document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
-    // Initialize contracts in parallel
+
+    // Initialize contracts (signing contracts with injected, read with Chainstack)
     contracts = await Promise.all(stakingConfigs.map(async config => {
-        const [stakingContract, tokenContract] = await Promise.all([
-            tronWeb.contract(config.stakingContractAbi, config.stakingContractAddress),
-            tronWeb.contract(config.tokenContractAbi, config.tokenContractAddress)
+        const [stakingContract, tokenContract, readStakingContract, readTokenContract] = await Promise.all([
+            tronWeb.contract(config.stakingContractAbi, config.stakingContractAddress), // For send
+            tronWeb.contract(config.tokenContractAbi, config.tokenContractAddress), // For send
+            readTronWeb.contract(config.stakingContractAbi, config.stakingContractAddress), // For view
+            readTronWeb.contract(config.tokenContractAbi, config.tokenContractAddress) // For view
         ]);
-        return { config, stakingContract, tokenContract };
+        return { config, stakingContract, tokenContract, readStakingContract, readTokenContract };
     }));
+
     // Admin check
     if (adminWallets.includes(userAddress)) {
         document.getElementById('admin-panel').style.display = 'block';
@@ -426,6 +431,8 @@ async function updateAdminUI() {
 // Update UI for a single contract
 async function updateContractUI(contractIndex) {
     const contract = contracts[contractIndex];
+    const readTokenContract = contract.readTokenContract;
+    const readStakingContract = contract.readStakingContract;
     const maxRetries = 3;
     async function executeWithRetry(fn, operationName, retries = maxRetries) {
         return retryWithBackoff(fn);
@@ -433,7 +440,7 @@ async function updateContractUI(contractIndex) {
     try {
         // Fetch decimals
         const decimalsRaw = await executeWithRetry(
-            () => contract.tokenContract.methods.decimals().call(),
+            () => readTokenContract.methods.decimals().call(),
             `decimals-${contractIndex}`
         );
         const decimals = Number(decimalsRaw);
@@ -442,7 +449,7 @@ async function updateContractUI(contractIndex) {
         const availableTokensElement = document.getElementById(`available-tokens-admin-${contractIndex}`);
         if (availableTokensElement) {
             await executeWithRetry(async () => {
-                const balanceRaw = await contract.tokenContract.methods.balanceOf(userAddress).call();
+                const balanceRaw = await readTokenContract.methods.balanceOf(userAddress).call();
                 const balance = Number(BigInt(balanceRaw) / BigInt(10 ** decimals));
                 availableTokensElement.innerText = formatNumber(balance);
             }, `available-tokens-${contractIndex}`);
@@ -452,14 +459,14 @@ async function updateContractUI(contractIndex) {
         await delay(THROTTLE_GAP_MS);
         // Fetch contract balance
         const contractBalanceRaw = await executeWithRetry(
-            () => contract.tokenContract.methods.balanceOf(contract.config.stakingContractAddress).call(),
+            () => readTokenContract.methods.balanceOf(contract.config.stakingContractAddress).call(),
             `contract-balance-${contractIndex}`
         );
         const contractBalance = Number(BigInt(contractBalanceRaw) / BigInt(10 ** decimals));
         await delay(THROTTLE_GAP_MS);
         // Fetch total unclaimed rewards
         const totalUnclaimedRaw = await executeWithRetry(
-            () => contract.stakingContract.methods.viewTotalUnclaimedRewards().call(),
+            () => readStakingContract.methods.viewTotalUnclaimedRewards().call(),
             `total-unclaimed-${contractIndex}`
         );
         const totalUnclaimed = Number(BigInt(totalUnclaimedRaw) / BigInt(10 ** decimals));
@@ -468,7 +475,7 @@ async function updateContractUI(contractIndex) {
         let rewardsLeft;
         if (contract.config.isSameToken) {
             const totalStakedRaw = await executeWithRetry(
-                () => contract.stakingContract.methods.viewTotalStaked().call(),
+                () => readStakingContract.methods.viewTotalStaked().call(),
                 `total-staked-${contractIndex}`
             );
             const totalStaked = Number(BigInt(totalStakedRaw) / BigInt(10 ** decimals));
@@ -486,7 +493,7 @@ async function updateContractUI(contractIndex) {
         }
         // Fetch daily rewards
         const dailyRewardsRaw = await executeWithRetry(
-            () => contract.stakingContract.methods.viewDailyReward().call(),
+            () => readStakingContract.methods.viewDailyReward().call(),
             `daily-rewards-${contractIndex}`
         );
         const dailyRewards = Number(BigInt(dailyRewardsRaw) / BigInt(10 ** decimals));
