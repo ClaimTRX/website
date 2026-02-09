@@ -2,6 +2,24 @@
 
 const contracts = [
   {
+    name: 'StableX',
+    tabName: 'USDD Pool', // Customize the tab name here
+    address: 'TD9vT92VYx4AN56R4pmPjpkbtgoehc7SR4',
+    decimals: 6,
+    soonDays: 10,
+    expireDays: 14,
+    chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
+  },
+  {
+    name: 'CFT',
+    tabName: 'BTC Pool', // Customize the tab name here
+    address: 'TQQuD8Lq37zmL2brsdrrqM5fA797T5dhVy',
+    decimals: 6,
+    soonDays: 10,
+    expireDays: 14,
+    chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
+  },
+  {
     name: 'CFT',
     tabName: 'TRX Pool', // Customize the tab name here
     address: 'TCf1vY3EMuczBSmo9Cfrffu6TsGrUvrC52',
@@ -54,7 +72,7 @@ const contracts = [
     soonDays: 10,
     expireDays: 14,
     chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
-  },
+  }
 ];
 
 // ───────────────────────────────────────────────
