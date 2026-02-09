@@ -306,9 +306,9 @@ async function initializeTronWeb() {
     tronWeb = window.tronWeb;
     userAddress = tronWeb.defaultAddress.base58;
     // Switch to Chainstack
-    tronWeb.fullNode = new TronWebCtor.providers.HttpProvider(CHAINSTACK_BASE_URL);
-    tronWeb.solidityNode = new TronWebCtor.providers.HttpProvider(CHAINSTACK_BASE_URL);
-    tronWeb.eventServer = new TronWebCtor.providers.HttpProvider(CHAINSTACK_BASE_URL);
+    tronWeb.setFullNode(CHAINSTACK_BASE_URL);
+tronWeb.setSolidityNode(CHAINSTACK_BASE_URL);
+tronWeb.setEventServer(CHAINSTACK_BASE_URL);
     document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
     // Initialize contracts in parallel
     contracts = await Promise.all(stakingConfigs.map(async config => {
