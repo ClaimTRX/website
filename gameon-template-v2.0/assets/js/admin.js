@@ -245,7 +245,7 @@ let contracts = [];
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 500) {
+async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn();
@@ -310,6 +310,14 @@ async function initializeTronWeb() {
     readTronWeb = new TronWebCtor({ fullHost: CHAINSTACK_BASE_URL });
 
     userAddress = tronWeb.defaultAddress.base58;
+    // Set address on readTronWeb to avoid owner_address errors
+    if (userAddress) {
+        readTronWeb.setAddress(userAddress);
+        console.log('readTronWeb address set to:', userAddress);
+    } else {
+        console.warn('No userAddress found; view calls may fail.');
+    }
+
     document.getElementById('connect-button').innerHTML = `<i class="icon-wallet me-md-2"></i> Wallet Connected`;
 
     // Initialize contracts (signing contracts with injected, read with Chainstack)
