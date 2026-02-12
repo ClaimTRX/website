@@ -7,14 +7,7 @@ const advertisements = [
     linkText: "Mint Now",
     icon: "icon-rocket"
   },
-  {
-    title: "BabyTuru",
-    description: "BabyTuru ($BBT) is a multichain memetoken originating on the Tron blockchain, blending playful bird-themed memes with practical utilities like deflationary token burns, arbitrage mechanisms and seamless staking rewards to incentivize long-term holding. It is a standout OG memecoin that has been around for over 4 years.",
-    image: "assets/img/content/bbt.jpg",
-    link: "https://t.me/babyturu",
-    linkText: "Join Now",
-    icon: "icon-telegram"
-  },
+  
   {
     title: "UpDawg",
     description: "UpDawg (UDAWG) is a Proof-of-reserve TRC20 token backed by TRX on the Tron Blockchain. It powers the uDawg_bot on Telegram - gamifying off & on-chain community engagement with rewards.",
@@ -33,22 +26,7 @@ A TRON DAO HackaTRON Season 7 winner, TronsCore makes community engagement and d
     linkText: "Join Now",
     icon: "icon-telegram"
   },
-  {
-    title: "JM Swap",
-    description: "JustMoney Swap is an AMM decentralized exchange (DEX) launched initially on the Tron Blockchain. It is the first multi and cross-chain swap with full support for taxed tokens.",
-    image: "assets/img/content/jmswapwhite.png",
-    link: "https://just.money",
-    linkText: "Swap Now",
-    icon: "icon-rocket"
-  },
-  {
-    title: "JM Explorer",
-    description: "JustMoney Explorer brings you all the advantages of a blockchain explorer, a DEX viewer, and a dAppstore in just one place! It offers a comprehensive solution where projects can list their dApps and users can effortlessly navigate and interact with them.",
-    image: "assets/img/content/jme.png",
-    link: "https://explorer.just.money/",
-    linkText: "Explore Now",
-    icon: "icon-rocket"
-  },
+  
   {
     title: "Stake StableX",
     description: "Earn both CFT and StableX with StableX staking",
@@ -65,14 +43,7 @@ A TRON DAO HackaTRON Season 7 winner, TronsCore makes community engagement and d
     linkText: "Coming Soon",
     icon: "icon-stake"
   },
-  {
-    title: "New CFT-USDT Staking",
-    description: "New USDT reward pool live. Stake your CFT for daily USDT rewards",
-    image: "assets/img/content/usdt.png",
-    link: "https://www.cftecosystem.com/poolstakingusdt",
-    linkText: "Stake Now",
-    icon: "icon-stake"
-  },
+  
   {
     title: "Advertise Your Project Here",
     description: "Want to showcase your project to our audience? Contact us to discuss advertising opportunities!",
