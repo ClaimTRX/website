@@ -58,6 +58,14 @@ A TRON DAO HackaTRON Season 7 winner, TronsCore makes community engagement and d
     icon: "icon-stake"
   },
   {
+    title: "CFT Legacy",
+    description: "OGs Prepare",
+    image: "assets/img/content/legacy.jpg",
+    link: "https://www.cftecosystem.com/",
+    linkText: "Coming Soon",
+    icon: "icon-stake"
+  },
+  {
     title: "New CFT-USDT Staking",
     description: "New USDT reward pool live. Stake your CFT for daily USDT rewards",
     image: "assets/img/content/usdt.png",
