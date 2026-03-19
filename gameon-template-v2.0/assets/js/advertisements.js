@@ -30,10 +30,10 @@ A TRON DAO HackaTRON Season 7 winner, TronsCore makes community engagement and d
   
   {
     title: "CFT Legacy",
-    description: "Legacy Staking",
+    description: "Legacy Staking now live, swap your CFT to Legacy and earn daily rewards. ",
     image: "assets/img/content/legacy-warrior-logo.png",
     link: "https://www.cftlegacy.com/",
-    linkText: "Legacy Staking Now Live",
+    linkText: "Stake Now",
     icon: "icon-stake"
   },
   
