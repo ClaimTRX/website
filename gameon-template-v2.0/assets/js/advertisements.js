@@ -27,20 +27,13 @@ A TRON DAO HackaTRON Season 7 winner, TronsCore makes community engagement and d
     icon: "icon-telegram"
   },
   
-  {
-    title: "Stake StableX",
-    description: "Earn both CFT and StableX with StableX staking",
-    image: "assets/img/content/stablex.png",
-    link: "https://www.cftecosystem.com/buystablex",
-    linkText: "Stake Now",
-    icon: "icon-stake"
-  },
+  
   {
     title: "CFT Legacy",
-    description: "OGs Prepare",
-    image: "assets/img/content/legacy.jpg",
-    link: "https://www.cftecosystem.com/",
-    linkText: "Coming Soon",
+    description: "Legacy Staking",
+    image: "assets/img/content/legacy-warrior-logo.png",
+    link: "https://www.cftlegacy.com/",
+    linkText: "Legacy Staking Now Live",
     icon: "icon-stake"
   },
   
