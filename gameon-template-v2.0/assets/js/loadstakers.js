@@ -29,15 +29,7 @@ const contracts = [
     expireDays: 14,
     chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
   },
-  {
-    name: 'CFT',
-    tabName: 'USDT Pool', // Customize the tab name here
-    address: 'TWTssCnUCDeMMqDA9A9zoxCfrLJXZh2N71',
-    decimals: 6,
-    soonDays: 10,
-    expireDays: 14,
-    chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
-  },
+  
   {
     name: 'CFTGame',
     tabName: 'CFT Game 7 Days', // Customize the tab name here
@@ -63,6 +55,14 @@ const contracts = [
     decimals: 6,
     soonDays: 10,
     expireDays: 14,
+    chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
+  }
+{
+    name: 'STAKE',                    // ← CHANGE THIS to the correct symbol (e.g. CFT, LP, TRX, etc.)
+    tabName: 'Advanced Rewards',      // ← You can rename the tab here
+    address: 'TMrDKEu6vSBSwstToiiooAiwB5xKNghEy8',
+    decimals: 6,                      // ← Change if your staking token uses 18 decimals
+    isRewardsContract: true,
     chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
   }
 ];
@@ -142,82 +142,113 @@ async function loadStakers(config, tabId) {
   const activeBody = document.getElementById(`active-body-${tabId}`);
   const soonBody = document.getElementById(`soon-body-${tabId}`);
   const expiredBody = document.getElementById(`expired-body-${tabId}`);
-  // Removed per-tab progress
   const totalStakersEl = document.getElementById(`total-stakers-${tabId}`);
   const activeTotalEl = document.getElementById(`active-total-${tabId}`);
-  const soonTotalEl = document.getElementById(`soon-total-${tabId}`);
-  const expiredTotalEl = document.getElementById(`expired-total-${tabId}`);
 
-  activeBody.innerHTML = '<tr><td colspan="4" class="text-center py-5">Connecting...</td></tr>';
+  activeBody.innerHTML = '<tr><td colspan="4" class="text-center py-5">Loading...</td></tr>';
   soonBody.innerHTML = '';
   expiredBody.innerHTML = '';
-  totalStakersEl.textContent = '(loading...)';
 
   try {
-    if (!window.tronWeb || !window.tronWeb.ready) {
-      throw new Error('Please unlock TronLink');
-    }
-    tronWeb = window.tronWeb;
     await initReadTronWeb(config.chainstackUrl);
     const contract = await readTronWeb.contract().at(config.address);
-    const list = await contract.getStakersList().call();
-    totalStakersEl.textContent = `(${list.length} wallets)`;
 
-    const activeData = [], soonData = [], expiredData = [];
+    let data = [];
 
-    for (let i = 0; i < list.length; i++) {
-      let addr = list[i];
-      if (addr.startsWith('41') && addr.length === 42) {
-        addr = readTronWeb.address.fromHex(addr);
-      }
-      try {
-        const info = await contract.users(addr).call();
-        const stakedNum = readTronWeb.toBigNumber(info.stakedAmount).shiftedBy(-config.decimals).toNumber();
+    if (config.isRewardsContract) {
+      // ─────── NEW CONTRACT LOGIC ───────
+      document.getElementById(`soon-section-${tabId}`).style.display = 'none';
+      document.getElementById(`expired-section-${tabId}`).style.display = 'none';
 
-        // ───────────────────────────────────────────────
-        //     NEW FEATURE: Hide stakers with < 1 token
-        // ───────────────────────────────────────────────
-        if (stakedNum < 1) continue;
-        // ───────────────────────────────────────────────
+      const result = await contract.getAllStakersAndAmounts().call();
+      const addresses = result[0] || result.addresses || [];
+      const amountsRaw = result[1] || result.amounts || [];
 
-        const lastClaim = Number(info.lastClaimTimestamp);
-        const isActive = info.isActive;
-        const now = Math.floor(Date.now() / 1000);
-        let daysSinceClaim = lastClaim === 0 ? Infinity : Math.floor((now - lastClaim) / 86400);
-        let status, statusClass, category;
+      totalStakersEl.textContent = `(${addresses.length} wallets)`;
 
-        if (lastClaim === 0) {
-          status = 'Never claimed'; statusClass = 'text-muted'; category = 'active';
-        } else if (!isActive || daysSinceClaim >= config.expireDays) {
-          status = 'EXPIRED'; statusClass = 'expired'; category = 'expired';
-        } else if (daysSinceClaim >= config.soonDays) {
-          status = 'Expire Soon'; statusClass = 'soon'; category = 'soon';
-        } else {
-          status = 'Active'; statusClass = 'text-success'; category = 'active';
+      for (let i = 0; i < addresses.length; i++) {
+        let addr = addresses[i];
+        if (addr.startsWith('41') && addr.length === 42) {
+          addr = readTronWeb.address.fromHex(addr);
         }
 
-        const lastClaimText = lastClaim === 0 ? 'Never' :
-          daysSinceClaim === 0 ? 'Today' :
-          daysSinceClaim === 1 ? '1 day ago' : `${daysSinceClaim} days ago`;
+        const stakedNum = readTronWeb.toBigNumber(amountsRaw[i])
+          .shiftedBy(-config.decimals)
+          .toNumber();
 
-        const data = { addr, stakedNum, lastClaimText, status, statusClass };
-        if (category === 'active') activeData.push(data);
-        else if (category === 'soon') soonData.push(data);
-        else expiredData.push(data);
-      } catch (e) { console.warn('Failed for', addr, e.message); }
+        if (stakedNum < 1) continue;
 
-      globalProcessed++;
-      updateGlobalProgress();
-      if (i < list.length - 1) await sleep(DELAY_MS);
+        // Show pending rewards in the "Last Claim" column
+        let pendingText = '—';
+        try {
+          let pendingRaw;
+          try {
+            pendingRaw = await contract.viewPendingReward(addr).call();
+          } catch {
+            pendingRaw = await contract.earned(addr).call(); // fallback
+          }
+          const pending = readTronWeb.toBigNumber(pendingRaw)
+            .shiftedBy(-config.decimals)
+            .toNumber();
+          if (pending > 0.0001) pendingText = `Pending: ${pending.toFixed(4)}`;
+        } catch (e) {
+          // some contracts may not expose it publicly
+        }
+
+        data.push({
+          addr,
+          stakedNum,
+          lastClaimText: pendingText,
+          status: 'Active',
+          statusClass: 'text-success'
+        });
+      }
+    } else {
+      // ─────── ORIGINAL CONTRACT LOGIC (unchanged) ───────
+      const list = await contract.getStakersList().call();
+      totalStakersEl.textContent = `(${list.length} wallets)`;
+
+      for (let i = 0; i < list.length; i++) {
+        let addr = list[i];
+        if (addr.startsWith('41') && addr.length === 42) {
+          addr = readTronWeb.address.fromHex(addr);
+        }
+        try {
+          const info = await contract.users(addr).call();
+          const stakedNum = readTronWeb.toBigNumber(info.stakedAmount).shiftedBy(-config.decimals).toNumber();
+          if (stakedNum < 1) continue;
+
+          const lastClaim = Number(info.lastClaimTimestamp);
+          const isActive = info.isActive;
+          const now = Math.floor(Date.now() / 1000);
+          let daysSinceClaim = lastClaim === 0 ? Infinity : Math.floor((now - lastClaim) / 86400);
+
+          let status, statusClass;
+          if (lastClaim === 0) {
+            status = 'Never claimed'; statusClass = 'text-muted';
+          } else if (!isActive || daysSinceClaim >= config.expireDays) {
+            status = 'EXPIRED'; statusClass = 'expired';
+          } else if (daysSinceClaim >= config.soonDays) {
+            status = 'Expire Soon'; statusClass = 'soon';
+          } else {
+            status = 'Active'; statusClass = 'text-success';
+          }
+
+          const lastClaimText = lastClaim === 0 ? 'Never' :
+            daysSinceClaim === 0 ? 'Today' :
+            daysSinceClaim === 1 ? '1 day ago' : `${daysSinceClaim} days ago`;
+
+          data.push({ addr, stakedNum, lastClaimText, status, statusClass });
+        } catch (e) { console.warn('Failed for', addr, e.message); }
+      }
     }
 
-    activeData.sort((a, b) => b.stakedNum - a.stakedNum);
-    soonData.sort((a, b) => b.stakedNum - a.stakedNum);
-    expiredData.sort((a, b) => b.stakedNum - a.stakedNum);
+    // Common sorting & rendering
+    data.sort((a, b) => b.stakedNum - a.stakedNum);
 
-    const buildRows = (data) => {
+    const buildRows = (rowsData) => {
       let rows = '';
-      data.forEach(s => {
+      rowsData.forEach(s => {
         rows += `
           <tr>
             <td data-label="Wallet">
@@ -233,16 +264,13 @@ async function loadStakers(config, tabId) {
       return rows || '<tr><td colspan="4" class="text-center py-4">None</td></tr>';
     };
 
-    activeBody.innerHTML = buildRows(activeData);
-    soonBody.innerHTML = buildRows(soonData);
-    expiredBody.innerHTML = buildRows(expiredData);
+    activeBody.innerHTML = buildRows(data);
 
-    const sum = arr => arr.reduce((t, s) => t + s.stakedNum, 0);
-    activeTotalEl.textContent = `Total Active: ${sum(activeData).toLocaleString(undefined, {maximumFractionDigits: 2})} ${config.name}`;
-    soonTotalEl.textContent = `Total Expire Soon: ${sum(soonData).toLocaleString(undefined, {maximumFractionDigits: 2})} ${config.name}`;
-    expiredTotalEl.textContent = `Total Expired: ${sum(expiredData).toLocaleString(undefined, {maximumFractionDigits: 2})} ${config.name}`;
+    const sum = data.reduce((t, s) => t + s.stakedNum, 0);
+    activeTotalEl.textContent = `Total Staked: ${sum.toLocaleString(undefined, {maximumFractionDigits: 2})} ${config.name}`;
 
   } catch (err) {
+    console.error(err);
     activeBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-5">Error: ${err.message}</td></tr>`;
   }
 }
