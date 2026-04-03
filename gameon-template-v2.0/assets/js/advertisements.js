@@ -11,7 +11,7 @@ const advertisements = [
 {
     title: "CFT Trading",
     description: "New SunSwap V4 CFT-TRX Pool is now live. Buy/Sell CFT using the new Smart Router.  ",
-    image: "assets/img/content/cft300.png",
+    image: "assets/img/content/cftlogo300.png",
     link: "https://sun.io/#/scan/pairDetail?pairAddress=c89289b58a94683a048efce2aafed347af9035c3e32b4b983b3ce8c118311c11&version=v4",
     linkText: "Trade Now",
     icon: "icon-coins"
