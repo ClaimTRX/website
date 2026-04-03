@@ -1,31 +1,22 @@
 const advertisements = [
-  {
-    title: "CFT Guardian Minting is Now Live",
-    description: "Earn daily SOL rewards by staking our Guardian NFTs",
-    image: "assets/img/content/guardian1.png",
-    link: "https://cftguardians.com/",
-    linkText: "Mint Now",
-    icon: "icon-rocket"
+{
+    title: "Legacy Trading",
+    description: "New SunSwap V4 Legacy-USDT Pool is now live. Buy/Sell Legacy using the new Smart Router.  ",
+    image: "assets/img/content/legacy-warrior-logo.png",
+    link: "https://sun.io/?lang=en-US#/scan/pairDetail?pairAddress=2ccc7715f822ffa5f4eeb0c2ca6c2468170d011cca5e44bf6b59ab3dbb6c927d&version=v4",
+    linkText: "Trade Now",
+    icon: "icon-coins"
   },
   
-  {
-    title: "UpDawg",
-    description: "UpDawg (UDAWG) is a Proof-of-reserve TRC20 token backed by TRX on the Tron Blockchain. It powers the uDawg_bot on Telegram - gamifying off & on-chain community engagement with rewards.",
-    image: "assets/img/content/updawg.png",
-    link: "https://t.me/udawgorg",
-    linkText: "Join Now",
-    icon: "icon-telegram"
+{
+    title: "CFT Trading",
+    description: "New SunSwap V4 CFT-TRX Pool is now live. Buy/Sell CFT using the new Smart Router.  ",
+    image: "assets/img/content/cft300.png",
+    link: "https://sun.io/#/scan/pairDetail?pairAddress=c89289b58a94683a048efce2aafed347af9035c3e32b4b983b3ce8c118311c11&version=v4",
+    linkText: "Trade Now",
+    icon: "icon-coins"
   },
-  {
-    title: "TronsCore",
-    description: `TronsCore POAPs (Proof of Attendance Protocols) is verifiable badges that prove participation in events.
-Creators can launch open POAP Badges or exclusive Whitelist POAPs with wallet-based access control.
-A TRON DAO HackaTRON Season 7 winner, TronsCore makes community engagement and digital identity on TRON simple and transparent.`,
-    image: "assets/img/content/tronscore.png",
-    link: "https://t.me/TronsCore",
-    linkText: "Join Now",
-    icon: "icon-telegram"
-  },
+ 
   
   
   {
