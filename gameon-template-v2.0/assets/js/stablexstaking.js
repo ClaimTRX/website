@@ -16,13 +16,6 @@ const tokenDetails = {
         stakingAddress: 'TRVn2h65VrbGb7zkASz3escJiHJWMSy7pV',
         decimals: 6,
         displayName: 'StableX'
-    },
-    cftnew: {
-        tokenAddress: 'TGd1irpHHU8cFC4ArY9KBoBiocQr1vVpWS',
-        stakingAddress: 'TABSRFLk6FF1FKPtTLy4zJpJqaiZQzwgQt',
-        decimals: 6,
-        price: 0.27,
-        displayName: 'CFT'
     }
 };
 
