@@ -1,0 +1,772 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="description" content="CFT Ecosystem Staking">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!-- Icons / CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>CFT Ecosystem - Staking</title>
+  <link rel="icon" href="assets/img/favicon.png">
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <style>
+  /* =============================
+     LUXE DESIGN SYSTEM – v2 (Enhanced)
+     ============================= */
+  :root {
+    --bg-0:#07090f; --bg-1:#0b0e17; --bg-2:#0f1321; --surface:#12172a; --line:#212b46;
+    --muted:#9aa7bd; --txt:#e9eef7;
+    --accent-1:#62ffcf; --accent-2:#7db2ff; --accent-3:#b37cff;
+    --success:#00e095; --danger:#ff5b73; --warning:#ffd166;
+    --radius-2:12px; --radius-3:18px; --radius-4:28px;
+    --shadow-1:0 10px 30px rgba(0,0,0,.55); --shadow-2:0 12px 40px rgba(0,0,0,.6);
+    --glass:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+    --focus-ring:0 0 0 3px rgba(125,178,255,.35);
+  }
+
+  html,body {
+    background:var(--bg-0);
+    color:var(--txt);
+    font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial
+  }
+
+  /* Header */
+  header#header { padding:1.5rem 0 }
+  .navbar-brand img { height:48px }
+  .navbar-nav.items .nav-link { font-size:1.1rem;padding:.75rem 1rem }
+  .navbar-nav.action .btn { font-size:1rem;padding:.5rem 1.25rem;height:50px }
+  .navbar-nav.toggle .nav-link { font-size:1.5rem;padding:.5rem }
+
+  /* Mobile menu modal */
+  #menu .modal-content { background:var(--bg-1);border:1px solid var(--line);color:var(--txt) }
+  #menu .modal-header { border-bottom:1px solid var(--line);padding:1rem }
+  #menu .modal-body { padding:1rem }
+  #menu .items .nav-item { margin:.5rem 0 }
+  #menu .items .nav-link { color:var(--txt);font-size:1.1rem;padding:.5rem 1rem }
+  #menu .items .dropdown-menu { background:var(--bg-2);border:1px solid var(--line);padding:.5rem }
+  #menu .items .dropdown-menu .nav-link { color:var(--muted);font-size:1rem }
+  #menu .items .dropdown-menu .nav-link:hover { color:var(--accent-1) }
+
+  /* Hero */
+  .hero-section { padding:120px 0 28px;text-align:center }
+  .intro-text {
+    display:inline-block;font-size:1rem;letter-spacing:.16em;text-transform:uppercase;
+    color:#c3d3ef;background:rgba(255,255,255,.03);border:1px solid var(--line);
+    padding:.42rem .95rem;border-radius:999px
+  }
+  .hero-section h1 { font-weight:900;letter-spacing:.4px;margin-top:16px;font-size:3.25rem;line-height:1.1 }
+  .hero-section p { color:#b5c2d8 }
+
+  /* Luxe Card */
+  .luxe-card {
+    position:relative;border-radius:var(--radius-4);background:var(--glass);
+    backdrop-filter:blur(10px);border:1px solid var(--line);box-shadow:var(--shadow-2);overflow:hidden
+  }
+  .staking-header { padding:32px }
+  .staking-title { display:flex;gap:16px;align-items:center }
+  .staking-title img { width:56px;height:56px }
+  .staking-title h4 { margin:0;font-weight:800 }
+  .chip {
+    display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);
+    border:1px solid var(--line);color:#cfe3ff;padding:.35rem .65rem;border-radius:999px;font-size:.85rem
+  }
+  .chip .dot { width:8px;height:8px;border-radius:999px;background:var(--success);box-shadow:0 0 0 2px rgba(0,224,149,.15) }
+  .staking-sub { color:var(--muted) }
+
+  /* KPI Row */
+  .kpis {
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:14px;padding:0 32px 24px
+  }
+  .kpi {
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:6px;padding:16px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3)
+  }
+  .kpi span:first-child { font-weight:800;font-size:1.15rem }
+  .kpi span:last-child { color:var(--muted);font-size:.88rem }
+
+  /* Action Grid */
+  .action-grid {
+    display:grid;
+    grid-template-columns:repeat(3, minmax(220px, 1fr)); /* keeps cards from collapsing */
+    gap:20px;
+    padding:0 32px 36px;
+    justify-items:center;
+    align-items:stretch;
+  }
+  .action-grid > [class*="col-"] { padding:0 } /* fix bootstrap col padding clash */
+
+  /* Panel */
+  .panel {
+    position:relative;display:flex;flex-direction:column;gap:12px;
+    background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);
+    padding:18px 18px 20px;box-shadow:var(--shadow-1);height:100%;
+    width:100%;max-width:280px;
+  }
+  .panel .item-title { color:var(--muted);font-weight:700;letter-spacing:.3px }
+  .panel small { color:#9fb0cc }
+
+  /* Inputs */
+  .form-control.luxe,
+  .input-area .input-text input.form-control {
+    background:#0c1121;border:1px solid var(--line);color:#eaf2ff;
+    border-radius:14px;padding:12px 14px;width:100%;
+  }
+  .form-control.luxe:focus,
+  .input-area .input-text input.form-control:focus {
+    outline:none;box-shadow:var(--focus-ring);border-color:rgba(125,178,255,.6)
+  }
+
+  /* Buttons */
+  .btn.primary,.btn.ghost { height:48px;display:flex;align-items:center;justify-content:center;border-radius:14px }
+  .btn.primary {
+    background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
+    color:#0b0e17;border:0;font-weight:800;width:100%;
+  }
+  .btn.primary:hover { filter:brightness(1.05) }
+  .btn.ghost { border:1px solid var(--line);color:#eaf2ff;background:transparent }
+  .btn.ghost:hover { border-color:rgba(125,178,255,.55) }
+
+  /* Pool Stats */
+  .stats-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px }
+  .stat-tile {
+    background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-3);
+    padding:14px 18px;display:flex;align-items:center;justify-content:space-between
+  }
+  .stat-tile .item-title { color:var(--muted);font-weight:700 }
+
+  /* Skeleton */
+  .skeleton { position:relative;overflow:hidden;min-width:80px;min-height:20px;background:#141a2b;border-radius:8px }
+  .skeleton::after {
+    content:"";position:absolute;inset:0;transform:translateX(-100%);
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);
+    animation:shimmer 1.2s infinite
+  }
+  @keyframes shimmer { 100% { transform:translateX(100%) } }
+
+  /* Modals */
+  .modal-content { background:var(--bg-1);border:1px solid var(--line);color:var(--txt);border-radius:16px }
+  .modal-header .btn-close { filter:invert(1) }
+  #energy-rental-modal .modal-body { padding-top:10px }
+  #energy-rental-modal .modal-body p { margin-bottom:10px;color:#cfe3ff }
+  #user-energy,#required-energy,#rental-energy,#rental-duration,#rental-cost-trx {
+    display:inline-block;padding:.15rem .5rem;border-radius:10px;
+    background:rgba(125,178,255,.12);border:1px solid rgba(125,178,255,.25);color:#ffffff
+  }
+  .modal .btn-rent {
+    background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
+    border:0;color:#0b0e17;border-radius:12px;font-weight:800
+  }
+  .modal .btn-cancel { border:1px solid var(--line);color:#eaf2ff;background:transparent;border-radius:12px }
+  #transaction-processing-modal .spinner {
+    border:4px solid var(--accent-2);border-top-color:transparent;border-radius:50%;
+    width:40px;height:40px;animation:spin 1s linear infinite;margin:0 auto 15px
+  }
+  @keyframes spin { 0%{transform:rotate(0)}100%{transform:rotate(360deg)} }
+
+  /* Ad card */
+  .luxe-ad-card {
+    position:relative;border-radius:var(--radius-4);
+    background:linear-gradient(135deg,rgba(98,255,207,.1),rgba(125,178,255,.1));
+    border:2px solid var(--accent-3);
+    box-shadow:var(--shadow-2),0 0 20px rgba(125,178,255,.3);
+    overflow:hidden;margin:2rem 0;
+    transition:transform .3s ease,box-shadow .3s ease
+  }
+  .luxe-ad-card:hover { transform:translateY(-5px);box-shadow:var(--shadow-2),0 0 30px rgba(125,178,255,.5) }
+  .luxe-ad-card .inner { padding:1.5rem }
+  .luxe-ad-card h2 { font-weight:800;color:var(--accent-1);text-shadow:0 0 5px rgba(98,255,207,.5) }
+  .luxe-ad-card p { color:var(--txt);font-size:1.1rem }
+  .luxe-ad-card .btn.primary {
+    background:linear-gradient(135deg,var(--accent-3),var(--accent-2));
+    font-weight:700;padding:.75rem 1.5rem;border-radius:12px
+  }
+  .luxe-ad-card .btn.primary:hover { filter:brightness(1.2) }
+
+  /* Responsive */
+  *, *::before, *::after { box-sizing: border-box; }
+  .kpis > .kpi { min-width:0; }
+  .kpi span { text-align:center;white-space:normal; }
+  .kpi span:first-child { overflow-wrap:anywhere; }
+
+  @media (max-width:992px){
+    .kpis { grid-template-columns:repeat(2, minmax(0,1fr)); padding:0 20px 20px; }
+    .action-grid {
+      display:flex;flex-direction:column;align-items:center;
+      gap:18px;padding:0 20px 28px;width:100%;
+    }
+    .action-grid .panel {
+      width:100%;
+      max-width:min(480px, calc(100% - 24px));
+      margin-inline:auto;
+      padding:16px;
+    }
+    .action-grid .panel > * { max-width:100%; }
+    .form-control.luxe { width:100%; }
+    .stats-grid { grid-template-columns:repeat(2, minmax(0,1fr)); }
+  }
+
+  @media (max-width:576px){
+    .kpis { grid-template-columns:1fr;padding:0 12px 16px; }
+    .action-grid { padding:0 12px 24px; }
+    .panel { padding:16px; }
+    .stats-grid { grid-template-columns:1fr; }
+    .kpi span:first-child { font-size:1rem; }
+  }
+
+  @media (min-width:992px){
+    .panel { min-height:260px; }
+  }
+
+  /* Staking area custom styles */
+  .staking-area .single-accordion-item { margin-bottom:18px }
+  .staking-area .card-header { background:none;border:none }
+  .staking-btn {
+    background:var(--bg-2);border:1px solid var(--line);
+    border-radius:var(--radius-3);padding:18px;color:var(--txt);width:100%;
+  }
+  .staking-btn:hover { background:rgba(255,255,255,.05) }
+  .staking-info .single-item {
+    display:flex;flex-direction:column;align-items:center;gap:6px
+  }
+  .staking-info .single-item span:first-child { font-weight:800;font-size:1.15rem;line-height:1.2 }
+  .staking-info .single-item span:last-child { color:var(--muted);font-size:.88rem }
+
+  .input-box .item-title { font-weight:700;color:var(--muted);margin-bottom:8px }
+  .input-area .input-btn { background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
+    color:#0b0e17;border:0;font-weight:800;border-radius:14px;height:48px;width:100%; }
+  .input-area .input-btn:hover { filter:brightness(1.05) }
+  .input-area .reward { color:#9fb0cc;font-size:.88rem }
+  .input-area h4.price { color:var(--txt);font-weight:700 }
+
+  /* Leaderboard button fix */
+  .leaderboard-button .btn-bordered {
+    background:transparent !important;
+    --bs-btn-bg:transparent;
+    border:1px solid var(--line);
+    color:#eaf2ff !important;
+    border-radius:14px;
+    padding:12px 20px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:.5rem;
+    box-shadow:none;
+    opacity:1 !important;
+    pointer-events:auto !important;
+  }
+  .leaderboard-button .btn-bordered:hover { border-color:rgba(125,178,255,.55); background:rgba(125,178,255,.1); }
+
+/* === Bottom-align buttons + perfect card sizing === */
+
+/* Stretch grid rows so each panel can take equal height */
+.action-grid {
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  grid-auto-rows: 1fr;                 /* rows will stretch evenly */
+  align-items: stretch;                 /* make children fill row height */
+  justify-items: center;
+  gap: 22px;
+}
+
+/* Make each panel a flex column so we can push the CTA to the bottom */
+.action-grid .panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  width: 100%;
+  max-width: 320px;                     /* consistent visual width */
+  min-height: 320px;                    /* equal height on desktop */
+  padding: 20px 20px 22px;
+  border-radius: var(--radius-3);
+  box-shadow: var(--shadow-1);
+}
+
+/* Reserve a tiny, consistent meta area height so Deposit (which has <small>)
+   doesn’t make that card “taller” than the others */
+.action-grid .panel .item-title { margin-bottom: 6px; }
+.action-grid .panel small { display: block; min-height: 18px; }
+
+/* The input section grows to the bottom; the button sits at the very end */
+.action-grid .panel .input-area {
+  margin-top: auto;                     /* pushes this block to the bottom */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Full-width controls inside cards */
+.action-grid .panel .form-control,
+.action-grid .panel .input-btn { width: 100%; }
+
+/* Slightly stronger focus ring so inputs feel crisp on dark bg */
+.form-control.luxe:focus,
+.input-area .input-text input.form-control:focus {
+  box-shadow: 0 0 0 3px rgba(125,178,255,.25);
+}
+
+/* Tidy card look */
+.action-grid .panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+}
+.action-grid .panel .input-btn {
+  height: 48px;
+  border-radius: 14px;
+}
+
+/* Responsive: keep the same effect on smaller screens */
+@media (max-width: 992px) {
+  .action-grid { grid-auto-rows: auto; }
+  .action-grid .panel {
+    max-width: min(480px, calc(100% - 24px));
+    min-height: 280px;
+  }
+}
+@media (max-width: 576px) {
+  .action-grid .panel { min-height: 260px; }
+}
+
+    
+  </style>
+</head>
+
+<body>
+  <div id="header-placeholder"></div>
+<script>
+  fetch('assets/js/header.html')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to load header: ' + response.status);
+      }
+      return response.text();
+    })
+    .then(data => {
+      document.getElementById('header-placeholder').innerHTML = data;
+
+      // NOW it's safe: the connect button exists
+      if (typeof initialize === 'function') {
+        initialize();
+      } else {
+        console.error('initialize() function not found. Is staking1.js loaded?');
+      }
+    })
+    .catch(err => {
+      console.error('Error loading header:', err);
+      alert('Failed to load navigation menu. Please refresh the page.');
+    });
+</script>
+
+  <!-- Hero -->
+  <section class="hero-section">
+    <div class="container text-center">
+      <span class="intro-text">CFT Ecosystem</span>
+      <h1 class="display-5">CFT Staking</h1>
+      <p class="mb-0">Grow your wealth through staking rewards</p>
+    </div>
+  </section>
+
+  <!-- CTA Area -->
+  <section class="py-3">
+    <div class="container">
+      <div class="luxe-ad-card">
+        <div class="row align-items-center g-0">
+          <div class="col-12 col-md-5 text-center p-3">
+            <img src="assets/img/content/cftlogo300.png" alt="" style="max-width:220px">
+          </div>
+          <div class="col-12 col-md-7 p-3">
+            <div class="inner">
+              <h2 class="m-0">Apply for project staking</h2>
+              <p class="mb-3">Earn weekly rewards from staked CFT to build your project</p>
+              <p>Soon available for projects on any chain</p>
+              <a class="btn primary" href="apply.html"><i class="icon-rocket me-2"></i>Coming Soon</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Staking Card -->
+  <section class="py-3 staking-area">
+    <div class="container">
+      <div class="luxe-card">
+        <!-- Header -->
+        <div class="staking-header">
+          <div class="staking-title">
+            <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h4 class="staking-title-text m-0">CFT Staking</h4>
+                <span class="chip" id="status-chip"><span class="dot"></span><span id="status-text">Ready</span></span>
+              </div>
+              <p class="staking-sub mb-0 mt-2">Stake tokens for rewards.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Staking Accordions -->
+        <div id="gameon-accordion" class="accordion p-4">
+          <!-- CFT Staking -->
+          <div class="single-accordion-item">
+            <div class="card-header bg-inherit border-0 p-0">
+              <h2 class="m-0">
+                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCFT">
+                  <div class="row">
+                    <div class="col-12 col-md-8">
+                      <div class="media flex-column flex-md-row">
+                        <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                        <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                          <h4 class="m-0">CFT Staking (Ended)</h4>
+                          <p>Stake CFT for CFT rewards.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                    <div class="col single-item"><span id="staked-amount-cft"></span><span>Staked</span></div>
+                    <div class="col single-item"><span id="projected-rewards-cft"></span><span>Yearly Rewards</span></div>
+                    <div class="col single-item"><span id="total-claimed-rewards-cft"></span><span>Total Claimed</span></div>
+                  </div>
+                </button>
+              </h2>
+            </div>
+                        <div id="collapseCFT" class="collapse" data-bs-parent="#gameon-accordion">
+              <div class="card-body">
+                <div class="row action-grid">
+                  <!-- Withdraw -->
+                  <div class="col-12 col-md-6 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Withdraw</span>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-cft" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="unstake-button-cft">Withdraw</a>
+                    </div>
+                  </div>
+
+                  <!-- Rewards -->
+                  <div class="col-12 col-md-6 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Pending Rewards</span>
+                    <div class="input-area d-flex flex-column">
+                      <h4 class="price m-0" id="claimable-rewards-cft">0 CFT</h4>
+                      <span class="reward my-2">Energy cost applies</span>
+                      <a href="#" class="btn input-btn mt-2 primary" id="claim-rewards-button-cft"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          <!-- CFTx Staking -->
+          <div class="single-accordion-item">
+            <div class="card-header bg-inherit border-0 p-0">
+              <h2 class="m-0">
+                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCFTx">
+                  <div class="row">
+                    <div class="col-12 col-md-8">
+                      <div class="media flex-column flex-md-row">
+                        <img class="avatar-max-lg" src="assets/img/content/cftlogo518.png" alt="">
+                        <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                          <h4 class="m-0">CFT Staking (Ended)</h4>
+                          <p>Stake CFT for StableX rewards.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                    <div class="col single-item"><span id="staked-amount-cftx"></span><span>Staked</span></div>
+                    <div class="col single-item"><span id="projected-rewards-cftx"></span><span>Yearly Rewards</span></div>
+                    <div class="col single-item"><span id="total-claimed-rewards-cftx"></span><span>Total Claimed</span></div>
+                  </div>
+                </button>
+              </h2>
+            </div>
+            <div id="collapseCFTx" class="collapse" data-bs-parent="#gameon-accordion">
+              <div class="card-body">
+                <div class="row action-grid">
+                  <!-- Deposit -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Deposit</span>
+                    <small><span id="available-tokens-cftx"></span> available</small>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="stake-amount-cftx" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="stake-button-cftx">Stake</a>
+                    </div>
+                  </div>
+                  <!-- Withdraw -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Withdraw</span>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-cftx" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="unstake-button-cftx">Withdraw</a>
+                    </div>
+                  </div>
+                  <!-- Rewards -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Pending Rewards</span>
+                    <div class="input-area d-flex flex-column">
+                      <h4 class="price m-0" id="claimable-rewards-cftx">0 StableX</h4>
+                      <span class="reward my-2">Energy cost applies</span>
+                      <a href="#" class="btn input-btn mt-2 primary" id="claim-rewards-button-cftx"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                    </div>
+                  </div>
+                </div>
+                
+              </div>
+            </div>
+          </div>
+
+          <!-- CFT/BBT Staking -->
+          <div class="single-accordion-item">
+            <div class="card-header bg-inherit border-0 p-0">
+              <h2 class="m-0">
+                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapsecftBBT">
+                  <div class="row">
+                    <div class="col-12 col-md-8">
+                      <div class="media flex-column flex-md-row">
+                        <img class="avatar-max-lg" src="assets/img/content/turu.png" alt="">
+                        <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                          <h4 class="m-0">BBT Staking (Ended)</h4>
+                          <p>Stake BBT for CFT rewards.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                    <div class="col single-item"><span id="staked-amount-cftturu"></span><span>Staked</span></div>
+                    <div class="col single-item"><span id="projected-rewards-cftturu"></span><span>Yearly Rewards</span></div>
+                    <div class="col single-item"><span id="total-claimed-rewards-cftturu"></span><span>Total Claimed</span></div>
+                  </div>
+                </button>
+              </h2>
+            </div>
+            <div id="collapsecftBBT" class="collapse" data-bs-parent="#gameon-accordion">
+              <div class="card-body">
+                <div class="row action-grid">
+                  <!-- Deposit -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Deposit</span>
+                    <small><span id="available-tokens-cftturu"></span> available</small>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="stake-amount-cftturu" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="stake-button-cftturu">Stake</a>
+                    </div>
+                  </div>
+                  <!-- Withdraw -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Withdraw</span>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-cftturu" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="unstake-button-cftturu">Withdraw</a>
+                    </div>
+                  </div>
+                  <!-- Rewards -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Pending Rewards</span>
+                    <div class="input-area d-flex flex-column">
+                      <h4 class="price m-0" id="claimable-rewards-cftturu">0 BBT</h4>
+                      <span class="reward my-2">Energy cost applies</span>
+                      <a href="#" class="btn input-btn mt-2 primary" id="claim-rewards-button-cftturu"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                    </div>
+                  </div>
+                </div>
+                
+              </div>
+            </div>
+          </div>
+
+          <!-- BBT Staking -->
+          <div class="single-accordion-item">
+            <div class="card-header bg-inherit border-0 p-0">
+              <h2 class="m-0">
+                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBBT">
+                  <div class="row">
+                    <div class="col-12 col-md-8">
+                      <div class="media flex-column flex-md-row">
+                        <img class="avatar-max-lg" src="assets/img/content/turu.png" alt="">
+                        <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                          <h4 class="m-0">BBT Staking</h4>
+                          <p>Stake BBT for BBT rewards.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                    <div class="col single-item"><span id="staked-amount-turu"></span><span>Staked</span></div>
+                    <div class="col single-item"><span id="projected-rewards-turu"></span><span>Yearly Rewards</span></div>
+                    <div class="col single-item"><span id="total-claimed-rewards-turu"></span><span>Total Claimed</span></div>
+                  </div>
+                </button>
+              </h2>
+            </div>
+            <div id="collapseBBT" class="collapse" data-bs-parent="#gameon-accordion">
+              <div class="card-body">
+                <div class="row action-grid">
+                  <!-- Deposit -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Deposit</span>
+                    <small><span id="available-tokens-turu"></span> available</small>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="stake-amount-turu" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="stake-button-turu">Stake</a>
+                    </div>
+                  </div>
+                  <!-- Withdraw -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Withdraw</span>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-turu" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="unstake-button-turu">Withdraw</a>
+                    </div>
+                  </div>
+                  <!-- Rewards -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Pending Rewards</span>
+                    <div class="input-area d-flex flex-column">
+                      <h4 class="price m-0" id="claimable-rewards-turu">0 BBT</h4>
+                      <span class="reward my-2">Energy cost applies</span>
+                      <a href="#" class="btn input-btn mt-2 primary" id="claim-rewards-button-turu"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                    </div>
+                  </div>
+                </div>
+              
+              </div>
+            </div>
+          </div>
+
+          
+          <!-- FYM Staking -->
+          <div class="single-accordion-item">
+            <div class="card-header bg-inherit border-0 p-0">
+              <h2 class="m-0">
+                <button class="btn staking-btn d-block text-start w-100 py-4" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFYM">
+                  <div class="row">
+                    <div class="col-12 col-md-8">
+                      <div class="media flex-column flex-md-row">
+                        <img class="avatar-max-lg" src="assets/img/content/fym.png" alt="">
+                        <div class="content media-body mt-4 mt-md-0 ms-md-4">
+                          <h4 class="m-0">FYM Staking</h4>
+                          <p>Stake FYM for CFT rewards. (Paused)</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row staking-info align-items-center justify-content-center mt-4 mt-md-5">
+                    <div class="col single-item"><span id="staked-amount-fym"></span><span>Staked</span></div>
+                    <div class="col single-item"><span id="projected-rewards-fym"></span><span>Yearly Rewards</span></div>
+                    <div class="col single-item"><span id="total-claimed-rewards-fym"></span><span>Total Claimed</span></div>
+                  </div>
+                </button>
+              </h2>
+            </div>
+            <div id="collapseFYM" class="collapse" data-bs-parent="#gameon-accordion">
+              <div class="card-body">
+                <div class="row action-grid">
+                  <!-- Deposit -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Deposit</span>
+                    <small><span id="available-tokens-fym"></span> available</small>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="stake-amount-fym" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="stake-button-fym">Stake</a>
+                    </div>
+                  </div>
+                  <!-- Withdraw -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Withdraw</span>
+                    <div class="input-area d-flex flex-column">
+                      <div class="input-text"><input type="text" placeholder="0" id="withdraw-amount-fym" class="form-control luxe"></div>
+                      <a href="#" class="btn input-btn mt-2 primary" id="unstake-button-fym">Withdraw</a>
+                    </div>
+                  </div>
+                  <!-- Rewards -->
+                  <div class="col-12 col-md-4 single-staking-item input-box panel">
+                    <span class="item-title mb-2">Pending Rewards</span>
+                    <div class="input-area d-flex flex-column">
+                      <h4 class="price m-0" id="claimable-rewards-fym">0 CFT</h4>
+                      <span class="reward my-2">Energy cost applies</span>
+                      <a href="#" class="btn input-btn mt-2 primary" id="claim-rewards-button-fym"><i class="fa-solid fa-lock me-1"></i> Claim</a>
+                    </div>
+                  </div>
+                </div>
+               
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /accordion -->
+      </div>
+    </div>
+  </section>
+
+  
+  <!-- Energy Rental Modal -->
+  <div class="modal fade" id="energy-rental-modal" tabindex="-1" aria-labelledby="energyRentalModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="energyRentalModalLabel">Insufficient Energy</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+        </div>
+        <div class="modal-body">
+          <p>Your wallet has <span id="user-energy">0</span> energy available, but <span id="required-energy">0</span> energy is required for this transaction.</p>
+          <p>Rent <span id="rental-energy">0</span> energy for <span id="rental-duration">5</span> minutes at a cost of <span id="rental-cost-trx">0.00</span> TRX?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-rent" id="rent-energy-confirm">Rent Energy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transaction Processing Modal -->
+  <div class="modal fade" id="transaction-processing-modal" tabindex="-1" aria-labelledby="transactionProcessingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="transactionProcessingModalLabel">Processing Transaction</h5>
+        </div>
+        <div class="modal-body text-center">
+          <div class="spinner"></div>
+          <p>Please wait while your transaction is being processed.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+
+  <!-- Footer -->
+  <footer class="footer-area py-5 mt-3">
+    <div class="container text-center">
+      <a class="navbar-brand" href="index.html"><img src="assets/img/logo/logo.png" alt="" style="height:28px"></a>
+      <div class="social-icons d-flex justify-content-center my-3 gap-3">
+        <a class="x-twitter" href="https://x.com/CFTTRC20" target="_blank"><i class="fab fa-x-twitter"></i></a>
+        
+        <a class="telegram" href="https://t.me/CFTEcosystem" target="_blank"><i class="fab fa-telegram-plane"></i></a>
+      </div>
+      <div class="copyright-area py-2">&copy;2025 CFT Ecosystem, All Rights Reserved</div>
+      <div id="scroll-to-top" class="scroll-to-top"><a href="#header" class="smooth-anchor"><i class="fa-solid fa-arrow-up"></i></a></div>
+    </div>
+  </footer>
+
+  <!-- Vendor JS -->
+  <script src="assets/js/vendor/jquery.min.js"></script>
+  <!-- Use Bootstrap 5 bundle (includes Popper) to avoid version mismatch -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/vendor/all.min.js"></script>
+  <script src="assets/js/vendor/gallery.min.js"></script>
+  <script src="assets/js/vendor/slider.min.js"></script>
+  <script src="assets/js/vendor/countdown.min.js"></script>
+  <script src="assets/js/vendor/shuffle.min.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.min.js"></script>
+
+  <!-- App JS -->
+  <script src="assets/js/advertisements.js"></script>
+  <script src="assets/js/oldstaking.js"></script>
+</body>
+</html>
