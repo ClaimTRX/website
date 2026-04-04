@@ -30,19 +30,7 @@ const tokenDetails = {
       claimRewards: 100000
     }
   },
-  cftx: {
-    tokenAddress: 'THUjZzHsvzDermxAGr3aGyophJ4nn4XyAK',
-    stakingAddress: 'THLETrCqWHVJNURBQNKLBYJTLBGpUnDatp',
-    decimals: 6,
-    displayName: 'STABLEX',
-    rewardDisplayName: 'StableX',
-    rewardDecimals: 6,
-    energyCosts: {
-      stake: 120000,
-      unstake: 75000,
-      claimRewards: 100000
-    }
-  },
+  
   cftturu: {
     tokenAddress: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
     stakingAddress: 'TXgt8nXRDTbYxbhDbkZyqs9cgjoBikQa72',
