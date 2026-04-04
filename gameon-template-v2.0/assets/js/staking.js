@@ -31,19 +31,7 @@ const tokenDetails = {
     }
   },
   
-  cftturu: {
-    tokenAddress: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
-    stakingAddress: 'TXgt8nXRDTbYxbhDbkZyqs9cgjoBikQa72',
-    decimals: 8,
-    rewardDecimals: 6,
-    displayName: 'CFT',
-    rewardDisplayName: 'CFT',
-    energyCosts: {
-      stake: 120000,
-      unstake: 75000,
-      claimRewards: 100000
-    }
-  },
+  
   turu: {
     tokenAddress: 'TGyZUWrL97mmmYJwrC7ZCLVrhbzvHmmWPL',
     stakingAddress: 'TLQPUiSeCHZ92UcphkesN46XtPN55MkNcm',
