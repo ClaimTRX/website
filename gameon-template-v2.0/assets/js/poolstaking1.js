@@ -19,6 +19,8 @@ const UI_REFRESH_DELAY_MS = 2000; // Reduced from 4000ms
 // Manual CFT price for APY calculation (update this value as needed)
 const CFT_TRX_PRICE = 0.2679; // Manually set CFT price in TRX (update as needed)
 const DAILY_PAYOUT_PERCENTAGE = 1; // 1% daily payout as per requirement
+const ENERGY_SAFETY_MARGIN_PCT = 15;
+const DEFAULT_FEE_LIMIT = 300_000_000; // 300 TRX max fee limit for simulation/building
 /* ===================== Token Config ===================== */
 const tokenDetails = {
   cft: {
@@ -308,6 +310,192 @@ async function initializeTronWeb() {
   setInterval(() => updateUI(key, false, userData), 60000);
 }
 /* ===================== Energy helpers ===================== */
+async function simulateContractEnergy({
+  contractAddress,
+  functionSelector,
+  parameters = [],
+  ownerAddress = userAddress,
+  callValue = 0,
+  feeLimit = DEFAULT_FEE_LIMIT
+}) {
+  if (!tronWeb || !ownerAddress) {
+    throw new Error('Wallet not connected.');
+  }
+
+  try {
+    if (
+      tronWeb.transactionBuilder &&
+      typeof tronWeb.transactionBuilder.estimateEnergy === 'function'
+    ) {
+      const res = await retryWithBackoff(() =>
+        tronWeb.transactionBuilder.estimateEnergy(
+          contractAddress,
+          functionSelector,
+          { feeLimit, callValue },
+          parameters,
+          ownerAddress
+        )
+      );
+
+      const ok = !!res?.result?.result;
+      const energy = Number(res?.energy_required || 0);
+
+      if (ok && energy > 0) {
+        return {
+          ok: true,
+          method: 'estimateEnergy',
+          energy,
+          raw: res
+        };
+      }
+    }
+  } catch (err) {
+    console.warn(`estimateEnergy failed for ${functionSelector}, falling back:`, err?.message || err);
+  }
+
+  const fallback = await retryWithBackoff(() =>
+    tronWeb.transactionBuilder.triggerConstantContract(
+      contractAddress,
+      functionSelector,
+      { feeLimit, callValue },
+      parameters,
+      ownerAddress
+    )
+  );
+
+  const ok = !!fallback?.result?.result;
+  const energy =
+    Number(fallback?.energy_used || 0) ||
+    Number(fallback?.energy_limit || 0) ||
+    0;
+
+  return {
+    ok,
+    method: 'triggerConstantContract',
+    energy,
+    raw: fallback
+  };
+}
+function addEnergySafetyMargin(energy, pct = ENERGY_SAFETY_MARGIN_PCT) {
+  return Math.ceil(Number(energy || 0) * (1 + pct / 100));
+}
+
+function toSun(amountTrx) {
+  return Math.ceil(Number(amountTrx || 0) * SUN_PER_TRX);
+}
+
+function fromSun(amountSun) {
+  return Number(amountSun || 0) / SUN_PER_TRX;
+}
+
+async function getCurrentAllowance(token, owner, spender) {
+  const allowanceRaw = await retryWithBackoff(() =>
+    readTokenContracts[token].methods.allowance(owner, spender).call()
+  );
+  return BigInt(allowanceRaw || '0');
+}
+
+async function getTokenBalanceRaw(token, owner) {
+  return retryWithBackoff(() =>
+    readTokenContracts[token].methods.balanceOf(owner).call()
+  );
+}
+function addEnergySafetyMargin(energy, pct = ENERGY_SAFETY_MARGIN_PCT) {
+  return Math.ceil(Number(energy || 0) * (1 + pct / 100));
+}
+
+function toSun(amountTrx) {
+  return Math.ceil(Number(amountTrx || 0) * SUN_PER_TRX);
+}
+
+function fromSun(amountSun) {
+  return Number(amountSun || 0) / SUN_PER_TRX;
+}
+
+async function getCurrentAllowance(token, owner, spender) {
+  const allowanceRaw = await retryWithBackoff(() =>
+    readTokenContracts[token].methods.allowance(owner, spender).call()
+  );
+  return BigInt(allowanceRaw || '0');
+}
+
+async function getTokenBalanceRaw(token, owner) {
+  return retryWithBackoff(() =>
+    readTokenContracts[token].methods.balanceOf(owner).call()
+  );
+}
+async function estimateUnstakeEnergy(token, amountInput) {
+  const details = tokenDetails[token];
+  const amountWei = toWei(amountInput, details.decimals);
+
+  if (amountWei <= 0n) {
+    throw new Error('Enter a valid amount to withdraw.');
+  }
+
+  const userData = await retryWithBackoff(() =>
+    readStakingContracts[token].methods.users(userAddress).call()
+  );
+
+  if (BigInt(userData?.stakedAmount || '0') < amountWei) {
+    throw new Error('Insufficient staked amount.');
+  }
+
+  const unstakeEstimate = await simulateContractEnergy({
+    contractAddress: details.stakingAddress,
+    functionSelector: 'unstake(uint256)',
+    parameters: [
+      { type: 'uint256', value: amountWei.toString() }
+    ]
+  });
+
+  return {
+    action: 'unstake',
+    rawTotalEnergy: unstakeEstimate.energy,
+    totalEnergy: addEnergySafetyMargin(unstakeEstimate.energy),
+    unstakeEnergy: unstakeEstimate.energy,
+    unstakeMethod: unstakeEstimate.method
+  };
+}
+async function estimateClaimRewardsEnergy(token) {
+  const details = tokenDetails[token];
+
+  let pendingRewards;
+  try {
+    pendingRewards = await retryWithBackoff(() =>
+      readStakingContracts[token].methods.earned(userAddress).call()
+    );
+  } catch {
+    pendingRewards = '0';
+  }
+
+  if (BigInt(pendingRewards || '0') === 0n) {
+    throw new Error('No rewards available to claim.');
+  }
+
+  const contractBalance = await retryWithBackoff(() =>
+    readTronWeb.trx.getBalance(details.stakingAddress)
+  );
+
+  if (Number(contractBalance || 0) < Number(pendingRewards || 0)) {
+    throw new Error('Insufficient contract balance to claim rewards.');
+  }
+
+  const claimEstimate = await simulateContractEnergy({
+    contractAddress: details.stakingAddress,
+    functionSelector: 'claimRewards()',
+    parameters: []
+  });
+
+  return {
+    action: 'claimRewards',
+    rawTotalEnergy: claimEstimate.energy,
+    totalEnergy: addEnergySafetyMargin(claimEstimate.energy),
+    claimEnergy: claimEstimate.energy,
+    claimMethod: claimEstimate.method,
+    pendingRewards
+  };
+}
+
 async function getAvailableEnergy(address) {
   try {
     const resources = await retryWithBackoff(() => readTronWeb.trx.getAccountResources(address));
@@ -419,71 +607,146 @@ async function pollDelegationStatus(orderId) {
     }, 1000);
   });
 }
-function showEnergyRentalModal(action, availableEnergy, token, extra=0) {
+function showEnergyRentalModal(action, availableEnergy, token, estimate) {
   return new Promise((resolve, reject) => {
     const modalElement = document.getElementById('energy-rental-modal');
     if (!modalElement) return reject(new Error('Energy rental modal not found.'));
-    const details = tokenDetails[token].energyCosts;
-    let requiredFirst, requiredRepeat;
-    if (action === 'approve') {
-      requiredFirst = details.approve;
-      requiredRepeat = details.approve;
-    } else {
-      requiredFirst = details[action + 'First'] || details[action];
-      requiredRepeat = details[action + 'Repeat'] || details[action];
-    }
-    requiredFirst += extra;
-    requiredRepeat += extra;
+
+    const required = Number(estimate?.totalEnergy || 0);
+    const shortfall = Math.max(0, required - availableEnergy);
+    const rental = shortfall;
+    const costTrx = energyPriceSun ? (rental * energyPriceSun / SUN_PER_TRX) : 0;
+
     const firstEst = document.getElementById('first-est');
     const repeatEst = document.getElementById('repeat-est');
-    if (firstEst) firstEst.textContent = requiredFirst.toLocaleString();
-    if (repeatEst) repeatEst.textContent = requiredRepeat.toLocaleString();
-    const updateDisplays = () => {
-      const selectedType = document.querySelector('[name="energy-type"]:checked')?.value || 'first';
-      const required = selectedType === 'first' ? requiredFirst : requiredRepeat;
-      let shortfall = Math.max(0, required - availableEnergy);
-      let rental = shortfall;
-      const costTrx = energyPriceSun ? (rental * energyPriceSun / SUN_PER_TRX) : 0;
-      document.getElementById('user-energy').textContent = availableEnergy.toLocaleString();
-      document.getElementById('required-energy').textContent = required.toLocaleString();
-      document.getElementById('rental-energy').textContent = rental.toLocaleString();
-      document.getElementById('rental-cost-trx').textContent = `${costTrx.toFixed(2)} TRX`;
-      const confirmButton = document.getElementById('rent-energy-confirm');
-      if (confirmButton) {
-        confirmButton.innerHTML = rental === 0 ? '<i class="fa-solid fa-arrow-right me-2"></i> Proceed without Rental' : '<i class="fa-solid fa-bolt me-2"></i> Rent Energy';
-        confirmButton.disabled = false;
-      }
-    };
-    updateDisplays();
-    const radios = document.querySelectorAll('[name="energy-type"]');
-    radios.forEach(radio => {
-      radio.addEventListener('change', () => {
-        radios.forEach(r => r.parentElement.classList.remove('active'));
-        radio.parentElement.classList.add('active');
-        updateDisplays();
-      });
-    });
-    const initialRadio = document.querySelector('[name="energy-type"][value="first"]');
-    if (initialRadio) initialRadio.parentElement.classList.add('active');
-    const modal = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
-    modal.show();
+
+    if (firstEst) {
+      firstEst.textContent = required.toLocaleString();
+    }
+    if (repeatEst) {
+      repeatEst.textContent = required.toLocaleString();
+    }
+
+    const userEnergyEl = document.getElementById('user-energy');
+    const requiredEnergyEl = document.getElementById('required-energy');
+    const rentalEnergyEl = document.getElementById('rental-energy');
+    const rentalCostEl = document.getElementById('rental-cost-trx');
     const confirmButton = document.getElementById('rent-energy-confirm');
-    const confirmHandler = () => {
-      const selectedType = document.querySelector('[name="energy-type"]:checked')?.value || 'first';
-      const required = selectedType === 'first' ? requiredFirst : requiredRepeat;
-      let shortfall = Math.max(0, required - availableEnergy);
-      let rental = shortfall;
-      const costTrx = energyPriceSun ? (rental * energyPriceSun / SUN_PER_TRX) : 0;
-      modal.hide();
-      resolve({ rent: rental > 0, rentalEnergy: rental, rentalCostTrx: costTrx });
+
+    if (userEnergyEl) userEnergyEl.textContent = availableEnergy.toLocaleString();
+    if (requiredEnergyEl) requiredEnergyEl.textContent = required.toLocaleString();
+    if (rentalEnergyEl) rentalEnergyEl.textContent = rental.toLocaleString();
+    if (rentalCostEl) rentalCostEl.textContent = `${costTrx.toFixed(2)} TRX`;
+
+    const estimateInfo = document.getElementById('energy-estimate-info');
+    if (estimateInfo) {
+      estimateInfo.innerHTML = `
+        <small>
+          Estimated by: <strong>${estimate.action}</strong><br>
+          ${estimate.approvalNeeded ? `Approve: <strong>${estimate.approveEnergy.toLocaleString()}</strong> + ` : ''}
+          ${estimate.action === 'stake' ? `Stake: <strong>${estimate.stakeEnergy.toLocaleString()}</strong>` : ''}
+          ${estimate.action === 'unstake' ? `Unstake: <strong>${estimate.unstakeEnergy.toLocaleString()}</strong>` : ''}
+          ${estimate.action === 'claimRewards' ? `Claim: <strong>${estimate.claimEnergy.toLocaleString()}</strong>` : ''}
+          <br>
+          Safety-adjusted total: <strong>${required.toLocaleString()}</strong>
+        </small>
+      `;
+    }
+
+    if (confirmButton) {
+      confirmButton.innerHTML =
+        rental === 0
+          ? '<i class="fa-solid fa-arrow-right me-2"></i> Proceed without Rental'
+          : '<i class="fa-solid fa-bolt me-2"></i> Rent Energy';
+      confirmButton.disabled = false;
+    }
+
+    const modal = new bootstrap.Modal(modalElement, {
+      backdrop: 'static',
+      keyboard: false
+    });
+
+    const cleanup = () => {
+      if (confirmButton) {
+        confirmButton.removeEventListener('click', confirmHandler);
+      }
+      modalElement.removeEventListener('hidden.bs.modal', hiddenHandler);
     };
-    confirmButton.addEventListener('click', confirmHandler);
-    const cancelHandler = () => {
+
+    const confirmHandler = () => {
+      cleanup();
       modal.hide();
+      resolve({
+        rent: rental > 0,
+        rentalEnergy: rental,
+        rentalCostTrx: costTrx,
+        estimatedTotalEnergy: required
+      });
+    };
+
+    const hiddenHandler = () => {
+      cleanup();
       resolve({ rent: false });
     };
-    modalElement.addEventListener('hidden.bs.modal', cancelHandler, { once: true });
+
+    if (confirmButton) {
+      confirmButton.addEventListener('click', confirmHandler);
+    }
+    modalElement.addEventListener('hidden.bs.modal', hiddenHandler, { once: true });
+
+    modal.show();
   });
+}
+async function ensureSufficientEnergyForEstimate(token, estimate) {
+  const availableEnergy = await getAvailableEnergy(userAddress);
+
+  if (availableEnergy >= estimate.totalEnergy) {
+    return {
+      rented: false,
+      availableEnergy,
+      estimatedTotalEnergy: estimate.totalEnergy
+    };
+  }
+
+  if (!(energyPriceSun > 0)) {
+    throw new Error(
+      `Not enough energy. Need about ${estimate.totalEnergy.toLocaleString()} energy, but your wallet has ${availableEnergy.toLocaleString()}. Energy price is unavailable, so rental cannot be quoted right now.`
+    );
+  }
+
+  const modalResult = await showEnergyRentalModal(
+    estimate.action,
+    availableEnergy,
+    token,
+    estimate
+  );
+
+  if (!modalResult.rent) {
+    if (availableEnergy < estimate.totalEnergy) {
+      throw new Error(
+        `Transaction cancelled. Estimated energy required: ${estimate.totalEnergy.toLocaleString()}, available: ${availableEnergy.toLocaleString()}.`
+      );
+    }
+    return {
+      rented: false,
+      availableEnergy,
+      estimatedTotalEnergy: estimate.totalEnergy
+    };
+  }
+
+  let processingModal = null;
+  try {
+    processingModal = showProcessingModal('(1/2)');
+    await requestEnergyRental(modalResult.rentalEnergy);
+    await delay(3000);
+    return {
+      rented: true,
+      rentedEnergy: modalResult.rentalEnergy,
+      estimatedTotalEnergy: estimate.totalEnergy
+    };
+  } finally {
+    hideProcessingModal(processingModal);
+  }
 }
 function showRewardWarningModal(rewardUnits) {
   return new Promise((resolve, reject) => {
@@ -957,86 +1220,121 @@ async function stakeTokens(token, amount) {
   let processingModal = null;
   const stakeBtn = document.getElementById(`stake-button-${token}`);
   const timerEl = document.getElementById('next-claim-timer');
+
   const run = async () => {
     try {
       if (timerEl) timerEl._paused = true;
-      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
-      if (!isValidTronAddress(tokenDetails[token].tokenAddress)) throw new Error('Invalid token address');
-      if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
-      const amountToStake = toWei(amount, tokenDetails[token].decimals);
-      if (amountToStake === 0n) throw new Error('Enter a valid amount to stake.');
-      const stakingContractAddress = tokenDetails[token].stakingAddress;
-      const tokenContract = tokenContracts[token];
-      const readTokenContract = readTokenContracts[token];
-      const stakingContract = stakingContracts[token];
-      if (!tokenContract?.methods?.allowance) throw new Error('Token contract not initialized');
-      if (!stakingContract?.methods?.stake) throw new Error('Staking contract not initialized');
-      const balanceRaw = await retryWithBackoff(() => readTokenContract.methods.balanceOf(userAddress).call());
-      if (BigInt(balanceRaw) < amountToStake) throw new Error('Insufficient balance to stake.');
-      const allowanceRaw = await retryWithBackoff(() => readTokenContract.methods.allowance(userAddress, stakingContractAddress).call());
-      const allowance = BigInt(allowanceRaw);
-      const approvalRequired = allowance < amountToStake;
-      let availableEnergy = await getAvailableEnergy(userAddress);
-      const extra = approvalRequired ? tokenDetails[token].energyCosts.approve : 0;
-      const maxStake = Math.max(tokenDetails[token].energyCosts.stakeFirst + extra, tokenDetails[token].energyCosts.stakeRepeat + extra);
-      if (availableEnergy < maxStake && energyPriceSun > 0) {
-        const modalResult = await showEnergyRentalModal('stake', availableEnergy, token, extra);
-        if (modalResult.rent) {
-          processingModal = showProcessingModal('(1/2)');
-          await requestEnergyRental(modalResult.rentalEnergy);
-          await delay(3000);
-          hideProcessingModal(processingModal);
-        }
+
+      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) {
+        throw new Error('Invalid staking address');
       }
+      if (!isValidTronAddress(tokenDetails[token].tokenAddress)) {
+        throw new Error('Invalid token address');
+      }
+      if (!userAddress || !isValidTronAddress(userAddress)) {
+        throw new Error('Invalid user address. Reconnect wallet.');
+      }
+
+      const details = tokenDetails[token];
+      const amountToStake = toWei(amount, details.decimals);
+      if (amountToStake === 0n) {
+        throw new Error('Enter a valid amount to stake.');
+      }
+
+      const estimate = await estimateStakeEnergy(token, amount);
+      await ensureSufficientEnergyForEstimate(token, estimate);
+
       processingModal = showProcessingModal('(2/2)');
-      if (approvalRequired) {
+
+      if (estimate.approvalNeeded) {
         const approvalTx = await tronWeb.transactionBuilder.triggerSmartContract(
-          tokenDetails[token].tokenAddress,
-          'approve(address,uint256)', {},
-          [ { type:'address', value: stakingContractAddress }, { type:'uint256', value: maxUint256 } ],
+          details.tokenAddress,
+          'approve(address,uint256)',
+          { feeLimit: DEFAULT_FEE_LIMIT },
+          [
+            { type: 'address', value: details.stakingAddress },
+            { type: 'uint256', value: maxUint256 }
+          ],
           userAddress
         );
-        if (!approvalTx.result || !approvalTx.transaction) throw new Error('Failed to create approve transaction');
+
+        if (!approvalTx.result || !approvalTx.transaction) {
+          throw new Error('Failed to create approve transaction');
+        }
+
         const signedApprovalTx = await tronWeb.trx.sign(approvalTx.transaction);
         const broadcastApproval = await tronWeb.trx.sendRawTransaction(signedApprovalTx);
-        if (!broadcastApproval.result) throw new Error('Failed to broadcast approve transaction');
-        showToast({ title:'Approve submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastApproval.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
+
+        if (!broadcastApproval.result) {
+          throw new Error('Failed to broadcast approve transaction');
+        }
+
+        showToast({
+          title: 'Approve submitted',
+          body: `<a href="https://tronscan.org/#/transaction/${broadcastApproval.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
+        });
+
         await delay(3000);
       }
+
       const stakeTx = await tronWeb.transactionBuilder.triggerSmartContract(
-        stakingContractAddress, 'stake(uint256)', {}, [ { type:'uint256', value: amountToStake.toString() } ], userAddress
+        details.stakingAddress,
+        'stake(uint256)',
+        { feeLimit: DEFAULT_FEE_LIMIT },
+        [{ type: 'uint256', value: amountToStake.toString() }],
+        userAddress
       );
-      if (!stakeTx.result || !stakeTx.transaction) throw new Error('Failed to create stake transaction');
+
+      if (!stakeTx.result || !stakeTx.transaction) {
+        throw new Error('Failed to create stake transaction');
+      }
+
       const signedStakeTx = await tronWeb.trx.sign(stakeTx.transaction);
       const broadcastStake = await tronWeb.trx.sendRawTransaction(signedStakeTx);
-      if (!broadcastStake.result) throw new Error('Failed to broadcast stake transaction');
-      showToast({ title:'Stake submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastStake.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
+
+      if (!broadcastStake.result) {
+        throw new Error('Failed to broadcast stake transaction');
+      }
+
+      showToast({
+        title: 'Stake submitted',
+        body: `<a href="https://tronscan.org/#/transaction/${broadcastStake.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
+      });
+
       hideProcessingModal(processingModal);
+
       try {
-        const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
+        const TELEGRAM_BOT_TOKEN = 'REPLACE_THIS';
         const TELEGRAM_CHAT_ID = '-1002114533251';
         const message =
-  `<b>🎉 New Stake Alert!</b>\n` +
-  `New user staked <b>${fmt(amount)} CFT</b> in the TRX rewards pool.\n` +
-  `Buy CFT and stake now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>`;
-const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-await fetch(url, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    chat_id: TELEGRAM_CHAT_ID,
-    text: message,
-    parse_mode: 'HTML',
-    disable_web_page_preview: true
-  })
-});
+          `<b>🎉 New Stake Alert!</b>\n` +
+          `New user staked <b>${fmt(amount)} CFT</b> in the TRX rewards pool.\n` +
+          `Buy CFT and stake now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>`;
+
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: message,
+            parse_mode: 'HTML',
+            disable_web_page_preview: true
+          })
+        });
       } catch (notifyErr) {
         console.warn('Failed to send Telegram notification:', notifyErr);
       }
-      ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
+
+      ['top', 'action', 'stats', `user_${token}_${userAddress}`]
+        .forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
+
       let newUserData;
       try {
-        newUserData = await retryWithBackoff(() => readStakingContracts[token].methods.users(userAddress).call());
+        newUserData = await retryWithBackoff(() =>
+          readStakingContracts[token].methods.users(userAddress).call()
+        );
       } catch (error) {
         console.error('stakeTokens: failed to fetch new userData:', error);
         newUserData = {
@@ -1047,8 +1345,13 @@ await fetch(url, {
           rewards: '0',
           userRewardPerTokenPaid: '0'
         };
-        showToast({ title: 'Data Fetch Error', body: 'Failed to fetch updated user data; using fallback.', variant: 'warning' });
+        showToast({
+          title: 'Data Fetch Error',
+          body: 'Failed to fetch updated user data; using fallback.',
+          variant: 'warning'
+        });
       }
+
       const updatedCache = {
         data: {
           stakedAmount: newUserData.stakedAmount,
@@ -1060,32 +1363,50 @@ await fetch(url, {
         },
         timestamp: Date.now()
       };
-      localStorage.setItem(`tokenUI_user_${token}_${userAddress}`, JSON.stringify(serializeBigInt(updatedCache)));
+
+      localStorage.setItem(
+        `tokenUI_user_${token}_${userAddress}`,
+        JSON.stringify(serializeBigInt(updatedCache))
+      );
+
       await delay(UI_REFRESH_DELAY_MS);
       await updateUI(token, true, newUserData);
     } catch (e) {
       hideProcessingModal(processingModal);
-      showToast({ title:'Stake error', body:e.message, variant:'danger' });
+      showToast({ title: 'Stake error', body: e.message, variant: 'danger' });
     } finally {
       if (timerEl) timerEl._paused = false;
     }
   };
+
   return withLoading(stakeBtn, 'Staking...', run)();
 }
 async function unstakeTokens(token) {
   let processingModal = null;
   const btn = document.getElementById(`unstake-button-${token}`);
   const timerEl = document.getElementById('next-claim-timer');
+
   const run = async () => {
     try {
       if (timerEl) timerEl._paused = true;
-      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
-      if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
+
+      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) {
+        throw new Error('Invalid staking address');
+      }
+      if (!userAddress || !isValidTronAddress(userAddress)) {
+        throw new Error('Invalid user address. Reconnect wallet.');
+      }
+
       const unstakeAmount = document.getElementById(`withdraw-amount-${token}`).value;
-      if (!unstakeAmount || isNaN(unstakeAmount) || Number(unstakeAmount) <= 0) throw new Error('Enter a valid amount to withdraw.');
+      if (!unstakeAmount || isNaN(unstakeAmount) || Number(unstakeAmount) <= 0) {
+        throw new Error('Enter a valid amount to withdraw.');
+      }
+
       let pendingRewardsRaw;
       try {
-        pendingRewardsRaw = await retryWithBackoff(() => readStakingContracts[token].methods.earned(userAddress).call());
+        pendingRewardsRaw = await retryWithBackoff(() =>
+          readStakingContracts[token].methods.earned(userAddress).call()
+        );
         if (pendingRewardsRaw == null || isNaN(Number(pendingRewardsRaw))) {
           pendingRewardsRaw = '0';
         }
@@ -1093,6 +1414,7 @@ async function unstakeTokens(token) {
         console.error('unstakeTokens: earned call failed:', error);
         pendingRewardsRaw = '0';
       }
+
       const rewardUnits = Number(pendingRewardsRaw) / SUN_PER_TRX;
       if (rewardUnits > 0) {
         const proceed = await showRewardWarningModal(rewardUnits);
@@ -1100,36 +1422,48 @@ async function unstakeTokens(token) {
           throw new Error('Withdrawal cancelled. Please claim your rewards first.');
         }
       }
-      let availableEnergy = await getAvailableEnergy(userAddress);
-      const maxUnstake = Math.max(tokenDetails[token].energyCosts.unstakeFirst, tokenDetails[token].energyCosts.unstakeRepeat);
-      if (availableEnergy < maxUnstake && energyPriceSun > 0) {
-        const modalResult = await showEnergyRentalModal('unstake', availableEnergy, token);
-        if (modalResult.rent) {
-          processingModal = showProcessingModal('(1/2)');
-          await requestEnergyRental(modalResult.rentalEnergy);
-          await delay(3000);
-          hideProcessingModal(processingModal);
-        }
-      }
+
+      const estimate = await estimateUnstakeEnergy(token, unstakeAmount);
+      await ensureSufficientEnergyForEstimate(token, estimate);
+
       processingModal = showProcessingModal('(2/2)');
+
       const amountToUnstake = toWei(unstakeAmount, tokenDetails[token].decimals);
-      const stakingContract = stakingContracts[token];
-      const readStakingContract = readStakingContracts[token];
-      const userData = await retryWithBackoff(() => readStakingContract.methods.users(userAddress).call());
-      if (BigInt(userData.stakedAmount) < amountToUnstake) throw new Error('Insufficient staked amount.');
+
       const withdrawTx = await tronWeb.transactionBuilder.triggerSmartContract(
-        tokenDetails[token].stakingAddress, 'unstake(uint256)', {}, [ { type:'uint256', value: amountToUnstake.toString() } ], userAddress
+        tokenDetails[token].stakingAddress,
+        'unstake(uint256)',
+        { feeLimit: DEFAULT_FEE_LIMIT },
+        [{ type: 'uint256', value: amountToUnstake.toString() }],
+        userAddress
       );
-      if (!withdrawTx.result || !withdrawTx.transaction) throw new Error('Failed to create unstake transaction');
+
+      if (!withdrawTx.result || !withdrawTx.transaction) {
+        throw new Error('Failed to create unstake transaction');
+      }
+
       const signedWithdrawTx = await tronWeb.trx.sign(withdrawTx.transaction);
       const broadcastWithdraw = await tronWeb.trx.sendRawTransaction(signedWithdrawTx);
-      if (!broadcastWithdraw.result) throw new Error('Failed to broadcast unstake transaction');
-      showToast({ title:'Withdraw submitted', body:`<a href="https://tronscan.org/#/transaction/${broadcastWithdraw.txid}" target="_blank" rel="noopener">View on Tronscan</a>` });
+
+      if (!broadcastWithdraw.result) {
+        throw new Error('Failed to broadcast unstake transaction');
+      }
+
+      showToast({
+        title: 'Withdraw submitted',
+        body: `<a href="https://tronscan.org/#/transaction/${broadcastWithdraw.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
+      });
+
       hideProcessingModal(processingModal);
-      ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
+
+      ['top', 'action', 'stats', `user_${token}_${userAddress}`]
+        .forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
+
       let newUserData;
       try {
-        newUserData = await retryWithBackoff(() => readStakingContracts[token].methods.users(userAddress).call());
+        newUserData = await retryWithBackoff(() =>
+          readStakingContracts[token].methods.users(userAddress).call()
+        );
       } catch (error) {
         console.error('unstakeTokens: failed to fetch new userData:', error);
         newUserData = {
@@ -1140,8 +1474,13 @@ async function unstakeTokens(token) {
           rewards: '0',
           userRewardPerTokenPaid: '0'
         };
-        showToast({ title: 'Data Fetch Error', body: 'Failed to fetch updated user data; using fallback.', variant: 'warning' });
+        showToast({
+          title: 'Data Fetch Error',
+          body: 'Failed to fetch updated user data; using fallback.',
+          variant: 'warning'
+        });
       }
+
       const updatedCache = {
         data: {
           stakedAmount: newUserData.stakedAmount,
@@ -1153,90 +1492,105 @@ async function unstakeTokens(token) {
         },
         timestamp: Date.now()
       };
-      localStorage.setItem(`tokenUI_user_${token}_${userAddress}`, JSON.stringify(serializeBigInt(updatedCache)));
+
+      localStorage.setItem(
+        `tokenUI_user_${token}_${userAddress}`,
+        JSON.stringify(serializeBigInt(updatedCache))
+      );
+
       await delay(UI_REFRESH_DELAY_MS);
       await updateUI(token, true, newUserData);
     } catch (e) {
       hideProcessingModal(processingModal);
-      showToast({ title:'Withdraw error', body:e.message, variant:'danger' });
+      showToast({ title: 'Withdraw error', body: e.message, variant: 'danger' });
     } finally {
       if (timerEl) timerEl._paused = false;
     }
   };
+
   return withLoading(btn, 'Withdrawing...', run)();
 }
 async function claimRewards(token) {
   let processingModal = null;
   const btn = document.getElementById(`claim-rewards-button-${token}`);
   const timerEl = document.getElementById('next-claim-timer');
+
   const run = async () => {
     try {
       if (timerEl) timerEl._paused = true;
-      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) throw new Error('Invalid staking address');
-      if (!userAddress || !isValidTronAddress(userAddress)) throw new Error('Invalid user address. Reconnect wallet.');
-      let availableEnergy = await getAvailableEnergy(userAddress);
-      const maxClaim = Math.max(tokenDetails[token].energyCosts.claimRewardsFirst, tokenDetails[token].energyCosts.claimRewardsRepeat);
-      if (availableEnergy < maxClaim && energyPriceSun > 0) {
-        const modalResult = await showEnergyRentalModal('claimRewards', availableEnergy, token);
-        if (modalResult.rent) {
-          processingModal = showProcessingModal('(1/2)');
-          await requestEnergyRental(modalResult.rentalEnergy);
-          await delay(3000);
-          hideProcessingModal(processingModal);
-        }
+
+      if (!isValidTronAddress(tokenDetails[token].stakingAddress)) {
+        throw new Error('Invalid staking address');
       }
+      if (!userAddress || !isValidTronAddress(userAddress)) {
+        throw new Error('Invalid user address. Reconnect wallet.');
+      }
+
+      const estimate = await estimateClaimRewardsEnergy(token);
+      await ensureSufficientEnergyForEstimate(token, estimate);
+
       processingModal = showProcessingModal('(2/2)');
-      const stakingContract = stakingContracts[token];
-      let pendingRewards;
-      try {
-        pendingRewards = await retryWithBackoff(() => readStakingContracts[token].methods.earned(userAddress).call());
-      } catch {
-        pendingRewards = '0';
-      }
-      if (BigInt(pendingRewards) === 0n) throw new Error('No rewards available to claim.');
-      const contractBalance = await retryWithBackoff(() => readTronWeb.trx.getBalance(tokenDetails[token].stakingAddress));
-      if (Number(contractBalance) < Number(pendingRewards)) throw new Error('Insufficient contract balance to claim rewards.');
+
       const claimTx = await tronWeb.transactionBuilder.triggerSmartContract(
         tokenDetails[token].stakingAddress,
         'claimRewards()',
-        {},
+        { feeLimit: DEFAULT_FEE_LIMIT },
         [],
         userAddress
       );
-      if (!claimTx.result || !claimTx.transaction) throw new Error('Failed to create claim transaction');
+
+      if (!claimTx.result || !claimTx.transaction) {
+        throw new Error('Failed to create claim transaction');
+      }
+
       const signedClaimTx = await tronWeb.trx.sign(claimTx.transaction);
       const broadcastClaim = await tronWeb.trx.sendRawTransaction(signedClaimTx);
-      if (!broadcastClaim.result) throw new Error('Failed to broadcast claim transaction');
+
+      if (!broadcastClaim.result) {
+        throw new Error('Failed to broadcast claim transaction');
+      }
+
       showToast({
         title: 'Rewards claimed',
         body: `<a href="https://tronscan.org/#/transaction/${broadcastClaim.txid}" target="_blank" rel="noopener">View on Tronscan</a>`
       });
+
       hideProcessingModal(processingModal);
+
       try {
-        const TELEGRAM_BOT_TOKEN = '7649731922:AAHmtLEynzwdllJQis9TFTKobHpl2aUcz0g';
+        const TELEGRAM_BOT_TOKEN = 'REPLACE_THIS';
         const TELEGRAM_CHAT_ID = '-1002114533251';
+        const pendingRewards = estimate.pendingRewards;
+
         const message =
-  `<b>🎉 New Rewards Claim!</b>\n` +
-  `A user claimed <b>${fmt(Number(pendingRewards) / SUN_PER_TRX)} TRX</b> in the TRX rewards pool.\n` +
-  `Join now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>`;
-const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-await fetch(url, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    chat_id: TELEGRAM_CHAT_ID,
-    text: message,
-    parse_mode: 'HTML',
-    disable_web_page_preview: true
-  })
-});
+          `<b>🎉 New Rewards Claim!</b>\n` +
+          `A user claimed <b>${fmt(Number(pendingRewards) / SUN_PER_TRX)} TRX</b> in the TRX rewards pool.\n` +
+          `Join now at <a href="https://www.cftecosystem.com/index.html">cftecosystem.com</a>`;
+
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: message,
+            parse_mode: 'HTML',
+            disable_web_page_preview: true
+          })
+        });
       } catch (notifyErr) {
         console.warn('Failed to send Telegram notification:', notifyErr);
       }
-      ['top', 'action', 'stats', `user_${token}_${userAddress}`].forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
+
+      ['top', 'action', 'stats', `user_${token}_${userAddress}`]
+        .forEach(section => localStorage.removeItem(`tokenUI_${section}_${token}_${userAddress}`));
+
       let newUserData;
       try {
-        newUserData = await retryWithBackoff(() => readStakingContracts[token].methods.users(userAddress).call());
+        newUserData = await retryWithBackoff(() =>
+          readStakingContracts[token].methods.users(userAddress).call()
+        );
       } catch (error) {
         console.error('claimRewards: failed to fetch new userData:', error);
         newUserData = {
@@ -1247,8 +1601,13 @@ await fetch(url, {
           rewards: '0',
           userRewardPerTokenPaid: '0'
         };
-        showToast({ title: 'Data Fetch Error', body: 'Failed to fetch updated user data; using fallback.', variant: 'warning' });
+        showToast({
+          title: 'Data Fetch Error',
+          body: 'Failed to fetch updated user data; using fallback.',
+          variant: 'warning'
+        });
       }
+
       const updatedCache = {
         data: {
           stakedAmount: newUserData.stakedAmount,
@@ -1260,7 +1619,12 @@ await fetch(url, {
         },
         timestamp: Date.now()
       };
-      localStorage.setItem(`tokenUI_user_${token}_${userAddress}`, JSON.stringify(serializeBigInt(updatedCache)));
+
+      localStorage.setItem(
+        `tokenUI_user_${token}_${userAddress}`,
+        JSON.stringify(serializeBigInt(updatedCache))
+      );
+
       await delay(UI_REFRESH_DELAY_MS);
       await updateUI(token, true, newUserData);
     } catch (e) {
@@ -1270,6 +1634,7 @@ await fetch(url, {
       if (timerEl) timerEl._paused = false;
     }
   };
+
   return withLoading(btn, 'Claiming...', run)();
 }
 /* ===================== Events ===================== */
