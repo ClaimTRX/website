@@ -20,15 +20,7 @@ const contracts = [
     expireDays: 14,
     chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
   },
-  {
-    name: 'CFT',
-    tabName: 'CFT Pool', // Customize the tab name here
-    address: 'TAbu6yKiVRbs3c7tcwFnreupEfVW9t8d9K',
-    decimals: 6,
-    soonDays: 10,
-    expireDays: 14,
-    chainstackUrl: 'https://tron-mainnet.core.chainstack.com/a326f4c9a023702fa22b346f85066299'
-  },
+  
   
   {
     name: 'CFTGame',
