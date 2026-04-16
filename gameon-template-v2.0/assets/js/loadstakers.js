@@ -48,7 +48,7 @@ const contracts = [
   }
 ];
 
-// Copy wallet address
+// copy wallet
 function copyAddr(el, addr) {
   navigator.clipboard.writeText(addr)
     .then(() => {
@@ -68,14 +68,22 @@ function copyAddr(el, addr) {
 
 window.copyAddr = copyAddr;
 
-const DELAY_MS = 0;
-const THROTTLE_GAP_MS = 350;
+const DELAY_MS = 120;
 const RETRY_COUNT = 3;
-const RETRY_DELAY_MS = 800;
+const RETRY_DELAY_MS = 900;
 const HIDE_STAKERS_BELOW_1 = true;
 
 let tronWeb = null;
 let readTronWeb = null;
+
+let globalTotal = 0;
+let globalProcessed = 0;
+let globalProgressBar = null;
+let globalCurrentEl = null;
+let globalProgressWrap = null;
+
+let currentBatchId = 0;
+const tabLoadState = new Map();
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -94,24 +102,6 @@ async function retry(fn, retries = RETRY_COUNT, delay = RETRY_DELAY_MS) {
   throw lastErr;
 }
 
-const throttle = (() => {
-  let queue = Promise.resolve();
-  let last = 0;
-
-  return async function run(fn) {
-    const exec = async () => {
-      const now = Date.now();
-      const wait = Math.max(0, THROTTLE_GAP_MS - (now - last));
-      if (wait > 0) await sleep(wait);
-      last = Date.now();
-      return fn();
-    };
-
-    queue = queue.then(exec, exec);
-    return queue;
-  };
-})();
-
 async function initReadTronWeb(chainstackUrl) {
   if (readTronWeb) return readTronWeb;
 
@@ -127,26 +117,8 @@ async function initReadTronWeb(chainstackUrl) {
   readTronWeb = new TronWebCtor({ fullHost: chainstackUrl });
   readTronWeb.setAddress('T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb');
 
-  const originalRequest = readTronWeb.request.bind(readTronWeb);
-  readTronWeb.request = async function(endpoint, params = {}, method = 'POST') {
-    return throttle(() => originalRequest(endpoint, params, method));
-  };
-
   return readTronWeb;
 }
-
-// Global progress state
-let globalTotal = 0;
-let globalProcessed = 0;
-let globalProgressBar = null;
-let globalCurrentEl = null;
-let globalProgressWrap = null;
-
-// Used to prevent old loads from corrupting new ones
-let currentBatchId = 0;
-
-// Track active tab loads
-const tabLoadState = new Map();
 
 function resetGlobalProgress() {
   globalTotal = 0;
@@ -175,6 +147,7 @@ function updateGlobalProgress() {
   if (safeProcessed >= globalTotal) {
     globalProgressBar.style.width = '100%';
     globalCurrentEl.textContent = '100';
+
     setTimeout(() => {
       if (globalProcessed >= globalTotal) {
         globalProgressWrap.style.display = 'none';
@@ -187,6 +160,10 @@ function incrementProgress(batchId) {
   if (batchId !== currentBatchId) return;
   globalProcessed += 1;
   updateGlobalProgress();
+}
+
+function makeTabId(tabName) {
+  return tabName.toLowerCase().replace(/\s+/g, '-');
 }
 
 function formatAmount(value, maxFractionDigits = 4) {
@@ -210,24 +187,30 @@ function toBase58Address(addr) {
 
 function parseBool(value) {
   if (typeof value === 'boolean') return value;
-  if (typeof value === 'string') return value === 'true';
+  if (typeof value === 'string') return value === 'true' || value === '1';
   if (typeof value === 'number') return value !== 0;
-  if (typeof value === 'object' && value !== null && typeof value.toString === 'function') {
-    return value.toString() === 'true' || value.toString() === '1';
+
+  try {
+    const s = value?.toString?.();
+    return s === 'true' || s === '1';
+  } catch {
+    return false;
   }
-  return false;
 }
 
 function parseTimestamp(value) {
-  if (value == null) return 0;
-  const n = Number(value.toString ? value.toString() : value);
-  return Number.isFinite(n) ? n : 0;
+  try {
+    const n = Number(value?.toString?.() ?? value ?? 0);
+    return Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
+  }
 }
 
 function parseStakedAmount(value, decimals) {
   try {
     return readTronWeb
-      .toBigNumber(value.toString ? value.toString() : value)
+      .toBigNumber(value?.toString?.() ?? value ?? 0)
       .shiftedBy(-decimals)
       .toNumber();
   } catch {
@@ -275,7 +258,6 @@ async function loadStakers(config, tabId, batchId = currentBatchId) {
   const activeBody = document.getElementById(`active-body-${tabId}`);
   const soonBody = document.getElementById(`soon-body-${tabId}`);
   const expiredBody = document.getElementById(`expired-body-${tabId}`);
-
   const totalStakersEl = document.getElementById(`total-stakers-${tabId}`);
   const activeTotalEl = document.getElementById(`active-total-${tabId}`);
   const soonTotalEl = document.getElementById(`soon-total-${tabId}`);
@@ -319,7 +301,6 @@ async function loadStakers(config, tabId, batchId = currentBatchId) {
 
       try {
         const info = await getUserInfo(contract, addr);
-
         const stakedNum = parseStakedAmount(info.stakedAmount, config.decimals);
 
         if (HIDE_STAKERS_BELOW_1 && stakedNum < 1) {
@@ -375,6 +356,7 @@ async function loadStakers(config, tabId, batchId = currentBatchId) {
         if (category === 'active') activeData.push(row);
         else if (category === 'soon') soonData.push(row);
         else expiredData.push(row);
+
       } catch (e) {
         console.warn('Failed for wallet:', addr, e);
         failedWallets.push(addr);
@@ -382,7 +364,7 @@ async function loadStakers(config, tabId, batchId = currentBatchId) {
         incrementProgress(batchId);
       }
 
-      if (DELAY_MS > 0 && i < list.length - 1) {
+      if (i < list.length - 1) {
         await sleep(DELAY_MS);
       }
     }
@@ -404,6 +386,7 @@ async function loadStakers(config, tabId, batchId = currentBatchId) {
     if (failedWallets.length > 0) {
       console.warn(`[${config.tabName}] failed wallets:`, failedWallets);
     }
+
   } catch (err) {
     console.error(`Error loading ${config.tabName}:`, err);
     activeBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-5">Error: ${err.message}</td></tr>`;
@@ -429,14 +412,11 @@ async function calculateGlobalTotal(batchId) {
       const list = await getStakerList(contract);
       globalTotal += list.length;
       updateGlobalProgress();
+      await sleep(120);
     } catch (err) {
       console.warn(`Failed to get staker count for ${config.tabName}:`, err);
     }
   }
-}
-
-function makeTabId(tabName) {
-  return tabName.toLowerCase().replace(/\s+/g, '-');
 }
 
 async function refreshAllTabs() {
@@ -463,13 +443,12 @@ async function setupTabs() {
 
   contracts.forEach((config, index) => {
     const tabId = makeTabId(config.tabName);
-    const tabLabel = config.tabName || `${config.name} Stakers`;
 
     const li = document.createElement('li');
     li.className = 'nav-item';
     li.innerHTML = `
       <a class="nav-link ${index === 0 ? 'active' : ''}" id="${tabId}-tab" data-bs-toggle="tab" href="#${tabId}" role="tab">
-        ${tabLabel}
+        ${config.tabName}
       </a>
     `;
     tabsContainer.appendChild(li);
@@ -540,8 +519,7 @@ async function setupTabs() {
 
     tabContent.appendChild(pane);
 
-    const refreshBtn = pane.querySelector(`#refresh-${tabId}`);
-    refreshBtn.addEventListener('click', async () => {
+    document.getElementById(`refresh-${tabId}`).addEventListener('click', async () => {
       currentBatchId += 1;
       const batchId = currentBatchId;
       await calculateGlobalTotal(batchId);
@@ -570,8 +548,7 @@ async function setupTabs() {
 
       if (
         activeBody.innerHTML.trim() === '' ||
-        activeBody.innerHTML.includes('Loading...') ||
-        activeBody.innerHTML.includes('Connecting...')
+        activeBody.innerHTML.includes('Loading...')
       ) {
         await loadStakers(config, tabId, currentBatchId);
       }
