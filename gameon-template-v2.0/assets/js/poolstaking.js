@@ -188,11 +188,20 @@ async function chainstackApiCall(endpoint, params = {}) {
 }
 /* ===================== TronWeb Setup (wrap requests) ===================== */
 async function fetchEnergyPrice() {
-  if (!userAddress) {
-    console.warn('No user address for fetching energy price.');
+  if (!userAddress || !isValidTronAddress(userAddress)) {
+    console.warn('No valid user address for fetching energy price:', userAddress);
     return;
   }
+
   try {
+    const body = {
+      receiver: userAddress,
+      amount: 65000,
+      duration: ENERGY_RENTAL_DURATION
+    };
+
+    console.log('Energy quote request:', body);
+
     const res = await fetch(`${ENERGY_RENTAL_API_URL}/energy/get-quote`, {
       method: 'POST',
       headers: {
@@ -200,16 +209,25 @@ async function fetchEnergyPrice() {
         'X-Api-Key': ENERGY_RENTAL_API_KEY,
         'X-Api-Secret': ENERGY_RENTAL_API_SECRET
       },
-      body: JSON.stringify({
-        receiver: userAddress,
-        amount: 65000,
-        duration: 5
-      })
+      body: JSON.stringify(body)
     });
-    if (!res.ok) throw new Error(`Quote failed: ${res.status}`);
-    const data = await res.json();
-    if (data.success && data.quote?.price_trx) {
-      energyPriceSun = Math.round((data.quote.price_trx * 1e6) / 65000);
+
+    const text = await res.text();
+    console.log('Energy quote raw response:', res.status, text);
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(`Quote failed ${res.status}: ${text}`);
+    }
+
+    if (!res.ok || !data.success) {
+      throw new Error(`Quote failed ${res.status}: ${data.error || data.message || text}`);
+    }
+
+    if (data.quote?.price_trx) {
+      energyPriceSun = Math.round((Number(data.quote.price_trx) * 1e6) / 65000);
       console.log(`Fetched energy price: ${energyPriceSun} SUN per energy unit`);
     }
   } catch (e) {
