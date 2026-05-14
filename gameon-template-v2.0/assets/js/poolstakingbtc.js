@@ -15,8 +15,8 @@ const ENERGY_RENTAL_DURATION = 5;
 const CACHE_TIMEOUT_MS = 120_000;
 const UI_REFRESH_DELAY_MS = 2000;
 
-const CFT_PRICE_USDT = 0.09;
-const BTC_PRICE_USDT = 76000;
+const CFT_PRICE_USDT = 0.24;
+const BTC_PRICE_USDT = 769700;
 const CFT_PRICE_BTC = CFT_PRICE_USDT / BTC_PRICE_USDT;
 const DAILY_PAYOUT_PERCENTAGE = 1;
 let energyRentalAvailable = true;   // ← Add this
