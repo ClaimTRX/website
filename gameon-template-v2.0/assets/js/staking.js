@@ -43,20 +43,9 @@ const tokenDetails = {
       unstake: 75000,
       claimRewards: 100000
     }
-  },
- 
-  fym: {
-    tokenAddress: 'TCTvRkt5kVndeGKWJmMUxEc2rovdrGNoK3',
-    stakingAddress: 'TP4HhAWv2WbSMCH2CRhdSsiwBP6JzViouq',
-    decimals: 6,
-    displayName: 'CFT',
-    rewardDisplayName: 'CFT',
-    energyCosts: {
-      stake: 120000,
-      unstake: 75000,
-      claimRewards: 100000
-    }
   }
+ 
+  
 };
 /* ===================== Lazy loading on collapse ===================== */
 const panelTokenMap = {
