@@ -6,18 +6,7 @@
 ===================================================== */
 
 const previousUpdate = {
-  date: 'May 14',
-
-  totalSupply: 997415,
-  activeCft: 416808,
-  teamHoldings: 408909,
-  inactiveCft: 142968,
-  sunswapLiquidity: 1541,
-  tradingPageSupply: 27189
-};
-
-const latestUpdate = {
-  date: 'Latest Update',
+  date: 'June 18',
 
   totalSupply: 997238,
   activeCft: 416933,
@@ -25,6 +14,17 @@ const latestUpdate = {
   inactiveCft: 141500,
   sunswapLiquidity: 399,
   tradingPageSupply: 23789
+};
+
+const latestUpdate = {
+  date: 'Latest Update',
+
+  totalSupply: 996938,
+  activeCft: 394129,
+  teamHoldings: 416017,
+  inactiveCft: 158496,
+  sunswapLiquidity: 298,
+  tradingPageSupply: 27998
 };
 
 /* =====================================================
