@@ -17,7 +17,7 @@ const THROTTLE_GAP_MS = 4; // Adjusted for 250 RPS (1000ms / 250 ≈ 4ms)
 const CONTRACT_CALL_DELAY_MS = 0; // No delay for faster execution
 const UI_REFRESH_DELAY_MS = 2000; // Reduced from 4000ms
 // Manual CFT price for APY calculation (update this value as needed)
-const CFT_TRX_PRICE = 0.69; // Manually set CFT price in TRX (update as needed)
+const CFT_TRX_PRICE = 0.59; // Manually set CFT price in TRX (update as needed)
 const DAILY_PAYOUT_PERCENTAGE = 1; // 1% daily payout as per requirement
 /* ===================== Token Config ===================== */
 const tokenDetails = {
